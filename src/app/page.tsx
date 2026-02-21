@@ -989,6 +989,18 @@ export default function App() {
             } catch (e) { console.error("댓글 저장 실패:", e); }
         };
 
+        const handleDeletePost = async (postId: any) => {
+            if (!confirm("이 게시글을 정말 삭제하시겠습니까?")) return;
+            try {
+                const res = await fetch(`/api/community?id=${postId}`, { method: 'DELETE' });
+                if (res.ok) {
+                    setCommunityPosts(communityPosts.filter(post => post.id !== postId));
+                } else {
+                    alert("삭제 실패");
+                }
+            } catch (e) { console.error("삭제 중 오류:", e); }
+        };
+
         return (
             <div style={{ minHeight: "100vh", background: "#F8F8F8", maxWidth: "480px", margin: "0 auto", ...baseFont }}>
                 {styles}
@@ -1008,6 +1020,9 @@ export default function App() {
                                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>{post.user_name}</div>
                                     <div style={{ fontSize: '11px', color: '#999' }}>{new Date(post.created_at || Date.now()).toLocaleString()}</div>
                                 </div>
+                                {isAdmin && (
+                                    <button onClick={() => handleDeletePost(post.id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#999', padding: '5px' }}>🗑️</button>
+                                )}
                             </div>
                             <p style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', margin: '0 0 15px 0', whiteSpace: 'pre-line' }}>{post.content}</p>
 
