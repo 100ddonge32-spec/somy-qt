@@ -74,6 +74,7 @@ export default function App() {
     const [qtForm, setQtForm] = useState({ date: '', reference: '', passage: '', question1: '', question2: '', question3: '', prayer: '' });
     const [aiLoading, setAiLoading] = useState(false);
     const [stats, setStats] = useState<{ today: { count: number; members: { user_name: string; avatar_url: string | null }[] }; ranking: { name: string; avatar: string | null; count: number }[]; totalCompletions: number } | null>(null);
+    const [statsError, setStatsError] = useState<string | null>(null);
     const [churchSettings, setChurchSettings] = useState({
         church_name: CHURCH_NAME,
         church_logo_url: CHURCH_LOGO,
@@ -434,12 +435,17 @@ export default function App() {
                             </button>
                             <button onClick={async () => {
                                 setView('stats');
+                                setStatsError(null);
                                 try {
                                     const r = await fetch('/api/stats');
                                     const data = await r.json();
-                                    if (data.today) setStats(data);
+                                    if (r.ok && data.today) {
+                                        setStats(data);
+                                    } else {
+                                        setStatsError(data.error || "통계 데이터를 가져올 수 없습니다.");
+                                    }
                                 } catch (e) {
-                                    console.error("통계 로드 실패:", e);
+                                    setStatsError("서버 연결에 실패했습니다.");
                                 }
                             }} style={{
                                 width: "100%", padding: "12px",
@@ -587,11 +593,18 @@ export default function App() {
                                 <button onClick={() => setView('community')} style={{ width: '100%', padding: '16px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', marginBottom: '10px' }}>은혜나눔 게시판 가기</button>
                                 <button onClick={async () => {
                                     setView('stats');
+                                    setStatsError(null);
                                     try {
                                         const r = await fetch('/api/stats');
                                         const data = await r.json();
-                                        if (data.today) setStats(data);
-                                    } catch (e) { }
+                                        if (r.ok && data.today) {
+                                            setStats(data);
+                                        } else {
+                                            setStatsError(data.error || "통계 데이터를 가져올 수 없습니다.");
+                                        }
+                                    } catch (e) {
+                                        setStatsError("서버 연결에 실패했습니다.");
+                                    }
                                 }} style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>👑 이달의 큐티왕 보기</button>
                             </div>
                         )}
@@ -791,7 +804,12 @@ export default function App() {
                     <div style={{ fontWeight: 700, color: "#333", fontSize: "14px" }}>👑 이달의 큐티왕</div>
                 </div>
 
-                {!stats || !stats.today ? (
+                {statsError ? (
+                    <div style={{ padding: '60px 20px', textAlign: 'center', color: '#E57373', fontSize: '14px' }}>
+                        ⚠️ 오류 발생: {statsError}<br />
+                        <button onClick={() => setView('home')} style={{ marginTop: '20px', padding: '10px 20px', background: '#F5F5F5', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>홈으로 이동</button>
+                    </div>
+                ) : !stats || !stats.today ? (
                     <div style={{ padding: '60px 20px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
                         데이터를 불러오는 중입니다... 🐑<br />
                         <span style={{ fontSize: '12px', opacity: 0.7 }}>(잠시만 기다려주세요)</span>
