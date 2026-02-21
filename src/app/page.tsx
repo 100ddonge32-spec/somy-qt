@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 
-type View = "home" | "chat" | "qt";
+type View = "home" | "chat" | "qt" | "community";
 
 const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = "https://cdn.imweb.me/thumbnail/20210813/569458bf12dd0.png";
@@ -25,6 +25,21 @@ const QT_DATA = {
     prayer: "선하신 목자 되신 주님, 오늘도 저를 인도해 주심에 감사드립니다. 제 삶의 모든 필요를 아시는 주님께 온전히 의지하게 하소서. 아멘.",
 };
 
+interface Comment {
+    id: number;
+    user: string;
+    content: string;
+    date: string;
+}
+
+interface Post {
+    id: number;
+    user: string;
+    content: string;
+    date: string;
+    comments: Comment[];
+}
+
 export default function App() {
     const [view, setView] = useState<View>("home");
     const [messages, setMessages] = useState([
@@ -33,7 +48,13 @@ export default function App() {
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [answers, setAnswers] = useState<string[]>(new Array(QT_DATA.questions.length).fill(""));
-    const [qtStep, setQtStep] = useState<"read" | "reflect" | "pray" | "done">("read");
+    const [graceInput, setGraceInput] = useState("");
+    const [qtStep, setQtStep] = useState<"read" | "reflect" | "grace" | "pray" | "done">("read");
+    const [communityPosts, setCommunityPosts] = useState<Post[]>([
+        { id: 1, user: "사무엘 성도", content: "오늘 말씀을 통해 선하신 목자 되신 주님을 다시금 기억하게 되었습니다. 어떤 상황에서도 부족함이 없게 하시는 하나님을 찬양합니다.", date: "2시간 전", comments: [{ id: 1, user: "마리아 권사", content: "아멘! 참 은혜로운 고백입니다.", date: "1시간 전" }] },
+        { id: 2, user: "안나 집사", content: "쉴 만한 물가로 인도하시는 하나님의 세밀한 손길을 느끼는 하루였습니다.", date: "5시간 전", comments: [] }
+    ]);
+    const [commentInputs, setCommentInputs] = useState<{ [key: number]: string }>({});
     const [passageInput, setPassageInput] = useState("");
     const [passageChat, setPassageChat] = useState<{ role: string; content: string }[]>([]);
     const [isPassageLoading, setIsPassageLoading] = useState(false);
@@ -115,6 +136,7 @@ export default function App() {
       @keyframes halo-pulse { 0%,100%{ opacity:.7; transform:translateX(-50%) scaleX(1); } 50%{ opacity:1; transform:translateX(-50%) scaleX(1.1); } }
       @keyframes shadow-pulse { 0%,100%{ transform:translateX(-50%) scaleX(1); opacity:.2; } 50%{ transform:translateX(-50%) scaleX(.7); opacity:.1; } }
       @keyframes fade-in { from{ opacity:0; transform:translateY(20px); } to{ opacity:1; transform:translateY(0); } }
+      @keyframes slide-right { from{ opacity:0; transform:translateX(20px); } to{ opacity:1; transform:translateX(0); } }
       @keyframes bounce-dot { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-7px); } }
     `}</style>
     );
@@ -214,8 +236,21 @@ export default function App() {
        QT PAGE
     ══════════════════════════════ */
     if (view === "qt") {
+        const handleShareGrace = () => {
+            if (!graceInput.trim()) return;
+            const newPost: Post = {
+                id: Date.now(),
+                user: "무명의 성도",
+                content: graceInput,
+                date: "방금 전",
+                comments: []
+            };
+            setCommunityPosts([newPost, ...communityPosts]);
+            setQtStep("pray");
+        };
+
         return (
-            <div style={{ minHeight: "100vh", background: "white", maxWidth: "480px", margin: "0 auto", ...baseFont }}>
+            <div style={{ minHeight: "100vh", background: "white", maxWidth: "480px", margin: "0 auto", ...baseFont, position: 'relative' }}>
                 {styles}
                 {/* Header */}
                 <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #EEE", position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
@@ -225,7 +260,7 @@ export default function App() {
                     <div style={{ marginLeft: 'auto', fontSize: '11px', color: '#999' }}>{QT_DATA.date}</div>
                 </div>
 
-                <div style={{ padding: "24px 20px", display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '100px' }}>
+                <div style={{ padding: "24px 20px", display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '120px' }}>
 
                     {/* Somy mini float */}
                     <div style={{ display: "flex", justifyContent: "center" }}>
@@ -238,168 +273,189 @@ export default function App() {
                         </div>
                     </div>
 
-                    {/* Step 1: READ */}
-                    <div style={{ background: "#FDFCFB", borderRadius: "20px", padding: "24px", border: "1px solid #F0ECE4", animation: "fade-in 0.5s" }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                            <div style={{ width: 22, height: 22, background: '#333', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>1</div>
-                            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>말씀 읽기</h3>
-                        </div>
-                        <div style={{ marginBottom: '20px' }}>
-                            <div style={{ fontSize: '14px', fontWeight: 600, color: '#B8924A', marginBottom: '8px' }}>{QT_DATA.reference}</div>
-                            <p style={{ lineHeight: 1.8, color: '#444', fontSize: '15px', whiteSpace: 'pre-line', margin: 0 }}>{QT_DATA.fullPassage}</p>
-                        </div>
+                    {/* Step Content Wrapper (Individual Screen Feel) */}
+                    <div key={qtStep} style={{ animation: "slide-right 0.5s ease-out" }}>
+                        {qtStep === 'read' && (
+                            <div style={{ background: "#FDFCFB", borderRadius: "20px", padding: "24px", border: "1px solid #F0ECE4" }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                                    <div style={{ width: 22, height: 22, background: '#333', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>1</div>
+                                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>말씀 읽기</h3>
+                                </div>
+                                <div style={{ marginBottom: '20px' }}>
+                                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#B8924A', marginBottom: '8px' }}>{QT_DATA.reference}</div>
+                                    <p style={{ lineHeight: 1.8, color: '#444', fontSize: '15px', whiteSpace: 'pre-line', margin: 0 }}>{QT_DATA.fullPassage}</p>
+                                </div>
 
-                        {/* Passage Q&A Section */}
-                        <div style={{ borderTop: '1px dashed #DDD', paddingTop: '20px', marginTop: '10px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
-                                <span style={{ fontSize: '14px' }}>✨</span>
-                                <span style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A' }}>소미에게 궁금한점을 물어보세요</span>
-                            </div>
-
-                            {/* Small Chat Box within Passage Card */}
-                            <div ref={passageRef} style={{
-                                maxHeight: '200px',
-                                overflowY: 'auto',
-                                marginBottom: '12px',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '8px'
-                            }}>
-                                {passageChat.length === 0 && (
-                                    <div style={{ fontSize: '12px', color: '#999', textAlign: 'center', padding: '10px 0' }}>
-                                        본문에서 궁금한 점을 아래에 입력해보세요!
+                                {/* Passage Q&A Section */}
+                                <div style={{ borderTop: '1px dashed #DDD', paddingTop: '20px', marginTop: '10px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+                                        <span style={{ fontSize: '14px' }}>✨</span>
+                                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A' }}>소미에게 궁금한점을 물어보세요</span>
                                     </div>
-                                )}
-                                {passageChat.map((chat, i) => (
-                                    <div key={i} style={{
-                                        alignSelf: chat.role === 'user' ? 'flex-end' : 'flex-start',
-                                        background: chat.role === 'user' ? '#EEE' : '#F5F2EA',
-                                        padding: '8px 12px',
-                                        borderRadius: '12px',
-                                        fontSize: '13px',
-                                        maxWidth: '85%',
-                                        lineHeight: 1.5,
-                                        color: '#444'
-                                    }}>
-                                        {chat.content}
+                                    <div ref={passageRef} style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {passageChat.length === 0 && <div style={{ fontSize: '12px', color: '#999', textAlign: 'center', padding: '10px 0' }}>본문에서 궁금한 점을 아래에 입력해보세요!</div>}
+                                        {passageChat.map((chat, i) => (
+                                            <div key={i} style={{ alignSelf: chat.role === 'user' ? 'flex-end' : 'flex-start', background: chat.role === 'user' ? '#EEE' : '#F5F2EA', padding: '8px 12px', borderRadius: '12px', fontSize: '13px', maxWidth: '85%', lineHeight: 1.5, color: '#444' }}>{chat.content}</div>
+                                        ))}
+                                        {isPassageLoading && <div style={{ alignSelf: 'flex-start', fontSize: '12px', color: '#B8924A', fontStyle: 'italic' }}>소미가 본문을 묵상 중...</div>}
                                     </div>
-                                ))}
-                                {isPassageLoading && (
-                                    <div style={{ alignSelf: 'flex-start', fontSize: '12px', color: '#B8924A', fontStyle: 'italic' }}>소미가 본문을 묵상 중...</div>
-                                )}
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <input type="text" value={passageInput} onChange={(e) => setPassageInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handlePassageAsk()} placeholder="예: '푸른 풀밭'은 어떤 의미인가요?" style={{ flex: 1, padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }} />
+                                        <button onClick={handlePassageAsk} disabled={isPassageLoading} style={{ padding: '0 15px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', opacity: isPassageLoading ? 0.6 : 1 }}>묻기</button>
+                                    </div>
+                                </div>
                             </div>
+                        )}
 
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                <input
-                                    type="text"
-                                    value={passageInput}
-                                    onChange={(e) => setPassageInput(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handlePassageAsk()}
-                                    placeholder="예: '푸른 풀밭'은 어떤 의미인가요?"
-                                    style={{
-                                        flex: 1,
-                                        padding: '10px 14px',
-                                        borderRadius: '10px',
-                                        border: '1px solid #EEE',
-                                        fontSize: '13px',
-                                        outline: 'none',
-                                        background: 'white'
-                                    }}
-                                />
-                                <button
-                                    onClick={handlePassageAsk}
-                                    disabled={isPassageLoading}
-                                    style={{
-                                        padding: '0 15px',
-                                        background: '#D4AF37',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '10px',
-                                        fontSize: '13px',
-                                        fontWeight: 700,
-                                        cursor: 'pointer',
-                                        opacity: isPassageLoading ? 0.6 : 1
-                                    }}
-                                >
-                                    묻기
-                                </button>
+                        {qtStep === 'reflect' && (
+                            <div style={{ background: "#FDFCFB", borderRadius: "20px", padding: "24px", border: "1px solid #F0ECE4" }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                                    <div style={{ width: 22, height: 22, background: '#D4AF37', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>2</div>
+                                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>묵상 질문</h3>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                    {QT_DATA.questions.map((q, idx) => (
+                                        <div key={idx} style={{ padding: '16px', background: 'white', borderRadius: '15px', border: '1px solid #EEE', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+                                            <div style={{ fontSize: '11px', color: '#B8924A', fontWeight: 700, marginBottom: '6px' }}>질문 {idx + 1}</div>
+                                            <div style={{ fontSize: '14px', color: '#333', fontWeight: 600, marginBottom: '10px', lineHeight: 1.5 }}>{q}</div>
+                                            <textarea value={answers[idx] || ""} onChange={(e) => handleAnswerChange(idx, e.target.value)} placeholder="여기에 답을 적어보세요..." style={{ width: '100%', height: '80px', border: '1px solid #F0F0F0', borderRadius: '10px', padding: '12px', boxSizing: 'border-box', outline: 'none', fontSize: '14px', background: '#FDFDFD', fontFamily: 'inherit' }} />
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {qtStep === 'grace' && (
+                            <div style={{ background: "#FDFCFB", borderRadius: "20px", padding: "24px", border: "1px solid #F0ECE4" }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                                    <div style={{ width: 22, height: 22, background: '#E6A4B4', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>✨</div>
+                                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>은혜나눔</h3>
+                                </div>
+                                <p style={{ fontSize: '14px', color: '#666', marginBottom: '16px' }}>오늘 말씀을 통해 받은 은혜를 기록해보세요.</p>
+                                <textarea value={graceInput} onChange={(e) => setGraceInput(e.target.value)} placeholder="성도들과 나누고 싶은 은혜를 자유롭게 적어주세요..." style={{ width: '100%', height: '200px', border: '1px solid #EEE', borderRadius: '15px', padding: '16px', boxSizing: 'border-box', outline: 'none', fontSize: '15px', background: 'white', fontFamily: 'inherit', lineHeight: 1.6 }} />
+                                <div style={{ marginTop: '12px', fontSize: '12px', color: '#999', textAlign: 'center' }}>나눈 은혜는 성도들과 함께 볼 수 있습니다.</div>
+                            </div>
+                        )}
+
+                        {qtStep === 'pray' && (
+                            <div style={{ background: "#FDFCFB", borderRadius: "20px", padding: "24px", border: "1px solid #F0ECE4" }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                                    <div style={{ width: 22, height: 22, background: '#8E9775', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>3</div>
+                                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>마무리 기도</h3>
+                                </div>
+                                <div style={{ padding: '24px', background: 'rgba(142,151,117,0.05)', borderRadius: '15px', borderLeft: '4px solid #8E9775' }}>
+                                    <p style={{ fontSize: '16px', fontStyle: 'italic', lineHeight: 1.8, color: '#444', margin: 0 }}>"{QT_DATA.prayer}"</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {qtStep === 'done' && (
+                            <div style={{ background: "#333", borderRadius: "20px", padding: "40px 30px", textAlign: 'center', color: 'white' }}>
+                                <div style={{ fontSize: '40px', marginBottom: '15px' }}>💝</div>
+                                <h2 style={{ margin: '0 0 10px 0', fontSize: '24px' }}>오늘의 큐티 완료!</h2>
+                                <p style={{ fontSize: '14px', opacity: 0.8, marginBottom: '24px' }}>말씀과 함께 승리하는 하루 되세요.</p>
+                                <button onClick={() => setView('community')} style={{ width: '100%', padding: '16px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>은혜나눔 게시판 가기</button>
+                            </div>
+                        )}
                     </div>
-
-                    {/* Step 2: REFLECT */}
-                    {(qtStep === 'reflect' || qtStep === 'pray' || qtStep === 'done') && (
-                        <div style={{ background: "#FDFCFB", borderRadius: "20px", padding: "24px", border: "1px solid #F0ECE4", animation: "fade-in 0.5s" }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                                <div style={{ width: 22, height: 22, background: '#D4AF37', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>2</div>
-                                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>묵상하기</h3>
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                {QT_DATA.questions.map((q, idx) => (
-                                    <div key={idx} style={{ padding: '16px', background: 'white', borderRadius: '15px', border: '1px solid #EEE' }}>
-                                        <div style={{ fontSize: '11px', color: '#B8924A', fontWeight: 700, marginBottom: '6px' }}>질문 {idx + 1}</div>
-                                        <div style={{ fontSize: '14px', color: '#333', fontWeight: 600, marginBottom: '10px', lineHeight: 1.5 }}>{q}</div>
-                                        <textarea
-                                            value={answers[idx] || ""}
-                                            onChange={(e) => handleAnswerChange(idx, e.target.value)}
-                                            placeholder="여기에 답을 적어보세요..."
-                                            style={{
-                                                width: '100%',
-                                                height: '90px',
-                                                border: '1px solid #F0F0F0',
-                                                borderRadius: '10px',
-                                                padding: '12px',
-                                                boxSizing: 'border-box',
-                                                outline: 'none',
-                                                fontSize: '14px',
-                                                background: '#FDFDFD',
-                                                fontFamily: 'inherit',
-                                                lineHeight: 1.6
-                                            }}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Step 3: PRAY */}
-                    {(qtStep === 'pray' || qtStep === 'done') && (
-                        <div style={{ background: "#FDFCFB", borderRadius: "20px", padding: "24px", border: "1px solid #F0ECE4", animation: "fade-in 0.5s" }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                                <div style={{ width: 22, height: 22, background: '#8E9775', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>3</div>
-                                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>마무리 기도</h3>
-                            </div>
-                            <div style={{ padding: '16px', background: 'rgba(142,151,117,0.05)', borderRadius: '12px', borderLeft: '3px solid #8E9775' }}>
-                                <p style={{ fontSize: '14px', fontStyle: 'italic', lineHeight: 1.8, color: '#5D4E37', margin: 0 }}>"{QT_DATA.prayer}"</p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Completion Card */}
-                    {qtStep === 'done' && (
-                        <div style={{ background: "#333", borderRadius: "20px", padding: "30px", textAlign: 'center', animation: "fade-in 0.5s", color: 'white' }}>
-                            <div style={{ fontSize: '30px', marginBottom: '10px' }}>💝</div>
-                            <h3 style={{ margin: '0 0 5px 0' }}>오늘의 큐티 완료!</h3>
-                            <p style={{ fontSize: '13px', opacity: 0.8, margin: 0 }}>예수인교회와 소미가 당신의 하루를 응원합니다.</p>
-                        </div>
-                    )}
                 </div>
 
                 {/* Footer Fix Action Button */}
                 <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', padding: '15px 20px', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', borderTop: '1px solid #EEE', boxSizing: 'border-box' }}>
                     {qtStep === 'read' && (
-                        <button onClick={() => setQtStep('reflect')} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>묵상으로 넘어가기</button>
+                        <button onClick={() => setQtStep('reflect')} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>묵상 질문으로</button>
                     )}
                     {qtStep === 'reflect' && (
-                        <button onClick={() => setQtStep('pray')} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>기도로 넘어가기</button>
+                        <button onClick={() => setQtStep('grace')} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>은혜 나누러 가기</button>
+                    )}
+                    {qtStep === 'grace' && (
+                        <button onClick={handleShareGrace} style={{ width: '100%', padding: '16px', background: '#E6A4B4', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>기록하고 성도들과 나누기</button>
                     )}
                     {qtStep === 'pray' && (
                         <button onClick={() => setQtStep('done')} style={{ width: '100%', padding: '16px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>큐티 마칠게요</button>
                     )}
                     {qtStep === 'done' && (
-                        <button onClick={() => setView('home')} style={{ width: '100%', padding: '16px', background: '#EEE', color: '#333', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 돌아가기</button>
+                        <button onClick={() => setView('home')} style={{ width: '100%', padding: '16px', background: '#EEE', color: '#333', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 이동</button>
                     )}
+                </div>
+            </div>
+        );
+    }
+
+    /* ══════════════════════════════
+       COMMUNITY PAGE
+    ══════════════════════════════ */
+    if (view === "community") {
+        const handleAddComment = (postId: number) => {
+            const commentText = commentInputs[postId];
+            if (!commentText?.trim()) return;
+
+            setCommunityPosts(communityPosts.map(post => {
+                if (post.id === postId) {
+                    return {
+                        ...post,
+                        comments: [...post.comments, {
+                            id: Date.now(),
+                            user: "예수인 성도",
+                            content: commentText,
+                            date: "방금 전"
+                        }]
+                    };
+                }
+                return post;
+            }));
+            setCommentInputs({ ...commentInputs, [postId]: "" });
+        };
+
+        return (
+            <div style={{ minHeight: "100vh", background: "#F8F8F8", maxWidth: "480px", margin: "0 auto", ...baseFont }}>
+                {styles}
+                <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #EEE", position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
+                    <button onClick={() => setView("home")} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
+                    <div style={{ fontWeight: 800, color: "#333", fontSize: "16px" }}>은혜나눔 게시판</div>
+                </div>
+
+                <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {communityPosts.map(post => (
+                        <div key={post.id} style={{ background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', animation: 'fade-in 0.5s' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                                <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#F0ECE4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🐑</div>
+                                <div>
+                                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>{post.user}</div>
+                                    <div style={{ fontSize: '11px', color: '#999' }}>{post.date}</div>
+                                </div>
+                            </div>
+                            <p style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', margin: '0 0 15px 0', whiteSpace: 'pre-line' }}>{post.content}</p>
+
+                            {/* Comments Section */}
+                            <div style={{ borderTop: '1px solid #F5F5F5', paddingTop: '15px' }}>
+                                <div style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', marginBottom: '10px' }}>댓글 {post.comments.length}개</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
+                                    {post.comments.map(comment => (
+                                        <div key={comment.id} style={{ background: '#FAFAFA', padding: '10px 15px', borderRadius: '12px', fontSize: '13px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                <span style={{ fontWeight: 700, color: '#555' }}>{comment.user}</span>
+                                                <span style={{ fontSize: '10px', color: '#AAA' }}>{comment.date}</span>
+                                            </div>
+                                            <div style={{ color: '#666' }}>{comment.content}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                                {/* Comment Input */}
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <input
+                                        type="text"
+                                        value={commentInputs[post.id] || ""}
+                                        onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleAddComment(post.id)}
+                                        placeholder="따뜻한 격려의 댓글을 달아주세요..."
+                                        style={{ flex: 1, padding: '10px 12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }}
+                                    />
+                                    <button onClick={() => handleAddComment(post.id)} style={{ background: '#333', color: 'white', border: 'none', borderRadius: '10px', padding: '0 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>등록</button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         );
