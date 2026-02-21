@@ -84,7 +84,10 @@ export default function App() {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider,
                 options: {
-                    redirectTo: window.location.origin
+                    redirectTo: window.location.origin,
+                    ...(provider === 'kakao' && {
+                        scopes: 'profile_nickname profile_image',
+                    }),
                 }
             });
             if (error) throw error;
