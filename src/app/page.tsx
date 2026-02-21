@@ -80,15 +80,21 @@ export default function App() {
     }, []);
 
     const handleLogin = async (provider: 'google' | 'kakao') => {
+        if (provider === 'kakao') {
+            // Supabase 내장 카카오 OAuth는 account_email을 강제 요청하므로
+            // 카카오 직접 연동으로 우회 (이메일 권한 불필요)
+            const kakaoAuthUrl = new URL('https://kauth.kakao.com/oauth/authorize');
+            kakaoAuthUrl.searchParams.set('client_id', 'c205e6ad80a115b72fc7b53749e204d9');
+            kakaoAuthUrl.searchParams.set('redirect_uri', `${window.location.origin}/api/kakao-callback`);
+            kakaoAuthUrl.searchParams.set('response_type', 'code');
+            kakaoAuthUrl.searchParams.set('scope', 'profile_nickname,profile_image');
+            window.location.href = kakaoAuthUrl.toString();
+            return;
+        }
         try {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider,
-                options: {
-                    redirectTo: window.location.origin,
-                    ...(provider === 'kakao' && {
-                        scopes: 'profile_nickname profile_image',
-                    }),
-                }
+                options: { redirectTo: window.location.origin }
             });
             if (error) throw error;
         } catch (err: any) {
@@ -211,7 +217,7 @@ export default function App() {
 
                 {user && (
                     <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', alignItems: 'center', gap: '8px', background: 'white', padding: '6px 12px', borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', fontSize: '12px' }}>
-                        <span style={{ color: '#333', fontWeight: 600 }}>{user.email?.split('@')[0]}님</span>
+                        <span style={{ color: '#333', fontWeight: 600 }}>{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
                         <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', padding: 0 }}>로그아웃</button>
                     </div>
                 )}
