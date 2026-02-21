@@ -6,8 +6,11 @@ import { supabase } from "@/lib/supabase";
 type View = "home" | "chat" | "qt" | "community";
 
 const SOMY_IMG = "/somy.png";
-const CHURCH_LOGO = "https://cdn.imweb.me/thumbnail/20210813/569458bf12dd0.png";
-const CHURCH_URL = "https://jesus-in.imweb.me/index";
+const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://cdn.imweb.me/thumbnail/20210813/569458bf12dd0.png";
+const CHURCH_URL = process.env.NEXT_PUBLIC_CHURCH_URL || "https://jesus-in.imweb.me/index";
+const CHURCH_NAME = process.env.NEXT_PUBLIC_CHURCH_NAME || "예수인교회";
+const APP_SUBTITLE = process.env.NEXT_PUBLIC_APP_SUBTITLE || "큐티 동반자";
+
 
 const QT_DATA = {
     date: new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" }),
@@ -258,7 +261,7 @@ export default function App() {
 
                     <div style={{ animation: "fade-in 1s ease-out" }}>
                         <h1 style={{ fontSize: "40px", fontWeight: 800, color: "#333", margin: "0 0 4px 0", letterSpacing: "-1px" }}>소미</h1>
-                        <p style={{ fontSize: "15px", color: "#B8924A", fontWeight: 600, margin: "0 0 10px 0" }}>예수인교회 큐티 동반자</p>
+                        <p style={{ fontSize: "15px", color: "#B8924A", fontWeight: 600, margin: "0 0 10px 0" }}>{CHURCH_NAME} {APP_SUBTITLE}</p>
                         <p style={{ fontSize: "14px", color: "#777", lineHeight: 1.6, margin: 0 }}>내 삶 속에 예수 그리스도!<br />소미가 당신의 묵상을 도와드릴게요 🐑</p>
                     </div>
 
@@ -312,7 +315,7 @@ export default function App() {
                     <a href={CHURCH_URL} target="_blank" rel="noopener noreferrer" style={{
                         marginTop: "10px", textAlign: "center", textDecoration: "none", color: "#999", fontSize: "13px", fontWeight: 500
                     }}>
-                        예수인교회 홈페이지 방문하기 →
+                        {CHURCH_NAME} 홈페이지 방문하기 →
                     </a>
                 </div>
             </div>
