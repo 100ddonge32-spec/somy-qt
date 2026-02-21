@@ -679,10 +679,23 @@ export default function App() {
                     <div>
                         <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>📖 성경 구절 (예: 시편 23:1-3)</label>
                         <input type="text" value={qtForm.reference} onChange={e => setQtForm(p => ({ ...p, reference: e.target.value }))} placeholder="예: 시편 23:1-3" style={inputStyle} />
+                        <button onClick={async () => {
+                            if (!qtForm.reference) { alert('성경 구절을 먼저 입력해주세요.'); return; }
+                            setAiLoading(true);
+                            try {
+                                const res = await fetch('/api/bible', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reference: qtForm.reference }) });
+                                const data = await res.json();
+                                if (data.passage) { setQtForm(p => ({ ...p, passage: data.passage })); }
+                                else { alert('본문 가져오기 실패: ' + (data.error || '')); }
+                            } catch { alert('서버 연결 실패'); }
+                            finally { setAiLoading(false); }
+                        }} disabled={aiLoading} style={{ marginTop: '6px', width: '100%', padding: '10px', background: '#F5F2EA', color: '#B8924A', border: 'none', borderRadius: '8px', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>
+                            {aiLoading ? '📖 가져오는 중...' : '📖 성경 본문 자동 가져오기'}
+                        </button>
                     </div>
                     <div>
                         <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>📜 성경 본문</label>
-                        <textarea value={qtForm.passage} onChange={e => setQtForm(p => ({ ...p, passage: e.target.value }))} placeholder="성경 본문을 직접 입력하세요" style={{ ...inputStyle, height: '120px' }} />
+                        <textarea value={qtForm.passage} onChange={e => setQtForm(p => ({ ...p, passage: e.target.value }))} placeholder="위 버튼으로 자동 가져오거나 직접 입력하세요" style={{ ...inputStyle, height: '120px' }} />
                     </div>
                     <button onClick={handleAiGenerate} disabled={aiLoading} style={{
                         width: '100%', padding: '14px', background: aiLoading ? '#ccc' : 'linear-gradient(135deg, #D4AF37, #B8924A)',
