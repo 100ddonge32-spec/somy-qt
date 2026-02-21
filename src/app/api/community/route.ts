@@ -64,3 +64,25 @@ export async function DELETE(req: NextRequest) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
+
+// 게시글 수정
+export async function PATCH(req: NextRequest) {
+    try {
+        const body = await req.json();
+        const { id, content } = body;
+
+        if (!id || !content) return NextResponse.json({ error: 'ID and content are required' }, { status: 400 });
+
+        const { data, error } = await supabaseAdmin
+            .from('community_posts')
+            .update({ content })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return NextResponse.json(data);
+    } catch (err: any) {
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}

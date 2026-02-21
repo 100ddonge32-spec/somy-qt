@@ -65,6 +65,8 @@ export default function App() {
     const [isPassageLoading, setIsPassageLoading] = useState(false);
     const [user, setUser] = useState<any>(null);
     const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase().trim());
+    const [editingPostId, setEditingPostId] = useState<any>(null);
+    const [editContent, setEditContent] = useState("");
 
     useEffect(() => {
         if (user) {
@@ -1001,6 +1003,25 @@ export default function App() {
             } catch (e) { console.error("삭제 중 오류:", e); }
         };
 
+        const handleUpdatePost = async () => {
+            if (!editingPostId || !editContent.trim()) return;
+            try {
+                const res = await fetch('/api/community', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: editingPostId, content: editContent })
+                });
+                if (res.ok) {
+                    const updatedPost = await res.json();
+                    setCommunityPosts(communityPosts.map(post =>
+                        post.id === editingPostId ? { ...post, content: updatedPost.content } : post
+                    ));
+                    setEditingPostId(null);
+                    setEditContent("");
+                }
+            } catch (e) { console.error("수정 중 오류:", e); }
+        };
+
         return (
             <div style={{ minHeight: "100vh", background: "#F8F8F8", maxWidth: "480px", margin: "0 auto", ...baseFont }}>
                 {styles}
@@ -1020,11 +1041,31 @@ export default function App() {
                                     <div style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>{post.user_name}</div>
                                     <div style={{ fontSize: '11px', color: '#999' }}>{new Date(post.created_at || Date.now()).toLocaleString()}</div>
                                 </div>
-                                {isAdmin && (
-                                    <button onClick={() => handleDeletePost(post.id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#999', padding: '5px' }}>🗑️</button>
-                                )}
+                                <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+                                    {(user?.id === post.user_id) && (
+                                        <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#B8924A', fontWeight: 600 }}>수정</button>
+                                    )}
+                                    {isAdmin && (
+                                        <button onClick={() => handleDeletePost(post.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#999' }}>🗑️</button>
+                                    )}
+                                </div>
                             </div>
-                            <p style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', margin: '0 0 15px 0', whiteSpace: 'pre-line' }}>{post.content}</p>
+
+                            {editingPostId === post.id ? (
+                                <div style={{ marginBottom: '15px' }}>
+                                    <textarea
+                                        value={editContent}
+                                        onChange={(e) => setEditContent(e.target.value)}
+                                        style={{ width: '100%', minHeight: '100px', border: '1px solid #DDD', borderRadius: '12px', padding: '12px', boxSizing: 'border-box', marginBottom: '8px', fontSize: '14px', fontFamily: 'inherit' }}
+                                    />
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button onClick={handleUpdatePost} style={{ padding: '8px 16px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>저장</button>
+                                        <button onClick={() => setEditingPostId(null)} style={{ padding: '8px 16px', background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>취소</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', margin: '0 0 15px 0', whiteSpace: 'pre-line' }}>{post.content}</p>
+                            )}
 
                             {/* Comments Section */}
                             <div style={{ borderTop: '1px solid #F5F5F5', paddingTop: '15px' }}>
