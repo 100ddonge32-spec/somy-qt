@@ -9,15 +9,19 @@ const supabaseAdmin = createClient(
     { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
-// 게시글 목록 및 댓글 불러오기
-export async function GET() {
+// 게시글 목록 및 댓글 불러오기 (교회별 격리)
+export async function GET(req: NextRequest) {
     try {
+        const { searchParams } = new URL(req.url);
+        const churchId = searchParams.get('church_id') || 'jesus-in';
+
         const { data: posts, error: postsError } = await supabaseAdmin
             .from('community_posts')
             .select(`
                 *,
                 comments:community_comments(*)
             `)
+            .eq('church_id', churchId) // 교회가 일치하는 것만!
             .order('created_at', { ascending: false });
 
         if (postsError) throw postsError;
@@ -27,15 +31,21 @@ export async function GET() {
     }
 }
 
-// 새 게시글 작성
+// 새 게시글 작성 (교회 꼬리표 달기)
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { user_id, user_name, avatar_url, content } = body;
+        const { user_id, user_name, avatar_url, content, church_id } = body;
 
         const { data, error } = await supabaseAdmin
             .from('community_posts')
-            .insert([{ user_id, user_name, avatar_url, content }])
+            .insert([{
+                user_id,
+                user_name,
+                avatar_url,
+                content,
+                church_id: church_id || 'jesus-in'
+            }])
             .select()
             .single();
 

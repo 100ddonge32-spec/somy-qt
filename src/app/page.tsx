@@ -66,6 +66,7 @@ export default function App() {
     const [user, setUser] = useState<any>(null);
     const [adminInfo, setAdminInfo] = useState<any>(null);
     const [isApproved, setIsApproved] = useState(false);
+    const [churchId, setChurchId] = useState('jesus-in');
     const isAdmin = !!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin');
     const isSuperAdmin = adminInfo?.role === 'super_admin';
     const [editingPostId, setEditingPostId] = useState<any>(null);
@@ -82,10 +83,13 @@ export default function App() {
                 })
                 .catch(console.error);
 
-            // 성도 승인 여부 체크
-            supabase.from('profiles').select('is_approved').eq('id', user.id).single()
+            // 성도 승인 및 교회 정보 체크
+            supabase.from('profiles').select('is_approved, church_id').eq('id', user.id).single()
                 .then(({ data }) => {
-                    if (data) setIsApproved(data.is_approved);
+                    if (data) {
+                        setIsApproved(data.is_approved);
+                        if (data.church_id) setChurchId(data.church_id);
+                    }
                 });
         } else {
             setAdminInfo(null);
@@ -560,9 +564,9 @@ export default function App() {
 
                             <button onClick={async () => {
                                 setView("community");
-                                // 게시판 진입 시 DB 데이터 로드
+                                // 게시판 진입 시 현재 소속 교회 데이터만 로드
                                 try {
-                                    const res = await fetch('/api/community');
+                                    const res = await fetch(`/api/community?church_id=${churchId}`);
                                     const data = await res.json();
                                     if (Array.isArray(data)) setCommunityPosts(data);
                                 } catch (e) { console.error("게시판 로드 실패:", e); }
@@ -647,7 +651,8 @@ export default function App() {
                             user_id: user.id,
                             user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
                             avatar_url: user.user_metadata?.avatar_url || null,
-                            content: graceInput
+                            content: graceInput,
+                            church_id: churchId
                         })
                     });
                     if (res.ok) {
