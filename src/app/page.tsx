@@ -125,6 +125,15 @@ export default function App() {
     const [adminTab, setAdminTab] = useState<"settings" | "members" | "master">("settings");
     const [memberList, setMemberList] = useState<any[]>([]);
     const [isManagingMembers, setIsManagingMembers] = useState(false);
+    const [showWelcome, setShowWelcome] = useState(false);
+    const audioRef = useRef<HTMLAudioElement>(null);
+
+    useEffect(() => {
+        const hasVisited = localStorage.getItem('somy_visited');
+        if (!hasVisited) {
+            setShowWelcome(true);
+        }
+    }, []);
     const scrollRef = useRef<HTMLDivElement>(null);
     const passageRef = useRef<HTMLDivElement>(null);
 
@@ -335,6 +344,37 @@ export default function App() {
                 maxWidth: "480px", margin: "0 auto", ...baseFont,
             }}>
                 {styles}
+
+                {/* 환영 모달 */}
+                {showWelcome && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '30px' }}>
+                        <div style={{ background: 'white', borderRadius: '30px', padding: '40px 30px', width: '100%', maxWidth: '380px', boxShadow: '0 20px 60px rgba(0,0,0,0.1)', textAlign: 'center', animation: 'fade-in 1s ease-out' }}>
+                            <div style={{ fontSize: '50px', marginBottom: '25px' }}>🌿</div>
+                            <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#333', marginBottom: '15px', lineHeight: 1.4 }}>환영합니다</h2>
+                            <p style={{ fontSize: '15px', color: '#666', lineHeight: 1.8, marginBottom: '30px', wordBreak: 'keep-all' }}>
+                                성도 여러분을 쉴만한 물가로 인도할 묵상 챗봇으로 오신 것을 환영합니다.<br /><br />
+                                이제 바쁜 삶 속에서도 말씀을 손에서 놓지 않는 성도님들이 되시길 바랍니다.
+                            </p>
+                            <button
+                                onClick={() => {
+                                    setShowWelcome(false);
+                                    localStorage.setItem('somy_visited', 'true');
+                                    if (audioRef.current) {
+                                        audioRef.current.play().catch(e => console.log("자동 재생 차단:", e));
+                                    }
+                                }}
+                                style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '18px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.2)' }}>
+                                들어가기
+                            </button>
+                            <div style={{ marginTop: '15px', fontSize: '12px', color: '#999' }}>입장 시 잔잔한 배경음악이 시작됩니다</div>
+                        </div>
+                    </div>
+                )}
+
+                {/* 배경 음악 오디오 플레이어 (숨김) */}
+                <audio ref={audioRef} loop>
+                    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3" type="audio/mpeg" />
+                </audio>
 
                 {/* Church Logo Header */}
                 <a href={churchSettings.church_url} target="_blank" rel="noopener noreferrer" style={{
