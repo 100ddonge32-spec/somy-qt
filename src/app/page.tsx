@@ -438,7 +438,7 @@ export default function App() {
                                 fontWeight: 600, fontSize: "13px", borderRadius: "12px",
                                 border: "none", cursor: "pointer"
                             }}>
-                                📊 묵상 참여 통계
+                                👑 이달의 큐티왕
                             </button>
                         </>
                     )}
