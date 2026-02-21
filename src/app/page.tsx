@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
-type View = "home" | "chat" | "qt" | "community" | "qtManage";
+type View = "home" | "chat" | "qt" | "community" | "qtManage" | "stats";
 
 const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://cdn.imweb.me/thumbnail/20210813/569458bf12dd0.png";
@@ -73,6 +73,7 @@ export default function App() {
     });
     const [qtForm, setQtForm] = useState({ date: '', reference: '', passage: '', question1: '', question2: '', question3: '', prayer: '' });
     const [aiLoading, setAiLoading] = useState(false);
+    const [stats, setStats] = useState<{ today: { count: number; members: { user_name: string; avatar_url: string | null }[] }; ranking: { name: string; avatar: string | null; count: number }[]; totalCompletions: number } | null>(null);
     const [churchSettings, setChurchSettings] = useState({
         church_name: CHURCH_NAME,
         church_logo_url: CHURCH_LOGO,
@@ -431,6 +432,14 @@ export default function App() {
                             }}>
                                 📝 큐티 본문 관리 (Admin)
                             </button>
+                            <button onClick={() => { fetch('/api/stats').then(r => r.json()).then(setStats); setView('stats'); }} style={{
+                                width: "100%", padding: "12px",
+                                background: "#F5F2EA", color: "#B8924A",
+                                fontWeight: 600, fontSize: "13px", borderRadius: "12px",
+                                border: "none", cursor: "pointer"
+                            }}>
+                                📊 묵상 참여 통계
+                            </button>
                         </>
                     )}
 
@@ -566,7 +575,8 @@ export default function App() {
                                 <div style={{ fontSize: '40px', marginBottom: '15px' }}>💝</div>
                                 <h2 style={{ margin: '0 0 10px 0', fontSize: '24px' }}>오늘의 큐티 완료!</h2>
                                 <p style={{ fontSize: '14px', opacity: 0.8, marginBottom: '24px' }}>말씀과 함께 승리하는 하루 되세요.</p>
-                                <button onClick={() => setView('community')} style={{ width: '100%', padding: '16px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>은혜나눔 게시판 가기</button>
+                                <button onClick={() => setView('community')} style={{ width: '100%', padding: '16px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', marginBottom: '10px' }}>은혜나눔 게시판 가기</button>
+                                <button onClick={() => { fetch('/api/stats').then(r => r.json()).then(setStats); setView('stats'); }} style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>📊 묵상 참여 통계 보기</button>
                             </div>
                         )}
                     </div>
@@ -584,7 +594,21 @@ export default function App() {
                         <button onClick={handleShareGrace} style={{ width: '100%', padding: '16px', background: '#E6A4B4', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>기록하고 성도들과 나누기</button>
                     )}
                     {qtStep === 'pray' && (
-                        <button onClick={() => setQtStep('done')} style={{ width: '100%', padding: '16px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>큐티 마칠게요</button>
+                        <button onClick={() => {
+                            // 큐티 완료 기록
+                            if (user) {
+                                fetch('/api/stats', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        user_id: user.id,
+                                        user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '성도',
+                                        avatar_url: user.user_metadata?.avatar_url || null,
+                                    }),
+                                }).catch(() => { });
+                            }
+                            setQtStep('done');
+                        }} style={{ width: '100%', padding: '16px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>큐티 마칠게요</button>
                     )}
                     {qtStep === 'done' && (
                         <button onClick={() => setView('home')} style={{ width: '100%', padding: '16px', background: '#EEE', color: '#333', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 이동</button>
@@ -721,6 +745,86 @@ export default function App() {
                         <button onClick={handleQtSave} style={{ flex: 2, padding: '14px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>💾 저장하기</button>
                     </div>
                 </div>
+            </div>
+        );
+    }
+
+    /* ══════════════════════════════
+       STATS PAGE
+    ══════════════════════════════ */
+    if (view === "stats") {
+        const medals = ['🥇', '🥈', '🥉'];
+        return (
+            <div style={{ minHeight: "100vh", background: "white", maxWidth: "480px", margin: "0 auto", ...baseFont }}>
+                {styles}
+                <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #EEE", position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
+                    <button onClick={() => setView("home")} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
+                    <div style={{ fontWeight: 700, color: "#333", fontSize: "14px" }}>📊 묵상 참여 통계</div>
+                </div>
+
+                {!stats ? (
+                    <div style={{ padding: '60px 20px', textAlign: 'center', color: '#999' }}>로딩 중...</div>
+                ) : (
+                    <div style={{ padding: "24px 20px", display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+                        {/* 전체 통계 카드 */}
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <div style={{ flex: 1, background: 'linear-gradient(135deg, #D4AF37, #B8924A)', borderRadius: '16px', padding: '20px', color: 'white', textAlign: 'center' }}>
+                                <div style={{ fontSize: '28px', fontWeight: 800 }}>{stats.today.count}</div>
+                                <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '4px' }}>오늘 참여</div>
+                            </div>
+                            <div style={{ flex: 1, background: '#333', borderRadius: '16px', padding: '20px', color: 'white', textAlign: 'center' }}>
+                                <div style={{ fontSize: '28px', fontWeight: 800 }}>{stats.totalCompletions}</div>
+                                <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '4px' }}>전체 큐티 횟수</div>
+                            </div>
+                        </div>
+
+                        {/* 오늘 참여자 */}
+                        <div style={{ background: '#FDFCFB', borderRadius: '16px', padding: '20px', border: '1px solid #F0ECE4' }}>
+                            <h3 style={{ margin: '0 0 14px 0', fontSize: '14px', fontWeight: 700 }}>☀️ 오늘 묵상한 성도</h3>
+                            {stats.today.members.length === 0 ? (
+                                <div style={{ fontSize: '13px', color: '#999', textAlign: 'center', padding: '10px 0' }}>아직 오늘 묵상한 성도가 없습니다</div>
+                            ) : (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                    {stats.today.members.map((m, i) => (
+                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'white', padding: '6px 12px', borderRadius: '20px', border: '1px solid #EEE', fontSize: '12px', fontWeight: 600 }}>
+                                            {m.avatar_url ? <img src={m.avatar_url} alt="" style={{ width: 20, height: 20, borderRadius: '50%' }} /> : <span>🐑</span>}
+                                            {m.user_name}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 이번 달 랭킹 */}
+                        <div style={{ background: '#FDFCFB', borderRadius: '16px', padding: '20px', border: '1px solid #F0ECE4' }}>
+                            <h3 style={{ margin: '0 0 14px 0', fontSize: '14px', fontWeight: 700 }}>🏆 이번 달 묵상 랭킹</h3>
+                            {stats.ranking.length === 0 ? (
+                                <div style={{ fontSize: '13px', color: '#999', textAlign: 'center', padding: '10px 0' }}>이번 달 기록이 없습니다</div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    {stats.ranking.map((r, i) => (
+                                        <div key={i} style={{
+                                            display: 'flex', alignItems: 'center', gap: '12px',
+                                            padding: '12px 16px', background: i < 3 ? 'rgba(212,175,55,0.08)' : 'white',
+                                            borderRadius: '12px', border: '1px solid #EEE',
+                                        }}>
+                                            <div style={{ fontSize: i < 3 ? '22px' : '14px', width: '30px', textAlign: 'center', fontWeight: 700, color: '#999' }}>
+                                                {i < 3 ? medals[i] : `${i + 1}`}
+                                            </div>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>{r.name}</div>
+                                            </div>
+                                            <div style={{ fontSize: '14px', fontWeight: 800, color: '#D4AF37' }}>{r.count}회</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <button onClick={() => setView('home')} style={{ width: '100%', padding: '14px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer', marginBottom: '20px' }}>홈으로 돌아가기</button>
+                    </div>
+                )}
             </div>
         );
     }
