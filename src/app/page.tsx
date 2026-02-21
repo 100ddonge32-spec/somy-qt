@@ -310,7 +310,7 @@ export default function App() {
                     animation: "fade-in 0.8s ease-out"
                 }}>
                     <img src={churchSettings.church_logo_url} alt={`${churchSettings.church_name} 로고`} style={{ height: "45px", objectFit: "contain" }} />
-                    <div style={{ fontSize: "12px", color: "#666", letterSpacing: "1px", fontWeight: 500 }}>{churchSettings.church_name.toUpperCase()}</div>
+                    <div style={{ fontSize: "12px", color: "#666", letterSpacing: "1px", fontWeight: 500 }}>{(churchSettings.church_name || "").toUpperCase()}</div>
                 </a>
 
                 {/* 설정 모달 */}
@@ -628,7 +628,9 @@ export default function App() {
                                         // 기록 성공 시 즉시 최신 통계 데이터 로드
                                         const statsRes = await fetch('/api/stats');
                                         const statsData = await statsRes.json();
-                                        setStats(statsData);
+                                        if (statsData && statsData.today) {
+                                            setStats(statsData);
+                                        }
                                     }
                                 } catch (e) {
                                     console.error("통계 기록 중 오류:", e);
@@ -800,11 +802,11 @@ export default function App() {
                         {/* 전체 통계 카드 */}
                         <div style={{ display: 'flex', gap: '12px' }}>
                             <div style={{ flex: 1, background: 'linear-gradient(135deg, #D4AF37, #B8924A)', borderRadius: '16px', padding: '20px', color: 'white', textAlign: 'center' }}>
-                                <div style={{ fontSize: '28px', fontWeight: 800 }}>{stats.today.count}</div>
+                                <div style={{ fontSize: '28px', fontWeight: 800 }}>{stats?.today?.count || 0}</div>
                                 <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '4px' }}>오늘 참여</div>
                             </div>
                             <div style={{ flex: 1, background: '#333', borderRadius: '16px', padding: '20px', color: 'white', textAlign: 'center' }}>
-                                <div style={{ fontSize: '28px', fontWeight: 800 }}>{stats.totalCompletions}</div>
+                                <div style={{ fontSize: '28px', fontWeight: 800 }}>{stats?.totalCompletions || 0}</div>
                                 <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '4px' }}>전체 큐티 횟수</div>
                             </div>
                         </div>
@@ -812,14 +814,14 @@ export default function App() {
                         {/* 오늘 참여자 */}
                         <div style={{ background: '#FDFCFB', borderRadius: '16px', padding: '20px', border: '1px solid #F0ECE4' }}>
                             <h3 style={{ margin: '0 0 14px 0', fontSize: '14px', fontWeight: 700 }}>☀️ 오늘 묵상한 성도</h3>
-                            {stats.today.members.length === 0 ? (
+                            {(stats?.today?.members?.length || 0) === 0 ? (
                                 <div style={{ fontSize: '13px', color: '#999', textAlign: 'center', padding: '10px 0' }}>아직 오늘 묵상한 성도가 없습니다</div>
                             ) : (
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                    {stats.today.members.map((m, i) => (
+                                    {stats?.today?.members?.map((m: any, i: number) => (
                                         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'white', padding: '6px 12px', borderRadius: '20px', border: '1px solid #EEE', fontSize: '12px', fontWeight: 600 }}>
-                                            {m.avatar_url ? <img src={m.avatar_url} alt="" style={{ width: 20, height: 20, borderRadius: '50%' }} /> : <span>🐑</span>}
-                                            {m.user_name}
+                                            {m?.avatar_url ? <img src={m.avatar_url} alt="" style={{ width: 20, height: 20, borderRadius: '50%' }} /> : <span>🐑</span>}
+                                            {m?.user_name || '성도'}
                                         </div>
                                     ))}
                                 </div>
@@ -829,11 +831,11 @@ export default function App() {
                         {/* 이번 달 랭킹 */}
                         <div style={{ background: '#FDFCFB', borderRadius: '16px', padding: '20px', border: '1px solid #F0ECE4' }}>
                             <h3 style={{ margin: '0 0 14px 0', fontSize: '14px', fontWeight: 700 }}>🏆 이번 달 묵상 랭킹</h3>
-                            {stats.ranking.length === 0 ? (
+                            {(stats?.ranking?.length || 0) === 0 ? (
                                 <div style={{ fontSize: '13px', color: '#999', textAlign: 'center', padding: '10px 0' }}>이번 달 기록이 없습니다</div>
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    {stats.ranking.map((r, i) => (
+                                    {stats?.ranking?.map((r: any, i: number) => (
                                         <div key={i} style={{
                                             display: 'flex', alignItems: 'center', gap: '12px',
                                             padding: '12px 16px', background: i < 3 ? 'rgba(212,175,55,0.08)' : 'white',
@@ -843,9 +845,9 @@ export default function App() {
                                                 {i < 3 ? medals[i] : `${i + 1}`}
                                             </div>
                                             <div style={{ flex: 1 }}>
-                                                <div style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>{r.name}</div>
+                                                <div style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>{r?.name || '성도'}</div>
                                             </div>
-                                            <div style={{ fontSize: '14px', fontWeight: 800, color: '#D4AF37' }}>{r.count}회</div>
+                                            <div style={{ fontSize: '14px', fontWeight: 800, color: '#D4AF37' }}>{r?.count || 0}회</div>
                                         </div>
                                     ))}
                                 </div>
