@@ -437,7 +437,7 @@ export default function App() {
                     </div>
                 ))}
                 {isLoading && (
-                    <div style={{ background: 'white', p: 10, borderRadius: 10, alignSelf: 'flex-start', border: '1px solid #EEE' }}>
+                    <div style={{ background: 'white', padding: '10px 16px', borderRadius: '15px', alignSelf: 'flex-start', border: '1px solid #EEE', fontSize: '13px', color: '#B8924A', fontStyle: 'italic' }}>
                         소미가 묵상 중...
                     </div>
                 )}
