@@ -71,6 +71,14 @@ export default function App() {
     const isSuperAdmin = adminInfo?.role === 'super_admin';
     const [editingPostId, setEditingPostId] = useState<any>(null);
     const [editContent, setEditContent] = useState("");
+    const [volume, setVolume] = useState(0.3); // 기본 볼륨 30%
+
+    // 볼륨 변경 시 오디오 객체에 즉시 반영
+    useEffect(() => {
+        if (audioRef.current) {
+            audioRef.current.volume = volume;
+        }
+    }, [volume]);
 
     useEffect(() => {
         if (user) {
@@ -371,10 +379,7 @@ export default function App() {
                     </div>
                 )}
 
-                {/* 배경 음악 오디오 플레이어 (숨김) */}
-                <audio ref={audioRef} loop>
-                    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3" type="audio/mpeg" />
-                </audio>
+                {/* 배경 음악 오디오 플레이어 (숨김) - 여기서 제거하고 하단 공통 영역으로 이동 */}
 
                 {/* Church Logo Header */}
                 <a href={churchSettings.church_url} target="_blank" rel="noopener noreferrer" style={{
@@ -1310,6 +1315,27 @@ export default function App() {
                 <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSend()} placeholder="메시지를 입력하세요..."
                     style={{ flex: 1, padding: "12px 15px", borderRadius: "10px", border: "1px solid #DDD", outline: "none" }} />
                 <button onClick={handleSend} style={{ padding: "12px 20px", background: "#333", color: "white", borderRadius: "10px", border: "none", fontWeight: 700 }}>전송</button>
+            </div>
+            {/* 공통 오디오 플레이어 및 볼륨 컨트롤러 */}
+            <audio ref={audioRef} loop preload="auto">
+                <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3" type="audio/mpeg" />
+            </audio>
+
+            <div style={{ position: 'fixed', bottom: '20px', left: '20px', zIndex: 9991, display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(10px)', padding: '8px 15px', borderRadius: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid rgba(255,255,255,0.3)', transition: 'all 0.3s' }}>
+                <span style={{ fontSize: '14px' }}>{volume === 0 ? '🔇' : '🎵'}</span>
+                <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={volume}
+                    onChange={(e) => setVolume(parseFloat(e.target.value))}
+                    style={{
+                        width: '60px',
+                        accentColor: '#B8924A',
+                        cursor: 'pointer'
+                    }}
+                />
             </div>
         </div>
     );
