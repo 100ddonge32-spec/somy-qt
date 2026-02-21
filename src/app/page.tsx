@@ -63,6 +63,20 @@ export default function App() {
     const [passageChat, setPassageChat] = useState<{ role: string; content: string }[]>([]);
     const [isPassageLoading, setIsPassageLoading] = useState(false);
     const [user, setUser] = useState<any>(null);
+    const [churchSettings, setChurchSettings] = useState({
+        church_name: CHURCH_NAME,
+        church_logo_url: CHURCH_LOGO,
+        church_url: CHURCH_URL,
+        app_subtitle: APP_SUBTITLE,
+    });
+    const [showSettings, setShowSettings] = useState(false);
+    const [settingsForm, setSettingsForm] = useState({
+        church_name: CHURCH_NAME,
+        church_logo_url: CHURCH_LOGO,
+        church_url: CHURCH_URL,
+        app_subtitle: APP_SUBTITLE,
+    });
+    const [settingsSaving, setSettingsSaving] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const passageRef = useRef<HTMLDivElement>(null);
 
@@ -91,6 +105,17 @@ export default function App() {
             setUser(session?.user ?? null);
         };
         checkUser();
+
+        // 교회 설정 로드
+        fetch('/api/settings')
+            .then(r => r.json())
+            .then(({ settings }) => {
+                if (settings) {
+                    setChurchSettings(settings);
+                    setSettingsForm(settings);
+                }
+            })
+            .catch(() => { });
 
         // 인증 상태 변화 감지
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
@@ -126,6 +151,29 @@ export default function App() {
     const handleLogout = async () => {
         await supabase.auth.signOut();
         setView("home");
+    };
+
+    const handleSaveSettings = async () => {
+        setSettingsSaving(true);
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settingsForm),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setChurchSettings({ ...settingsForm });
+                setShowSettings(false);
+                alert('설정이 저장되었습니다! ✅');
+            } else {
+                alert('저장 실패: ' + data.error);
+            }
+        } catch {
+            alert('저장 중 오류가 발생했습니다.');
+        } finally {
+            setSettingsSaving(false);
+        }
     };
 
     const handleAnswerChange = (index: number, value: string) => {
@@ -223,7 +271,7 @@ export default function App() {
                 {styles}
 
                 {/* Church Logo Header */}
-                <a href={CHURCH_URL} target="_blank" rel="noopener noreferrer" style={{
+                <a href={churchSettings.church_url} target="_blank" rel="noopener noreferrer" style={{
                     textDecoration: "none",
                     display: "flex",
                     flexDirection: "column",
@@ -232,13 +280,46 @@ export default function App() {
                     marginBottom: "20px",
                     animation: "fade-in 0.8s ease-out"
                 }}>
-                    <img src={CHURCH_LOGO} alt="예수인교회 로고" style={{ height: "45px", objectFit: "contain" }} />
-                    <div style={{ fontSize: "12px", color: "#666", letterSpacing: "1px", fontWeight: 500 }}>JESUS-IN CHURCH</div>
+                    <img src={churchSettings.church_logo_url} alt={`${churchSettings.church_name} 로고`} style={{ height: "45px", objectFit: "contain" }} />
+                    <div style={{ fontSize: "12px", color: "#666", letterSpacing: "1px", fontWeight: 500 }}>{churchSettings.church_name.toUpperCase()}</div>
                 </a>
+
+                {/* 설정 모달 */}
+                {showSettings && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                        <div style={{ background: 'white', borderRadius: '20px', padding: '28px', width: '100%', maxWidth: '400px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>⚙️ 교회 설정</h2>
+                                <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                {[['church_name', '교회 이름', '예: 예수인교회'], ['app_subtitle', '앱 부제목', '예: 큐티 동반자'], ['church_logo_url', '교회 로고 URL', 'https://...'], ['church_url', '교회 홈페이지 URL', 'https://...']].map(([key, label, placeholder]) => (
+                                    <div key={key}>
+                                        <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>{label}</label>
+                                        <input
+                                            type="text"
+                                            value={settingsForm[key as keyof typeof settingsForm]}
+                                            onChange={e => setSettingsForm(prev => ({ ...prev, [key]: e.target.value }))}
+                                            placeholder={placeholder}
+                                            style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                                <button onClick={() => setShowSettings(false)} style={{ flex: 1, padding: '12px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '10px', fontWeight: 600, cursor: 'pointer' }}>취소</button>
+                                <button onClick={handleSaveSettings} disabled={settingsSaving} style={{ flex: 2, padding: '12px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', opacity: settingsSaving ? 0.7 : 1 }}>
+                                    {settingsSaving ? '저장 중...' : '💾 저장하기'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {user && (
                     <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', alignItems: 'center', gap: '8px', background: 'white', padding: '6px 12px', borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', fontSize: '12px' }}>
                         <span style={{ color: '#333', fontWeight: 600 }}>{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
+                        <button onClick={() => { setSettingsForm({ ...churchSettings }); setShowSettings(true); }} style={{ background: 'none', border: 'none', color: '#B8924A', cursor: 'pointer', padding: 0, fontSize: '14px' }} title="교회 설정">⚙️</button>
                         <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', padding: 0 }}>로그아웃</button>
                     </div>
                 )}
