@@ -594,18 +594,29 @@ export default function App() {
                         <button onClick={handleShareGrace} style={{ width: '100%', padding: '16px', background: '#E6A4B4', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>기록하고 성도들과 나누기</button>
                     )}
                     {qtStep === 'pray' && (
-                        <button onClick={() => {
+                        <button onClick={async () => {
                             // 큐티 완료 기록
                             if (user) {
-                                fetch('/api/stats', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        user_id: user.id,
-                                        user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '성도',
-                                        avatar_url: user.user_metadata?.avatar_url || null,
-                                    }),
-                                }).catch(() => { });
+                                try {
+                                    const res = await fetch('/api/stats', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            user_id: user.id,
+                                            user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '성도',
+                                            avatar_url: user.user_metadata?.avatar_url || null,
+                                        }),
+                                    });
+
+                                    if (res.ok) {
+                                        // 기록 성공 시 즉시 최신 통계 데이터 로드
+                                        const statsRes = await fetch('/api/stats');
+                                        const statsData = await statsRes.json();
+                                        setStats(statsData);
+                                    }
+                                } catch (e) {
+                                    console.error("통계 기록 중 오류:", e);
+                                }
                             }
                             setQtStep('done');
                         }} style={{ width: '100%', padding: '16px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>큐티 마칠게요</button>
