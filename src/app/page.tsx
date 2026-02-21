@@ -10,6 +10,7 @@ const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://cdn.imwe
 const CHURCH_URL = process.env.NEXT_PUBLIC_CHURCH_URL || "https://jesus-in.imweb.me/index";
 const CHURCH_NAME = process.env.NEXT_PUBLIC_CHURCH_NAME || "예수인교회";
 const APP_SUBTITLE = process.env.NEXT_PUBLIC_APP_SUBTITLE || "큐티 동반자";
+const ADMIN_EMAIL = "pastorbaek@kakao.com";
 
 
 const QT_DATA = {
@@ -63,6 +64,7 @@ export default function App() {
     const [passageChat, setPassageChat] = useState<{ role: string; content: string }[]>([]);
     const [isPassageLoading, setIsPassageLoading] = useState(false);
     const [user, setUser] = useState<any>(null);
+    const isAdmin = user?.email === ADMIN_EMAIL;
     const [qtData, setQtData] = useState({
         date: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
         reference: QT_DATA.reference,
@@ -349,7 +351,7 @@ export default function App() {
                 {user && (
                     <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', alignItems: 'center', gap: '8px', background: 'white', padding: '6px 12px', borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', fontSize: '12px' }}>
                         <span style={{ color: '#333', fontWeight: 600 }}>{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
-                        <button onClick={() => { setSettingsForm({ ...churchSettings }); setShowSettings(true); }} style={{ background: 'none', border: 'none', color: '#B8924A', cursor: 'pointer', padding: 0, fontSize: '14px' }} title="교회 설정">⚙️</button>
+                        {isAdmin && <button onClick={() => { setSettingsForm({ ...churchSettings }); setShowSettings(true); }} style={{ background: 'none', border: 'none', color: '#B8924A', cursor: 'pointer', padding: 0, fontSize: '14px' }} title="교회 설정">⚙️</button>}
                         <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', padding: 0 }}>로그아웃</button>
                     </div>
                 )}
@@ -421,18 +423,20 @@ export default function App() {
                             }}>
                                 ☀️ 오늘의 큐티 시작
                             </button>
-                            <button onClick={() => {
-                                const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
-                                setQtForm({ date: today, reference: '', passage: '', question1: '', question2: '', question3: '', prayer: '' });
-                                setView('qtManage');
-                            }} style={{
-                                width: "100%", padding: "12px",
-                                background: "#F5F2EA", color: "#B8924A",
-                                fontWeight: 600, fontSize: "13px", borderRadius: "12px",
-                                border: "none", cursor: "pointer"
-                            }}>
-                                📝 큐티 본문 관리 (Admin)
-                            </button>
+                            {isAdmin && (
+                                <button onClick={() => {
+                                    const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
+                                    setQtForm({ date: today, reference: '', passage: '', question1: '', question2: '', question3: '', prayer: '' });
+                                    setView('qtManage');
+                                }} style={{
+                                    width: "100%", padding: "12px",
+                                    background: "#F5F2EA", color: "#B8924A",
+                                    fontWeight: 600, fontSize: "13px", borderRadius: "12px",
+                                    border: "none", cursor: "pointer"
+                                }}>
+                                    📝 큐티 본문 관리 (Admin)
+                                </button>
+                            )}
                             <button onClick={async () => {
                                 setView('stats');
                                 setStatsError(null);
