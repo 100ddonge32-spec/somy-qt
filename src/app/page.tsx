@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 type View = "home" | "chat" | "qt" | "community";
 
@@ -58,8 +59,44 @@ export default function App() {
     const [passageInput, setPassageInput] = useState("");
     const [passageChat, setPassageChat] = useState<{ role: string; content: string }[]>([]);
     const [isPassageLoading, setIsPassageLoading] = useState(false);
+    const [user, setUser] = useState<any>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const passageRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        // 유저 세션 확인
+        const checkUser = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            setUser(session?.user ?? null);
+        };
+        checkUser();
+
+        // 인증 상태 변화 감지
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+            setUser(session?.user ?? null);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    const handleLogin = async (provider: 'google' | 'kakao') => {
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider,
+                options: {
+                    redirectTo: window.location.origin
+                }
+            });
+            if (error) throw error;
+        } catch (err: any) {
+            alert("로그인 중 오류가 발생했어요: " + err.message);
+        }
+    };
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        setView("home");
+    };
 
     const handleAnswerChange = (index: number, value: string) => {
         const newAnswers = [...answers];
@@ -169,6 +206,13 @@ export default function App() {
                     <div style={{ fontSize: "12px", color: "#666", letterSpacing: "1px", fontWeight: 500 }}>JESUS-IN CHURCH</div>
                 </a>
 
+                {user && (
+                    <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', alignItems: 'center', gap: '8px', background: 'white', padding: '6px 12px', borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', fontSize: '12px' }}>
+                        <span style={{ color: '#333', fontWeight: 600 }}>{user.email?.split('@')[0]}님</span>
+                        <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', padding: 0 }}>로그아웃</button>
+                    </div>
+                )}
+
                 {/* Character Section */}
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", flex: 1, justifyContent: 'center' }}>
                     <div style={{ position: "relative", perspective: "600px" }}>
@@ -204,23 +248,39 @@ export default function App() {
 
                 {/* Action Buttons */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%", maxWidth: "300px", animation: "fade-in 1.4s ease-out" }}>
-                    <button onClick={() => setView("chat")} style={{
-                        width: "100%", padding: "16px",
-                        background: "#333", color: "white",
-                        fontWeight: 700, fontSize: "16px", borderRadius: "15px",
-                        border: "none", cursor: "pointer", boxShadow: "0 5px 15px rgba(0,0,0,.1)",
-                        transition: "all .2s"
-                    }} onMouseOver={e => e.currentTarget.style.background = "#000"} onMouseOut={e => e.currentTarget.style.background = "#333"}>
-                        💬 소미와 대화하기
-                    </button>
-                    <button onClick={() => { setQtStep("read"); setView("qt"); }} style={{
-                        width: "100%", padding: "16px",
-                        background: "white", color: "#333",
-                        fontWeight: 600, fontSize: "15px", borderRadius: "15px",
-                        border: "1px solid #DDD", cursor: "pointer"
-                    }}>
-                        ☀️ 오늘의 큐티 시작
-                    </button>
+                    {!user ? (
+                        <div style={{ background: 'white', padding: '24px', borderRadius: '20px', boxShadow: '0 5px 20px rgba(0,0,0,0.05)', border: '1px solid #EEE', textAlign: 'center' }}>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', marginBottom: '16px' }}>성도님, 먼저 로그인해주세요</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <button onClick={() => handleLogin('kakao')} style={{ width: '100%', padding: '12px', background: '#FEE500', color: '#3C1E1E', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                                    <span style={{ fontSize: '16px' }}>💬</span> 카카오로 로그인
+                                </button>
+                                <button onClick={() => handleLogin('google')} style={{ width: '100%', padding: '12px', background: 'white', color: '#333', border: '1px solid #DDD', borderRadius: '10px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                                    <span style={{ fontSize: '16px' }}>G</span> 구글로 로그인
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <button onClick={() => setView("chat")} style={{
+                                width: "100%", padding: "16px",
+                                background: "#333", color: "white",
+                                fontWeight: 700, fontSize: "16px", borderRadius: "15px",
+                                border: "none", cursor: "pointer", boxShadow: "0 5px 15px rgba(0,0,0,.1)",
+                                transition: "all .2s"
+                            }} onMouseOver={e => e.currentTarget.style.background = "#000"} onMouseOut={e => e.currentTarget.style.background = "#333"}>
+                                💬 소미와 대화하기
+                            </button>
+                            <button onClick={() => { setQtStep("read"); setView("qt"); }} style={{
+                                width: "100%", padding: "16px",
+                                background: "white", color: "#333",
+                                fontWeight: 600, fontSize: "15px", borderRadius: "15px",
+                                border: "1px solid #DDD", cursor: "pointer"
+                            }}>
+                                ☀️ 오늘의 큐티 시작
+                            </button>
+                        </>
+                    )}
 
                     <a href={CHURCH_URL} target="_blank" rel="noopener noreferrer" style={{
                         marginTop: "10px", textAlign: "center", textDecoration: "none", color: "#999", fontSize: "13px", fontWeight: 500
@@ -240,7 +300,7 @@ export default function App() {
             if (!graceInput.trim()) return;
             const newPost: Post = {
                 id: Date.now(),
-                user: "무명의 성도",
+                user: user?.email?.split('@')[0] || "익명의 성도",
                 content: graceInput,
                 date: "방금 전",
                 comments: []
@@ -396,7 +456,7 @@ export default function App() {
                         ...post,
                         comments: [...post.comments, {
                             id: Date.now(),
-                            user: "예수인 성도",
+                            user: user?.email?.split('@')[0] || "예수인 성도",
                             content: commentText,
                             date: "방금 전"
                         }]
