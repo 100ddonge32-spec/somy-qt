@@ -432,7 +432,16 @@ export default function App() {
                             }}>
                                 📝 큐티 본문 관리 (Admin)
                             </button>
-                            <button onClick={() => { fetch('/api/stats').then(r => r.json()).then(setStats); setView('stats'); }} style={{
+                            <button onClick={async () => {
+                                setView('stats');
+                                try {
+                                    const r = await fetch('/api/stats');
+                                    const data = await r.json();
+                                    if (data.today) setStats(data);
+                                } catch (e) {
+                                    console.error("통계 로드 실패:", e);
+                                }
+                            }} style={{
                                 width: "100%", padding: "12px",
                                 background: "#F5F2EA", color: "#B8924A",
                                 fontWeight: 600, fontSize: "13px", borderRadius: "12px",
@@ -576,7 +585,14 @@ export default function App() {
                                 <h2 style={{ margin: '0 0 10px 0', fontSize: '24px' }}>오늘의 큐티 완료!</h2>
                                 <p style={{ fontSize: '14px', opacity: 0.8, marginBottom: '24px' }}>말씀과 함께 승리하는 하루 되세요.</p>
                                 <button onClick={() => setView('community')} style={{ width: '100%', padding: '16px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', marginBottom: '10px' }}>은혜나눔 게시판 가기</button>
-                                <button onClick={() => { fetch('/api/stats').then(r => r.json()).then(setStats); setView('stats'); }} style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>👑 이달의 큐티왕 보기</button>
+                                <button onClick={async () => {
+                                    setView('stats');
+                                    try {
+                                        const r = await fetch('/api/stats');
+                                        const data = await r.json();
+                                        if (data.today) setStats(data);
+                                    } catch (e) { }
+                                }} style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>👑 이달의 큐티왕 보기</button>
                             </div>
                         )}
                     </div>
@@ -773,8 +789,11 @@ export default function App() {
                     <div style={{ fontWeight: 700, color: "#333", fontSize: "14px" }}>👑 이달의 큐티왕</div>
                 </div>
 
-                {!stats ? (
-                    <div style={{ padding: '60px 20px', textAlign: 'center', color: '#999' }}>로딩 중...</div>
+                {!stats || !stats.today ? (
+                    <div style={{ padding: '60px 20px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
+                        데이터를 불러오는 중입니다... 🐑<br />
+                        <span style={{ fontSize: '12px', opacity: 0.7 }}>(잠시만 기다려주세요)</span>
+                    </div>
                 ) : (
                     <div style={{ padding: "24px 20px", display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
