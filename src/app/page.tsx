@@ -72,6 +72,7 @@ export default function App() {
     const [editingPostId, setEditingPostId] = useState<any>(null);
     const [editContent, setEditContent] = useState("");
     const [volume, setVolume] = useState(0.3); // 기본 볼륨 30%
+    const [isPlaying, setIsPlaying] = useState(false);
 
     // 볼륨 변경 시 오디오 객체에 즉시 반영
     useEffect(() => {
@@ -369,6 +370,7 @@ export default function App() {
                                     localStorage.setItem('somy_visited', 'true');
                                     if (audioRef.current) {
                                         audioRef.current.play().catch(e => console.log("자동 재생 차단:", e));
+                                        setIsPlaying(true);
                                     }
                                 }}
                                 style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '18px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.2)' }}>
@@ -1322,7 +1324,22 @@ export default function App() {
             </audio>
 
             <div style={{ position: 'fixed', bottom: '20px', left: '20px', zIndex: 9991, display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(10px)', padding: '8px 15px', borderRadius: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid rgba(255,255,255,0.3)', transition: 'all 0.3s' }}>
-                <span style={{ fontSize: '14px' }}>{volume === 0 ? '🔇' : '🎵'}</span>
+                <button
+                    onClick={() => {
+                        if (audioRef.current) {
+                            if (isPlaying) {
+                                audioRef.current.pause();
+                                setIsPlaying(false);
+                            } else {
+                                audioRef.current.play();
+                                setIsPlaying(true);
+                            }
+                        }
+                    }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', padding: 0, display: 'flex', alignItems: 'center' }}
+                >
+                    {isPlaying ? '🎵' : '🔇'}
+                </button>
                 <input
                     type="range"
                     min="0"
