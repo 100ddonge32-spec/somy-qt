@@ -436,16 +436,28 @@ export default function App() {
                             <button onClick={async () => {
                                 setView('stats');
                                 setStatsError(null);
+                                setStats(null); // 로딩 초기화
+
+                                const controller = new AbortController();
+                                const timeoutId = setTimeout(() => controller.abort(), 8000); // 8초 타임아웃
+
                                 try {
-                                    const r = await fetch('/api/stats');
+                                    const r = await fetch('/api/stats', { signal: controller.signal, cache: 'no-store' });
+                                    clearTimeout(timeoutId);
                                     const data = await r.json();
-                                    if (r.ok && data.today) {
+
+                                    if (data) {
                                         setStats(data);
+                                        if (data.error) setStatsError(data.error);
                                     } else {
-                                        setStatsError(data.error || "통계 데이터를 가져올 수 없습니다.");
+                                        setStatsError("데이터 형식이 올바르지 않습니다.");
                                     }
-                                } catch (e) {
-                                    setStatsError("서버 연결에 실패했습니다.");
+                                } catch (e: any) {
+                                    if (e.name === 'AbortError') {
+                                        setStatsError("서버 응답 시간이 초과되었습니다. (8초)");
+                                    } else {
+                                        setStatsError("서버 연결 중 오류가 발생했습니다.");
+                                    }
                                 }
                             }} style={{
                                 width: "100%", padding: "12px",
@@ -594,17 +606,18 @@ export default function App() {
                                 <button onClick={async () => {
                                     setView('stats');
                                     setStatsError(null);
+                                    setStats(null);
+                                    const controller = new AbortController();
+                                    const timeoutId = setTimeout(() => controller.abort(), 8000);
                                     try {
-                                        const r = await fetch('/api/stats');
+                                        const r = await fetch('/api/stats', { signal: controller.signal, cache: 'no-store' });
+                                        clearTimeout(timeoutId);
                                         const data = await r.json();
-                                        if (r.ok && data.today) {
+                                        if (data) {
                                             setStats(data);
-                                        } else {
-                                            setStatsError(data.error || "통계 데이터를 가져올 수 없습니다.");
+                                            if (data.error) setStatsError(data.error);
                                         }
-                                    } catch (e) {
-                                        setStatsError("서버 연결에 실패했습니다.");
-                                    }
+                                    } catch (e) { }
                                 }} style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>👑 이달의 큐티왕 보기</button>
                             </div>
                         )}
@@ -806,13 +819,13 @@ export default function App() {
 
                 {statsError ? (
                     <div style={{ padding: '60px 20px', textAlign: 'center', color: '#E57373', fontSize: '14px' }}>
-                        ⚠️ 오류 발생: {statsError}<br />
-                        <button onClick={() => setView('home')} style={{ marginTop: '20px', padding: '10px 20px', background: '#F5F5F5', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>홈으로 이동</button>
+                        ⚠️ {statsError}<br />
+                        <button onClick={() => setView('home')} style={{ marginTop: '20px', padding: '10px 20px', background: '#F5F5F5', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 600 }}>← 홈으로 돌아가기</button>
                     </div>
-                ) : !stats || !stats.today ? (
+                ) : !stats ? (
                     <div style={{ padding: '60px 20px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
                         데이터를 불러오는 중입니다... 🐑<br />
-                        <span style={{ fontSize: '12px', opacity: 0.7 }}>(잠시만 기다려주세요)</span>
+                        <span style={{ fontSize: '12px', opacity: 0.7 }}>(8초 이상 걸리면 자동으로 중단됩니다)</span>
                     </div>
                 ) : (
                     <div style={{ padding: "24px 20px", display: 'flex', flexDirection: 'column', gap: '20px' }}>
