@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 
 type View = "home" | "chat" | "qt";
 
-const SOMY_IMG = "/api/character";
+const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = "https://cdn.imweb.me/thumbnail/20210813/569458bf12dd0.png";
 const CHURCH_URL = "https://jesus-in.imweb.me/index";
 
