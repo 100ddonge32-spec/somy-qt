@@ -64,8 +64,26 @@ export default function App() {
     const passageRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        // 유저 세션 확인
+        // URL 해시에서 세션 토큰 직접 처리 (Next.js App Router 호환)
         const checkUser = async () => {
+            const hash = window.location.hash;
+            if (hash && hash.includes('access_token=')) {
+                const params = new URLSearchParams(hash.substring(1));
+                const accessToken = params.get('access_token');
+                const refreshToken = params.get('refresh_token');
+                if (accessToken && refreshToken) {
+                    const { data } = await supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken,
+                    });
+                    if (data?.session?.user) {
+                        setUser(data.session.user);
+                        // URL에서 해시 제거 (깔끔하게)
+                        window.history.replaceState(null, '', window.location.pathname);
+                        return;
+                    }
+                }
+            }
             const { data: { session } } = await supabase.auth.getSession();
             setUser(session?.user ?? null);
         };
