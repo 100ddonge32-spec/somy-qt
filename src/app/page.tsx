@@ -391,91 +391,98 @@ export default function App() {
                 </div>
 
                 {/* Action Buttons */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%", maxWidth: "300px", animation: "fade-in 1.4s ease-out" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%", maxWidth: "320px", animation: "fade-in 1.4s ease-out", paddingBottom: "40px" }}>
                     {!user ? (
-                        <div style={{ background: 'white', padding: '24px', borderRadius: '20px', boxShadow: '0 5px 20px rgba(0,0,0,0.05)', border: '1px solid #EEE', textAlign: 'center' }}>
-                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', marginBottom: '16px' }}>성도님, 먼저 로그인해주세요</div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                <button onClick={() => handleLogin('kakao')} style={{ width: '100%', padding: '12px', background: '#FEE500', color: '#3C1E1E', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                                    <span style={{ fontSize: '16px' }}>💬</span> 카카오로 로그인
+                        <div style={{ background: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', border: '1px solid #EEE', textAlign: 'center' }}>
+                            <div style={{ fontSize: '16px', fontWeight: 700, color: '#333', marginBottom: '20px' }}>성도님, 먼저 로그인해주세요</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <button onClick={() => handleLogin('kakao')} style={{ width: '100%', padding: '14px', background: '#FEE500', color: '#3C1E1E', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 4px 12px rgba(254,229,0,0.3)' }}>
+                                    <span style={{ fontSize: '18px' }}>💬</span> 카카오로 로그인
                                 </button>
-                                <button onClick={() => handleLogin('google')} style={{ width: '100%', padding: '12px', background: 'white', color: '#333', border: '1px solid #DDD', borderRadius: '10px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                                    <span style={{ fontSize: '16px' }}>G</span> 구글로 로그인
+                                <button onClick={() => handleLogin('google')} style={{ width: '100%', padding: '14px', background: 'white', color: '#333', border: '1px solid #DDD', borderRadius: '12px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                                    <span style={{ fontSize: '18px' }}>G</span> 구글로 로그인
                                 </button>
                             </div>
                         </div>
                     ) : (
                         <>
                             <button onClick={() => setView("chat")} style={{
-                                width: "100%", padding: "16px",
+                                width: "100%", padding: "20px",
                                 background: "#333", color: "white",
-                                fontWeight: 700, fontSize: "16px", borderRadius: "15px",
-                                border: "none", cursor: "pointer", boxShadow: "0 5px 15px rgba(0,0,0,.1)",
+                                fontWeight: 800, fontSize: "18px", borderRadius: "18px",
+                                border: "none", cursor: "pointer", boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
                                 transition: "all .2s"
-                            }} onMouseOver={e => e.currentTarget.style.background = "#000"} onMouseOut={e => e.currentTarget.style.background = "#333"}>
+                            }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                 💬 소미와 대화하기
                             </button>
+
                             <button onClick={() => { setQtStep("read"); setView("qt"); }} style={{
-                                width: "100%", padding: "16px",
+                                width: "100%", padding: "18px",
                                 background: "white", color: "#333",
-                                fontWeight: 600, fontSize: "15px", borderRadius: "15px",
-                                border: "1px solid #DDD", cursor: "pointer"
+                                fontWeight: 700, fontSize: "17px", borderRadius: "18px",
+                                border: "2px solid #333", cursor: "pointer",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.05)"
                             }}>
                                 ☀️ 오늘의 큐티 시작
                             </button>
-                            {isAdmin && (
-                                <button onClick={() => {
-                                    const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
-                                    setQtForm({ date: today, reference: '', passage: '', question1: '', question2: '', question3: '', prayer: '' });
-                                    setView('qtManage');
+
+                            <button onClick={() => setView("community")} style={{
+                                width: "100%", padding: "18px",
+                                background: "#E6A4B4", color: "white",
+                                fontWeight: 700, fontSize: "17px", borderRadius: "18px",
+                                border: "none", cursor: "pointer",
+                                boxShadow: "0 4px 12px rgba(230,164,180,0.3)"
+                            }}>
+                                📝 은혜나눔 게시판
+                            </button>
+
+                            <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+                                <button onClick={async () => {
+                                    setView('stats');
+                                    setStatsError(null);
+                                    setStats(null);
+                                    const controller = new AbortController();
+                                    const timeoutId = setTimeout(() => controller.abort(), 8000);
+                                    try {
+                                        const r = await fetch('/api/stats', { signal: controller.signal, cache: 'no-store' });
+                                        clearTimeout(timeoutId);
+                                        const data = await r.json();
+                                        if (data) {
+                                            setStats(data);
+                                            if (data.error) setStatsError(data.error);
+                                        }
+                                    } catch (e: any) {
+                                        setStatsError(e.name === 'AbortError' ? "시간 초과" : "연결 실패");
+                                    }
                                 }} style={{
-                                    width: "100%", padding: "12px",
+                                    flex: 1, padding: "14px",
                                     background: "#F5F2EA", color: "#B8924A",
-                                    fontWeight: 600, fontSize: "13px", borderRadius: "12px",
+                                    fontWeight: 700, fontSize: "14px", borderRadius: "14px",
                                     border: "none", cursor: "pointer"
                                 }}>
-                                    📝 큐티 본문 관리 (Admin)
+                                    👑 이달의 큐티왕
                                 </button>
-                            )}
-                            <button onClick={async () => {
-                                setView('stats');
-                                setStatsError(null);
-                                setStats(null); // 로딩 초기화
 
-                                const controller = new AbortController();
-                                const timeoutId = setTimeout(() => controller.abort(), 8000); // 8초 타임아웃
-
-                                try {
-                                    const r = await fetch('/api/stats', { signal: controller.signal, cache: 'no-store' });
-                                    clearTimeout(timeoutId);
-                                    const data = await r.json();
-
-                                    if (data) {
-                                        setStats(data);
-                                        if (data.error) setStatsError(data.error);
-                                    } else {
-                                        setStatsError("데이터 형식이 올바르지 않습니다.");
-                                    }
-                                } catch (e: any) {
-                                    if (e.name === 'AbortError') {
-                                        setStatsError("서버 응답 시간이 초과되었습니다. (8초)");
-                                    } else {
-                                        setStatsError("서버 연결 중 오류가 발생했습니다.");
-                                    }
-                                }
-                            }} style={{
-                                width: "100%", padding: "12px",
-                                background: "#F5F2EA", color: "#B8924A",
-                                fontWeight: 600, fontSize: "13px", borderRadius: "12px",
-                                border: "none", cursor: "pointer"
-                            }}>
-                                👑 이달의 큐티왕
-                            </button>
+                                {isAdmin && (
+                                    <button onClick={() => {
+                                        const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
+                                        setQtForm({ date: today, reference: '', passage: '', question1: '', question2: '', question3: '', prayer: '' });
+                                        setView('qtManage');
+                                    }} style={{
+                                        flex: 1, padding: "14px",
+                                        background: "#EEE", color: "#666",
+                                        fontWeight: 700, fontSize: "14px", borderRadius: "14px",
+                                        border: "none", cursor: "pointer"
+                                    }}>
+                                        ⚙️ 관리 모드
+                                    </button>
+                                )}
+                            </div>
                         </>
                     )}
 
                     <a href={CHURCH_URL} target="_blank" rel="noopener noreferrer" style={{
-                        marginTop: "10px", textAlign: "center", textDecoration: "none", color: "#999", fontSize: "13px", fontWeight: 500
+                        marginTop: "10px", textAlign: "center", textDecoration: "none", color: "#999", fontSize: "14px", fontWeight: 500
                     }}>
                         {CHURCH_NAME} 홈페이지 방문하기 →
                     </a>
