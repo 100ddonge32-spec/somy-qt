@@ -24,20 +24,20 @@ export const metadata: Metadata = {
     siteName: `${appName}`,
     images: [
       {
-        url: `${APP_URL}/somy.png`,
-        width: 512,
-        height: 512,
-        alt: "소미 큐티 챗봇 캐릭터",
+        url: `${APP_URL}/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "소미 큐티 챗봇 - 성경과 함께하는 양 캐릭터",
       },
     ],
     type: "website",
     locale: "ko_KR",
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: `${appName} - ${churchName}`,
     description: "소미와 함께하는 따뜻한 큐티 시간 🐑",
-    images: [`${APP_URL}/somy.png`],
+    images: [`${APP_URL}/og-image.png`],
   },
 };
 
