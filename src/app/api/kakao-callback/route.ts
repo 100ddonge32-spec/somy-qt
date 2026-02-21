@@ -104,10 +104,11 @@ export async function GET(req: NextRequest) {
         return NextResponse.redirect(`${APP_URL}?error=step5_${encodeURIComponent(linkErr.message.slice(0, 50))}`);
     }
 
-    const actionLink = linkData?.properties?.action_link;
-    if (!actionLink) {
-        return NextResponse.redirect(`${APP_URL}?error=step5_no_link`);
+    const hashedToken = linkData?.properties?.hashed_token;
+    if (!hashedToken) {
+        return NextResponse.redirect(`${APP_URL}?error=step5_no_token`);
     }
 
-    return NextResponse.redirect(actionLink);
+    // hashed_token을 query param으로 전달 (해시 기반 리다이렉트 문제 우회)
+    return NextResponse.redirect(`${APP_URL}/auth/callback?token=${encodeURIComponent(hashedToken)}`);
 }
