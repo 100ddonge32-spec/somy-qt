@@ -31,17 +31,20 @@ const QT_DATA = {
 };
 
 interface Comment {
-    id: number;
-    user: string;
+    id: any;
+    user_id: string;
+    user_name: string;
     content: string;
-    date: string;
+    created_at: string;
 }
 
 interface Post {
-    id: number;
-    user: string;
+    id: any;
+    user_id: string;
+    user_name: string;
+    avatar_url: string | null;
     content: string;
-    date: string;
+    created_at: string;
     comments: Comment[];
 }
 
@@ -55,10 +58,7 @@ export default function App() {
     const [answers, setAnswers] = useState<string[]>(new Array(QT_DATA.questions.length).fill(""));
     const [graceInput, setGraceInput] = useState("");
     const [qtStep, setQtStep] = useState<"read" | "reflect" | "grace" | "pray" | "done">("read");
-    const [communityPosts, setCommunityPosts] = useState<Post[]>([
-        { id: 1, user: "사무엘 성도", content: "오늘 말씀을 통해 선하신 목자 되신 주님을 다시금 기억하게 되었습니다. 어떤 상황에서도 부족함이 없게 하시는 하나님을 찬양합니다.", date: "2시간 전", comments: [{ id: 1, user: "마리아 권사", content: "아멘! 참 은혜로운 고백입니다.", date: "1시간 전" }] },
-        { id: 2, user: "안나 집사", content: "쉴 만한 물가로 인도하시는 하나님의 세밀한 손길을 느끼는 하루였습니다.", date: "5시간 전", comments: [] }
-    ]);
+    const [communityPosts, setCommunityPosts] = useState<Post[]>([]);
     const [commentInputs, setCommentInputs] = useState<{ [key: number]: string }>({});
     const [passageInput, setPassageInput] = useState("");
     const [passageChat, setPassageChat] = useState<{ role: string; content: string }[]>([]);
@@ -436,7 +436,15 @@ export default function App() {
                                 ☀️ 오늘의 큐티 시작
                             </button>
 
-                            <button onClick={() => setView("community")} style={{
+                            <button onClick={async () => {
+                                setView("community");
+                                // 게시판 진입 시 DB 데이터 로드
+                                try {
+                                    const res = await fetch('/api/community');
+                                    const data = await res.json();
+                                    if (Array.isArray(data)) setCommunityPosts(data);
+                                } catch (e) { console.error("게시판 로드 실패:", e); }
+                            }} style={{
                                 width: "100%", padding: "18px",
                                 background: "#E6A4B4", color: "white",
                                 fontWeight: 700, fontSize: "17px", borderRadius: "18px",
@@ -505,16 +513,28 @@ export default function App() {
        QT PAGE
     ══════════════════════════════ */
     if (view === "qt") {
-        const handleShareGrace = () => {
+        const handleShareGrace = async () => {
             if (!graceInput.trim()) return;
-            const newPost: Post = {
-                id: Date.now(),
-                user: user?.email?.split('@')[0] || "익명의 성도",
-                content: graceInput,
-                date: "방금 전",
-                comments: []
-            };
-            setCommunityPosts([newPost, ...communityPosts]);
+
+            if (user) {
+                try {
+                    const res = await fetch('/api/community', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: user.id,
+                            user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
+                            avatar_url: user.user_metadata?.avatar_url || null,
+                            content: graceInput
+                        })
+                    });
+                    if (res.ok) {
+                        const newPost = await res.json();
+                        setCommunityPosts([newPost, ...communityPosts]);
+                    }
+                } catch (e) { console.error("은혜나눔 저장 실패:", e); }
+            }
+
             setQtStep("pray");
         };
 
@@ -938,25 +958,35 @@ export default function App() {
        COMMUNITY PAGE
     ══════════════════════════════ */
     if (view === "community") {
-        const handleAddComment = (postId: number) => {
+        const handleAddComment = async (postId: any) => {
             const commentText = commentInputs[postId];
-            if (!commentText?.trim()) return;
+            if (!commentText?.trim() || !user) return;
 
-            setCommunityPosts(communityPosts.map(post => {
-                if (post.id === postId) {
-                    return {
-                        ...post,
-                        comments: [...post.comments, {
-                            id: Date.now(),
-                            user: user?.email?.split('@')[0] || "예수인 성도",
-                            content: commentText,
-                            date: "방금 전"
-                        }]
-                    };
+            try {
+                const res = await fetch('/api/community/comments', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        post_id: postId,
+                        user_id: user.id,
+                        user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
+                        content: commentText
+                    })
+                });
+                if (res.ok) {
+                    const newComment = await res.json();
+                    setCommunityPosts(communityPosts.map(post => {
+                        if (post.id === postId) {
+                            return {
+                                ...post,
+                                comments: [...(post.comments || []), newComment]
+                            };
+                        }
+                        return post;
+                    }));
+                    setCommentInputs({ ...commentInputs, [postId]: "" });
                 }
-                return post;
-            }));
-            setCommentInputs({ ...commentInputs, [postId]: "" });
+            } catch (e) { console.error("댓글 저장 실패:", e); }
         };
 
         return (
@@ -971,10 +1001,12 @@ export default function App() {
                     {communityPosts.map(post => (
                         <div key={post.id} style={{ background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', animation: 'fade-in 0.5s' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                                <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#F0ECE4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🐑</div>
+                                <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#F0ECE4', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                                    {post.avatar_url ? <img src={post.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🐑'}
+                                </div>
                                 <div>
-                                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>{post.user}</div>
-                                    <div style={{ fontSize: '11px', color: '#999' }}>{post.date}</div>
+                                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>{post.user_name}</div>
+                                    <div style={{ fontSize: '11px', color: '#999' }}>{new Date(post.created_at || Date.now()).toLocaleString()}</div>
                                 </div>
                             </div>
                             <p style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', margin: '0 0 15px 0', whiteSpace: 'pre-line' }}>{post.content}</p>
@@ -983,11 +1015,11 @@ export default function App() {
                             <div style={{ borderTop: '1px solid #F5F5F5', paddingTop: '15px' }}>
                                 <div style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', marginBottom: '10px' }}>댓글 {post.comments.length}개</div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
-                                    {post.comments.map(comment => (
+                                    {post.comments?.map((comment: any) => (
                                         <div key={comment.id} style={{ background: '#FAFAFA', padding: '10px 15px', borderRadius: '12px', fontSize: '13px' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                                <span style={{ fontWeight: 700, color: '#555' }}>{comment.user}</span>
-                                                <span style={{ fontSize: '10px', color: '#AAA' }}>{comment.date}</span>
+                                                <span style={{ fontWeight: 700, color: '#555' }}>{comment.user_name}</span>
+                                                <span style={{ fontSize: '10px', color: '#AAA' }}>{new Date(comment.created_at || Date.now()).toLocaleTimeString()}</span>
                                             </div>
                                             <div style={{ color: '#666' }}>{comment.content}</div>
                                         </div>
