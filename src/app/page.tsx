@@ -373,7 +373,7 @@ export default function App() {
                     </div>
 
                     <div style={{ animation: "fade-in 1s ease-out" }}>
-                        <h1 style={{ fontSize: "40px", fontWeight: 800, color: "#333", margin: "0 0 4px 0", letterSpacing: "-1px" }}>소미</h1>
+                        <h1 style={{ fontSize: "22px", fontWeight: 800, color: "#333", margin: "0 0 8px 0", letterSpacing: "-0.5px", lineHeight: 1.3 }}>저는 당신의 큐티도우미 소미 입니다</h1>
                         <p style={{ fontSize: "15px", color: "#B8924A", fontWeight: 600, margin: "0 0 10px 0" }}>{CHURCH_NAME} {APP_SUBTITLE}</p>
                         <p style={{ fontSize: "12px", color: "#B8924A", fontWeight: 600, margin: "0 0 6px 0", letterSpacing: "0.5px", opacity: 0.85 }}>바쁜 현대인을 위한 큐티 챗봇</p>
                         <p style={{ fontSize: "14px", color: "#777", lineHeight: 1.6, margin: 0 }}>내 삶 속에 예수 그리스도!<br />소미가 당신의 묵상을 도와드릴게요 🐑</p>
