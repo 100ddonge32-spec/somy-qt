@@ -1013,13 +1013,15 @@ export default function App() {
 
                             {/* Comments Section */}
                             <div style={{ borderTop: '1px solid #F5F5F5', paddingTop: '15px' }}>
-                                <div style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', marginBottom: '10px' }}>댓글 {post.comments.length}개</div>
+                                <div style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', marginBottom: '10px' }}>댓글 {post.comments?.length || 0}개</div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
-                                    {post.comments?.map((comment: any) => (
+                                    {post.comments && Array.isArray(post.comments) && post.comments.map((comment: any) => (
                                         <div key={comment.id} style={{ background: '#FAFAFA', padding: '10px 15px', borderRadius: '12px', fontSize: '13px' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                                <span style={{ fontWeight: 700, color: '#555' }}>{comment.user_name}</span>
-                                                <span style={{ fontSize: '10px', color: '#AAA' }}>{new Date(comment.created_at || Date.now()).toLocaleTimeString()}</span>
+                                                <span style={{ fontWeight: 700, color: '#555' }}>{comment.user_name || '성도'}</span>
+                                                <span style={{ fontSize: '10px', color: '#AAA' }}>
+                                                    {comment.created_at ? new Date(comment.created_at).toLocaleTimeString() : '방금 전'}
+                                                </span>
                                             </div>
                                             <div style={{ color: '#666' }}>{comment.content}</div>
                                         </div>
