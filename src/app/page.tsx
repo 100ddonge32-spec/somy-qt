@@ -10,7 +10,7 @@ const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://cdn.imwe
 const CHURCH_URL = process.env.NEXT_PUBLIC_CHURCH_URL || "https://jesus-in.imweb.me/index";
 const CHURCH_NAME = process.env.NEXT_PUBLIC_CHURCH_NAME || "예수인교회";
 const APP_SUBTITLE = process.env.NEXT_PUBLIC_APP_SUBTITLE || "큐티 동반자";
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com";
+const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com").toLowerCase().split(',').map(e => e.trim());
 
 
 const QT_DATA = {
@@ -64,7 +64,15 @@ export default function App() {
     const [passageChat, setPassageChat] = useState<{ role: string; content: string }[]>([]);
     const [isPassageLoading, setIsPassageLoading] = useState(false);
     const [user, setUser] = useState<any>(null);
-    const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    const isAdmin = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase().trim());
+
+    useEffect(() => {
+        if (user) {
+            console.log("현재 로그인 이메일:", user.email);
+            console.log("관리자 이메일 리스트:", ADMIN_EMAILS);
+            console.log("관리자 여부:", isAdmin);
+        }
+    }, [user, isAdmin]);
     const [qtData, setQtData] = useState({
         date: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
         reference: QT_DATA.reference,
