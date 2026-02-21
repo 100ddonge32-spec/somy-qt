@@ -795,9 +795,30 @@ export default function App() {
                         <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>🙏 마무리 기도문</label>
                         <textarea value={qtForm.prayer} onChange={e => setQtForm(p => ({ ...p, prayer: e.target.value }))} placeholder="마무리 기도문을 입력하세요" style={{ ...inputStyle, height: '100px' }} />
                     </div>
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px', paddingBottom: '30px' }}>
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                         <button onClick={() => setView('home')} style={{ flex: 1, padding: '14px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' }}>취소</button>
                         <button onClick={handleQtSave} style={{ flex: 2, padding: '14px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>💾 저장하기</button>
+                    </div>
+
+                    <div style={{ marginTop: '20px', borderTop: '1px dashed #DDD', paddingTop: '20px', paddingBottom: '40px' }}>
+                        <button onClick={async () => {
+                            if (window.confirm('🚨 정말로 모든 묵상 통계 데이터를 초기화하시겠습니까? 복구할 수 없습니다.')) {
+                                try {
+                                    const res = await fetch('/api/stats', { method: 'DELETE' });
+                                    if (res.ok) {
+                                        alert('✅ 통계 데이터가 초기화되었습니다.');
+                                        setStats(null);
+                                        setView('home');
+                                    } else {
+                                        alert('❌ 초기화 실패');
+                                    }
+                                } catch {
+                                    alert('서버 연결 실패');
+                                }
+                            }
+                        }} style={{ width: '100%', padding: '14px', background: '#FFF0F0', color: '#D32F2F', border: '1px solid #FFCDD2', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>
+                            🧨 묵상 참여 기록 전체 초기화 (위험)
+                        </button>
                     </div>
                 </div>
             </div>

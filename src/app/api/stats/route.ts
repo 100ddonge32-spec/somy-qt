@@ -116,3 +116,19 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
+
+// 큐티 통계 초기화 (DELETE)
+export async function DELETE() {
+    try {
+        const { error } = await supabaseAdmin
+            .from('qt_completions')
+            .delete()
+            .neq('id', 0);
+
+        if (error) throw error;
+        return NextResponse.json({ success: true });
+    } catch (err: any) {
+        console.error('[Stats API DELETE Error]:', err);
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}
