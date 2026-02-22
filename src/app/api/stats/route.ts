@@ -97,7 +97,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { user_id, user_name, avatar_url } = body;
+        const { user_id, user_name, avatar_url, answers } = body;
 
         if (!user_id) return NextResponse.json({ error: 'No user_id' }, { status: 400 });
 
@@ -105,7 +105,13 @@ export async function POST(req: NextRequest) {
         const { error } = await supabaseAdmin
             .from('qt_completions')
             .upsert(
-                { user_id, user_name: user_name || '성도', avatar_url, completed_date: today },
+                {
+                    user_id,
+                    user_name: user_name || '성도',
+                    avatar_url,
+                    completed_date: today,
+                    answers: answers || [] // 답변 데이터 추가 저장
+                },
                 { onConflict: 'user_id,completed_date' }
             );
 

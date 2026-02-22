@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { getGraceVerse } from '@/lib/navigator-verses';
 
-type View = "home" | "chat" | "qt" | "community" | "qtManage" | "stats";
+type View = "home" | "chat" | "qt" | "community" | "qtManage" | "stats" | "history";
 
 const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://cdn.imweb.me/thumbnail/20210813/569458bf12dd0.png";
@@ -148,6 +148,19 @@ export default function App() {
         app_subtitle: APP_SUBTITLE,
         plan: 'free',
     });
+    const [history, setHistory] = useState<any[]>([]);
+    const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+
+    const fetchHistory = async () => {
+        if (!user) return;
+        setIsHistoryLoading(true);
+        try {
+            const res = await fetch(`/api/qt/history?user_id=${user.id}`);
+            const data = await res.json();
+            if (Array.isArray(data)) setHistory(data);
+        } catch (e) { console.error("히스토리 로드 실패:", e); }
+        finally { setIsHistoryLoading(false); }
+    };
     const [settingsSaving, setSettingsSaving] = useState(false);
     const [adminTab, setAdminTab] = useState<"settings" | "members" | "master">("settings");
     const [memberList, setMemberList] = useState<any[]>([]);
@@ -774,6 +787,17 @@ export default function App() {
                                         👑 이달의 큐티왕
                                     </button>
 
+                                    <button onClick={() => {
+                                        setView('history');
+                                        fetchHistory();
+                                    }} style={{
+                                        flex: 1, padding: "14px",
+                                        background: "#F0F7F4", color: "#709176",
+                                        fontWeight: 700, fontSize: "14px", borderRadius: "14px",
+                                        border: "none", cursor: "pointer"
+                                    }}>
+                                        📜 나의 묵상 기록
+                                    </button>
                                     {isAdmin && (
                                         <button onClick={() => {
                                             const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -991,6 +1015,7 @@ export default function App() {
                                                 user_id: user.id,
                                                 user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '성도',
                                                 avatar_url: user.user_metadata?.avatar_url || null,
+                                                answers: answers // 답변 데이터 포함
                                             }),
                                         });
 
@@ -1460,6 +1485,82 @@ export default function App() {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                </div>
+            );
+        }
+
+        /* ══════════════════════════════
+           HISTORY PAGE
+        ══════════════════════════════ */
+        if (view === "history") {
+            return (
+                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "480px", margin: "0 auto", ...baseFont }}>
+                    {styles}
+                    <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #EEE", position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
+                        <button onClick={() => setView("home")} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "16px" }}>나의 묵상 기록</div>
+                    </div>
+
+                    <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '100px' }}>
+                        {isHistoryLoading ? (
+                            <div style={{ textAlign: 'center', padding: '100px 0', color: '#999' }}>기록을 불러오는 중입니다... 🐑</div>
+                        ) : history.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '100px 0', color: '#999' }}>아직 저장된 묵상이 없어요. <br />오늘의 큐티를 시작해보세요!</div>
+                        ) : (
+                            history.map((h, idx) => (
+                                <div key={idx} style={{ background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: '1px solid #F0ECE4' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#B8924A' }}>
+                                            {new Date(h.completed_date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
+                                        </div>
+                                        <div style={{ fontSize: '12px', background: '#E8F5E9', padding: '4px 10px', borderRadius: '12px', color: '#2E7D32', fontWeight: 600 }}>완료 ✅</div>
+                                    </div>
+
+                                    <div style={{ marginBottom: '15px' }}>
+                                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>📖 {h.daily_qt?.reference}</div>
+                                        {h.daily_qt?.passage && (
+                                            <p style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                {h.daily_qt.passage.substring(0, 100)}...
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {h.answers && Array.isArray(h.answers) && h.answers.some((a: string) => a && a.trim()) && (
+                                        <div style={{ borderTop: '1px dashed #EEE', paddingTop: '15px' }}>
+                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#709176', marginBottom: '10px' }}>나의 고백</div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                {h.answers.map((ans: string, i: number) => ans && ans.trim() && (
+                                                    <div key={i} style={{ background: '#F9FAF9', padding: '10px 14px', borderRadius: '12px', fontSize: '13px', color: '#444' }}>
+                                                        <span style={{ fontWeight: 700, color: '#709176', marginRight: '6px' }}>{i + 1}.</span> {ans}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <button onClick={() => {
+                                        const qt = h.daily_qt;
+                                        if (qt) {
+                                            setQtData({
+                                                date: new Date(qt.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
+                                                reference: qt.reference,
+                                                fullPassage: qt.passage,
+                                                verse: qt.verse || qt.passage.split('\n')[0],
+                                                questions: [qt.question1, qt.question2, qt.question3].filter(Boolean),
+                                                prayer: qt.prayer,
+                                            });
+                                            setAnswers(h.answers || []);
+                                            setQtStep('done');
+                                            setView('qt');
+                                        }
+                                    }} style={{ width: '100%', marginTop: '15px', padding: '12px', background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '12px', color: '#666', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                                        전체 내용 다시보기
+                                    </button>
+                                </div>
+                            ))
+                        )}
+                        <button onClick={() => setView('home')} style={{ marginTop: '10px', width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 돌아가기</button>
                     </div>
                 </div>
             );
