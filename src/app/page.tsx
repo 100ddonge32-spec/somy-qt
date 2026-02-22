@@ -1834,7 +1834,7 @@ export default function App() {
 
     // 최종 렌더링
     return (
-        <div style={{ position: 'relative', maxWidth: '480px', margin: '0 auto', height: '100vh', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', maxWidth: '480px', margin: '0 auto' }}>
             {renderContent()}
             {renderInstallGuide()}
         </div>
