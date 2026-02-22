@@ -140,7 +140,7 @@ export default function App() {
                 setPlayerStatus("API OK");
                 clearInterval(checkYT);
             }
-        }, 500);
+        }, 300); // 체크 간격 단축
 
         // 2. 스크립트 강제 주입
         if (typeof window !== 'undefined' && !(window as any).YT) {
@@ -174,7 +174,7 @@ export default function App() {
                 width: '640',
                 videoId: todayCcm.youtubeId,
                 playerVars: {
-                    'autoplay': 0,
+                    'autoplay': 1, // 초기 생성 시 자동 재생 시도
                     'controls': 0,
                     'showinfo': 0,
                     'rel': 0,
@@ -2290,15 +2290,17 @@ export default function App() {
                 const state = playerRef.current.getPlayerState?.();
                 if (state === 1) { // PLAYING
                     playerRef.current.pauseVideo();
-                } else if (state === 2 || state === -1 || state === 5 || state === 0) {
-                    // PAUSED, UNSTARTED, CUED, ENDED
+                } else {
+                    // 즉각적인 반응을 위해 로드와 재생을 동시에 시도
                     playerRef.current.playVideo();
-                    // 만약 1초 뒤에도 재생 상태가 아니라면 강제 로드
+
+                    // 만약 0.3초 뒤에도 재생 상태가 아니라면 강제 로드 (지연 시간 대폭 단축)
                     setTimeout(() => {
-                        if (playerRef.current && playerRef.current.getPlayerState?.() !== 1) {
-                            playerRef.current.loadVideoById(todayCcm.youtubeId);
+                        const curState = playerRef.current.getPlayerState?.();
+                        if (curState !== 1 && curState !== 3) { // NOT PLAYING nor BUFFERING
+                            playerRef.current.loadVideoById(CCM_LIST[ccmIndex].youtubeId);
                         }
-                    }, 1000);
+                    }, 300);
                 }
             } catch (err) {
                 console.log("Resetting Engine...");
@@ -2368,7 +2370,7 @@ export default function App() {
                         fontFamily: 'monospace',
                         textShadow: '0 0 5px rgba(0,255,65,0.5)'
                     }}>
-                        {todayCcm.title}
+                        {CCM_LIST[ccmIndex]?.title || todayCcm?.title}
                     </div>
                     <div style={{ fontSize: '7px', color: '#888', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>
                         {playerStatus}
