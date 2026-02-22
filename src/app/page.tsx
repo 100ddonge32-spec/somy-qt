@@ -2534,54 +2534,35 @@ export default function App() {
                     {/* RESET (MENU - Top) */}
                     <div
                         onClick={(e) => hapticClick(e, () => { setPlayRequested(true); initPlayer(); })}
-                        style={{ position: 'absolute', top: '8px', fontSize: '9px', fontWeight: 900, color: '#B8924A', cursor: 'pointer', zIndex: 5, transition: 'transform 0.1s' }}
+                        style={{ position: 'absolute', top: '8px', fontSize: '10px', fontWeight: 900, color: '#B8924A', cursor: 'pointer', zIndex: 5, transition: 'transform 0.1s' }}
                         onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.85)'}
                         onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     >RESET</div>
 
-                    {/* 이전 곡 버튼 - 영역 확장 */}
-                    {/* PREV ⏮ (West) */}
-                    <div
-                        onClick={(e) => hapticClick(e, handlePrevCcm)}
-                        style={{ position: 'absolute', left: '8px', fontSize: '11px', color: '#BBB', padding: '10px', cursor: 'pointer', zIndex: 5, transition: 'transform 0.1s' }}
-                        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.85)'}
-                        onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    >⏮</div>
-
-                    {/* 다음 곡 버튼 - 영역 확장 */}
-                    {/* NEXT ⏭ (East) */}
-                    <div
-                        onClick={(e) => hapticClick(e, handleNextCcm)}
-                        style={{ position: 'absolute', right: '8px', fontSize: '11px', color: '#BBB', padding: '10px', cursor: 'pointer', zIndex: 5, transition: 'transform 0.1s' }}
-                        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.85)'}
-                        onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    >⏭</div>
-
-                    {/* PLAY/PAUSE ▶️⏸ (South) */}
-                    <div
-                        onClick={(e) => hapticClick(e, () => togglePlay(e))}
-                        style={{ position: 'absolute', bottom: '8px', fontSize: '11px', color: '#BBB', padding: '10px', cursor: 'pointer', zIndex: 5, transition: 'transform 0.1s' }}
-                        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.85)'}
-                        onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    >{isCcmPlaying ? '⏸' : '▶️'}</div>
-
-                    {/* Center Center Select Button */}
+                    {/* Center Center Play Button - Enlarged and Iconized */}
                     <div
                         onClick={(e) => hapticClick(e, () => togglePlay(e))}
                         style={{
-                            width: '42px',
-                            height: '42px',
+                            width: '48px',
+                            height: '48px',
                             borderRadius: '50%',
                             background: 'linear-gradient(135deg, #F9F9F9 0%, #DCDCDC 100%)',
                             border: '1px solid #CCC',
-                            boxShadow: '2px 2px 5px rgba(0,0,0,0.1)',
+                            boxShadow: '0 4px 10px rgba(0,0,0,0.15), inset 0 1px 2px white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '20px',
+                            color: '#333',
                             cursor: 'pointer',
-                            zIndex: 2,
-                            transition: 'transform 0.1s'
+                            zIndex: 10,
+                            transition: 'all 0.1s'
                         }}
-                        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.92)'}
+                        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.9)'}
                         onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    />
+                    >
+                        {isCcmPlaying ? '⏸' : '▶️'}
+                    </div>
                 </div>
             </div>
         );
