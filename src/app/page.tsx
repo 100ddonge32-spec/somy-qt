@@ -821,28 +821,28 @@ export default function App() {
                                         <span style={{ fontSize: '20px' }}>📜</span>
                                         <span style={{ whiteSpace: 'nowrap' }}>나의 묵상 기록</span>
                                     </button>
-                                    {isAdmin && (
-                                        <button onClick={() => {
-                                            const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
-                                            setQtForm({ date: today, reference: '', passage: '', question1: '', question2: '', question3: '', prayer: '' });
-                                            setView('qtManage');
-                                        }} style={{
-                                            flex: 1, padding: "12px 4px",
-                                            background: "#F5F5F5", color: "#666",
-                                            fontWeight: 700, fontSize: "11px", borderRadius: "16px",
-                                            border: "none", cursor: "pointer",
-                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-                                            boxShadow: '0 4px 10px rgba(0,0,0,0.05)'
-                                        }}>
-                                            <span style={{ fontSize: '20px' }}>⚙️</span>
-                                            <span style={{ whiteSpace: 'nowrap' }}>관리 모드</span>
-                                        </button>
-                                    )}
                                 </div>
                             </>
                         )}
-
                     </div>
+
+                    {isAdmin && (
+                        <div style={{ padding: '0 20px 40px 20px', width: '100%', maxWidth: '320px', margin: '0 auto' }}>
+                            <button onClick={() => {
+                                const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
+                                setQtForm({ date: today, reference: '', passage: '', question1: '', question2: '', question3: '', prayer: '' });
+                                setView('qtManage');
+                            }} style={{
+                                width: '100%', padding: "14px",
+                                background: "#F9F9F9", color: "#999",
+                                fontWeight: 700, fontSize: "13px", borderRadius: "14px",
+                                border: "1px solid #EEE", cursor: "pointer",
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                            }}>
+                                ⚙️ 관리자 모드 들어가기
+                            </button>
+                        </div>
+                    )}
                 </div>
             );
         }
