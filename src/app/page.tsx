@@ -725,6 +725,42 @@ export default function App() {
     `}</style>
     );
 
+    const hapticClick = useCallback((e: React.MouseEvent | React.TouchEvent, action: () => void) => {
+        e.stopPropagation();
+        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(12);
+        action();
+    }, []);
+
+    const togglePlay = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
+        if (e) e.stopPropagation();
+        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(15);
+        if (!playerRef.current) {
+            setPlayRequested(true);
+            initPlayer();
+            return;
+        }
+        try {
+            const state = playerRef.current.getPlayerState?.();
+            if (state === 1) { // Playing -> Pause
+                pauseCooldown.current = true;
+                setPlayRequested(false);
+                playerRef.current.mute();
+                playerRef.current.pauseVideo();
+                setPlayerStatus("Paused");
+                setTimeout(() => { pauseCooldown.current = false; }, 1500);
+            } else { // Paused -> Play
+                hasInteracted.current = true;
+                setPlayRequested(true);
+                playerRef.current.unMute();
+                playerRef.current.playVideo();
+                setPlayerStatus("Playing");
+            }
+        } catch (err) {
+            setPlayRequested(true);
+            initPlayer();
+        }
+    }, [isApiReady, todayCcm, initPlayer]);
+
     const renderContent = () => {
         if (view === "home") {
             return (
@@ -1018,7 +1054,10 @@ export default function App() {
                                 <div style={{ fontSize: '40px', marginBottom: '15px' }}>🔒</div>
                                 <div style={{ fontSize: '18px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>승인 대기 중입니다</div>
                                 <div style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, marginBottom: '24px' }}>
-                                    성도님 반가워요!<br />아직 관리자의 승인이 완료되지 않았습니다.<br />잠시만 기다려 주시면 곧 이용하실 수 있어요. 🐑
+                                    성도님 반가워요!<br />아직 관리자의 승인이 완료되지 않았습니다.<br />잠시만 기다려 주시면 곧 이용하실 수 있어요.
+                                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', margin: '15px auto 0', border: '2px solid #EEE' }}>
+                                        <img src={SOMY_IMG} alt="소미" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    </div>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                     <button
@@ -2068,52 +2107,137 @@ export default function App() {
 
         if (view === "ccm") {
             return (
-                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "480px", margin: "0 auto", ...baseFont }}>
+                <div style={{ minHeight: "100vh", background: "#F2F2F7", maxWidth: "480px", margin: "0 auto", ...baseFont, paddingBottom: '40px' }}>
                     {styles}
-                    <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #EEE", position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
+                    <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", background: 'white', borderBottom: "1px solid #EEE" }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
-                        <div style={{ fontWeight: 800, color: "#333", fontSize: "16px" }}>소미 라디오 🎵</div>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "16px" }}>소미-파드 클래식 🎵</div>
                     </div>
 
-                    <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div style={{ background: 'white', borderRadius: '35px', padding: '32px', textAlign: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.05)', border: '1px solid #F0ECE4' }}>
-                            <div style={{ width: '120px', height: '120px', background: 'linear-gradient(135deg, #FFF9C4 0%, #FBC02D 100%)', borderRadius: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '50px', margin: '0 auto 24px', boxShadow: '0 15px 30px rgba(251,192,45,0.2)', animation: isCcmPlaying ? 'pulse 2s infinite' : 'none' }}>
-                                📻
+                    <div style={{ padding: '30px 20px', display: 'flex', flexDirection: 'column', gap: '30px', alignItems: 'center' }}>
+                        {/* 1. Large iPod Display Area */}
+                        <div style={{
+                            width: '100%',
+                            background: '#F5F5F7',
+                            borderRadius: '32px',
+                            padding: '24px',
+                            boxShadow: '0 10px 30px rgba(0,0,0,0.1), inset 0 1px 2px white',
+                            border: '1px solid #DDD',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center'
+                        }}>
+                            {/* LCD Screen Section */}
+                            <div style={{
+                                width: '100%',
+                                height: '180px',
+                                background: '#000',
+                                borderRadius: '16px',
+                                marginBottom: '25px',
+                                padding: '20px',
+                                boxShadow: 'inset 0 2px 20px rgba(0,0,0,1)',
+                                border: '1px solid #333',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                position: 'relative'
+                            }}>
+                                {/* Album Art or Icon Zone */}
+                                <div style={{
+                                    width: '80px',
+                                    height: '80px',
+                                    background: 'linear-gradient(135deg, #FFF9C4 0%, #FBC02D 100%)',
+                                    borderRadius: '12px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '40px',
+                                    boxShadow: '0 8px 16px rgba(0,0,0,0.5)',
+                                    animation: isCcmPlaying ? 'pulse 2s infinite' : 'none'
+                                }}>
+                                    📻
+                                </div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#FFF', marginBottom: '4px' }}>{todayCcm?.title || "찬양 제목"}</div>
+                                    <div style={{ fontSize: '13px', color: '#B8924A', fontWeight: 700 }}>{todayCcm?.artist || "아티스트"}</div>
+                                </div>
+
+                                {/* Waveform Animation */}
+                                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '20px' }}>
+                                    {[...Array(12)].map((_, i) => (
+                                        <div key={i} style={{
+                                            width: '3px',
+                                            background: isCcmPlaying ? '#00FF41' : '#333',
+                                            borderRadius: '1px',
+                                            height: isCcmPlaying ? '100%' : '3px',
+                                            transition: 'height 0.2s',
+                                            animation: isCcmPlaying ? `wave-music ${0.5 + i * 0.1}s infinite ease-in-out` : 'none'
+                                        }} />
+                                    ))}
+                                </div>
                             </div>
 
-                            <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>{todayCcm?.title || "찬양 제목"}</h3>
-                            <p style={{ fontSize: '15px', color: '#B8924A', fontWeight: 700, marginBottom: '32px' }}>{todayCcm?.artist || "아티스트"}</p>
+                            {/* 2. Large Interactive Click Wheel */}
+                            <div style={{
+                                width: '160px',
+                                height: '160px',
+                                background: '#FFF',
+                                borderRadius: '50%',
+                                position: 'relative',
+                                boxShadow: '0 10px 25px rgba(0,0,0,0.1), inset 0 2px 5px rgba(0,0,0,0.05)',
+                                border: '1px solid #EEE',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <div
+                                    onClick={(e) => hapticClick(e, () => { setPlayRequested(true); initPlayer(); })}
+                                    onTouchStart={(e) => hapticClick(e, () => { setPlayRequested(true); initPlayer(); })}
+                                    style={{ position: 'absolute', top: '15px', fontSize: '10px', fontWeight: 900, color: '#B8924A', cursor: 'pointer', zIndex: 15 }}
+                                >RESET</div>
 
-                            {/* Play Controls */}
-                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '30px', marginBottom: '40px' }}>
-                                <button
-                                    onClick={() => {
-                                        if (playerRef.current) {
-                                            try {
-                                                if (isCcmPlaying) playerRef.current.pauseVideo();
-                                                else playerRef.current.playVideo();
-                                            } catch (e) {
-                                                playerRef.current.loadVideoById(todayCcm?.youtubeId);
-                                            }
-                                        }
-                                    }}
+                                <div
+                                    onClick={(e) => hapticClick(e, handlePrevCcm)}
+                                    onTouchStart={(e) => hapticClick(e, handlePrevCcm)}
+                                    style={{ position: 'absolute', left: '15px', fontSize: '12px', color: '#BBB', cursor: 'pointer', zIndex: 11 }}
+                                >⏮</div>
+
+                                <div
+                                    onClick={(e) => hapticClick(e, handleNextCcm)}
+                                    onTouchStart={(e) => hapticClick(e, handleNextCcm)}
+                                    style={{ position: 'absolute', right: '15px', fontSize: '12px', color: '#BBB', cursor: 'pointer', zIndex: 11 }}
+                                >⏭</div>
+
+                                <div
+                                    onClick={(e) => hapticClick(e, () => togglePlay(e))}
+                                    onTouchStart={(e) => hapticClick(e, () => togglePlay(e))}
                                     style={{
-                                        width: '100px', height: '100px', borderRadius: '50%',
-                                        background: 'linear-gradient(135deg, #333 0%, #000 100%)',
-                                        color: 'white', border: '4px solid #FFF',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        fontSize: '40px', cursor: 'pointer',
-                                        boxShadow: '0 15px 35px rgba(0,0,0,0.3)',
-                                        transition: 'all 0.2s active'
+                                        width: '60px',
+                                        height: '60px',
+                                        borderRadius: '50%',
+                                        background: 'linear-gradient(135deg, #F9F9F9 0%, #DCDCDC 100%)',
+                                        border: '1px solid #CCC',
+                                        boxShadow: '0 6px 15px rgba(0,0,0,0.15)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '24px',
+                                        color: '#333',
+                                        cursor: 'pointer',
+                                        zIndex: 10,
+                                        transition: 'transform 0.1s'
                                     }}
+                                    onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.92)'}
+                                    onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
                                 >
                                     {isCcmPlaying ? '⏸' : '▶️'}
-                                </button>
+                                </div>
                             </div>
 
-                            {/* Volume Slider */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', background: '#F9F9F9', padding: '15px 20px', borderRadius: '20px' }}>
-                                <span style={{ fontSize: '16px' }}>{ccmVolume === 0 ? '🔇' : ccmVolume < 50 ? '🔉' : '🔊'}</span>
+                            {/* Volume bar at bottom of iPod frame */}
+                            <div style={{ width: '100%', marginTop: '30px', display: 'flex', alignItems: 'center', gap: '15px', padding: '0 10px' }}>
+                                <span style={{ fontSize: '14px' }}>🔉</span>
                                 <input
                                     type="range"
                                     min="0"
@@ -2124,20 +2248,23 @@ export default function App() {
                                         setCcmVolume(vol);
                                         if (playerRef.current) playerRef.current.setVolume(vol);
                                     }}
-                                    style={{ flex: 1, accentColor: '#333', cursor: 'pointer' }}
+                                    style={{ flex: 1, accentColor: '#333' }}
                                 />
-                                <span style={{ fontSize: '12px', fontWeight: 700, color: '#999', width: '30px' }}>{ccmVolume}</span>
+                                <span style={{ fontSize: '14px' }}>🔊</span>
                             </div>
                         </div>
 
-                        <div style={{ background: '#FFF3F5', borderRadius: '20px', padding: '20px', display: 'flex', gap: '15px', alignItems: 'center', border: '1px solid #FFD1DC' }}>
-                            <div style={{ fontSize: '24px' }}>🐑</div>
+                        {/* Somy's Tip Section */}
+                        <div style={{ width: '100%', background: '#FFF', borderRadius: '24px', padding: '20px', display: 'flex', gap: '15px', alignItems: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #FFD1DC' }}>
+                            <div style={{ width: '50px', height: '50px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid #FFD1DC' }}>
+                                <img src={SOMY_IMG} alt="소미" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
                             <div style={{ fontSize: '13px', color: '#D81B60', lineHeight: 1.6, fontWeight: 600 }}>
                                 <strong>소미의 은사!</strong> 찬양을 틀어두고 뒤로가기를 눌러보세요. 음악을 들으며 소미와 대화하거나 말씀을 묵상할 수 있어요! 🎵
                             </div>
                         </div>
 
-                        <button onClick={() => setView('home')} style={{ width: '100%', padding: '16px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', marginTop: '10px' }}>홈으로 돌아가기</button>
+                        <button onClick={() => setView('home')} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '20px', fontWeight: 700, cursor: 'pointer' }}>홈으로 돌아가기</button>
                     </div>
                 </div>
             );
@@ -2381,45 +2508,6 @@ export default function App() {
         };
 
         const handleEnd = () => setIsDragging(false);
-
-        const togglePlay = (e: React.MouseEvent) => {
-            e.stopPropagation();
-            if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(15);
-            if (!playerRef.current) {
-                setPlayRequested(true);
-                initPlayer();
-                return;
-            }
-
-            try {
-                const state = playerRef.current.getPlayerState?.();
-                if (state === 1) { // 현재 재생 중이면 -> 멈춤
-                    // 쿨다운 시작 (감시 시스템과의 충돌 방지)
-                    pauseCooldown.current = true;
-                    setPlayRequested(false);
-                    playerRef.current.mute(); // [중요] 일시정지 시 뮤트 병행 (유령 재생의 소리 차단)
-                    playerRef.current.pauseVideo();
-                    setPlayerStatus("Paused");
-                    // 1.5초 후 감시 재개
-                    setTimeout(() => { pauseCooldown.current = false; }, 1500);
-                } else { // 현재 멈춤 상태면 -> 재생
-                    hasInteracted.current = true; // 버튼 클릭도 사용장 상호작용
-                    setPlayRequested(true);
-                    playerRef.current.unMute();
-                    playerRef.current.playVideo();
-                    setPlayerStatus("Playing");
-                }
-            } catch (err) {
-                setPlayRequested(true);
-                initPlayer();
-            }
-        };
-
-        const hapticClick = (e: React.MouseEvent | React.TouchEvent, action: () => void) => {
-            e.stopPropagation();
-            if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(12);
-            action();
-        };
 
         return (
             <div
