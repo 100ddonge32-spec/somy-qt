@@ -607,12 +607,16 @@ export default function App() {
                                 const graceVerse = getGraceVerse();
                                 return (
                                     <>
-                                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px" }}>
-                                            <span style={{ fontSize: '14px' }}>📖</span>
-                                            <span style={{ fontSize: "12px", fontWeight: 700, color: "#B8924A" }}>오늘의 말씀</span>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "12px" }}>
+                                            <span style={{ fontSize: '16px' }}>📖</span>
+                                            <span style={{ fontSize: "14px", fontWeight: 800, color: "#B8924A", letterSpacing: '0.5px' }}>오늘의 말씀</span>
                                         </div>
-                                        <p style={{ fontSize: "13px", color: "#444", lineHeight: 1.6, margin: "0 0 8px 0", fontStyle: "italic" }}>"{graceVerse.verse}"</p>
-                                        <p style={{ fontSize: "11px", color: "#999", fontWeight: 600, margin: 0 }}>— {graceVerse.book} {graceVerse.ref}</p>
+                                        <div style={{ position: 'relative', padding: '0 10px' }}>
+                                            <span style={{ position: 'absolute', top: '-5px', left: '-5px', fontSize: '24px', color: '#F0ECE4', zIndex: 0, fontFamily: 'serif' }}>"</span>
+                                            <p style={{ position: 'relative', zIndex: 1, fontSize: "14px", color: "#333", lineHeight: 1.7, margin: "0 0 12px 0", fontWeight: 500, wordBreak: 'keep-all' }}>{graceVerse.verse}</p>
+                                            <span style={{ position: 'absolute', bottom: '-5px', right: '-5px', fontSize: '24px', color: '#F0ECE4', zIndex: 0, fontFamily: 'serif' }}>"</span>
+                                        </div>
+                                        <p style={{ fontSize: "12px", color: "#B8924A", fontWeight: 700, margin: 0, textAlign: 'right', opacity: 0.8 }}>— {graceVerse.book} {graceVerse.ref}</p>
                                     </>
                                 );
                             })()}
@@ -855,9 +859,23 @@ export default function App() {
                                         <div style={{ width: 22, height: 22, background: '#333', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>1</div>
                                         <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>말씀 읽기</h3>
                                     </div>
-                                    <div style={{ marginBottom: '20px' }}>
-                                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#B8924A', marginBottom: '8px' }}>{qtData.reference}</div>
-                                        <p style={{ lineHeight: 1.8, color: '#444', fontSize: '15px', whiteSpace: 'pre-line', margin: 0 }}>{qtData.fullPassage}</p>
+                                    <div style={{ marginBottom: '20px', background: 'white', padding: '20px', borderRadius: '15px', border: '1px solid #F5F5F5', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
+                                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#B8924A', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span style={{ fontSize: '18px' }}>📍</span> {qtData.reference}
+                                        </div>
+                                        <div style={{
+                                            lineHeight: 2.1,
+                                            color: '#333',
+                                            fontSize: '16px',
+                                            whiteSpace: 'pre-line',
+                                            margin: 0,
+                                            textAlign: 'left',
+                                            wordBreak: 'keep-all',
+                                            letterSpacing: '-0.3px',
+                                            fontWeight: 400
+                                        }}>
+                                            {qtData.fullPassage}
+                                        </div>
                                     </div>
 
                                     {/* Passage Q&A Section */}
