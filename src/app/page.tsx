@@ -364,6 +364,19 @@ export default function App() {
       @keyframes fade-in { from{ opacity:0; transform:translateY(20px); } to{ opacity:1; transform:translateY(0); } }
       @keyframes slide-right { from{ opacity:0; transform:translateX(20px); } to{ opacity:1; transform:translateX(0); } }
       @keyframes bounce-dot { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-7px); } }
+      @keyframes bell-swing {
+          0%, 100% { transform: rotate(0); }
+          10%, 30%, 50%, 70%, 90% { transform: rotate(15deg); }
+          20%, 40%, 60%, 80% { transform: rotate(-15deg); }
+      }
+      @keyframes bounce-light {
+          from { transform: translateY(0); }
+          to { transform: translateY(-3px); }
+      }
+      @keyframes slide-up {
+          from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+          to { transform: translateX(-50%) translateY(0); opacity: 1; }
+      }
     `}</style>
     );
 
@@ -556,16 +569,6 @@ export default function App() {
 
                     {user && (
                         <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 100 }}>
-                            <div style={{ position: 'relative' }}>
-                                <button onClick={() => setShowNotiList(!showNotiList)} style={{ background: 'white', border: 'none', width: '36px', height: '36px', borderRadius: '50%', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
-                                    🔔
-                                </button>
-                                {notifications.filter(n => !n.is_read).length > 0 && (
-                                    <div style={{ position: 'absolute', top: '-2px', right: '-2px', background: '#FF5252', color: 'white', fontSize: '10px', fontWeight: 800, width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white' }}>
-                                        {notifications.filter(n => !n.is_read).length}
-                                    </div>
-                                )}
-                            </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'white', padding: '6px 12px', borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', fontSize: '12px' }}>
                                 <span style={{ color: '#333', fontWeight: 600 }}>{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
                                 {isAdmin && <button onClick={() => { setSettingsForm({ ...churchSettings }); setShowSettings(true); }} style={{ background: 'none', border: 'none', color: '#B8924A', cursor: 'pointer', padding: '5px', fontSize: '18px' }} title="교회 설정">⚙️</button>}
@@ -663,43 +666,51 @@ export default function App() {
                                 </button>
 
                                 <button onClick={async () => {
-                                    setView("community");
-                                    // 게시판 진입 시 현재 소속 교회 데이터만 로드
-                                    try {
-                                        const res = await fetch(`/api/community?church_id=${churchId}`);
-                                        const data = await res.json();
-                                        if (Array.isArray(data)) setCommunityPosts(data);
-                                    } catch (e) { console.error("게시판 로드 실패:", e); }
+                                    if (notifications.filter(n => !n.is_read).length > 0) {
+                                        setShowNotiList(true);
+                                    } else {
+                                        setView("community");
+                                        // 게시판 진입 시 현재 소속 교회 데이터만 로드
+                                        try {
+                                            const res = await fetch(`/api/community?church_id=${churchId}`);
+                                            const data = await res.json();
+                                            if (Array.isArray(data)) setCommunityPosts(data);
+                                        } catch (e) { console.error("게시판 로드 실패:", e); }
+                                    }
                                 }} style={{
                                     width: "100%", padding: "18px",
                                     background: "#E6A4B4", color: "white",
                                     fontWeight: 700, fontSize: "17px", borderRadius: "18px",
                                     border: "none", cursor: "pointer",
                                     boxShadow: "0 4px 12px rgba(230,164,180,0.3)",
-                                    position: 'relative', // 배지 배치를 위해 추가
+                                    position: 'relative',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    gap: '8px'
-                                }}>
+                                    gap: '10px',
+                                    transition: 'all 0.2s'
+                                }} onMouseOver={e => e.currentTarget.style.transform = "scale(1.02)"} onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}>
+                                    <span style={{ fontSize: '20px', animation: notifications.filter(n => !n.is_read).length > 0 ? 'bell-swing 2s infinite ease-in-out' : 'none' }}>🔔</span>
                                     📝 은혜나눔 게시판
                                     {notifications.filter(n => !n.is_read).length > 0 && (
                                         <div style={{
                                             position: 'absolute',
-                                            top: '-8px',
-                                            right: '-8px',
+                                            top: '-10px',
+                                            right: '10px',
                                             background: '#FF5252',
                                             color: 'white',
                                             fontSize: '11px',
-                                            fontWeight: 800,
-                                            width: '22px',
-                                            height: '22px',
-                                            borderRadius: '50%',
+                                            fontWeight: 900,
+                                            minWidth: '24px',
+                                            height: '24px',
+                                            padding: '0 6px',
+                                            borderRadius: '12px',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             border: '3px solid white',
-                                            boxShadow: '0 2px 8px rgba(255,82,82,0.4)'
+                                            boxShadow: '0 4px 10px rgba(255,82,82,0.4)',
+                                            animation: 'bounce-light 1s infinite alternate'
                                         }}>
                                             {notifications.filter(n => !n.is_read).length}
                                         </div>
@@ -1166,7 +1177,7 @@ export default function App() {
                                         alert('서버 연결 실패');
                                     }
                                 }
-                            }} style={{ width: '100%', padding: '14px', background: '#FFF0F0', color: '#D32F2F', border: '1px solid #FFCDD2', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>
+                            }} style={{ width: '100%', padding: '14px', background: '#FFF0F0', color: '#D32F2F', border: '1px solid #FFCDD2', borderRadius: '12px', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
                                 🧨 묵상 참여 기록 전체 초기화 (위험)
                             </button>
                         </div>
@@ -1460,7 +1471,7 @@ export default function App() {
     const renderNotificationList = () => {
         if (!showNotiList) return null;
         return (
-            <div style={{ position: 'absolute', top: '65px', right: '20px', width: '280px', background: 'white', borderRadius: '18px', boxShadow: '0 10px 30px rgba(0,0,0,0.15)', zIndex: 1000, border: '1px solid #EEE', overflow: 'hidden', animation: 'fade-in 0.2s ease-out' }}>
+            <div style={{ position: 'absolute', top: '50px', left: '50%', transform: 'translateX(-50%)', width: '320px', background: 'white', borderRadius: '24px', boxShadow: '0 15px 50px rgba(0,0,0,0.2)', zIndex: 1000, border: '1px solid #F0ECE4', overflow: 'hidden', animation: 'slide-up 0.3s ease-out' }}>
                 <div style={{ padding: '15px', borderBottom: '1px solid #F5F5F5', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FDFCFB' }}>
                     <span style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>새 소식</span>
                     <button onClick={() => setShowNotiList(false)} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '12px' }}>닫기</button>
