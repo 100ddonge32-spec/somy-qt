@@ -144,24 +144,24 @@ export default function App() {
     }, [ccmIndex, playRequested]);
 
     useEffect(() => {
-        const checkYT = setInterval(() => {
-            if (typeof window !== 'undefined' && (window as any).YT && (window as any).YT.Player) {
-                console.log("📥 YouTube API Found");
+        // 1. YouTube API 공식 콜백 등록
+        if (typeof window !== 'undefined') {
+            (window as any).onYouTubeIframeAPIReady = () => {
+                console.log("🌐 YouTube API Ready (Official)");
                 setIsApiReady(true);
-                setPlayerStatus("API OK");
-                clearInterval(checkYT);
+                setPlayerStatus("Engine Ready");
+            };
+
+            // 이미 로드된 경우 체크
+            if ((window as any).YT && (window as any).YT.Player) {
+                setIsApiReady(true);
+            } else if (!(window as any).YT) {
+                const tag = document.createElement('script');
+                tag.src = "https://www.youtube.com/iframe_api";
+                tag.async = true;
+                document.body.appendChild(tag);
             }
-        }, 200); // 체크 간격 더 단축
-
-        // 2. 스크립트 강제 주입
-        if (typeof window !== 'undefined' && !(window as any).YT) {
-            const tag = document.createElement('script');
-            tag.src = "https://www.youtube.com/iframe_api";
-            tag.async = true;
-            document.body.appendChild(tag);
         }
-
-        return () => clearInterval(checkYT);
     }, []);
 
     const initPlayer = useCallback(() => {
@@ -197,22 +197,14 @@ export default function App() {
                 },
                 events: {
                     'onReady': (event: any) => {
-                        console.log("✅ Player Ready!");
-                        // 의도가 있을 때만 자동 재생 시도
+                        console.log("✅ Player Prepared!");
+                        // 초기 준비가 되면 즉시 예열(Pre-warming) 시도
                         if (playRequestedRef.current) {
-                            setPlayerStatus("AUTO-START");
                             try {
-                                event.target.mute();
-                                event.target.playVideo();
-                                // 정책에 의해 가로막힐 경우를 대비해 1초 뒤 상태 확인
-                                setTimeout(() => {
-                                    if (playRequestedRef.current && event.target.getPlayerState() !== 1) {
-                                        setPlayerStatus("Tap twice");
-                                    }
-                                }, 1200);
+                                event.target.mute(); // 일단 무음으로
+                                event.target.playVideo(); // 재생 시동 (브라우저 정책 우회 및 버퍼링 시작)
+                                setPlayerStatus("Warming..");
                             } catch (e) { }
-                        } else {
-                            setPlayerStatus("Paused");
                         }
                     },
                     'onStateChange': (event: any) => {
@@ -267,7 +259,7 @@ export default function App() {
             console.error("Fatal Player Init Error:", err);
             setPlayerStatus("Fatal Error");
         }
-    }, [isApiReady, todayCcm]);
+    }, [isApiReady, todayCcm, handleNextCcm, ccmVolume]);
 
     useEffect(() => {
         if (isApiReady && todayCcm && !playerRef.current) {
@@ -306,7 +298,7 @@ export default function App() {
                     } catch (e) { }
                 }
             }
-        }, 500); // 0.5초 주기로 정밀 감시 (초기 재생 속도 향상)
+        }, 300); // 0.3초 주기로 초정밀 감시 (반응성 극대화)
 
         return () => clearInterval(watchdog);
     }, [ccmVolume]);
@@ -2672,17 +2664,18 @@ export default function App() {
     // 최종 렌더링
     return (
         <div style={{ position: 'relative', maxWidth: '480px', margin: '0 auto' }}>
-            {/* 실제 플레이어 프레임 (브라우저 지연 로딩 회피를 위해 1x1 크기로 상단 배치) */}
+            {/* 실제 플레이어 프레임 (브라우저 쓰로틀링 방지를 위해 실물 크기로 상단 고정) */}
             <div id="ccm-player-container" style={{
                 position: 'fixed',
-                top: 0,
-                left: 0,
-                width: '1px',
-                height: '1px',
+                top: '-10px',
+                left: '-10px',
+                width: '200px',
+                height: '200px',
                 zIndex: -1,
-                opacity: 0.001,
+                opacity: 0.01,
                 pointerEvents: 'none',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                background: '#000'
             }}>
                 <div id="ccm-player-hidden-global"></div>
             </div>
