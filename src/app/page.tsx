@@ -994,11 +994,14 @@ export default function App() {
                                 boxShadow: "0 4px 15px rgba(0,0,0,0.02)"
                             }}>
                                 <p style={{ fontSize: "14px", color: "#8B6E3F", lineHeight: 1.6, margin: "0 0 8px 0", wordBreak: 'keep-all', fontWeight: 500 }}>
-                                    <strong style={{ color: "#D4AF37", fontSize: "15px" }}>소미(SOMY)</strong>는 <strong style={{ color: "#D4AF37" }}>Social Mystery</strong>의 약자로,<br />
-                                    일상 속 하나님의 신비로운 은혜를 함께 찾아가는 동반자라는 뜻이에요.
+                                    <strong style={{ color: "#D4AF37", fontSize: "15px" }}>소미(SOMY)</strong>는 <strong style={{ color: "#D4AF37" }}>'포솜포솜한 양'</strong>과 <br />
+                                    하나님의 <strong style={{ color: "#D4AF37" }}>'말씀의 소리(Sori)'</strong>를 합친 이름이에요.
                                 </p>
                                 <div style={{ height: '1px', background: 'rgba(212, 175, 55, 0.1)', margin: '10px 0' }} />
-                                <p style={{ fontSize: "13px", color: "#B8924A", fontWeight: 700, margin: 0, letterSpacing: "0.2px" }}>바쁜 현대인을 위한 큐티 동반자 🐑✨</p>
+                                <p style={{ fontSize: "13px", color: "#8B6E3F", lineHeight: 1.5, margin: 0 }}>
+                                    매일 아침, 포근한 양의 모습으로 찾아와 <br />
+                                    말씀의 세미한 음성을 들려주는 동반자랍니다. ✨
+                                </p>
                             </div>
                         </div>
 
