@@ -98,23 +98,41 @@ export default function App() {
                 })
                 .catch(err => console.log("관리자 체크 실패 (조용히 넘어감):", err));
 
-            // 성도 승인 및 교회 정보 체크
-            supabase.from('profiles').select('is_approved, church_id').eq('id', user.id).single()
-                .then(({ data, error }) => {
-                    if (error) {
-                        console.log("프로필 정보 조회 실패:", error.message);
-                        return;
-                    }
-                    if (data) {
-                        setIsApproved(data.is_approved);
-                        if (data.church_id) setChurchId(data.church_id);
-                    }
-                });
+            // 승인 상태 및 교회 정보 체크 함수
+            const checkApprovalStatus = () => {
+                supabase.from('profiles').select('is_approved, church_id').eq('id', user.id).single()
+                    .then(({ data, error }) => {
+                        if (error) {
+                            console.log("프로필 정보 조회 실패:", error.message);
+                            return;
+                        }
+                        if (data) {
+                            setIsApproved(data.is_approved);
+                            if (data.church_id) setChurchId(data.church_id);
+                        }
+                    });
+            };
+
+            // 최초 1회 체크
+            checkApprovalStatus();
+
+            // 승인 대기 중일 때 15초마다 자동으로 상태 재확인 (승인되면 자동 해제)
+            const approvalPoller = setInterval(() => {
+                if (!isApproved) {
+                    console.log("승인 상태 자동 확인 중...");
+                    checkApprovalStatus();
+                } else {
+                    clearInterval(approvalPoller);
+                }
+            }, 15000);
+
             // 알림 가져오기
             fetch(`/api/notifications?user_id=${user.id}`)
                 .then(r => r.ok ? r.json() : [])
                 .then(data => setNotifications(data))
                 .catch(err => console.error("알림 로드 실패:", err));
+
+            return () => clearInterval(approvalPoller);
         } else {
             setAdminInfo(null);
             setIsApproved(false);
