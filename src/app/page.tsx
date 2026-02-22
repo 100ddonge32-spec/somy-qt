@@ -92,7 +92,8 @@ export default function App() {
     const [ccmVolume, setCcmVolume] = useState(50);
     const [isCcmPlaying, setIsCcmPlaying] = useState(false);
     const [isApiReady, setIsApiReady] = useState(false);
-    const [playerPos, setPlayerPos] = useState({ x: 0, y: 0 }); // 초기 좌표는 useEffect에서 설정
+    const [playRequested, setPlayRequested] = useState(true); // 자동 재생 의도 기본값 true
+    const [playerPos, setPlayerPos] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const dragOffset = useRef({ x: 0, y: 0 });
     const playerRef = useRef<any>(null);
@@ -125,12 +126,12 @@ export default function App() {
 
     useEffect(() => {
         setTodayCcm(CCM_LIST[ccmIndex]);
-        // 곡이 바뀌면 플레이어에 새 영상 로드
-        if (playerRef.current && playerRef.current.loadVideoById) {
+        // 곡이 바뀌면 재생 의도가 있을 때만 로드
+        if (playerRef.current && playerRef.current.loadVideoById && playRequested) {
             playerRef.current.loadVideoById(CCM_LIST[ccmIndex].youtubeId);
             setPlayerStatus("Switching..");
         }
-    }, [ccmIndex]);
+    }, [ccmIndex, playRequested]);
 
     useEffect(() => {
         const checkYT = setInterval(() => {
@@ -187,6 +188,10 @@ export default function App() {
                     'onReady': (event: any) => {
                         console.log("✅ Player Ready!");
                         setPlayerStatus("iPod Ready");
+                        // 브라우저 정책 내에서 최대한 자동 재생 시도
+                        if (playRequested) {
+                            try { event.target.playVideo(); } catch (e) { }
+                        }
                     },
                     'onStateChange': (event: any) => {
                         const state = event.data;
@@ -2282,6 +2287,7 @@ export default function App() {
             e.stopPropagation();
             if (!playerRef.current) {
                 setPlayerStatus("Repairing..");
+                setPlayRequested(true);
                 initPlayer();
                 return;
             }
@@ -2289,18 +2295,21 @@ export default function App() {
             try {
                 const state = playerRef.current.getPlayerState?.();
                 if (state === 1) { // PLAYING
+                    setPlayRequested(false); // 명확한 멈춤 의도 기록
                     playerRef.current.pauseVideo();
+                    setPlayerStatus("Paused");
                 } else {
-                    // 즉각적인 반응을 위해 로드와 재생을 동시에 시도
+                    setPlayRequested(true); // 명확한 재생 의도 기록
                     playerRef.current.playVideo();
 
-                    // 만약 0.3초 뒤에도 재생 상태가 아니라면 강제 로드 (지연 시간 대폭 단축)
+                    // 만약 0.4초 뒤에도 재생 상태가 아니라면 강제 로드
                     setTimeout(() => {
                         const curState = playerRef.current.getPlayerState?.();
-                        if (curState !== 1 && curState !== 3) { // NOT PLAYING nor BUFFERING
+                        // 여전히 재생을 원할 때만 강제 로드 수행
+                        if (playerRef.current && curState !== 1 && curState !== 3) {
                             playerRef.current.loadVideoById(CCM_LIST[ccmIndex].youtubeId);
                         }
-                    }, 300);
+                    }, 400);
                 }
             } catch (err) {
                 console.log("Resetting Engine...");
