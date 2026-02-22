@@ -9,8 +9,8 @@ const supabaseAdmin = createClient(
 
 const KAKAO_CLIENT_ID = 'c205e6ad80a115b72fc7b53749e204d9';
 const KAKAO_CLIENT_SECRET = 'QWgDkVCdUj74tqYCpGUsks4wbuLY1h0R';
+
 export async function GET(req: NextRequest) {
-    // 로컬 개발 환경과 배포 환경에 따라 APP_URL 동적 결정
     const host = req.headers.get('host') || 'somy-qt.vercel.app';
     const protocol = host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https';
     const APP_URL = `${protocol}://${host}`;
@@ -76,23 +76,51 @@ export async function GET(req: NextRequest) {
         },
     });
 
-    // 이미 존재하는 경우 무시 (User already registered), 다른 에러는 처리
     if (createErr && !createErr.message.includes('already')) {
         return NextResponse.redirect(`${APP_URL}?error=step3_${encodeURIComponent(createErr.message.slice(0, 50))}`);
     }
 
-    // STEP 4: 사용자 업데이트 (닉네임, 사진 최신화) - 기존 사용자인 경우
-    if (createErr) {
-        const { data: usersData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
-        const existingUser = usersData?.users?.find((u) => u.email === syntheticEmail);
-        if (existingUser) {
-            await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
-                user_metadata: {
+    // STEP 4: 사용자 ID 확보 (신규 또는 기존)
+    const { data: usersData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+    const supabaseUser = usersData?.users?.find((u) => u.email === syntheticEmail);
+
+    if (supabaseUser) {
+        // 이름/사진 최신화
+        await supabaseAdmin.auth.admin.updateUserById(supabaseUser.id, {
+            user_metadata: { full_name: nickname, name: nickname, avatar_url: profileImage },
+        });
+
+        // ✅ STEP 4-1: profiles 테이블에 행 자동 생성
+        // 없으면 insert (is_approved: false로 시작), 있으면 이름/사진만 업데이트
+        const { data: existingProfile } = await supabaseAdmin
+            .from('profiles')
+            .select('id, is_approved')
+            .eq('id', supabaseUser.id)
+            .single();
+
+        if (!existingProfile) {
+            // 신규 사용자 → profiles 행 생성 (승인 대기)
+            const { error: insertErr } = await supabaseAdmin
+                .from('profiles')
+                .insert({
+                    id: supabaseUser.id,
                     full_name: nickname,
-                    name: nickname,
                     avatar_url: profileImage,
-                },
-            });
+                    email: syntheticEmail,
+                    church_id: 'jesus-in',
+                    is_approved: false,
+                });
+            if (insertErr) {
+                console.error('[Kakao Callback] profiles insert 실패:', insertErr.message);
+            } else {
+                console.log('[Kakao Callback] 신규 성도 profiles 행 생성 완료');
+            }
+        } else {
+            // 기존 사용자 → 이름/사진만 업데이트 (is_approved 건드리지 않음)
+            await supabaseAdmin
+                .from('profiles')
+                .update({ full_name: nickname, avatar_url: profileImage })
+                .eq('id', supabaseUser.id);
         }
     }
 
@@ -112,6 +140,5 @@ export async function GET(req: NextRequest) {
         return NextResponse.redirect(`${APP_URL}?error=step5_no_token`);
     }
 
-    // hashed_token을 query param으로 전달 (해시 기반 리다이렉트 문제 우회)
     return NextResponse.redirect(`${APP_URL}/auth/callback?token=${encodeURIComponent(hashedToken)}`);
 }
