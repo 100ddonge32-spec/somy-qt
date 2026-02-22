@@ -112,6 +112,7 @@ export default function App() {
     const [playerPos, setPlayerPos] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [showIpod, setShowIpod] = useState(true); // 아이팟 표시 여부
+    const [showSomyIntro, setShowSomyIntro] = useState(false); // 소미 소개 카드 표시 여부 (기본 닫힘)
     const dragOffset = useRef({ x: 0, y: 0 });
     const playerRef = useRef<any>(null);
 
@@ -143,6 +144,13 @@ export default function App() {
         const randomIdx = Math.floor(Math.random() * CCM_LIST.length);
         console.log("🎲 Random Pick Index:", randomIdx);
         setCcmIndex(randomIdx);
+
+        // 첫 방문 여부 확인 (소미 소개 카드 토글용)
+        const introSeen = localStorage.getItem('somy_intro_seen');
+        if (!introSeen) {
+            setShowSomyIntro(true);
+            localStorage.setItem('somy_intro_seen', 'true');
+        }
     }, []);
 
     useEffect(() => {
@@ -990,27 +998,54 @@ export default function App() {
                             </h1>
                             <p style={{ fontSize: "15px", color: "#B8924A", fontWeight: 600, margin: "0 0 10px 0" }}>{churchSettings.church_name} {churchSettings.app_subtitle}</p>
 
-                            {/* 소미 이름 의미 소개 카드로 통합 */}
-                            <div style={{
-                                background: "rgba(255, 255, 255, 0.4)",
-                                padding: "16px",
-                                borderRadius: "20px",
-                                marginTop: "15px",
-                                border: "1px solid rgba(212, 175, 55, 0.15)",
-                                maxWidth: "300px",
-                                backdropFilter: "blur(5px)",
-                                boxShadow: "0 4px 15px rgba(0,0,0,0.02)"
-                            }}>
-                                <p style={{ fontSize: "14px", color: "#8B6E3F", lineHeight: 1.6, margin: "0 0 8px 0", wordBreak: 'keep-all', fontWeight: 500 }}>
-                                    <strong style={{ color: "#D4AF37", fontSize: "15px" }}>소미(SOMY)</strong>는 <strong style={{ color: "#D4AF37" }}>'포솜포솜한 양'</strong>과 <br />
-                                    하나님의 <strong style={{ color: "#D4AF37" }}>'말씀의 소리(Sori)'</strong>를 합친 이름이에요.
-                                </p>
-                                <div style={{ height: '1px', background: 'rgba(212, 175, 55, 0.1)', margin: '10px 0' }} />
-                                <p style={{ fontSize: "13px", color: "#8B6E3F", lineHeight: 1.5, margin: 0 }}>
-                                    매일 아침, 포근한 양의 모습으로 찾아와 <br />
-                                    말씀의 세미한 음성을 들려주는 동반자랍니다. ✨
-                                </p>
-                            </div>
+                            {/* 소미 이름 의미 소개 토글 버튼 추가 */}
+                            <button
+                                onClick={() => setShowSomyIntro(!showSomyIntro)}
+                                style={{
+                                    background: "rgba(255, 255, 255, 0.6)",
+                                    border: "1px solid rgba(212, 175, 55, 0.3)",
+                                    borderRadius: "20px",
+                                    padding: "6px 14px",
+                                    fontSize: "12px",
+                                    color: "#B8924A",
+                                    fontWeight: 700,
+                                    cursor: "pointer",
+                                    marginTop: "5px",
+                                    marginBottom: showSomyIntro ? "5px" : "15px",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                    transition: "all 0.2s ease"
+                                }}
+                            >
+                                소미란? {showSomyIntro ? '▲' : '▼'}
+                            </button>
+
+                            {/* 소미 이름 의미 소개 카드 (상태에 따라 표시) */}
+                            {showSomyIntro && (
+                                <div style={{
+                                    background: "rgba(255, 255, 255, 0.4)",
+                                    padding: "16px",
+                                    borderRadius: "20px",
+                                    marginTop: "10px",
+                                    marginBottom: "15px",
+                                    border: "1px solid rgba(212, 175, 55, 0.15)",
+                                    maxWidth: "300px",
+                                    backdropFilter: "blur(5px)",
+                                    boxShadow: "0 4px 15px rgba(0,0,0,0.02)",
+                                    animation: "fade-in 0.3s ease-out"
+                                }}>
+                                    <p style={{ fontSize: "14px", color: "#8B6E3F", lineHeight: 1.6, margin: "0 0 8px 0", wordBreak: 'keep-all', fontWeight: 500 }}>
+                                        <strong style={{ color: "#D4AF37", fontSize: "15px" }}>소미(SOMY)</strong>는 <strong style={{ color: "#D4AF37" }}>'포솜포솜한 양'</strong>과 <br />
+                                        하나님의 <strong style={{ color: "#D4AF37" }}>'말씀의 소리(Sori)'</strong>를 합친 이름이에요.
+                                    </p>
+                                    <div style={{ height: '1px', background: 'rgba(212, 175, 55, 0.1)', margin: '10px 0' }} />
+                                    <p style={{ fontSize: "13px", color: "#8B6E3F", lineHeight: 1.5, margin: 0 }}>
+                                        매일 아침, 포근한 양의 모습으로 찾아와 <br />
+                                        말씀의 세미한 음성을 들려주는 동반자랍니다. ✨
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
                         <div style={{
