@@ -97,8 +97,8 @@ export default function App() {
     const [editContent, setEditContent] = useState("");
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [showNotiList, setShowNotiList] = useState(false);
-    const [ccmIndex, setCcmIndex] = useState(0);
-    const [todayCcm, setTodayCcm] = useState<CcmVideo | null>(null);
+    const [ccmIndex, setCcmIndex] = useState(() => Math.floor(Math.random() * CCM_LIST.length));
+    const [todayCcm, setTodayCcm] = useState<CcmVideo>(CCM_LIST[ccmIndex]);
     const [ccmVolume, setCcmVolume] = useState(50);
     const [isCcmPlaying, setIsCcmPlaying] = useState(false);
     const [isApiReady, setIsApiReady] = useState(false);
@@ -136,12 +136,6 @@ export default function App() {
         setPlayRequested(true);
         setCcmIndex(prev => (prev - 1 + CCM_LIST.length) % CCM_LIST.length);
         setPlayerStatus("Prev Song..");
-    }, []);
-
-    useEffect(() => {
-        // [초강력 랜덤 시스템] 앱을 켤 때마다 31곡 중 하나를 무작위로 추첨 (Shuffle On)
-        const randomIdx = Math.floor(Math.random() * CCM_LIST.length);
-        setCcmIndex(randomIdx);
     }, []);
 
     useEffect(() => {
