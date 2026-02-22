@@ -2358,20 +2358,22 @@ export default function App() {
                     <div style={{ fontSize: '10px', color: '#AAA', position: 'absolute', left: '10px' }}>⏮</div>
                     <div style={{ fontSize: '10px', color: '#AAA', position: 'absolute', right: '10px' }}>⏭</div>
 
-                    {/* 중앙 선택 버튼 */}
+                    {/* 중앙 선택 버튼 (더 크게 개선) */}
                     <div style={{
-                        width: '32px',
-                        height: '32px',
+                        width: '42px',
+                        height: '42px',
                         borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #F0F0F0 0%, #D0D0D0 100%)',
-                        border: '1px solid #CCC',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        background: 'linear-gradient(135deg, #FFFFFF 0%, #E0E0E0 100%)',
+                        border: '1px solid #BBB',
+                        boxShadow: '0 4px 8px rgba(0,0,0,0.15), inset 0 1px 2px white',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: '12px'
+                        fontSize: '20px',
+                        color: '#333',
+                        transition: 'all 0.1s'
                     }}>
-                        🔘
+                        {isCcmPlaying ? '⏸' : '▶️'}
                     </div>
                 </div>
             </div>
