@@ -2256,7 +2256,11 @@ export default function App() {
                                     onChange={(e) => {
                                         const vol = parseInt(e.target.value);
                                         setCcmVolume(vol);
-                                        if (playerRef.current) playerRef.current.setVolume(vol);
+                                        if (playerRef.current) {
+                                            playerRef.current.unMute();
+                                            playerRef.current.setVolume(vol);
+                                            hasInteracted.current = true;
+                                        }
                                     }}
                                     style={{ flex: 1, accentColor: '#333' }}
                                 />
