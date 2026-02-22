@@ -148,6 +148,28 @@ export default function App() {
         app_subtitle: APP_SUBTITLE,
         plan: 'free',
     });
+    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+    const [showInstallGuide, setShowInstallGuide] = useState(false);
+
+    useEffect(() => {
+        const handleBeforeInstallPrompt = (e: any) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+        };
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    }, []);
+
+    const handleInstallClick = async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') setDeferredPrompt(null);
+        } else {
+            // iOS나 기타 환경에서는 안내 모달 표시
+            setShowInstallGuide(true);
+        }
+    };
     const [history, setHistory] = useState<any[]>([]);
     const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 
@@ -863,6 +885,22 @@ export default function App() {
                                 transition: 'all 0.2s'
                             }} onMouseOver={e => e.currentTarget.style.background = "#EEEEEE"} onMouseOut={e => e.currentTarget.style.background = "#F5F5F5"}>
                                 ⚙️ 관리자 센터 들어가기
+                            </button>
+                        )}
+
+                        {/* 앱 설치 버튼 (모바일 웹 환경일 때 표시) */}
+                        {typeof window !== 'undefined' && !window.matchMedia('(display-mode: standalone)').matches && (
+                            <button onClick={handleInstallClick} style={{
+                                width: '100%', padding: "16px",
+                                background: "linear-gradient(135deg, #FFF9C4 0%, #FFF59D 100%)",
+                                color: "#827717",
+                                fontWeight: 800, fontSize: "15px", borderRadius: "18px",
+                                border: "1px solid #FBC02D", cursor: "pointer",
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                                boxShadow: '0 8px 20px rgba(251,192,45,0.15), inset 0 1px 0 rgba(255,255,255,0.5)',
+                                transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }} onMouseOver={e => e.currentTarget.style.transform = "scale(1.02)"} onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}>
+                                📱 어플로 간편하게 홈화면에 추가
                             </button>
                         )}
                     </div>
@@ -1759,10 +1797,41 @@ export default function App() {
         );
     };
 
+    // 앱 설치 안내 모달
+    const renderInstallGuide = () => {
+        if (!showInstallGuide) return null;
+        return (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '30px' }}>
+                <div style={{ background: 'white', borderRadius: '30px', padding: '30px', width: '100%', maxWidth: '380px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', textAlign: 'center', animation: 'fade-in 0.3s ease-out' }}>
+                    <div style={{ fontSize: '40px', marginBottom: '20px' }}>📱</div>
+                    <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#333', marginBottom: '15px' }}>홈 화면에 어플 추가</h3>
+
+                    <div style={{ background: '#F9F7F2', padding: '20px', borderRadius: '20px', textAlign: 'left', marginBottom: '25px' }}>
+                        <p style={{ fontSize: '14px', color: '#555', lineHeight: '1.8', margin: 0 }}>
+                            iPhone 사용자는 브라우저 정책상<br />
+                            <strong>[수동 추가]</strong>가 필요해요! 😊<br /><br />
+                            1. 하단 중앙의 <strong>[공유 버튼]</strong> (↑) 클릭<br />
+                            2. 아래로 내려서 <strong>[홈 화면에 추가]</strong> 클릭<br />
+                            3. 우측 상단 <strong>[추가]</strong>를 누르면 끝!
+                        </p>
+                    </div>
+
+                    <button
+                        onClick={() => setShowInstallGuide(false)}
+                        style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '18px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.2)' }}>
+                        알겠어요!
+                    </button>
+                    <p style={{ marginTop: '15px', fontSize: '12px', color: '#999' }}>아이콘이 생기면 훨씬 편하게 들어올 수 있어요!</p>
+                </div>
+            </div>
+        );
+    };
+
     // 최종 렌더링
     return (
-        <div style={{ position: 'relative', maxWidth: '480px', margin: '0 auto' }}>
+        <div style={{ position: 'relative', maxWidth: '480px', margin: '0 auto', height: '100vh', overflow: 'hidden' }}>
             {renderContent()}
+            {renderInstallGuide()}
         </div>
     );
 }
