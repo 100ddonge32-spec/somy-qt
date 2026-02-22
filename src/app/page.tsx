@@ -106,73 +106,74 @@ export default function App() {
     useEffect(() => {
         setTodayCcm(getTodayCcm());
 
+        // YouTube API 준비 함수 먼저 정의
+        (window as any).onYouTubeIframeAPIReady = () => {
+            console.log("YouTube API Ready Event Fired");
+            setIsApiReady(true);
+        };
+
         // YouTube API 스크립트 추가
         if (!(window as any).YT) {
             const tag = document.createElement('script');
             tag.src = "https://www.youtube.com/iframe_api";
+            tag.async = true;
             const firstScriptTag = document.getElementsByTagName('script')[0];
             firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
         } else {
+            console.log("YouTube API already exists in window");
             setIsApiReady(true);
         }
-
-        (window as any).onYouTubeIframeAPIReady = () => {
-            console.log("YouTube API Ready");
-            setIsApiReady(true);
-        };
     }, []);
 
     useEffect(() => {
-        // API가 준비되고, 데이터가 있고, 컨테이너가 있을 때 플레이어 초기화 또는 동기화
+        // API가 준비되고, 데이터가 있고, 컨테이너가 있을 때 플레이어 초기화
         const container = document.getElementById('ccm-player-hidden-global');
-        if (isApiReady && todayCcm && container) {
-            if (!playerRef.current) {
-                console.log("Initializing Global Player:", todayCcm.title);
-                try {
-                    playerRef.current = new (window as any).YT.Player('ccm-player-hidden-global', {
-                        height: '0',
-                        width: '0',
-                        videoId: todayCcm.youtubeId,
-                        playerVars: {
-                            'autoplay': 0,
-                            'controls': 0,
-                            'showinfo': 0,
-                            'rel': 0,
-                            'iv_load_policy': 3,
-                            'enablejsapi': 1,
-                            'origin': typeof window !== 'undefined' ? window.location.origin : '',
-                            'widget_referrer': typeof window !== 'undefined' ? window.location.href : ''
+        if (isApiReady && todayCcm && container && !playerRef.current) {
+            console.log("🚀 Creating YT Player instance for:", todayCcm.title);
+            try {
+                playerRef.current = new (window as any).YT.Player('ccm-player-hidden-global', {
+                    height: '10',
+                    width: '10',
+                    videoId: todayCcm.youtubeId,
+                    playerVars: {
+                        'autoplay': 0,
+                        'controls': 0,
+                        'showinfo': 0,
+                        'rel': 0,
+                        'iv_load_policy': 3,
+                        'enablejsapi': 1,
+                        'origin': typeof window !== 'undefined' ? window.location.origin : '',
+                        'widget_referrer': typeof window !== 'undefined' ? window.location.href : '',
+                        'playsinline': 1
+                    },
+                    events: {
+                        'onReady': (event: any) => {
+                            console.log("✅ YT Player Ready");
+                            event.target.setVolume(ccmVolume);
                         },
-                        events: {
-                            'onReady': (event: any) => {
-                                event.target.setVolume(ccmVolume);
-                                console.log("Player Ready ✅");
-                            },
-                            'onStateChange': (event: any) => {
-                                const state = event.data;
-                                // -1: UNSTARTED, 0: ENDED, 1: PLAYING, 2: PAUSED, 3: BUFFERING, 5: CUED
-                                if (state === (window as any).YT.PlayerState.PLAYING) setIsCcmPlaying(true);
-                                else if (state === (window as any).YT.PlayerState.PAUSED || state === (window as any).YT.PlayerState.ENDED) setIsCcmPlaying(false);
-                            },
-                            'onError': (e: any) => {
-                                console.error("YT Player Error:", e.data);
-                            }
+                        'onStateChange': (event: any) => {
+                            const state = event.data;
+                            const YTState = (window as any).YT.PlayerState;
+                            console.log("🎼 Player State Changed:", state);
+                            if (state === YTState.PLAYING) setIsCcmPlaying(true);
+                            else if (state === YTState.PAUSED || state === YTState.ENDED || state === YTState.CUED) setIsCcmPlaying(false);
+                        },
+                        'onError': (e: any) => {
+                            console.error("❌ YT Player Error:", e.data);
                         }
-                    });
-                } catch (err) {
-                    console.error("Player Init Failed:", err);
-                }
-            } else if (playerRef.current.cueVideoById) {
-                // 이미 플레이어가 있으면 영상 ID 체크 후 다르면 로드
-                try {
-                    const currentUrl = playerRef.current.getVideoUrl?.() || "";
-                    if (currentUrl && !currentUrl.includes(todayCcm.youtubeId)) {
-                        playerRef.current.cueVideoById(todayCcm.youtubeId);
                     }
-                } catch (e) {
-                    console.log("Sync error (silent):", e);
-                }
+                });
+            } catch (err) {
+                console.error("Critical Player Init Error:", err);
             }
+        } else if (playerRef.current && todayCcm) {
+            // 이미 플레이어가 있고 곡이 바뀌었을 때 (동기화)
+            try {
+                const currentUrl = playerRef.current.getVideoUrl?.() || "";
+                if (currentUrl && !currentUrl.includes(todayCcm.youtubeId)) {
+                    playerRef.current.cueVideoById(todayCcm.youtubeId);
+                }
+            } catch (e) { }
         }
     }, [isApiReady, todayCcm]);
 
@@ -2201,7 +2202,7 @@ export default function App() {
         );
     };
 
-    // 하단 고정 플레이어 바 (세련된 플로팅 필 디자인)
+    // 클래식 아이팟 스타일 플로팅 플레이어 (Somy-iPod)
     const renderMiniPlayer = () => {
         if (!todayCcm || view === 'ccm') return null;
 
@@ -2215,12 +2216,31 @@ export default function App() {
 
         const handleMove = (clientX: number, clientY: number) => {
             if (!isDragging) return;
-            const newX = Math.max(0, Math.min(window.innerWidth - 180, clientX - dragOffset.current.x));
-            const newY = Math.max(0, Math.min(window.innerHeight - 80, clientY - dragOffset.current.y));
+            const newX = Math.max(0, Math.min(window.innerWidth - 100, clientX - dragOffset.current.x));
+            const newY = Math.max(0, Math.min(window.innerHeight - 150, clientY - dragOffset.current.y));
             setPlayerPos({ x: newX, y: newY });
         };
 
         const handleEnd = () => setIsDragging(false);
+
+        const playPause = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            if (playerRef.current) {
+                try {
+                    const playerState = playerRef.current.getPlayerState?.();
+                    if (playerState === 1) {
+                        playerRef.current.pauseVideo();
+                    } else {
+                        playerRef.current.playVideo();
+                    }
+                } catch (err) {
+                    console.log("Play failed, reloading video...");
+                    playerRef.current.loadVideoById(todayCcm.youtubeId);
+                }
+            } else {
+                console.log("Player not initialized yet");
+            }
+        };
 
         return (
             <div
@@ -2228,23 +2248,21 @@ export default function App() {
                     position: 'fixed',
                     left: `${playerPos.x}px`,
                     top: `${playerPos.y}px`,
-                    width: '180px',
-                    height: '64px',
+                    width: '85px',
+                    height: '140px',
                     zIndex: 2000,
                     cursor: isDragging ? 'grabbing' : 'grab',
-                    transition: isDragging ? 'none' : 'all 0.1s ease-out',
-                    userSelect: 'none',
-                    touchAction: 'none',
-                    background: 'rgba(255, 255, 255, 0.85)',
-                    backdropFilter: 'blur(15px)',
-                    borderRadius: '32px',
+                    background: '#F0F0F0',
+                    borderRadius: '12px',
                     padding: '8px',
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '10px',
-                    boxShadow: '0 12px 40px rgba(0,0,0,0.12), inset 0 0 0 1px rgba(255,255,255,0.5)',
-                    border: '1px solid rgba(255,255,255,0.3)',
-                    animation: 'fade-in 0.5s ease-out'
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.15), inset 0 1px 1px white',
+                    border: '1px solid #CCC',
+                    transition: isDragging ? 'none' : 'transform 0.2s',
+                    userSelect: 'none',
+                    touchAction: 'none'
                 }}
                 onMouseDown={(e) => handleStart(e.clientX, e.clientY)}
                 onMouseMove={(e) => handleMove(e.clientX, e.clientY)}
@@ -2254,56 +2272,71 @@ export default function App() {
                 onTouchMove={(e) => handleMove(e.touches[0].clientX, e.touches[0].clientY)}
                 onTouchEnd={handleEnd}
             >
-                {/* 재생 버튼 */}
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        if (playerRef.current) {
-                            try {
-                                if (isCcmPlaying) playerRef.current.pauseVideo();
-                                else playerRef.current.playVideo();
-                            } catch (err) {
-                                console.error("Playback failed:", err);
-                                // 재생 실패 시 강제 재호출
-                                playerRef.current.loadVideoById(todayCcm.youtubeId);
-                            }
-                        }
-                    }}
+                {/* 아이팟 스크린 영역 */}
+                <div
+                    onClick={() => setView('ccm')}
                     style={{
-                        width: '48px',
-                        height: '48px',
-                        borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #333 0%, #000 100%)',
-                        color: 'white',
-                        border: 'none',
+                        width: '100%',
+                        height: '50px',
+                        background: '#333',
+                        borderRadius: '4px',
+                        marginBottom: '12px',
                         display: 'flex',
-                        alignItems: 'center',
+                        flexDirection: 'column',
                         justifyContent: 'center',
-                        fontSize: '18px',
+                        alignItems: 'center',
+                        padding: '4px',
+                        overflow: 'hidden',
                         cursor: 'pointer',
-                        boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-                        flexShrink: 0
+                        border: '1px solid #000'
                     }}
                 >
-                    {isCcmPlaying ? '⏸' : '▶️'}
-                </button>
-
-                {/* 곡 정보 */}
-                <div style={{ flex: 1, overflow: 'hidden' }} onClick={() => setView('ccm')}>
-                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: '2px' }}>
+                    <div style={{ fontSize: '9px', color: '#00FF00', fontWeight: 800, whiteSpace: 'nowrap', width: '100%', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {todayCcm.title}
                     </div>
-                    <div style={{ fontSize: '10px', color: '#B8924A', fontWeight: 700 }}>
-                        {todayCcm.artist}
+                    <div style={{ fontSize: '7px', color: '#AAA', marginTop: '2px' }}>
+                        {isCcmPlaying ? 'Playing...' : 'Paused'}
                     </div>
+                    {isCcmPlaying && (
+                        <div style={{ width: '80%', height: '2px', background: '#444', marginTop: '4px', position: 'relative' }}>
+                            <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: '40%', background: '#00FF00', animation: 'halo-pulse 2s infinite' }}></div>
+                        </div>
+                    )}
                 </div>
 
-                {/* 흐르는 음표 애니메이션 (재생 중일 때만) */}
-                {isCcmPlaying && (
-                    <div style={{ position: 'absolute', top: '-15px', right: '10px', fontSize: '16px', animation: 'float 2s infinite ease-in-out' }}>
-                        🎵
-                    </div>
-                )}
+                {/* 클릭 휠 영역 */}
+                <div style={{
+                    width: '64px',
+                    height: '64px',
+                    background: 'white',
+                    borderRadius: '50%',
+                    position: 'relative',
+                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid #EEE'
+                }}>
+                    <div style={{ fontSize: '10px', color: '#999', position: 'absolute', top: '4px', fontWeight: 700 }}>MENU</div>
+                    <div style={{ fontSize: '10px', color: '#999', position: 'absolute', bottom: '4px' }}>{isCcmPlaying ? '⏸' : '▶️'}</div>
+                    <div style={{ fontSize: '10px', color: '#999', position: 'absolute', left: '6px' }}>⏮</div>
+                    <div style={{ fontSize: '10px', color: '#999', position: 'absolute', right: '6px' }}>⏭</div>
+
+                    {/* 중앙 실제 조작 버튼 */}
+                    <button
+                        onClick={playPause}
+                        style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #EEE 0%, #CCC 100%)',
+                            border: '1px solid #BBB',
+                            cursor: 'pointer',
+                            zIndex: 2,
+                            boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+                        }}
+                    ></button>
+                </div>
             </div>
         );
     };
@@ -2311,7 +2344,7 @@ export default function App() {
     // 최종 렌더링
     return (
         <div style={{ position: 'relative', maxWidth: '480px', margin: '0 auto' }}>
-            <div id="ccm-player-container" style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0.01, overflow: 'hidden', pointerEvents: 'none' }}>
+            <div id="ccm-player-container" style={{ position: 'absolute', top: '-100px', left: '-100px', width: '20px', height: '20px', opacity: 0.1, pointerEvents: 'none', overflow: 'hidden' }}>
                 <div id="ccm-player-hidden-global"></div>
             </div>
             {renderContent()}
