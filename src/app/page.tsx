@@ -1808,16 +1808,23 @@ export default function App() {
         return (
             <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '30px' }}>
                 <div style={{ background: 'white', borderRadius: '30px', padding: '30px', width: '100%', maxWidth: '380px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', textAlign: 'center', animation: 'fade-in 0.3s ease-out' }}>
-                    <div style={{ fontSize: '40px', marginBottom: '20px' }}>📱</div>
-                    <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#333', marginBottom: '15px' }}>홈 화면에 어플 추가</h3>
+                    <div style={{ fontSize: '40px', marginBottom: '15px' }}>📱</div>
+                    <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#333', marginBottom: '10px' }}>홈 화면에 어플 추가</h3>
+
+                    {/* 중요 안내: Safari만 가능 */}
+                    <div style={{ background: '#FFF3E0', border: '1px solid #FFB74D', padding: '12px 16px', borderRadius: '14px', marginBottom: '16px', textAlign: 'left' }}>
+                        <p style={{ fontSize: '13px', color: '#E65100', fontWeight: 700, margin: 0 }}>
+                            ⚠️ 반드시 <strong>사파리(Safari)</strong> 앱에서 접속해야 합니다!<br />
+                            <span style={{ fontWeight: 400 }}>크롬, 네이버 앱 등에서는 이 기능이 없어요.</span>
+                        </p>
+                    </div>
 
                     <div style={{ background: '#F9F7F2', padding: '20px', borderRadius: '20px', textAlign: 'left', marginBottom: '25px' }}>
-                        <p style={{ fontSize: '14px', color: '#555', lineHeight: '1.8', margin: 0 }}>
-                            iPhone 사용자는 브라우저 정책상<br />
-                            <strong>[수동 추가]</strong>가 필요해요! 😊<br /><br />
-                            1. 하단 중앙의 <strong>[공유 버튼]</strong> (↑) 클릭<br />
-                            2. 아래로 내려서 <strong>[홈 화면에 추가]</strong> 클릭<br />
-                            3. 우측 상단 <strong>[추가]</strong>를 누르면 끝!
+                        <p style={{ fontSize: '14px', color: '#555', lineHeight: '2', margin: 0 }}>
+                            1️⃣ <strong>사파리(Safari)</strong>로 이 페이지 다시 열기<br />
+                            2️⃣ 하단 중앙 <strong>공유 버튼</strong> 탭 (네모에 화살표↑)<br />
+                            3️⃣ 아래로 스크롤 후 <strong>[홈 화면에 추가]</strong> 탭<br />
+                            4️⃣ 오른쪽 위 <strong>[추가]</strong> 탭하면 완성! 🎉
                         </p>
                     </div>
 

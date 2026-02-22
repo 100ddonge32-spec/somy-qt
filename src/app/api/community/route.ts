@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
                 *,
                 comments:community_comments(*)
             `)
-            .eq('church_id', churchId) // 교회가 일치하는 것만!
+            .eq('church_id', churchId)
             .order('created_at', { ascending: false });
 
         if (postsError) throw postsError;
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     }
 }
 
-// 새 게시글 작성 (교회 꼬리표 달기)
+// 새 게시글 작성
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
@@ -55,38 +55,51 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
+
 // 게시글 삭제
 export async function DELETE(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
-        const id = searchParams.get('id');
+        const idRaw = searchParams.get('id');
 
-        if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+        if (!idRaw) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-        // 1단계: 연결된 댓글 먼저 삭제 (외래키 제약 해결)
-        const { error: commentDeleteError } = await supabaseAdmin
+        // ID를 숫자로 변환 (타입 불일치 방지)
+        const id = parseInt(idRaw, 10);
+        if (isNaN(id)) return NextResponse.json({ error: 'Invalid ID format' }, { status: 400 });
+
+        console.log(`[DELETE] 게시글 삭제 시작. id=${id}`);
+
+        // 1단계: 연결된 댓글 먼저 삭제
+        const { error: commentDeleteError, count: deletedComments } = await supabaseAdmin
             .from('community_comments')
-            .delete()
+            .delete({ count: 'exact' })
             .eq('post_id', id);
 
         if (commentDeleteError) {
-            console.error('댓글 삭제 실패:', commentDeleteError);
-            // 댓글 테이블이 없거나 칼럼명이 다를 수 있으므로 에러 무시하고 진행
+            console.error('[DELETE] 댓글 삭제 중 오류 (무시하고 계속):', commentDeleteError.message);
+        } else {
+            console.log(`[DELETE] 댓글 ${deletedComments ?? 0}개 삭제 완료`);
         }
 
         // 2단계: 게시글 삭제
-        const { error } = await supabaseAdmin
+        const { error: postDeleteError, count: deletedPosts } = await supabaseAdmin
             .from('community_posts')
-            .delete()
+            .delete({ count: 'exact' })
             .eq('id', id);
 
-        if (error) throw error;
-        return NextResponse.json({ success: true });
+        if (postDeleteError) {
+            console.error('[DELETE] 게시글 삭제 실패:', postDeleteError);
+            throw postDeleteError;
+        }
+
+        console.log(`[DELETE] 게시글 삭제 완료. 삭제된 행 수: ${deletedPosts}`);
+        return NextResponse.json({ success: true, deletedPosts });
     } catch (err: any) {
-        return NextResponse.json({ error: err.message }, { status: 500 });
+        console.error('[DELETE] 최종 에러:', err);
+        return NextResponse.json({ error: err.message, code: err.code, details: err.details }, { status: 500 });
     }
 }
-
 
 // 게시글 수정
 export async function PATCH(req: NextRequest) {
