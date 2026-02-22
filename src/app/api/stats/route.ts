@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 // 캐싱 완전 방지
+// 캐싱 완전 방지
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 

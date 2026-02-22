@@ -1026,6 +1026,8 @@ export default function App() {
                                             if (statsData && statsData.today) {
                                                 setStats(statsData);
                                             }
+                                            // 히스토리 목록도 초기화 (다시 들어갈 때 최신화되도록)
+                                            setHistory([]);
                                         }
                                     } catch (e) {
                                         console.error("통계 기록 중 오류:", e);
@@ -1518,10 +1520,16 @@ export default function App() {
                                     </div>
 
                                     <div style={{ marginBottom: '15px' }}>
-                                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>📖 {h.daily_qt?.reference}</div>
-                                        {h.daily_qt?.passage && (
+                                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            📖 {h.daily_qt?.reference || "오늘의 말씀 묵상"}
+                                        </div>
+                                        {h.daily_qt?.passage ? (
                                             <p style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                                                 {h.daily_qt.passage.substring(0, 100)}...
+                                            </p>
+                                        ) : (
+                                            <p style={{ fontSize: '13px', color: '#999', fontStyle: 'italic', margin: 0 }}>
+                                                기록된 말씀 본문이 없습니다.
                                             </p>
                                         )}
                                     </div>
