@@ -1481,7 +1481,8 @@ export default function App() {
             const handleDeletePost = async (postId: any) => {
                 if (!confirm("이 게시글을 정말 삭제하시겠습니까?")) return;
                 try {
-                    const res = await fetch(`/api/community?id=${postId}`, { method: 'DELETE' });
+                    // postId에 타임스탬프가 올 수 있으므로 URL 인코딩 필수
+                    const res = await fetch(`/api/community?id=${encodeURIComponent(postId)}`, { method: 'DELETE' });
                     if (res.ok) {
                         setCommunityPosts(communityPosts.filter(post => post.id !== postId));
                     } else {

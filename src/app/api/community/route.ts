@@ -60,9 +60,12 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
-        const id = searchParams.get('id');
+        const rawId = searchParams.get('id');
 
-        if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+        if (!rawId) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+
+        // URL에서 + 기호가 공백으로 변환되므로 다시 디코딩 (타임스탬프 id 대응)
+        const id = decodeURIComponent(rawId);
 
         console.log(`[DELETE] 게시글 삭제 시작. id=${id}`);
 
