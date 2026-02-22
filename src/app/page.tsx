@@ -3,8 +3,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { getGraceVerse } from '@/lib/navigator-verses';
+import { getTodayCcm, CcmVideo } from "@/lib/ccm";
 
-type View = "home" | "chat" | "qt" | "community" | "qtManage" | "stats" | "history" | "admin";
+type View = "home" | "chat" | "qt" | "community" | "qtManage" | "stats" | "history" | "admin" | "ccm";
 
 const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://cdn.imweb.me/thumbnail/20210813/569458bf12dd0.png";
@@ -86,6 +87,11 @@ export default function App() {
     const [editContent, setEditContent] = useState("");
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [showNotiList, setShowNotiList] = useState(false);
+    const [todayCcm, setTodayCcm] = useState<CcmVideo | null>(null);
+
+    useEffect(() => {
+        setTodayCcm(getTodayCcm());
+    }, []);
 
     // 승인 상태 및 교회 정보 체크 함수 (서버와 동기화 포함)
     const checkApprovalStatus = useCallback(async () => {
@@ -900,6 +906,18 @@ export default function App() {
                                         <span style={{ whiteSpace: 'nowrap' }}>나의 묵상 기록</span>
                                     </button>
                                 </div>
+
+                                <button onClick={() => setView('ccm')} style={{
+                                    width: "100%", padding: "14px",
+                                    background: "#E8EAF6", color: "#3F51B5",
+                                    fontWeight: 700, fontSize: "13px", borderRadius: "18px",
+                                    border: "1px solid #C5CAE9", cursor: "pointer",
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                                    boxShadow: '0 4px 12px rgba(63,81,181,0.1)',
+                                    marginTop: '8px'
+                                }}>
+                                    <span style={{ fontSize: '18px' }}>🎵</span> 오늘의 CCM 듣기
+                                </button>
                             </>
                         )}
                     </div>
@@ -1800,6 +1818,55 @@ export default function App() {
                             ))
                         )}
                         <button onClick={() => setView('home')} style={{ marginTop: '10px', width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 돌아가기</button>
+                    </div>
+                </div>
+            );
+        }
+
+        if (view === "ccm") {
+            return (
+                <div style={{ minHeight: "100vh", background: "white", maxWidth: "480px", margin: "0 auto", ...baseFont }}>
+                    {styles}
+                    <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #EEE", position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
+                        <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "16px" }}>오늘의 CCM</div>
+                    </div>
+
+                    <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div style={{ background: '#F9F9F7', borderRadius: '30px', padding: '24px', textAlign: 'center', border: '1px solid #F0ECE4' }}>
+                            <div style={{ fontSize: '40px', marginBottom: '16px' }}>🎵</div>
+                            <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>오늘의 추천 찬양</h3>
+                            <p style={{ fontSize: '14px', color: '#999', marginBottom: '24px' }}>주님과 함께하는 향기로운 멜로디 🌿</p>
+
+                            {todayCcm ? (
+                                <div style={{ background: 'white', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 15px 40px rgba(0,0,0,0.08)', border: '1px solid #F0F0F0' }}>
+                                    <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden' }}>
+                                        <iframe
+                                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
+                                            src={`https://www.youtube.com/embed/${todayCcm.youtubeId}?rel=0`}
+                                            title={todayCcm.title}
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            allowFullScreen
+                                        ></iframe>
+                                    </div>
+                                    <div style={{ padding: '20px', textAlign: 'left', background: 'linear-gradient(to right, #FDFCFB, #FFF)' }}>
+                                        <div style={{ fontSize: '17px', fontWeight: 800, color: '#333', marginBottom: '4px' }}>{todayCcm.title}</div>
+                                        <div style={{ fontSize: '14px', color: '#B8924A', fontWeight: 700 }}>{todayCcm.artist}</div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div style={{ padding: '40px', color: '#999' }}>찬양을 준비 중입니다... 🐑</div>
+                            )}
+                        </div>
+
+                        <div style={{ background: '#FFF9C4', borderRadius: '20px', padding: '20px', display: 'flex', gap: '15px', alignItems: 'center', border: '1px solid #FBC02D' }}>
+                            <div style={{ fontSize: '24px' }}>💡</div>
+                            <div style={{ fontSize: '13px', color: '#827717', lineHeight: 1.6, fontWeight: 600 }}>
+                                <strong>김부장의 팁!</strong> 유튜브 창 오른쪽 하단의 '전체 화면' 버튼을 누르면 더 크게 감상하실 수 있습니다. 묵상 중에 틀어두시면 은혜가 두 배!
+                            </div>
+                        </div>
+
+                        <button onClick={() => setView('home')} style={{ width: '100%', padding: '16px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', marginTop: '10px' }}>홈으로 돌아가기</button>
                     </div>
                 </div>
             );
