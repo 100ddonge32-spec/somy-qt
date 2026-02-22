@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { getGraceVerse } from '@/lib/navigator-verses';
 
 type View = "home" | "chat" | "qt" | "community" | "qtManage" | "stats";
 
@@ -568,23 +569,20 @@ export default function App() {
                             <p style={{ fontSize: "14px", color: "#777", lineHeight: 1.6, margin: 0 }}>내 삶 속에 예수 그리스도! 🐑</p>
                         </div>
 
-                        {/* Verse Card */}
                         <div style={{ background: "white", borderRadius: "20px", padding: "20px", width: "280px", boxShadow: "0 4px 20px rgba(0,0,0,0.05)", border: "1px solid #F0ECE4", animation: "fade-in 1.2s ease-out", minHeight: "100px", display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                            {isQtLoading ? (
-                                <div style={{ textAlign: 'center', color: '#B8924A', fontSize: '13px' }}>
-                                    <div style={{ marginBottom: '8px' }}>🤖 소미가 말씀을 준비 중이에요...</div>
-                                    <div style={{ fontSize: '11px', color: '#999' }}>유료 버전용 AI 자동 생성 기능 작동 중</div>
-                                </div>
-                            ) : (
-                                <>
-                                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px" }}>
-                                        <span style={{ fontSize: '14px' }}>📖</span>
-                                        <span style={{ fontSize: "12px", fontWeight: 700, color: "#B8924A" }}>오늘의 말씀</span>
-                                    </div>
-                                    <p style={{ fontSize: "13px", color: "#444", lineHeight: 1.6, margin: "0 0 8px 0", fontStyle: "italic" }}>"{qtData.verse}"</p>
-                                    <p style={{ fontSize: "11px", color: "#999", fontWeight: 600, margin: 0 }}>— {qtData.reference}</p>
-                                </>
-                            )}
+                            {(() => {
+                                const graceVerse = getGraceVerse();
+                                return (
+                                    <>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px" }}>
+                                            <span style={{ fontSize: '14px' }}>📖</span>
+                                            <span style={{ fontSize: "12px", fontWeight: 700, color: "#B8924A" }}>오늘의 말씀</span>
+                                        </div>
+                                        <p style={{ fontSize: "13px", color: "#444", lineHeight: 1.6, margin: "0 0 8px 0", fontStyle: "italic" }}>"{graceVerse.verse}"</p>
+                                        <p style={{ fontSize: "11px", color: "#999", fontWeight: 600, margin: 0 }}>— {graceVerse.book} {graceVerse.ref}</p>
+                                    </>
+                                );
+                            })()}
                         </div>
                     </div>
 
@@ -1010,11 +1008,40 @@ export default function App() {
                                     }
                                 } catch { alert('데이터 로드 실패'); }
                                 finally { setAiLoading(false); }
-                            }} disabled={aiLoading} style={{ width: '100%', padding: '12px', background: '#333', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
+                            }} disabled={aiLoading} style={{ width: '100%', padding: '12px', background: '#333', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '13px', cursor: 'pointer', marginBottom: '8px' }}>
                                 {aiLoading ? '🔄 로딩 중...' : '📅 오늘 성경 통독 본문 불러오기'}
                             </button>
+
+                            <button onClick={async () => {
+                                const gv = getGraceVerse();
+                                setAiLoading(true);
+                                try {
+                                    // 본문은 있으니 질문/기도문만 생성 요청
+                                    const res = await fetch('/api/qt-generate', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ reference: `${gv.book} ${gv.ref}`, passage: gv.verse })
+                                    });
+                                    const data = await res.json();
+                                    setQtForm({
+                                        ...qtForm,
+                                        reference: `${gv.book} ${gv.ref}`,
+                                        passage: gv.verse,
+                                        question1: data.question1 || '',
+                                        question2: data.question2 || '',
+                                        question3: data.question3 || '',
+                                        prayer: data.prayer || '',
+                                    });
+                                } catch {
+                                    setQtForm({ ...qtForm, reference: `${gv.book} ${gv.ref}`, passage: gv.verse });
+                                    alert('말씀은 불러왔으나 질문 생성에 실패했습니다.');
+                                } finally { setAiLoading(false); }
+                            }} disabled={aiLoading} style={{ width: '100%', padding: '12px', background: '#F5F2EA', color: '#B8924A', border: '1px solid #B8924A', borderRadius: '10px', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
+                                🛳️ 네비게이토 은혜 말씀 불러오기
+                            </button>
+
                             <p style={{ fontSize: '11px', color: '#999', marginTop: '8px', textAlign: 'center' }}>
-                                * 성경 읽기표에 따른 오늘 분량의 말씀과 내용을 자동으로 채워줍니다.
+                                * 통독 본문 또는 네비게이토 암송 구절을 자동으로 채워줍니다.
                             </p>
                         </div>
 
