@@ -777,7 +777,7 @@ export default function App() {
                                     </div>
                                 </div>
 
-                                <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+                                <div style={{ display: 'flex', gap: '8px', marginTop: '10px', width: '100%' }}>
                                     <button onClick={async () => {
                                         setView('stats');
                                         setStatsError(null);
@@ -796,24 +796,30 @@ export default function App() {
                                             setStatsError(e.name === 'AbortError' ? "시간 초과" : "연결 실패");
                                         }
                                     }} style={{
-                                        flex: 1, padding: "14px",
+                                        flex: 1, padding: "12px 4px",
                                         background: "#F5F2EA", color: "#B8924A",
-                                        fontWeight: 700, fontSize: "14px", borderRadius: "14px",
-                                        border: "none", cursor: "pointer"
+                                        fontWeight: 700, fontSize: "11px", borderRadius: "16px",
+                                        border: "none", cursor: "pointer",
+                                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+                                        boxShadow: '0 4px 10px rgba(184,146,74,0.1)'
                                     }}>
-                                        👑 이달의 큐티왕
+                                        <span style={{ fontSize: '20px' }}>👑</span>
+                                        <span style={{ whiteSpace: 'nowrap' }}>이달의 큐티왕</span>
                                     </button>
 
                                     <button onClick={() => {
                                         setView('history');
                                         fetchHistory();
                                     }} style={{
-                                        flex: 1, padding: "14px",
+                                        flex: 1, padding: "12px 4px",
                                         background: "#F0F7F4", color: "#709176",
-                                        fontWeight: 700, fontSize: "14px", borderRadius: "14px",
-                                        border: "none", cursor: "pointer"
+                                        fontWeight: 700, fontSize: "11px", borderRadius: "16px",
+                                        border: "none", cursor: "pointer",
+                                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+                                        boxShadow: '0 4px 10px rgba(112,145,118,0.1)'
                                     }}>
-                                        📜 나의 묵상 기록
+                                        <span style={{ fontSize: '20px' }}>📜</span>
+                                        <span style={{ whiteSpace: 'nowrap' }}>나의 묵상 기록</span>
                                     </button>
                                     {isAdmin && (
                                         <button onClick={() => {
@@ -821,12 +827,15 @@ export default function App() {
                                             setQtForm({ date: today, reference: '', passage: '', question1: '', question2: '', question3: '', prayer: '' });
                                             setView('qtManage');
                                         }} style={{
-                                            flex: 1, padding: "14px",
-                                            background: "#EEE", color: "#666",
-                                            fontWeight: 700, fontSize: "14px", borderRadius: "14px",
-                                            border: "none", cursor: "pointer"
+                                            flex: 1, padding: "12px 4px",
+                                            background: "#F5F5F5", color: "#666",
+                                            fontWeight: 700, fontSize: "11px", borderRadius: "16px",
+                                            border: "none", cursor: "pointer",
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+                                            boxShadow: '0 4px 10px rgba(0,0,0,0.05)'
                                         }}>
-                                            ⚙️ 관리 모드
+                                            <span style={{ fontSize: '20px' }}>⚙️</span>
+                                            <span style={{ whiteSpace: 'nowrap' }}>관리 모드</span>
                                         </button>
                                     )}
                                 </div>
