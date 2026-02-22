@@ -2158,21 +2158,18 @@ export default function App() {
                                 }}>
                                     📻
                                 </div>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#FFF', marginBottom: '4px' }}>{todayCcm?.title || "찬양 제목"}</div>
-                                    <div style={{ fontSize: '13px', color: '#B8924A', fontWeight: 700 }}>{todayCcm?.artist || "아티스트"}</div>
-                                </div>
-
-                                {/* Waveform Animation */}
-                                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '20px' }}>
-                                    {[...Array(12)].map((_, i) => (
+                                {/* Expanded Dynamic Waveform Visualizer */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', height: '60px', marginBottom: '10px' }}>
+                                    {[...Array(24)].map((_, i) => (
                                         <div key={i} style={{
-                                            width: '3px',
-                                            background: isCcmPlaying ? '#00FF41' : '#333',
-                                            borderRadius: '1px',
-                                            height: isCcmPlaying ? '100%' : '3px',
-                                            transition: 'height 0.2s',
-                                            animation: isCcmPlaying ? `wave-music ${0.5 + i * 0.1}s infinite ease-in-out` : 'none'
+                                            width: '4px',
+                                            background: isCcmPlaying ? '#00FF41' : '#222',
+                                            borderRadius: '2px',
+                                            height: isCcmPlaying ? '100%' : '10%',
+                                            transition: 'height 0.3s ease',
+                                            boxShadow: isCcmPlaying ? '0 0 10px rgba(0,255,65,0.5)' : 'none',
+                                            animation: isCcmPlaying ? `wave-music ${0.4 + (i % 7) * 0.15}s infinite ease-in-out` : 'none',
+                                            opacity: 0.3 + (i % 5) * 0.15
                                         }} />
                                     ))}
                                 </div>
