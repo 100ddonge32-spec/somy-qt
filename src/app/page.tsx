@@ -411,11 +411,26 @@ export default function App() {
             return (
                 <div style={{
                     minHeight: "100vh",
-                    background: "linear-gradient(180deg, #FFFFFF 0%, #FFF9F0 100%)",
+                    background: "linear-gradient(180deg, #FFF8F0 0%, #FEF0D8 50%, #F5E0BB 100%)",
                     display: "flex", flexDirection: "column", alignItems: "center",
                     justifyContent: "space-between", padding: "40px 24px 60px 24px",
                     maxWidth: "480px", margin: "0 auto", ...baseFont,
+                    position: 'relative'
                 }}>
+                    {/* 우측 상단 사용자 정보 */}
+                    {user && (
+                        <div style={{
+                            position: 'absolute', top: '15px', right: '15px',
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            background: 'rgba(255,255,255,0.7)', padding: '6px 12px',
+                            borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                            fontSize: '12px', border: '1px solid rgba(255,255,255,0.8)',
+                            backdropFilter: 'blur(5px)', zIndex: 10
+                        }}>
+                            <span style={{ color: '#333', fontWeight: 700 }}>{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
+                            <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontWeight: 600, fontSize: '11px' }}>로그아웃</button>
+                        </div>
+                    )}
                     {styles}
 
                     {/* 환영 모달 */}
@@ -684,11 +699,11 @@ export default function App() {
                                     width: "100%", padding: "18px",
                                     background: "#E0F2F1", color: "#00695C",
                                     fontWeight: 800, fontSize: "17px", borderRadius: "18px",
-                                    border: "none", cursor: "pointer",
-                                    boxShadow: "0 8px 20px rgba(0,105,92,0.1)",
+                                    border: "1px solid #B2DFDB", cursor: "pointer",
+                                    boxShadow: "0 6px 15px rgba(0,105,92,0.15), inset 0 1px 0 rgba(255,255,255,0.5)",
                                     transition: "all .3s ease",
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-                                }} onMouseOver={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 25px rgba(0,105,92,0.15)"; }} onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 8px 20px rgba(0,105,92,0.1)"; }}>
+                                }} onMouseOver={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 20px rgba(0,105,92,0.2)"; }} onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 15px rgba(0,105,92,0.15), inset 0 1px 0 rgba(255,255,255,0.5)"; }}>
                                     <span style={{ fontSize: '20px' }}>💬</span> 소미와 대화하기
                                 </button>
 
@@ -700,11 +715,11 @@ export default function App() {
                                     width: "100%", padding: "18px",
                                     background: "#FFF9C4", color: "#827717",
                                     fontWeight: 800, fontSize: "17px", borderRadius: "18px",
-                                    border: "none", cursor: "pointer",
-                                    boxShadow: "0 8px 20px rgba(130,119,23,0.12)",
+                                    border: "1px solid #FFF59D", cursor: "pointer",
+                                    boxShadow: "0 6px 15px rgba(130,119,23,0.15), inset 0 1px 0 rgba(255,255,255,0.5)",
                                     transition: "all .3s ease",
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-                                }} onMouseOver={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 25px rgba(130,119,23,0.18)"; }} onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 8px 20px rgba(130,119,23,0.12)"; }}>
+                                }} onMouseOver={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 20px rgba(130,119,23,0.2)"; }} onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 15px rgba(130,119,23,0.15), inset 0 1px 0 rgba(255,255,255,0.5)"; }}>
                                     <span style={{ fontSize: '20px' }}>☀️</span> 오늘의 큐티 시작
                                 </button>
 
@@ -720,14 +735,14 @@ export default function App() {
                                         width: "100%", padding: "18px",
                                         background: "#FCE4EC", color: "#AD1457",
                                         fontWeight: 800, fontSize: "17px", borderRadius: "18px",
-                                        border: "none", cursor: "pointer",
-                                        boxShadow: "0 8px 20px rgba(173,20,87,0.12)",
+                                        border: "1px solid #F8BBD0", cursor: "pointer",
+                                        boxShadow: "0 6px 15px rgba(173,20,87,0.15), inset 0 1px 0 rgba(255,255,255,0.5)",
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         gap: '8px',
                                         transition: 'all 0.3s ease'
-                                    }} onMouseOver={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 25px rgba(173,20,87,0.18)"; }} onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 8px 20px rgba(173,20,87,0.12)"; }}>
+                                    }} onMouseOver={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 20px rgba(173,20,87,0.2)"; }} onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 15px rgba(173,20,87,0.15), inset 0 1px 0 rgba(255,255,255,0.5)"; }}>
                                         <span style={{ fontSize: '20px' }}>📝</span> 은혜나눔 게시판
                                     </button>
 
@@ -837,19 +852,12 @@ export default function App() {
                     </div>
 
                     <div style={{ padding: '0 20px 40px 20px', width: '100%', maxWidth: '360px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
-                        {user && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'white', padding: '10px 20px', borderRadius: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', fontSize: '14px', border: '1px solid #F0ECE4' }}>
-                                <span style={{ color: '#333', fontWeight: 700 }}>{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
-                                <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontWeight: 600 }}>로그아웃</button>
-                            </div>
-                        )}
-
                         {isAdmin && (
                             <button onClick={() => setView('admin')} style={{
                                 width: '100%', padding: "16px",
                                 background: "#F5F5F5", color: "#757575",
                                 fontWeight: 800, fontSize: "15px", borderRadius: "18px",
-                                border: "1px solid #EEE", cursor: "pointer",
+                                border: "1px solid #E0E0E0", cursor: "pointer",
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
                                 boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
                                 transition: 'all 0.2s'
