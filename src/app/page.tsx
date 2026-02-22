@@ -183,32 +183,31 @@ export default function App() {
                 width: '640',
                 videoId: todayCcm.youtubeId,
                 playerVars: {
-                    'autoplay': 1, // 자동 재생 강제
-                    'mute': 1,     // 브라우저 정책 우회를 위한 음소거 시작
+                    'autoplay': playRequestedRef.current ? 1 : 0, // 현재 의도에 따라 동적 설정
+                    'mute': playRequestedRef.current ? 1 : 0,    // 정책 우회를 위한 뮤트 시작
                     'controls': 0,
                     'showinfo': 0,
                     'rel': 0,
                     'iv_load_policy': 3,
                     'enablejsapi': 1,
                     'playsinline': 1,
-                    'origin': window.location.origin
+                    'origin': typeof window !== 'undefined' ? window.location.origin : ''
                 },
                 events: {
                     'onReady': (event: any) => {
                         console.log("✅ Player Ready!");
-                        setPlayerStatus("AUTO-START");
-                        // 브라우저 자동재생 정책 우회: 의도가 있을 때만 뮤트 재생
+                        // 의도가 있을 때만 자동 재생 시도
                         if (playRequestedRef.current) {
+                            setPlayerStatus("AUTO-START");
                             try {
                                 event.target.mute();
                                 event.target.playVideo();
-                                // 1초 뒤 조용히 언뮤트 시도
+                                // 정책에 의해 가로막힐 경우를 대비해 1초 뒤 상태 확인
                                 setTimeout(() => {
-                                    if (playRequestedRef.current) {
-                                        event.target.unMute();
-                                        event.target.setVolume(ccmVolume);
+                                    if (playRequestedRef.current && event.target.getPlayerState() !== 1) {
+                                        setPlayerStatus("Tap twice");
                                     }
-                                }, 1000);
+                                }, 1200);
                             } catch (e) { }
                         } else {
                             setPlayerStatus("Paused");
@@ -293,26 +292,25 @@ export default function App() {
         return () => clearInterval(watchdog);
     }, []);
 
-    // 유저 상격 (첫 클릭 시 오디오 해제용)
+    // 유저 전역 점화 시스템 (첫 클릭 시 오디오 엔진 완벽 부팅)
     useEffect(() => {
-        const handleFirstInteraction = () => {
-            console.log("👋 Interaction: Activating Audio");
+        const igniteEngine = () => {
+            console.log("🔥 Gospel Ignition: User Interaction Detected");
             if (playerRef.current && playRequestedRef.current) {
                 try {
                     playerRef.current.unMute();
+                    playerRef.current.setVolume(ccmVolume);
                     playerRef.current.playVideo();
                 } catch (e) { }
             }
-            window.removeEventListener('click', handleFirstInteraction);
-            window.removeEventListener('touchstart', handleFirstInteraction);
         };
-        window.addEventListener('click', handleFirstInteraction, { once: true });
-        window.addEventListener('touchstart', handleFirstInteraction, { once: true });
+        window.addEventListener('click', igniteEngine, { once: true });
+        window.addEventListener('touchstart', igniteEngine, { once: true });
         return () => {
-            window.removeEventListener('click', handleFirstInteraction);
-            window.removeEventListener('touchstart', handleFirstInteraction);
+            window.removeEventListener('click', igniteEngine);
+            window.removeEventListener('touchstart', igniteEngine);
         };
-    }, []);
+    }, [ccmVolume]);
 
     // 승인 상태 및 교회 정보 체크 함수 (서버와 동기화 포함)
     const checkApprovalStatus = useCallback(async () => {
