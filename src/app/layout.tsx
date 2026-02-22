@@ -11,6 +11,13 @@ const appName = process.env.NEXT_PUBLIC_APP_NAME || "소미 QT";
 export const metadata: Metadata = {
   title: `${appName} - ${churchName}`,
   description: "소미와 함께하는 따뜻한 큐티 시간 🐑",
+  themeColor: "#D4AF37",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: appName,
+  },
   icons: {
     icon: "/somy.png",
     apple: "/somy.png",
@@ -50,6 +57,21 @@ export default function RootLayout({
     <html lang="ko" suppressHydrationWarning>
       <body className={`${inter.className} bg-[#F9F7F2] text-[#3E3C3A]`} suppressHydrationWarning>
         {children}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('SW registered');
+                  }, function(err) {
+                    console.log('SW registration failed: ', err);
+                  });
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );
