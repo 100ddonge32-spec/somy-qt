@@ -101,6 +101,7 @@ export default function App() {
     };
     const [playerPos, setPlayerPos] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
+    const [showIpod, setShowIpod] = useState(true); // 아이팟 표시 여부
     const dragOffset = useRef({ x: 0, y: 0 });
     const playerRef = useRef<any>(null);
 
@@ -2383,6 +2384,7 @@ export default function App() {
 
         const togglePlay = (e: React.MouseEvent) => {
             e.stopPropagation();
+            if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(15);
             if (!playerRef.current) {
                 setPlayRequested(true);
                 initPlayer();
@@ -2411,6 +2413,12 @@ export default function App() {
                 setPlayRequested(true);
                 initPlayer();
             }
+        };
+
+        const hapticClick = (e: React.MouseEvent, action: () => void) => {
+            e.stopPropagation();
+            if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(12);
+            action();
         };
 
         return (
@@ -2443,6 +2451,28 @@ export default function App() {
                 onTouchMove={(e) => handleMove(e.touches[0].clientX, e.touches[0].clientY)}
                 onTouchEnd={handleEnd}
             >
+                {/* 닫기 버튼 (Hide iPod) */}
+                <div
+                    onClick={(e) => hapticClick(e, () => setShowIpod(false))}
+                    style={{
+                        position: 'absolute',
+                        top: '6px',
+                        right: '10px',
+                        width: '18px',
+                        height: '18px',
+                        background: '#EEE',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '9px',
+                        color: '#999',
+                        cursor: 'pointer',
+                        zIndex: 10,
+                        boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
+                        border: '1px solid #DDD'
+                    }}
+                >✕</div>
                 {/* 1. 아이팟 LCD 스크린 영역 */}
                 <div
                     onClick={() => setView('ccm')}
@@ -2503,33 +2533,41 @@ export default function App() {
                 >
                     {/* RESET (MENU - Top) */}
                     <div
-                        onClick={(e) => { e.stopPropagation(); setPlayRequested(true); initPlayer(); }}
-                        style={{ position: 'absolute', top: '8px', fontSize: '9px', fontWeight: 900, color: '#B8924A', cursor: 'pointer', zIndex: 5 }}
+                        onClick={(e) => hapticClick(e, () => { setPlayRequested(true); initPlayer(); })}
+                        style={{ position: 'absolute', top: '8px', fontSize: '9px', fontWeight: 900, color: '#B8924A', cursor: 'pointer', zIndex: 5, transition: 'transform 0.1s' }}
+                        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.85)'}
+                        onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     >RESET</div>
 
                     {/* 이전 곡 버튼 - 영역 확장 */}
                     {/* PREV ⏮ (West) */}
                     <div
-                        onClick={(e) => { e.stopPropagation(); handlePrevCcm(); }}
-                        style={{ position: 'absolute', left: '8px', fontSize: '12px', color: '#BBB', padding: '10px', cursor: 'pointer', zIndex: 5 }}
+                        onClick={(e) => hapticClick(e, handlePrevCcm)}
+                        style={{ position: 'absolute', left: '8px', fontSize: '11px', color: '#BBB', padding: '10px', cursor: 'pointer', zIndex: 5, transition: 'transform 0.1s' }}
+                        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.85)'}
+                        onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     >⏮</div>
 
                     {/* 다음 곡 버튼 - 영역 확장 */}
                     {/* NEXT ⏭ (East) */}
                     <div
-                        onClick={(e) => { e.stopPropagation(); handleNextCcm(); }}
-                        style={{ position: 'absolute', right: '8px', fontSize: '12px', color: '#BBB', padding: '10px', cursor: 'pointer', zIndex: 5 }}
+                        onClick={(e) => hapticClick(e, handleNextCcm)}
+                        style={{ position: 'absolute', right: '8px', fontSize: '11px', color: '#BBB', padding: '10px', cursor: 'pointer', zIndex: 5, transition: 'transform 0.1s' }}
+                        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.85)'}
+                        onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     >⏭</div>
 
                     {/* PLAY/PAUSE ▶️⏸ (South) */}
                     <div
-                        onClick={(e) => { e.stopPropagation(); togglePlay(e); }}
-                        style={{ position: 'absolute', bottom: '8px', fontSize: '12px', color: '#BBB', padding: '10px', cursor: 'pointer', zIndex: 5 }}
+                        onClick={(e) => hapticClick(e, () => togglePlay(e))}
+                        style={{ position: 'absolute', bottom: '8px', fontSize: '11px', color: '#BBB', padding: '10px', cursor: 'pointer', zIndex: 5, transition: 'transform 0.1s' }}
+                        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.85)'}
+                        onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     >{isCcmPlaying ? '⏸' : '▶️'}</div>
 
                     {/* Center Center Select Button */}
                     <div
-                        onClick={togglePlay}
+                        onClick={(e) => hapticClick(e, () => togglePlay(e))}
                         style={{
                             width: '42px',
                             height: '42px',
@@ -2538,8 +2576,11 @@ export default function App() {
                             border: '1px solid #CCC',
                             boxShadow: '2px 2px 5px rgba(0,0,0,0.1)',
                             cursor: 'pointer',
-                            zIndex: 2
+                            zIndex: 2,
+                            transition: 'transform 0.1s'
                         }}
+                        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.92)'}
+                        onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     />
                 </div>
             </div>
@@ -2563,7 +2604,36 @@ export default function App() {
             </div>
             {renderContent()}
             {renderNotificationList()}
-            {renderMiniPlayer()}
+            {showIpod ? renderMiniPlayer() : (
+                <div
+                    onClick={() => {
+                        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(20);
+                        setShowIpod(true);
+                    }}
+                    style={{
+                        position: 'fixed',
+                        bottom: '20px',
+                        right: '20px',
+                        width: '40px',
+                        height: '40px',
+                        background: 'rgba(51, 51, 51, 0.8)',
+                        color: 'white',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '20px',
+                        zIndex: 2500,
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+                        backdropFilter: 'blur(5px)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        animation: 'fade-in 0.3s'
+                    }}
+                >
+                    🎧
+                </div>
+            )}
             {renderInstallGuide()}
         </div>
     );
