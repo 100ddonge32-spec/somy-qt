@@ -92,7 +92,12 @@ export default function App() {
     const [ccmVolume, setCcmVolume] = useState(50);
     const [isCcmPlaying, setIsCcmPlaying] = useState(false);
     const [isApiReady, setIsApiReady] = useState(false);
-    const [playRequested, setPlayRequested] = useState(true); // 자동 재생 의도 기본값 true
+    const [playRequested, _setPlayRequested] = useState(true); // 자동 재생 의도 기본값 true
+    const playRequestedRef = useRef(true);
+    const setPlayRequested = (val: boolean) => {
+        playRequestedRef.current = val;
+        _setPlayRequested(val);
+    };
     const [playerPos, setPlayerPos] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const dragOffset = useRef({ x: 0, y: 0 });
@@ -109,11 +114,13 @@ export default function App() {
     const initAttempts = useRef(0);
 
     const handleNextCcm = useCallback(() => {
+        setPlayRequested(true);
         setCcmIndex(prev => (prev + 1) % CCM_LIST.length);
         setPlayerStatus("Next Song..");
     }, []);
 
     const handlePrevCcm = useCallback(() => {
+        setPlayRequested(true);
         setCcmIndex(prev => (prev - 1 + CCM_LIST.length) % CCM_LIST.length);
         setPlayerStatus("Prev Song..");
     }, []);
@@ -189,19 +196,21 @@ export default function App() {
                     'onReady': (event: any) => {
                         console.log("✅ Player Ready!");
                         setPlayerStatus("AUTO-START");
-                        // 브라우저 자동재생 정책(Muted Autoplay) 우회 시도
-                        if (playRequested) {
+                        // 브라우저 자동재생 정책 우회: 의도가 있을 때만 뮤트 재생
+                        if (playRequestedRef.current) {
                             try {
-                                event.target.mute(); // 우선 뮤트로 시작하여 정책 통과
+                                event.target.mute();
                                 event.target.playVideo();
-                                // 잠시 후 언뮤트 시도 (가능한 경우)
+                                // 1초 뒤 조용히 언뮤트 시도
                                 setTimeout(() => {
-                                    if (playRequested) {
+                                    if (playRequestedRef.current) {
                                         event.target.unMute();
                                         event.target.setVolume(ccmVolume);
                                     }
                                 }, 1000);
                             } catch (e) { }
+                        } else {
+                            setPlayerStatus("Paused");
                         }
                     },
                     'onStateChange': (event: any) => {
@@ -248,26 +257,50 @@ export default function App() {
         }
     }, [isApiReady, todayCcm, initPlayer]);
 
-    // 유저 상향 (첫 클릭 시 오디오 해제용)
+    // 강력한 자동 재생 및 유령 재생 방지 통합 감시 루틴
+    useEffect(() => {
+        const watchdog = setInterval(() => {
+            if (!playerRef.current || typeof playerRef.current.getPlayerState !== 'function') return;
+
+            const state = playerRef.current.getPlayerState();
+            // 재생 요청 중인데 멈춰있거나 로드되지 않은 경우 강제 조치
+            if (playRequestedRef.current) {
+                if (state !== 1 && state !== 3) { // NOT PLAYING nor BUFFERING
+                    try {
+                        playerRef.current.unMute();
+                        playerRef.current.playVideo();
+                    } catch (e) { }
+                }
+            }
+            // 재생 요청이 없는데 재생 중인 경우 (유령 재생 발견!) 강제 정지
+            else if (state === 1 || state === 3) {
+                try { playerRef.current.pauseVideo(); } catch (e) { }
+            }
+        }, 1000);
+
+        return () => clearInterval(watchdog);
+    }, []);
+
+    // 유저 상격 (첫 클릭 시 오디오 해제용)
     useEffect(() => {
         const handleFirstInteraction = () => {
-            if (playerRef.current && playRequested) {
+            console.log("👋 Interaction: Activating Audio");
+            if (playerRef.current && playRequestedRef.current) {
                 try {
                     playerRef.current.unMute();
                     playerRef.current.playVideo();
-                    setPlayerStatus("Playing");
                 } catch (e) { }
             }
             window.removeEventListener('click', handleFirstInteraction);
             window.removeEventListener('touchstart', handleFirstInteraction);
         };
-        window.addEventListener('click', handleFirstInteraction);
-        window.addEventListener('touchstart', handleFirstInteraction);
+        window.addEventListener('click', handleFirstInteraction, { once: true });
+        window.addEventListener('touchstart', handleFirstInteraction, { once: true });
         return () => {
             window.removeEventListener('click', handleFirstInteraction);
             window.removeEventListener('touchstart', handleFirstInteraction);
         };
-    }, [playRequested]);
+    }, []);
 
     // 승인 상태 및 교회 정보 체크 함수 (서버와 동기화 포함)
     const checkApprovalStatus = useCallback(async () => {
@@ -2326,25 +2359,27 @@ export default function App() {
 
             try {
                 const state = playerRef.current.getPlayerState?.();
-                if (state === 1) { // PLAYING
-                    setPlayRequested(false); // 명확한 멈춤 의도 기록
+                if (state === 1) { // PLAYING -> PAUSE
+                    setPlayRequested(false); // 명확한 멈춤 의도 잠금
                     playerRef.current.pauseVideo();
                     setPlayerStatus("Paused");
-                } else {
-                    setPlayRequested(true); // 명확한 재생 의도 기록
+                } else { // PAUSED -> PLAY
+                    setPlayRequested(true); // 명확한 재생 의도 활성화
+                    playerRef.current.unMute(); // 재생 시 음소거 해제 보장
                     playerRef.current.playVideo();
 
-                    // 만약 0.4초 뒤에도 재생 상태가 아니라면 강제 로드
+                    // 만약 0.5초 뒤에도 재생 상태가 아니라면 강제 로드
                     setTimeout(() => {
-                        const curState = playerRef.current.getPlayerState?.();
-                        // 여전히 재생을 원할 때만 강제 로드 수행
-                        if (playerRef.current && curState !== 1 && curState !== 3) {
-                            playerRef.current.loadVideoById(CCM_LIST[ccmIndex].youtubeId);
+                        const curState = playerRef.current?.getPlayerState?.();
+                        // ★중요: 비동기 시점에도 '재생 의도'가 여전히 true일 때만 강제 실행 (유령 재생 방지)
+                        if (playRequestedRef.current && curState !== 1 && curState !== 3) {
+                            playerRef.current?.loadVideoById(CCM_LIST[ccmIndex].youtubeId);
                         }
-                    }, 400);
+                    }, 500);
                 }
             } catch (err) {
                 console.log("Resetting Engine...");
+                setPlayRequested(true);
                 initPlayer();
             }
         };
@@ -2449,7 +2484,7 @@ export default function App() {
                     onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
                     <div
-                        onClick={(e) => { e.stopPropagation(); initPlayer(); }}
+                        onClick={(e) => { e.stopPropagation(); setPlayRequested(true); initPlayer(); }}
                         style={{ fontSize: '9px', color: '#B8924A', position: 'absolute', top: '7px', fontWeight: 800, letterSpacing: '0.5px' }}
                     > RESET </div>
                     <div
