@@ -675,9 +675,35 @@ export default function App() {
                                     background: "#E6A4B4", color: "white",
                                     fontWeight: 700, fontSize: "17px", borderRadius: "18px",
                                     border: "none", cursor: "pointer",
-                                    boxShadow: "0 4px 12px rgba(230,164,180,0.3)"
+                                    boxShadow: "0 4px 12px rgba(230,164,180,0.3)",
+                                    position: 'relative', // 배지 배치를 위해 추가
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px'
                                 }}>
                                     📝 은혜나눔 게시판
+                                    {notifications.filter(n => !n.is_read).length > 0 && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: '-8px',
+                                            right: '-8px',
+                                            background: '#FF5252',
+                                            color: 'white',
+                                            fontSize: '11px',
+                                            fontWeight: 800,
+                                            width: '22px',
+                                            height: '22px',
+                                            borderRadius: '50%',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            border: '3px solid white',
+                                            boxShadow: '0 2px 8px rgba(255,82,82,0.4)'
+                                        }}>
+                                            {notifications.filter(n => !n.is_read).length}
+                                        </div>
+                                    )}
                                 </button>
 
                                 <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
