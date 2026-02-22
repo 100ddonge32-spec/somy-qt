@@ -411,7 +411,7 @@ export default function App() {
             return (
                 <div style={{
                     minHeight: "100vh",
-                    background: "linear-gradient(180deg, #FFF8F0 0%, #FEF0D8 50%, #F5E0BB 100%)",
+                    background: "linear-gradient(180deg, #FFFFFF 0%, #FFF9F0 100%)",
                     display: "flex", flexDirection: "column", alignItems: "center",
                     justifyContent: "space-between", padding: "40px 24px 60px 24px",
                     maxWidth: "480px", margin: "0 auto", ...baseFont,
@@ -619,21 +619,35 @@ export default function App() {
                             <p style={{ fontSize: "14px", color: "#777", lineHeight: 1.6, margin: 0 }}>내 삶 속에 예수 그리스도! 🐑</p>
                         </div>
 
-                        <div style={{ background: "white", borderRadius: "20px", padding: "20px", width: "280px", boxShadow: "0 4px 20px rgba(0,0,0,0.05)", border: "1px solid #F0ECE4", animation: "fade-in 1.2s ease-out", minHeight: "100px", display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div style={{
+                            background: "rgba(255, 255, 255, 0.9)",
+                            borderRadius: "24px",
+                            padding: "24px",
+                            width: "100%",
+                            maxWidth: "300px",
+                            boxShadow: "0 10px 30px rgba(0,0,0,0.04)",
+                            border: "1px solid #F5F5F5",
+                            animation: "fade-in 1.2s ease-out",
+                            minHeight: "120px",
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            backdropFilter: 'blur(5px)'
+                        }}>
                             {(() => {
                                 const graceVerse = getGraceVerse();
                                 return (
                                     <>
-                                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "12px" }}>
-                                            <span style={{ fontSize: '16px' }}>📖</span>
-                                            <span style={{ fontSize: "14px", fontWeight: 800, color: "#B8924A", letterSpacing: '0.5px' }}>오늘의 말씀</span>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
+                                            <div style={{ width: '32px', height: '32px', background: '#F5F2EA', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>📖</div>
+                                            <span style={{ fontSize: "15px", fontWeight: 800, color: "#9E7B31", letterSpacing: '-0.2px' }}>오늘의 말씀</span>
                                         </div>
-                                        <div style={{ position: 'relative', padding: '0 10px' }}>
-                                            <span style={{ position: 'absolute', top: '-5px', left: '-5px', fontSize: '24px', color: '#F0ECE4', zIndex: 0, fontFamily: 'serif' }}>"</span>
-                                            <p style={{ position: 'relative', zIndex: 1, fontSize: "14px", color: "#333", lineHeight: 1.7, margin: "0 0 12px 0", fontWeight: 500, wordBreak: 'keep-all' }}>{graceVerse.verse}</p>
-                                            <span style={{ position: 'absolute', bottom: '-5px', right: '-5px', fontSize: '24px', color: '#F0ECE4', zIndex: 0, fontFamily: 'serif' }}>"</span>
+                                        <div style={{ position: 'relative', padding: '0 4px' }}>
+                                            <p style={{ position: 'relative', zIndex: 1, fontSize: "15px", color: "#444", lineHeight: 1.8, margin: "0 0 16px 0", fontWeight: 500, wordBreak: 'keep-all', textAlign: 'center' }}>
+                                                "{graceVerse.verse}"
+                                            </p>
                                         </div>
-                                        <p style={{ fontSize: "12px", color: "#B8924A", fontWeight: 700, margin: 0, textAlign: 'right', opacity: 0.8 }}>— {graceVerse.book} {graceVerse.ref}</p>
+                                        <p style={{ fontSize: "13px", color: "#B8924A", fontWeight: 700, margin: 0, textAlign: 'right' }}>— {graceVerse.book} {graceVerse.ref}</p>
                                     </>
                                 );
                             })()}
@@ -667,33 +681,36 @@ export default function App() {
                         ) : (
                             <>
                                 <button onClick={() => setView("chat")} style={{
-                                    width: "100%", padding: "20px",
-                                    background: "#333", color: "white",
-                                    fontWeight: 800, fontSize: "18px", borderRadius: "18px",
-                                    border: "none", cursor: "pointer", boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
-                                    transition: "all .2s"
-                                }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                    💬 소미와 대화하기
+                                    width: "100%", padding: "18px",
+                                    background: "#E0F2F1", color: "#00695C",
+                                    fontWeight: 800, fontSize: "17px", borderRadius: "18px",
+                                    border: "none", cursor: "pointer",
+                                    boxShadow: "0 8px 20px rgba(0,105,92,0.1)",
+                                    transition: "all .3s ease",
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                                }} onMouseOver={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 25px rgba(0,105,92,0.15)"; }} onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 8px 20px rgba(0,105,92,0.1)"; }}>
+                                    <span style={{ fontSize: '20px' }}>💬</span> 소미와 대화하기
                                 </button>
 
                                 <button onClick={() => {
-                                    fetchQt(); // 최신 큐티 데이터 다시 불러오기
+                                    fetchQt();
                                     setQtStep("read");
                                     setView("qt");
                                 }} style={{
                                     width: "100%", padding: "18px",
-                                    background: "white", color: "#333",
-                                    fontWeight: 700, fontSize: "17px", borderRadius: "18px",
-                                    border: "2px solid #333", cursor: "pointer",
-                                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)"
-                                }}>
-                                    ☀️ 오늘의 큐티 시작
+                                    background: "#FFF9C4", color: "#827717",
+                                    fontWeight: 800, fontSize: "17px", borderRadius: "18px",
+                                    border: "none", cursor: "pointer",
+                                    boxShadow: "0 8px 20px rgba(130,119,23,0.12)",
+                                    transition: "all .3s ease",
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                                }} onMouseOver={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 25px rgba(130,119,23,0.18)"; }} onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 8px 20px rgba(130,119,23,0.12)"; }}>
+                                    <span style={{ fontSize: '20px' }}>☀️</span> 오늘의 큐티 시작
                                 </button>
 
                                 <div style={{ position: 'relative', width: '100%' }}>
                                     <button onClick={async () => {
                                         setView("community");
-                                        // 게시판 진입 시 현재 소속 교회 데이터만 로드
                                         try {
                                             const res = await fetch(`/api/community?church_id=${churchId}`);
                                             const data = await res.json();
@@ -701,17 +718,17 @@ export default function App() {
                                         } catch (e) { console.error("게시판 로드 실패:", e); }
                                     }} style={{
                                         width: "100%", padding: "18px",
-                                        background: "#E6A4B4", color: "white",
-                                        fontWeight: 700, fontSize: "17px", borderRadius: "18px",
+                                        background: "#FCE4EC", color: "#AD1457",
+                                        fontWeight: 800, fontSize: "17px", borderRadius: "18px",
                                         border: "none", cursor: "pointer",
-                                        boxShadow: "0 4px 12px rgba(230,164,180,0.3)",
+                                        boxShadow: "0 8px 20px rgba(173,20,87,0.12)",
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        gap: '10px',
-                                        transition: 'all 0.2s'
-                                    }} onMouseOver={e => e.currentTarget.style.transform = "scale(1.01)"} onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}>
-                                        📝 은혜나눔 게시판
+                                        gap: '8px',
+                                        transition: 'all 0.3s ease'
+                                    }} onMouseOver={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 12px 25px rgba(173,20,87,0.18)"; }} onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 8px 20px rgba(173,20,87,0.12)"; }}>
+                                        <span style={{ fontSize: '20px' }}>📝</span> 은혜나눔 게시판
                                     </button>
 
                                     {/* 입체형 부유 알림종 (읽지 않은 알림이 있을 때만 표시) */}
@@ -830,12 +847,13 @@ export default function App() {
                         {isAdmin && (
                             <button onClick={() => setView('admin')} style={{
                                 width: '100%', padding: "16px",
-                                background: "#333", color: "white",
+                                background: "#F5F5F5", color: "#757575",
                                 fontWeight: 800, fontSize: "15px", borderRadius: "18px",
-                                border: "none", cursor: "pointer",
+                                border: "1px solid #EEE", cursor: "pointer",
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                                boxShadow: '0 8px 20px rgba(0,0,0,0.15)'
-                            }}>
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                                transition: 'all 0.2s'
+                            }} onMouseOver={e => e.currentTarget.style.background = "#EEEEEE"} onMouseOut={e => e.currentTarget.style.background = "#F5F5F5"}>
                                 ⚙️ 관리자 센터 들어가기
                             </button>
                         )}
