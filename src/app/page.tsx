@@ -175,7 +175,8 @@ export default function App() {
                 width: '640',
                 videoId: todayCcm.youtubeId,
                 playerVars: {
-                    'autoplay': 1, // 초기 생성 시 자동 재생 시도
+                    'autoplay': 1, // 자동 재생 강제
+                    'mute': 1,     // 브라우저 정책 우회를 위한 음소거 시작
                     'controls': 0,
                     'showinfo': 0,
                     'rel': 0,
@@ -187,10 +188,20 @@ export default function App() {
                 events: {
                     'onReady': (event: any) => {
                         console.log("✅ Player Ready!");
-                        setPlayerStatus("iPod Ready");
-                        // 브라우저 정책 내에서 최대한 자동 재생 시도
+                        setPlayerStatus("AUTO-START");
+                        // 브라우저 자동재생 정책(Muted Autoplay) 우회 시도
                         if (playRequested) {
-                            try { event.target.playVideo(); } catch (e) { }
+                            try {
+                                event.target.mute(); // 우선 뮤트로 시작하여 정책 통과
+                                event.target.playVideo();
+                                // 잠시 후 언뮤트 시도 (가능한 경우)
+                                setTimeout(() => {
+                                    if (playRequested) {
+                                        event.target.unMute();
+                                        event.target.setVolume(ccmVolume);
+                                    }
+                                }, 1000);
+                            } catch (e) { }
                         }
                     },
                     'onStateChange': (event: any) => {
@@ -236,6 +247,27 @@ export default function App() {
             initPlayer();
         }
     }, [isApiReady, todayCcm, initPlayer]);
+
+    // 유저 상향 (첫 클릭 시 오디오 해제용)
+    useEffect(() => {
+        const handleFirstInteraction = () => {
+            if (playerRef.current && playRequested) {
+                try {
+                    playerRef.current.unMute();
+                    playerRef.current.playVideo();
+                    setPlayerStatus("Playing");
+                } catch (e) { }
+            }
+            window.removeEventListener('click', handleFirstInteraction);
+            window.removeEventListener('touchstart', handleFirstInteraction);
+        };
+        window.addEventListener('click', handleFirstInteraction);
+        window.addEventListener('touchstart', handleFirstInteraction);
+        return () => {
+            window.removeEventListener('click', handleFirstInteraction);
+            window.removeEventListener('touchstart', handleFirstInteraction);
+        };
+    }, [playRequested]);
 
     // 승인 상태 및 교회 정보 체크 함수 (서버와 동기화 포함)
     const checkApprovalStatus = useCallback(async () => {
