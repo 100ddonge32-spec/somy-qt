@@ -49,6 +49,16 @@ interface Post {
     comments: Comment[];
 }
 
+interface Notification {
+    id: number;
+    user_id: string;
+    actor_name: string;
+    type: 'comment';
+    post_id: number;
+    is_read: boolean;
+    created_at: string;
+}
+
 export default function App() {
     const [view, setView] = useState<View>("home");
     const [messages, setMessages] = useState([
@@ -72,6 +82,8 @@ export default function App() {
     const isSuperAdmin = adminInfo?.role === 'super_admin';
     const [editingPostId, setEditingPostId] = useState<any>(null);
     const [editContent, setEditContent] = useState("");
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [showNotiList, setShowNotiList] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -98,9 +110,15 @@ export default function App() {
                         if (data.church_id) setChurchId(data.church_id);
                     }
                 });
+            // 알림 가져오기
+            fetch(`/api/notifications?user_id=${user.id}`)
+                .then(r => r.ok ? r.json() : [])
+                .then(data => setNotifications(data))
+                .catch(err => console.error("알림 로드 실패:", err));
         } else {
             setAdminInfo(null);
             setIsApproved(false);
+            setNotifications([]);
         }
     }, [user]);
     const [qtData, setQtData] = useState({
@@ -537,10 +555,22 @@ export default function App() {
                     )}
 
                     {user && (
-                        <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', alignItems: 'center', gap: '8px', background: 'white', padding: '6px 12px', borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', fontSize: '12px' }}>
-                            <span style={{ color: '#333', fontWeight: 600 }}>{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
-                            {isAdmin && <button onClick={() => { setSettingsForm({ ...churchSettings }); setShowSettings(true); }} style={{ background: 'none', border: 'none', color: '#B8924A', cursor: 'pointer', padding: '5px', fontSize: '18px' }} title="교회 설정">⚙️</button>}
-                            <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', padding: 0 }}>로그아웃</button>
+                        <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 100 }}>
+                            <div style={{ position: 'relative' }}>
+                                <button onClick={() => setShowNotiList(!showNotiList)} style={{ background: 'white', border: 'none', width: '36px', height: '36px', borderRadius: '50%', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                                    🔔
+                                </button>
+                                {notifications.filter(n => !n.is_read).length > 0 && (
+                                    <div style={{ position: 'absolute', top: '-2px', right: '-2px', background: '#FF5252', color: 'white', fontSize: '10px', fontWeight: 800, width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white' }}>
+                                        {notifications.filter(n => !n.is_read).length}
+                                    </div>
+                                )}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'white', padding: '6px 12px', borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', fontSize: '12px' }}>
+                                <span style={{ color: '#333', fontWeight: 600 }}>{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
+                                {isAdmin && <button onClick={() => { setSettingsForm({ ...churchSettings }); setShowSettings(true); }} style={{ background: 'none', border: 'none', color: '#B8924A', cursor: 'pointer', padding: '5px', fontSize: '18px' }} title="교회 설정">⚙️</button>}
+                                <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', padding: 0 }}>로그아웃</button>
+                            </div>
                         </div>
                     )}
 
@@ -1391,7 +1421,6 @@ export default function App() {
                         </div>
                     )}
                 </div>
-
                 <div style={{ padding: "15px", borderTop: "1px solid #EEE", display: "flex", gap: "10px" }}>
                     <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSend()} placeholder="메시지를 입력하세요..."
                         style={{ flex: 1, padding: "12px 15px", borderRadius: "10px", border: "1px solid #DDD", outline: "none" }} />
@@ -1401,6 +1430,51 @@ export default function App() {
         );
     };
 
-    // 최종 렌더링: 김부장님의 원래 의도대로 컨텐츠만 깔끔하게 반환합니다.
-    return renderContent();
+    // 알림 리스트 팝업
+    const renderNotificationList = () => {
+        if (!showNotiList) return null;
+        return (
+            <div style={{ position: 'absolute', top: '65px', right: '20px', width: '280px', background: 'white', borderRadius: '18px', boxShadow: '0 10px 30px rgba(0,0,0,0.15)', zIndex: 1000, border: '1px solid #EEE', overflow: 'hidden', animation: 'fade-in 0.2s ease-out' }}>
+                <div style={{ padding: '15px', borderBottom: '1px solid #F5F5F5', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FDFCFB' }}>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>새 소식</span>
+                    <button onClick={() => setShowNotiList(false)} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '12px' }}>닫기</button>
+                </div>
+                <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                    {notifications.length === 0 ? (
+                        <div style={{ padding: '30px 20px', textAlign: 'center', color: '#AAA', fontSize: '13px' }}>
+                            아직 도착한 소식이 없어요 🐑
+                        </div>
+                    ) : (
+                        notifications.map(n => (
+                            <div key={n.id} onClick={async () => {
+                                // 읽음 처리
+                                if (!n.is_read) {
+                                    await fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: n.id }) });
+                                    setNotifications(notifications.map(noti => noti.id === n.id ? { ...noti, is_read: true } : noti));
+                                }
+                                // 게시판으로 이동
+                                setView('community');
+                                setShowNotiList(false);
+                            }} style={{ padding: '12px 15px', borderBottom: '1px solid #F9F9F9', cursor: 'pointer', background: n.is_read ? 'white' : '#FFF9F9', transition: 'background 0.2s' }}>
+                                <div style={{ fontSize: '13px', color: '#333', lineHeight: 1.4 }}>
+                                    <strong>{n.actor_name}</strong>님이 성도님의 은혜나눔에 댓글을 남기셨습니다.
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>
+                                    {new Date(n.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    // 최종 렌더링
+    return (
+        <div style={{ position: 'relative', maxWidth: '480px', margin: '0 auto' }}>
+            {renderNotificationList()}
+            {renderContent()}
+        </div>
+    );
 }
