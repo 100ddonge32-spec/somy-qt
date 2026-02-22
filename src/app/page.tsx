@@ -129,13 +129,27 @@ export default function App() {
 
     const handleNextCcm = useCallback(() => {
         setPlayRequested(true);
-        setCcmIndex(prev => prev !== null ? (prev + 1) % CCM_LIST.length : 0);
+        setCcmIndex(prev => {
+            if (CCM_LIST.length <= 1) return 0;
+            let nextIdx;
+            do {
+                nextIdx = Math.floor(Math.random() * CCM_LIST.length);
+            } while (nextIdx === prev);
+            return nextIdx;
+        });
         setPlayerStatus("Next Song..");
     }, []);
 
     const handlePrevCcm = useCallback(() => {
         setPlayRequested(true);
-        setCcmIndex(prev => prev !== null ? (prev - 1 + CCM_LIST.length) % CCM_LIST.length : 0);
+        setCcmIndex(prev => {
+            if (CCM_LIST.length <= 1) return 0;
+            let nextIdx;
+            do {
+                nextIdx = Math.floor(Math.random() * CCM_LIST.length);
+            } while (nextIdx === prev);
+            return nextIdx;
+        });
         setPlayerStatus("Prev Song..");
     }, []);
 
@@ -263,6 +277,9 @@ export default function App() {
                         } else if (state === YTState.PAUSED) {
                             setIsCcmPlaying(false);
                             setPlayerStatus("Paused");
+                        } else if (state === YTState.ENDED) {
+                            // 곡이 끝나면 자동으로 다음 (무작위) 곡 재생
+                            handleNextCcm();
                         }
                     },
                     'onError': (e: any) => {
