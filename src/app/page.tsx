@@ -90,6 +90,7 @@ export default function App() {
     const [todayCcm, setTodayCcm] = useState<CcmVideo | null>(null);
     const [ccmVolume, setCcmVolume] = useState(50);
     const [isCcmPlaying, setIsCcmPlaying] = useState(false);
+    const [isApiReady, setIsApiReady] = useState(false);
     const playerRef = useRef<any>(null);
 
     useEffect(() => {
@@ -101,42 +102,55 @@ export default function App() {
             tag.src = "https://www.youtube.com/iframe_api";
             const firstScriptTag = document.getElementsByTagName('script')[0];
             firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+        } else {
+            setIsApiReady(true);
         }
 
         (window as any).onYouTubeIframeAPIReady = () => {
             console.log("YouTube API Ready");
+            setIsApiReady(true);
         };
     }, []);
 
     useEffect(() => {
-        // Player div가 존재하고 API가 준비되었을 때만 초기화
-        const container = document.getElementById('ccm-player-container');
-        if (container && todayCcm && (window as any).YT && (window as any).YT.Player && !playerRef.current) {
-            playerRef.current = new (window as any).YT.Player('ccm-player-hidden-global', {
-                height: '0',
-                width: '0',
-                videoId: todayCcm.youtubeId,
-                playerVars: {
-                    'autoplay': 0,
-                    'controls': 0,
-                    'showinfo': 0,
-                    'rel': 0,
-                    'iv_load_policy': 3
-                },
-                events: {
-                    'onReady': (event: any) => {
-                        event.target.setVolume(ccmVolume);
-                        console.log("Global Player Ready");
+        // API가 준비되고, 데이터가 있고, 컨테이너가 있을 때 플레이어 초기화 또는 동기화
+        const container = document.getElementById('ccm-player-hidden-global');
+        if (isApiReady && todayCcm && container) {
+            if (!playerRef.current) {
+                console.log("Initializing Player with:", todayCcm.title);
+                playerRef.current = new (window as any).YT.Player('ccm-player-hidden-global', {
+                    height: '0',
+                    width: '0',
+                    videoId: todayCcm.youtubeId,
+                    playerVars: {
+                        'autoplay': 0,
+                        'controls': 0,
+                        'showinfo': 0,
+                        'rel': 0,
+                        'iv_load_policy': 3,
+                        'enablejsapi': 1
                     },
-                    'onStateChange': (event: any) => {
-                        const state = event.data;
-                        if (state === (window as any).YT.PlayerState.PLAYING) setIsCcmPlaying(true);
-                        else if (state === (window as any).YT.PlayerState.PAUSED || state === (window as any).YT.PlayerState.ENDED) setIsCcmPlaying(false);
+                    events: {
+                        'onReady': (event: any) => {
+                            event.target.setVolume(ccmVolume);
+                        },
+                        'onStateChange': (event: any) => {
+                            const state = event.data;
+                            // YT.PlayerState.PLAYING = 1, PAUSED = 2, BUFFERING = 3, CUED = 5
+                            if (state === 1) setIsCcmPlaying(true);
+                            else if (state === 2 || state === 0 || state === 5) setIsCcmPlaying(false);
+                        }
                     }
+                });
+            } else {
+                // 이미 플레이어가 있으면 영상 ID 체크 후 다르면 로드
+                const currentVideoUrl = playerRef.current.getVideoUrl?.() || "";
+                if (currentVideoUrl && !currentVideoUrl.includes(todayCcm.youtubeId)) {
+                    playerRef.current.cueVideoById(todayCcm.youtubeId);
                 }
-            });
+            }
         }
-    }, [todayCcm]); // todayCcm이 로드되면 한 번만 초기화
+    }, [isApiReady, todayCcm]);
 
     // 승인 상태 및 교회 정보 체크 함수 (서버와 동기화 포함)
     const checkApprovalStatus = useCallback(async () => {
