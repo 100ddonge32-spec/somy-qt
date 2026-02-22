@@ -156,7 +156,8 @@ export default function App() {
         church_logo_url: CHURCH_LOGO,
         church_url: CHURCH_URL,
         app_subtitle: APP_SUBTITLE,
-        plan: 'free', // 기본값 free
+        plan: 'free',
+        community_visible: true, // 은혜 게시판 공개 여부
     });
     const [showSettings, setShowSettings] = useState(false);
     const [settingsForm, setSettingsForm] = useState({
@@ -165,6 +166,7 @@ export default function App() {
         church_url: CHURCH_URL,
         app_subtitle: APP_SUBTITLE,
         plan: 'free',
+        community_visible: true,
     });
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [showInstallGuide, setShowInstallGuide] = useState(false);
@@ -541,17 +543,19 @@ export default function App() {
                                 {adminTab === 'settings' ? (
                                     <>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                                            {[
-                                                ['church_name', '교회 이름', '예: 예수인교회'],
-                                                ['app_subtitle', '앱 부제목', '예: 큐티 동반자'],
-                                                ['church_logo_url', '교회 로고 URL', 'https://...'],
-                                                ['church_url', '교회 홈페이지 URL', 'https://...']
-                                            ].map(([key, label, placeholder]) => (
+                                            {(
+                                                [
+                                                    ['church_name', '교회 이름', '예: 예수인교회'],
+                                                    ['app_subtitle', '앱 부제목', '예: 큐티 동반자'],
+                                                    ['church_logo_url', '교회 로고 URL', 'https://...'],
+                                                    ['church_url', '교회 홈페이지 URL', 'https://...']
+                                                ] as [string, string, string][]
+                                            ).map(([key, label, placeholder]) => (
                                                 <div key={key}>
                                                     <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>{label}</label>
                                                     <input
                                                         type="text"
-                                                        value={settingsForm[key as keyof typeof settingsForm]}
+                                                        value={String(settingsForm[key as keyof typeof settingsForm])}
                                                         onChange={e => setSettingsForm(prev => ({ ...prev, [key]: e.target.value }))}
                                                         placeholder={placeholder}
                                                         style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }}
@@ -571,6 +575,15 @@ export default function App() {
                                                 <p style={{ fontSize: '11px', color: '#999', marginTop: '6px', lineHeight: 1.4 }}>
                                                     * 유료 버전은 말씀이 준비되지 않았을 때 AI가 자동으로 성경 읽기표에 맞춰 말씀을 생성합니다.
                                                 </p>
+                                                <div>
+                                                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>📋 은혜 게시판 공개 설정</label>
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: '10px', border: '1px solid #EEE', background: '#FAFAFA' }}>
+                                                        <span style={{ fontSize: '13px', color: '#555' }}>{settingsForm.community_visible ? '🟢 공개 (성도 누구나 볼 수 있음)' : '🔴 비공개 (관리자만 볼 수 있음)'}</span>
+                                                        <button onClick={() => setSettingsForm(prev => ({ ...prev, community_visible: !prev.community_visible }))} style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: settingsForm.community_visible ? '#E8F5E9' : '#FFEBEE', color: settingsForm.community_visible ? '#2E7D32' : '#C62828' }}>
+                                                            {settingsForm.community_visible ? '비공개로 전환' : '공개로 전환'}
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                         <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
@@ -763,84 +776,89 @@ export default function App() {
                                     <span style={{ fontSize: '20px' }}>☀️</span> 오늘의 큐티 시작
                                 </button>
 
-                                <div style={{ position: 'relative', width: '100%' }}>
-                                    <button onClick={async () => {
-                                        setView("community");
-                                        try {
-                                            const res = await fetch(`/api/community?church_id=${churchId}`);
-                                            const data = await res.json();
-                                            if (Array.isArray(data)) setCommunityPosts(data);
-                                        } catch (e) { console.error("게시판 로드 실패:", e); }
-                                    }} style={{
-                                        width: "100%", padding: "18px",
-                                        background: "#FCE4EC", color: "#AD1457",
-                                        fontWeight: 800, fontSize: "17px", borderRadius: "18px",
-                                        border: "1px solid #F8BBD0", cursor: "pointer",
-                                        boxShadow: "0 6px 15px rgba(173,20,87,0.15), inset 0 1px 0 rgba(255,255,255,0.5)",
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '8px',
-                                        transition: 'all 0.3s ease'
-                                    }} onMouseOver={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 20px rgba(173,20,87,0.2)"; }} onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 15px rgba(173,20,87,0.15), inset 0 1px 0 rgba(255,255,255,0.5)"; }}>
-                                        <span style={{ fontSize: '20px' }}>📝</span> 은혜나눔 게시판
-                                    </button>
+                                {/* 은혜나누 게시판: community_visible 설정에 따라 표시 (관리자는 항상 보임) */}
+                                {(churchSettings.community_visible || isAdmin) && (
+                                    <div style={{ position: 'relative', width: '100%' }}>
+                                        {!churchSettings.community_visible && isAdmin && (
+                                            <div style={{ position: 'absolute', top: '-10px', right: '8px', fontSize: '10px', background: '#FF9800', color: 'white', padding: '2px 8px', borderRadius: '8px', fontWeight: 700, zIndex: 1 }}>비공개 (관리자만 보임)</div>
+                                        )}
+                                        <button onClick={async () => {
+                                            setView("community");
+                                            try {
+                                                const res = await fetch(`/api/community?church_id=${churchId}`);
+                                                const data = await res.json();
+                                                if (Array.isArray(data)) setCommunityPosts(data);
+                                            } catch (e) { console.error("게시판 로드 실패:", e); }
+                                        }} style={{
+                                            width: "100%", padding: "18px",
+                                            background: "#FCE4EC", color: "#AD1457",
+                                            fontWeight: 800, fontSize: "17px", borderRadius: "18px",
+                                            border: "1px solid #F8BBD0", cursor: "pointer",
+                                            boxShadow: "0 6px 15px rgba(173,20,87,0.15), inset 0 1px 0 rgba(255,255,255,0.5)",
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '8px',
+                                            transition: 'all 0.3s ease'
+                                        }} onMouseOver={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 20px rgba(173,20,87,0.2)"; }} onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 15px rgba(173,20,87,0.15), inset 0 1px 0 rgba(255,255,255,0.5)"; }}>
+                                            <span style={{ fontSize: '20px' }}>📝</span> 은혜나눔 게시판
+                                        </button>
 
-                                    {/* 입체형 부유 알림종 (읽지 않은 알림이 있을 때만 표시) */}
-                                    {notifications.filter(n => !n.is_read).length > 0 && (
-                                        <div
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setShowNotiList(!showNotiList);
-                                            }}
-                                            style={{
-                                                position: 'absolute',
-                                                top: '-15px',
-                                                right: '15px',
-                                                width: '42px',
-                                                height: '42px',
-                                                background: 'white',
-                                                borderRadius: '50%',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                boxShadow: '0 6px 16px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.05)',
-                                                cursor: 'pointer',
-                                                zIndex: 1001,
-                                                border: '2px solid #E6A4B4',
-                                                transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                                                animation: 'bell-swing 2s infinite ease-in-out'
-                                            }}
-                                            onMouseOver={e => e.currentTarget.style.transform = "scale(1.1) rotate(10deg)"}
-                                            onMouseOut={e => e.currentTarget.style.transform = "scale(1) rotate(0)"}
-                                        >
-                                            <span style={{ fontSize: '20px' }}>🔔</span>
-                                            <div style={{
-                                                position: 'absolute',
-                                                top: '-6px',
-                                                right: '-6px',
-                                                background: '#FF5252',
-                                                color: 'white',
-                                                fontSize: '10px',
-                                                fontWeight: 900,
-                                                minWidth: '20px',
-                                                height: '20px',
-                                                padding: '0 4px',
-                                                borderRadius: '10px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                border: '2px solid white',
-                                                boxShadow: '0 2px 6px rgba(255,82,82,0.4)',
-                                                animation: 'bounce-light 1s infinite alternate'
-                                            }}>
-                                                {notifications.filter(n => !n.is_read).length}
+                                        {/* 입체형 부유 알림종 (읽지 않은 알림이 있을 때만 표시) */}
+                                        {notifications.filter(n => !n.is_read).length > 0 && (
+                                            <div
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setShowNotiList(!showNotiList);
+                                                }}
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: '-15px',
+                                                    right: '15px',
+                                                    width: '42px',
+                                                    height: '42px',
+                                                    background: 'white',
+                                                    borderRadius: '50%',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    boxShadow: '0 6px 16px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.05)',
+                                                    cursor: 'pointer',
+                                                    zIndex: 1001,
+                                                    border: '2px solid #E6A4B4',
+                                                    transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                                    animation: 'bell-swing 2s infinite ease-in-out'
+                                                }}
+                                                onMouseOver={e => e.currentTarget.style.transform = "scale(1.1) rotate(10deg)"}
+                                                onMouseOut={e => e.currentTarget.style.transform = "scale(1) rotate(0)"}
+                                            >
+                                                <span style={{ fontSize: '20px' }}>🔔</span>
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    top: '-6px',
+                                                    right: '-6px',
+                                                    background: '#FF5252',
+                                                    color: 'white',
+                                                    fontSize: '10px',
+                                                    fontWeight: 900,
+                                                    minWidth: '20px',
+                                                    height: '20px',
+                                                    padding: '0 4px',
+                                                    borderRadius: '10px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    border: '2px solid white',
+                                                    boxShadow: '0 2px 6px rgba(255,82,82,0.4)',
+                                                    animation: 'bounce-light 1s infinite alternate'
+                                                }}>
+                                                    {notifications.filter(n => !n.is_read).length}
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
-                                    {/* 알림 리스트 팝업 호출 위치 이동 */}
-                                    {renderNotificationList()}
-                                </div>
+                                        )}
+                                    </div>
+                                )} {/* community_visible 조건부 닫기 */}
+                                {renderNotificationList()}
 
                                 <div style={{ display: 'flex', gap: '8px', marginTop: '10px', width: '100%' }}>
                                     <button onClick={async () => {
@@ -1782,7 +1800,7 @@ export default function App() {
                                             {[['church_name', '교회 이름', '예: 예수인교회'], ['app_subtitle', '앱 부제목', '예: 큐티 동반자'], ['church_logo_url', '교회 로고 URL', 'https://...'], ['church_url', '교회 홈페이지 URL', 'https://...']].map(([key, label, placeholder]) => (
                                                 <div key={key}>
                                                     <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>{label}</label>
-                                                    <input type="text" value={settingsForm[key as keyof typeof settingsForm]} onChange={e => setSettingsForm(prev => ({ ...prev, [key]: e.target.value }))} placeholder={placeholder} style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }} />
+                                                    <input type="text" value={String(settingsForm[key as keyof typeof settingsForm])} onChange={e => setSettingsForm(prev => ({ ...prev, [key]: e.target.value }))} placeholder={placeholder} style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }} />
                                                 </div>
                                             ))}
                                             <div>
