@@ -139,10 +139,9 @@ export default function App() {
     }, []);
 
     useEffect(() => {
-        // 클라이언트 마운트 시점에 정확한 오늘 곡 인덱스 확보 (Hydration 방지)
-        const today = getTodayCcm();
-        const idx = CCM_LIST.findIndex(c => c.youtubeId === today.youtubeId);
-        setCcmIndex(idx >= 0 ? idx : 0);
+        // [초강력 랜덤 시스템] 앱을 켤 때마다 31곡 중 하나를 무작위로 추첨 (Shuffle On)
+        const randomIdx = Math.floor(Math.random() * CCM_LIST.length);
+        setCcmIndex(randomIdx);
     }, []);
 
     useEffect(() => {
