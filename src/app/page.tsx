@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { getGraceVerse } from '@/lib/navigator-verses';
 
@@ -87,6 +87,41 @@ export default function App() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [showNotiList, setShowNotiList] = useState(false);
 
+    // 승인 상태 및 교회 정보 체크 함수 (서버와 동기화 포함)
+    const checkApprovalStatus = useCallback(async () => {
+        if (!user) return;
+        try {
+            const { data, error } = await supabase.from('profiles').select('is_approved, church_id').eq('id', user.id).single();
+
+            if (error || !data) {
+                console.log("프로필 정보가 없거나 조회 실패, 서버와 동기화 시도...");
+                const syncRes = await fetch('/api/auth/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: user.id,
+                        email: user.email,
+                        name: user.user_metadata?.full_name || user.user_metadata?.name,
+                        avatar_url: user.user_metadata?.avatar_url
+                    })
+                });
+                if (syncRes.ok) {
+                    const syncData = await syncRes.json();
+                    setIsApproved(syncData.is_approved);
+                    console.log("동기화 완료:", syncData);
+                }
+                return;
+            }
+
+            if (data) {
+                setIsApproved(data.is_approved);
+                if (data.church_id) setChurchId(data.church_id);
+            }
+        } catch (err) {
+            console.error("상태 확인 중 오류:", err);
+        }
+    }, [user, setIsApproved, setChurchId]);
+
     useEffect(() => {
         if (user) {
             // DB 기반 관리자 권한 체크
@@ -100,32 +135,12 @@ export default function App() {
                 })
                 .catch(err => console.log("관리자 체크 실패 (조용히 넘어감):", err));
 
-            // 승인 상태 및 교회 정보 체크 함수
-            const checkApprovalStatus = () => {
-                supabase.from('profiles').select('is_approved, church_id').eq('id', user.id).single()
-                    .then(({ data, error }) => {
-                        if (error) {
-                            console.log("프로필 정보 조회 실패:", error.message);
-                            return;
-                        }
-                        if (data) {
-                            setIsApproved(data.is_approved);
-                            if (data.church_id) setChurchId(data.church_id);
-                        }
-                    });
-            };
-
-            // 최초 1회 체크
+            // 최초 1회 체크 및 동기화
             checkApprovalStatus();
 
-            // 승인 대기 중일 때 15초마다 자동으로 상태 재확인 (승인되면 자동 해제)
+            // 승인 대기 중일 때 15초마다 자동으로 상태 재확인
             const approvalPoller = setInterval(() => {
-                if (!isApproved) {
-                    console.log("승인 상태 자동 확인 중...");
-                    checkApprovalStatus();
-                } else {
-                    clearInterval(approvalPoller);
-                }
+                checkApprovalStatus();
             }, 15000);
 
             // 알림 가져오기
@@ -739,13 +754,32 @@ export default function App() {
                                 </div>
                             </div>
                         ) : !isApproved && !isAdmin ? (
-                            <div style={{ background: '#FFF9C4', padding: '24px', borderRadius: '20px', textAlign: 'center', border: '1px solid #FFF176', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-                                <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔒</div>
-                                <div style={{ fontSize: '16px', fontWeight: 700, color: '#333', marginBottom: '8px' }}>승인 대기 중입니다</div>
-                                <div style={{ fontSize: '13px', color: '#666', lineHeight: 1.5 }}>
-                                    성도님 반가워요!<br />
-                                    아직 관리자의 승인이 완료되지 않았습니다.<br />
-                                    잠시만 기다려 주시면 곧 이용하실 수 있어요. 🐑
+                            <div style={{ background: '#FFFDE7', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', border: '1px solid #FFF59D', textAlign: 'center' }}>
+                                <div style={{ fontSize: '40px', marginBottom: '15px' }}>🔒</div>
+                                <div style={{ fontSize: '18px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>승인 대기 중입니다</div>
+                                <div style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, marginBottom: '24px' }}>
+                                    성도님 반가워요!<br />아직 관리자의 승인이 완료되지 않았습니다.<br />잠시만 기다려 주시면 곧 이용하실 수 있어요. 🐑
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <button
+                                        onClick={() => {
+                                            const btn = document.getElementById('refresh-btn');
+                                            if (btn) btn.innerText = "상태 확인 중...";
+                                            checkApprovalStatus().finally(() => {
+                                                if (btn) btn.innerText = "🔄 상태 다시 확인하기";
+                                            });
+                                        }}
+                                        id="refresh-btn"
+                                        style={{ width: '100%', padding: '14px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                    >
+                                        🔄 상태 다시 확인하기
+                                    </button>
+                                    <button
+                                        onClick={handleLogout}
+                                        style={{ width: '100%', padding: '12px', background: 'transparent', color: '#999', border: 'none', fontSize: '13px', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+                                    >
+                                        다른 계정으로 로그인하기
+                                    </button>
                                 </div>
                             </div>
                         ) : (
