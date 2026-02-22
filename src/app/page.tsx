@@ -61,6 +61,15 @@ interface Notification {
     created_at: string;
 }
 
+// [초극강 최적화] YouTube API 스크립트를 파일 파싱 즉시 로드 시작 (병렬 처리 극대화)
+if (typeof window !== 'undefined' && !document.getElementById('yt-api-script')) {
+    const tag = document.createElement('script');
+    tag.id = 'yt-api-script';
+    tag.src = "https://www.youtube.com/iframe_api";
+    tag.async = true;
+    document.head.appendChild(tag);
+}
+
 export default function App() {
     const [view, setView] = useState<View>("home");
     const [messages, setMessages] = useState([
@@ -73,6 +82,7 @@ export default function App() {
     const [qtStep, setQtStep] = useState<"read" | "reflect" | "grace" | "pray" | "done">("read");
     const [communityPosts, setCommunityPosts] = useState<Post[]>([]);
     const [isPrivatePost, setIsPrivatePost] = useState(false); // 은혜나눔 비공개 여부
+    const [lastToggleTime, setLastToggleTime] = useState(0); // 이중 트리거 방지용
     const [commentInputs, setCommentInputs] = useState<{ [key: number]: string }>({});
     const [passageInput, setPassageInput] = useState("");
     const [passageChat, setPassageChat] = useState<{ role: string; content: string }[]>([]);
@@ -92,7 +102,7 @@ export default function App() {
     const [ccmVolume, setCcmVolume] = useState(50);
     const [isCcmPlaying, setIsCcmPlaying] = useState(false);
     const [isApiReady, setIsApiReady] = useState(false);
-    const [playRequested, _setPlayRequested] = useState(true);
+    const [playRequested, _setPlayRequested] = useState(true); // 처음부터 재생 의도 On
     const playRequestedRef = useRef(true);
     const hasInteracted = useRef(false); // 사용자 터치 여부 (오디오 잠금 해제용)
     const setPlayRequested = (val: boolean) => {
@@ -129,137 +139,133 @@ export default function App() {
     }, []);
 
     useEffect(() => {
+        // 클라이언트 마운트 시점에 정확한 오늘 곡 인덱스 확보 (Hydration 방지)
         const today = getTodayCcm();
-        const initialIdx = CCM_LIST.findIndex(c => c.youtubeId === today.youtubeId);
-        setCcmIndex(initialIdx >= 0 ? initialIdx : 0);
+        const idx = CCM_LIST.findIndex(c => c.youtubeId === today.youtubeId);
+        setCcmIndex(idx >= 0 ? idx : 0);
     }, []);
 
     useEffect(() => {
         setTodayCcm(CCM_LIST[ccmIndex]);
-        // 곡이 바뀌면 재생 의도가 있을 때만 로드
-        if (playerRef.current && playerRef.current.loadVideoById && playRequested) {
-            playerRef.current.loadVideoById(CCM_LIST[ccmIndex].youtubeId);
+        // 곡이 바뀌면 재생 시도
+        if (playerRef.current && playerRef.current.loadVideoById) {
+            if (playRequestedRef.current) {
+                playerRef.current.loadVideoById(CCM_LIST[ccmIndex].youtubeId);
+            } else {
+                playerRef.current.cueVideoById(CCM_LIST[ccmIndex].youtubeId);
+            }
             setPlayerStatus("Switching..");
         }
-    }, [ccmIndex, playRequested]);
+    }, [ccmIndex]);
 
     useEffect(() => {
-        // 1. YouTube API 공식 콜백 등록
-        if (typeof window !== 'undefined') {
-            (window as any).onYouTubeIframeAPIReady = () => {
-                console.log("🌐 YouTube API Ready (Official)");
-                setIsApiReady(true);
-                setPlayerStatus("Engine Ready");
-            };
+        if (typeof window === 'undefined') return;
 
-            // 이미 로드된 경우 체크
-            if ((window as any).YT && (window as any).YT.Player) {
-                setIsApiReady(true);
-            } else if (!(window as any).YT) {
-                const tag = document.createElement('script');
-                tag.src = "https://www.youtube.com/iframe_api";
-                tag.async = true;
-                document.body.appendChild(tag);
-            }
+        // [초속 로딩] YouTube 서버 사전 연결
+        const preconnects = [
+            "https://www.youtube.com",
+            "https://www.google.com",
+            "https://s.ytimg.com",
+            "https://i.ytimg.com"
+        ];
+        preconnects.forEach(url => {
+            const link = document.createElement('link');
+            link.rel = 'preconnect';
+            link.href = url;
+            document.head.appendChild(link);
+        });
+
+        // API 준비 콜백 정의
+        (window as any).onYouTubeIframeAPIReady = () => {
+            console.log("📥 YT API Ready (Stable)");
+            setIsApiReady(true);
+            setPlayerStatus("Engine Ready");
+        };
+
+        // 이미 로드된 경우 체크
+        if ((window as any).YT && (window as any).YT.Player) {
+            setIsApiReady(true);
+            setPlayerStatus("Engine Ready");
         }
     }, []);
 
     const initPlayer = useCallback(() => {
+        if (!isApiReady || !todayCcm || playerRef.current) return;
+
         const container = document.getElementById('ccm-player-hidden-global');
-        if (!isApiReady || !todayCcm || !container) {
-            console.log("⚠️ Init deferred:", { isApiReady, hasCcm: !!todayCcm, hasContainer: !!container });
-            return;
-        }
+        if (!container) return;
 
-        if (playerRef.current) {
-            try { playerRef.current.destroy(); } catch (e) { }
-            playerRef.current = null;
-        }
-
-        console.log("🏗 Creating New Player Instance...");
-        setPlayerStatus("Building...");
+        console.log("🏗 Initializing Player...");
+        setPlayerStatus("Loading..");
 
         try {
             playerRef.current = new (window as any).YT.Player('ccm-player-hidden-global', {
-                height: '360', // 브라우저 배터리 세이버 방지를 위해 실물 크기 할당
+                height: '360',
                 width: '640',
                 videoId: todayCcm.youtubeId,
                 playerVars: {
-                    'autoplay': playRequestedRef.current ? 1 : 0, // 현재 의도에 따라 동적 설정
-                    'mute': playRequestedRef.current ? 1 : 0,    // 정책 우회를 위한 뮤트 시작
+                    'autoplay': 0,
+                    'mute': 1,
                     'controls': 0,
                     'showinfo': 0,
                     'rel': 0,
                     'iv_load_policy': 3,
                     'enablejsapi': 1,
                     'playsinline': 1,
-                    'origin': typeof window !== 'undefined' ? window.location.origin : ''
+                    'origin': window.location.origin
                 },
                 events: {
                     'onReady': (event: any) => {
-                        console.log("✅ Player Prepared!");
-                        // 초기 준비가 되면 즉시 예열(Pre-warming) 시도
+                        console.log("✅ Player Ready");
+                        setPlayerStatus("Ready");
+                        // 만약 유저가 이미 재생을 눌렀다면 시동
                         if (playRequestedRef.current) {
-                            try {
-                                event.target.mute(); // 일단 무음으로
-                                event.target.playVideo(); // 재생 시동 (브라우저 정책 우회 및 버퍼링 시작)
-                                setPlayerStatus("Warming..");
-                            } catch (e) { }
+                            event.target.playVideo();
                         }
                     },
                     'onStateChange': (event: any) => {
                         const state = event.data;
                         const YTState = (window as any).YT.PlayerState;
 
-                        // [강력 필터] 재생 의도가 없는데 재생/버퍼링 시 즉각 차단
-                        if (!playRequestedRef.current && (state === YTState.PLAYING || state === YTState.BUFFERING)) {
-                            event.target.mute(); // 일단 소리부터 끄기
-                            event.target.pauseVideo();
-                            return;
+                        // MediaSession API 연동 (모바일 잠금화면 제어)
+                        if ('mediaSession' in navigator && todayCcm) {
+                            navigator.mediaSession.metadata = new MediaMetadata({
+                                title: todayCcm.title,
+                                artist: todayCcm.artist,
+                                album: 'Somy QT CCM',
+                                artwork: [
+                                    { src: `https://img.youtube.com/vi/${todayCcm.youtubeId}/mqdefault.jpg`, sizes: '320x180', type: 'image/jpeg' }
+                                ]
+                            });
+
+                            navigator.mediaSession.setActionHandler('play', () => { togglePlay(); });
+                            navigator.mediaSession.setActionHandler('pause', () => { togglePlay(); });
+                            navigator.mediaSession.setActionHandler('nexttrack', () => { handleNextCcm(); });
+                            navigator.mediaSession.setActionHandler('previoustrack', () => { handlePrevCcm(); });
+
+                            if (state === YTState.PLAYING) navigator.mediaSession.playbackState = 'playing';
+                            else if (state === YTState.PAUSED) navigator.mediaSession.playbackState = 'paused';
                         }
 
                         if (state === YTState.PLAYING) {
                             setIsCcmPlaying(true);
-                            // 사용자가 터치한 적이 있다면 소리 켜기 (유도)
-                            if (hasInteracted.current) {
-                                event.target.unMute();
-                                event.target.setVolume(ccmVolume);
-                            }
                             setPlayerStatus("Playing");
+                            if (hasInteracted.current) event.target.unMute();
                         } else if (state === YTState.PAUSED) {
                             setIsCcmPlaying(false);
                             setPlayerStatus("Paused");
-                        } else if (state === YTState.BUFFERING) {
-                            setPlayerStatus("Loading..");
-                        } else if (state === YTState.CUED) {
-                            // 브라우저가 자동재생을 막은 경우 (터치 대기)
-                            if (playRequestedRef.current && !hasInteracted.current) {
-                                setPlayerStatus("Tap twice");
-                            }
                         }
                     },
                     'onError': (e: any) => {
                         console.error("❌ Player Error:", e.data);
-                        const errCode = e.data;
-                        if (errCode === 150 || errCode === 101) {
-                            setPlayerStatus("RESTRICTED!");
-                            // 임베딩 제한이면 2초 뒤 자동 다음 곡
-                            setTimeout(handleNextCcm, 2000);
-                        } else {
-                            setPlayerStatus("Err: " + errCode);
-                            if (initAttempts.current < 2) {
-                                initAttempts.current++;
-                                setTimeout(initPlayer, 2000);
-                            }
-                        }
+                        handleNextCcm(); // 에러 시 다음 곡으로 토스
                     }
                 }
             });
         } catch (err) {
-            console.error("Fatal Player Init Error:", err);
-            setPlayerStatus("Fatal Error");
+            console.error("Fatal Init Error:", err);
         }
-    }, [isApiReady, todayCcm, handleNextCcm, ccmVolume]);
+    }, [isApiReady, todayCcm, handleNextCcm]);
 
     useEffect(() => {
         if (isApiReady && todayCcm && !playerRef.current) {
@@ -267,41 +273,23 @@ export default function App() {
         }
     }, [isApiReady, todayCcm, initPlayer]);
 
-    // 강력한 자동 재생 및 유령 재생 방지 통합 감시 루틴
+    // 강력한 재생 보장 watchdog
     useEffect(() => {
         const watchdog = setInterval(() => {
-            if (!playerRef.current || typeof playerRef.current.getPlayerState !== 'function' || pauseCooldown.current) return;
-
+            if (!playerRef.current || !playerRef.current.getPlayerState) return;
             const state = playerRef.current.getPlayerState();
             const YTState = (window as any).YT.PlayerState;
 
-            // 1. 재생 요청 중 (자동 재생 및 복구)
-            if (playRequestedRef.current) {
-                if (state !== YTState.PLAYING && state !== YTState.BUFFERING) {
-                    try {
-                        // 사용자 터치 전이면 일단 mute 상태로라도 재생 (정책 우회)
-                        if (!hasInteracted.current) playerRef.current.mute();
-                        else {
-                            playerRef.current.unMute();
-                            playerRef.current.setVolume(ccmVolume);
-                        }
-                        playerRef.current.playVideo();
-                    } catch (e) { }
-                }
+            if (playRequestedRef.current && state !== YTState.PLAYING && state !== YTState.BUFFERING) {
+                // 재생 요청 중인데 안 꺼져있으면 시도 (정책 우회를 위해 mute 상태 유지 가능)
+                try {
+                    if (!hasInteracted.current) playerRef.current.mute();
+                    playerRef.current.playVideo();
+                } catch (e) { }
             }
-            // 2. 재생 요청 없음 (유령 재생 차단)
-            else {
-                if (state === YTState.PLAYING || state === YTState.BUFFERING) {
-                    try {
-                        playerRef.current.mute(); // 소리부터 무조건 끄기 (MediaSession 차단)
-                        playerRef.current.pauseVideo();
-                    } catch (e) { }
-                }
-            }
-        }, 300); // 0.3초 주기로 초정밀 감시 (반응성 극대화)
-
+        }, 300); // 0.3초 주기로 초정밀 감시
         return () => clearInterval(watchdog);
-    }, [ccmVolume]);
+    }, []);
 
     // 유저 전역 점화 시스템 (터치 이력이 생기는 순간 모든 오디오 엔진 부팅)
     useEffect(() => {
@@ -724,34 +712,46 @@ export default function App() {
     }, []);
 
     const togglePlay = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
-        if (e) e.stopPropagation();
+        if (e) {
+            e.stopPropagation();
+            // [모바일 이중 트리거 방지] 300ms 내 재입력 차단
+            const now = Date.now();
+            if (now - lastToggleTime < 300) return;
+            setLastToggleTime(now);
+        }
+
         if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(15);
+
+        hasInteracted.current = true;
+
         if (!playerRef.current) {
             setPlayRequested(true);
             initPlayer();
             return;
         }
+
         try {
             const state = playerRef.current.getPlayerState?.();
-            if (state === 1) { // Playing -> Pause
-                pauseCooldown.current = true;
+            const YTState = (window as any).YT.PlayerState;
+
+            if (state === YTState.PLAYING) {
                 setPlayRequested(false);
-                playerRef.current.mute();
                 playerRef.current.pauseVideo();
                 setPlayerStatus("Paused");
-                setTimeout(() => { pauseCooldown.current = false; }, 1500);
-            } else { // Paused -> Play
-                hasInteracted.current = true;
+                if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+            } else {
                 setPlayRequested(true);
                 playerRef.current.unMute();
+                playerRef.current.setVolume(ccmVolume);
                 playerRef.current.playVideo();
                 setPlayerStatus("Playing");
+                if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
             }
         } catch (err) {
-            setPlayRequested(true);
+            console.error("Play Toggle Error:", err);
             initPlayer();
         }
-    }, [isApiReady, todayCcm, initPlayer]);
+    }, [ccmVolume, initPlayer, lastToggleTime]);
 
     const renderContent = () => {
         if (view === "home") {
@@ -1048,7 +1048,7 @@ export default function App() {
                                 <div style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, marginBottom: '24px' }}>
                                     성도님 반가워요!<br />아직 관리자의 승인이 완료되지 않았습니다.<br />잠시만 기다려 주시면 곧 이용하실 수 있어요.
                                     <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', margin: '15px auto 0', border: '2px solid #EEE' }}>
-                                        <img src={SOMY_IMG} alt="소미" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <img src={SOMY_IMG} alt="소미" style={{ width: '100%', height: '100%', objectFit: "cover" }} />
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -2181,26 +2181,22 @@ export default function App() {
                                 justifyContent: 'center'
                             }}>
                                 <div
-                                    onClick={(e) => hapticClick(e, () => { setPlayRequested(true); initPlayer(); })}
-                                    onTouchStart={(e) => hapticClick(e, () => { setPlayRequested(true); initPlayer(); })}
+                                    onClick={(e) => hapticClick(e, () => togglePlay(e))}
                                     style={{ position: 'absolute', top: '15px', fontSize: '10px', fontWeight: 900, color: '#B8924A', cursor: 'pointer', zIndex: 15 }}
                                 >RESET</div>
 
                                 <div
                                     onClick={(e) => hapticClick(e, handlePrevCcm)}
-                                    onTouchStart={(e) => hapticClick(e, handlePrevCcm)}
                                     style={{ position: 'absolute', left: '15px', fontSize: '12px', color: '#BBB', cursor: 'pointer', zIndex: 11 }}
                                 >⏮</div>
 
                                 <div
                                     onClick={(e) => hapticClick(e, handleNextCcm)}
-                                    onTouchStart={(e) => hapticClick(e, handleNextCcm)}
                                     style={{ position: 'absolute', right: '15px', fontSize: '12px', color: '#BBB', cursor: 'pointer', zIndex: 11 }}
                                 >⏭</div>
 
                                 <div
                                     onClick={(e) => hapticClick(e, () => togglePlay(e))}
-                                    onTouchStart={(e) => hapticClick(e, () => togglePlay(e))}
                                     style={{
                                         width: '60px',
                                         height: '60px',
@@ -2344,7 +2340,7 @@ export default function App() {
                             const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
                             setQtForm({ date: today, reference: '', passage: '', question1: '', question2: '', question3: '', prayer: '' });
                             setView('qtManage');
-                        }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
+                        }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
                             <div style={{ width: '48px', height: '48px', background: '#E3F2FD', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📖</div>
                             <div style={{ flex: 1 }}>
                                 <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '2px' }}>오늘의 큐티 말씀 관리</div>
@@ -2610,8 +2606,7 @@ export default function App() {
                 >
                     {/* RESET (MENU - Top) */}
                     <div
-                        onClick={(e) => hapticClick(e, () => { setPlayRequested(true); initPlayer(); })}
-                        onTouchStart={(e) => hapticClick(e, () => { setPlayRequested(true); initPlayer(); })}
+                        onClick={(e) => hapticClick(e, () => togglePlay(e))}
                         style={{ position: 'absolute', top: '8px', fontSize: '10px', fontWeight: 900, color: '#B8924A', cursor: 'pointer', zIndex: 15, transition: 'transform 0.1s' }}
                         onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.85)'}
                         onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
@@ -2620,21 +2615,18 @@ export default function App() {
                     {/* PREV ⏮ (West - Very Small, between circles) */}
                     <div
                         onClick={(e) => hapticClick(e, handlePrevCcm)}
-                        onTouchStart={(e) => hapticClick(e, handlePrevCcm)}
                         style={{ position: 'absolute', left: '12px', fontSize: '11px', color: '#BBB', cursor: 'pointer', zIndex: 11 }}
                     >⏮</div>
 
                     {/* NEXT ⏭ (East - Very Small, between circles) */}
                     <div
                         onClick={(e) => hapticClick(e, handleNextCcm)}
-                        onTouchStart={(e) => hapticClick(e, handleNextCcm)}
                         style={{ position: 'absolute', right: '12px', fontSize: '11px', color: '#BBB', cursor: 'pointer', zIndex: 11 }}
                     >⏭</div>
 
                     {/* Center Center Play Button - Enlarged and Iconized */}
                     <div
                         onClick={(e) => hapticClick(e, () => togglePlay(e))}
-                        onTouchStart={(e) => hapticClick(e, () => togglePlay(e as any))}
                         style={{
                             width: '48px',
                             height: '48px',
@@ -2667,12 +2659,12 @@ export default function App() {
             {/* 실제 플레이어 프레임 (브라우저 쓰로틀링 방지를 위해 실물 크기로 상단 고정) */}
             <div id="ccm-player-container" style={{
                 position: 'fixed',
-                top: '-10px',
-                left: '-10px',
-                width: '200px',
-                height: '200px',
-                zIndex: -1,
-                opacity: 0.01,
+                top: '-500px', // 화면 밖으로 멀리 배치 (절전 모드 방지)
+                left: '-500px',
+                width: '320px', // 실제 크기 확보
+                height: '240px',
+                zIndex: -100,
+                opacity: 1, // 투명도 1로 유지하여 '보이는 플레이어'로 인식 유도
                 pointerEvents: 'none',
                 overflow: 'hidden',
                 background: '#000'
