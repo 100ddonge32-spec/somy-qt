@@ -63,6 +63,18 @@ export async function DELETE(req: NextRequest) {
 
         if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
+        // 1단계: 연결된 댓글 먼저 삭제 (외래키 제약 해결)
+        const { error: commentDeleteError } = await supabaseAdmin
+            .from('community_comments')
+            .delete()
+            .eq('post_id', id);
+
+        if (commentDeleteError) {
+            console.error('댓글 삭제 실패:', commentDeleteError);
+            // 댓글 테이블이 없거나 칼럼명이 다를 수 있으므로 에러 무시하고 진행
+        }
+
+        // 2단계: 게시글 삭제
         const { error } = await supabaseAdmin
             .from('community_posts')
             .delete()
@@ -74,6 +86,7 @@ export async function DELETE(req: NextRequest) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
+
 
 // 게시글 수정
 export async function PATCH(req: NextRequest) {

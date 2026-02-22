@@ -1485,9 +1485,14 @@ export default function App() {
                     if (res.ok) {
                         setCommunityPosts(communityPosts.filter(post => post.id !== postId));
                     } else {
-                        alert("삭제 실패");
+                        const errData = await res.json().catch(() => ({}));
+                        console.error("삭제 실패 상세:", errData);
+                        alert(`삭제 실패: ${errData.error || '알 수 없는 오류'} (status: ${res.status})`);
                     }
-                } catch (e) { console.error("삭제 중 오류:", e); }
+                } catch (e) {
+                    console.error("삭제 중 오류:", e);
+                    alert("삭제 중 네트워크 오류가 발생했습니다.");
+                }
             };
 
             const handleUpdatePost = async () => {
