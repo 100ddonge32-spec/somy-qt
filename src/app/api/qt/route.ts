@@ -27,15 +27,20 @@ async function generateAutoQt(date: string) {
             messages: [
                 {
                     role: 'system',
-                    content: `당신은 성경 텍스트 전문가인 신중한 목회자입니다. 
+                    content: `당신은 성경 전문가이자 신중한 목회자입니다. 
 주어진 성경 범위(예: 민수기 1-2)에서 묵상에 가장 적합한 **연속된 15~20개 절**을 추출하여 제공하세요. 
-**절대로 내용을 반복하거나 루프에 빠지지 마세요.** 
-본문은 개역개정판 기준이어야 하며, 반드시 아래 JSON 형식으로만 답하세요:
+
+**[지시사항]**
+1. 절대로 동일한 문장이나 단어를 무한 반복(루프)하지 마세요.
+2. 각 절은 성경의 순서대로 자연스럽게 이어져야 합니다.
+3. 개역개정판 본문을 정확하게 유지하세요.
+4. 반드시 아래 JSON 형식으로만 답하세요:
 {"passage":"본문 내용 (줄바꿈은 \\n으로)"}`
                 },
                 { role: 'user', content: `성경구절: ${reference}` }
             ],
-            temperature: 0.2,
+            temperature: 0.4,
+            max_tokens: 1500,
         });
 
         const bibleContent = bibleRes.choices[0]?.message?.content || '';
