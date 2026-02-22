@@ -98,9 +98,9 @@ export default function App() {
     const playerRef = useRef<any>(null);
 
     useEffect(() => {
-        // 화면 하단 오른쪽에 초기 위치 설정
+        // 화면 중앙 우측에 초기 위치 설정 (더 잘 보이도록)
         if (typeof window !== 'undefined') {
-            setPlayerPos({ x: window.innerWidth - 85, y: window.innerHeight - 180 });
+            setPlayerPos({ x: window.innerWidth - 110, y: window.innerHeight * 0.4 });
         }
     }, []);
 
@@ -2409,18 +2409,38 @@ export default function App() {
                 >
                     <div
                         onClick={(e) => { e.stopPropagation(); initPlayer(); }}
-                        style={{ fontSize: '9px', color: '#B8924A', position: 'absolute', top: '8px', fontWeight: 800 }}
+                        style={{ fontSize: '9px', color: '#B8924A', position: 'absolute', top: '7px', fontWeight: 800, letterSpacing: '0.5px' }}
                     > RESET </div>
                     <div
                         onClick={(e) => { e.stopPropagation(); handlePrevCcm(); }}
-                        style={{ fontSize: '10px', color: '#AAA', position: 'absolute', left: '10px', cursor: 'pointer', padding: '10px' }}
+                        style={{
+                            fontSize: '12px',
+                            color: '#BBB',
+                            position: 'absolute',
+                            left: '6px',
+                            cursor: 'pointer',
+                            padding: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
                     >⏮</div>
                     <div
                         onClick={(e) => { e.stopPropagation(); handleNextCcm(); }}
-                        style={{ fontSize: '10px', color: '#AAA', position: 'absolute', right: '10px', cursor: 'pointer', padding: '10px' }}
+                        style={{
+                            fontSize: '12px',
+                            color: '#BBB',
+                            position: 'absolute',
+                            right: '6px',
+                            cursor: 'pointer',
+                            padding: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
                     >⏭</div>
 
-                    {/* 중앙 선택 버튼 (더 크게 개선) */}
+                    {/* 중앙 선택 버튼 */}
                     <div style={{
                         width: '42px',
                         height: '42px',
