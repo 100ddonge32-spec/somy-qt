@@ -59,17 +59,15 @@ export async function POST(req: NextRequest) {
 // 게시글 삭제
 export async function DELETE(req: NextRequest) {
     try {
-        const { searchParams } = new URL(req.url);
-        const rawId = searchParams.get('id');
+        // URL 파라미터 인코딩 문제 회피: body의 JSON에서 id를 읽음
+        const body = await req.json();
+        const { id } = body;
 
-        if (!rawId) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
-
-        // URL에서 + 기호가 공백으로 변환되므로 다시 디코딩 (타임스탬프 id 대응)
-        const id = decodeURIComponent(rawId);
+        if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
         console.log(`[DELETE] 게시글 삭제 시작. id=${id}`);
 
-        // 1단계: 연결된 댓글 먼저 삭제 (외래키 제약 해결)
+        // 1단계: 연결된 댓글 먼저 삭제
         const { error: commentDeleteError } = await supabaseAdmin
             .from('community_comments')
             .delete()
