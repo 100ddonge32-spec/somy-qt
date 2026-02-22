@@ -47,6 +47,7 @@ interface Post {
     content: string;
     created_at: string;
     comments: Comment[];
+    is_private?: boolean; // 비공개 여부
 }
 
 interface Notification {
@@ -70,6 +71,7 @@ export default function App() {
     const [graceInput, setGraceInput] = useState("");
     const [qtStep, setQtStep] = useState<"read" | "reflect" | "grace" | "pray" | "done">("read");
     const [communityPosts, setCommunityPosts] = useState<Post[]>([]);
+    const [isPrivatePost, setIsPrivatePost] = useState(false); // 은혜나눔 비공개 여부
     const [commentInputs, setCommentInputs] = useState<{ [key: number]: string }>({});
     const [passageInput, setPassageInput] = useState("");
     const [passageChat, setPassageChat] = useState<{ role: string; content: string }[]>([]);
@@ -776,88 +778,36 @@ export default function App() {
                                     <span style={{ fontSize: '20px' }}>☀️</span> 오늘의 큐티 시작
                                 </button>
 
-                                {/* 은혜나누 게시판: community_visible 설정에 따라 표시 (관리자는 항상 보임) */}
-                                {(churchSettings.community_visible || isAdmin) && (
-                                    <div style={{ position: 'relative', width: '100%' }}>
-                                        {!churchSettings.community_visible && isAdmin && (
-                                            <div style={{ position: 'absolute', top: '-10px', right: '8px', fontSize: '10px', background: '#FF9800', color: 'white', padding: '2px 8px', borderRadius: '8px', fontWeight: 700, zIndex: 1 }}>비공개 (관리자만 보임)</div>
-                                        )}
-                                        <button onClick={async () => {
-                                            setView("community");
-                                            try {
-                                                const res = await fetch(`/api/community?church_id=${churchId}`);
-                                                const data = await res.json();
-                                                if (Array.isArray(data)) setCommunityPosts(data);
-                                            } catch (e) { console.error("게시판 로드 실패:", e); }
-                                        }} style={{
-                                            width: "100%", padding: "18px",
-                                            background: "#FCE4EC", color: "#AD1457",
-                                            fontWeight: 800, fontSize: "17px", borderRadius: "18px",
-                                            border: "1px solid #F8BBD0", cursor: "pointer",
-                                            boxShadow: "0 6px 15px rgba(173,20,87,0.15), inset 0 1px 0 rgba(255,255,255,0.5)",
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: '8px',
-                                            transition: 'all 0.3s ease'
-                                        }} onMouseOver={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 20px rgba(173,20,87,0.2)"; }} onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 15px rgba(173,20,87,0.15), inset 0 1px 0 rgba(255,255,255,0.5)"; }}>
-                                            <span style={{ fontSize: '20px' }}>📝</span> 은혜나눔 게시판
-                                        </button>
+                                <div style={{ position: 'relative', width: '100%' }}>
+                                    <button onClick={async () => {
+                                        setView("community");
+                                        try {
+                                            const res = await fetch(`/api/community?church_id=${churchId}`);
+                                            const data = await res.json();
+                                            if (Array.isArray(data)) setCommunityPosts(data);
+                                        } catch (e) { console.error("게시판 로드 실패:", e); }
+                                    }} style={{
+                                        width: "100%", padding: "18px",
+                                        background: "#FCE4EC", color: "#AD1457",
+                                        fontWeight: 800, fontSize: "17px", borderRadius: "18px",
+                                        border: "1px solid #F8BBD0", cursor: "pointer",
+                                        boxShadow: "0 6px 15px rgba(173,20,87,0.15), inset 0 1px 0 rgba(255,255,255,0.5)",
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                        transition: 'all 0.3s ease'
+                                    }} onMouseOver={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 20px rgba(173,20,87,0.2)"; }} onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 15px rgba(173,20,87,0.15), inset 0 1px 0 rgba(255,255,255,0.5)"; }}>
+                                        <span style={{ fontSize: '20px' }}>📝</span> 은혜나눔 게시판
+                                    </button>
 
-                                        {/* 입체형 부유 알림종 (읽지 않은 알림이 있을 때만 표시) */}
-                                        {notifications.filter(n => !n.is_read).length > 0 && (
-                                            <div
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setShowNotiList(!showNotiList);
-                                                }}
-                                                style={{
-                                                    position: 'absolute',
-                                                    top: '-15px',
-                                                    right: '15px',
-                                                    width: '42px',
-                                                    height: '42px',
-                                                    background: 'white',
-                                                    borderRadius: '50%',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    boxShadow: '0 6px 16px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.05)',
-                                                    cursor: 'pointer',
-                                                    zIndex: 1001,
-                                                    border: '2px solid #E6A4B4',
-                                                    transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                                                    animation: 'bell-swing 2s infinite ease-in-out'
-                                                }}
-                                                onMouseOver={e => e.currentTarget.style.transform = "scale(1.1) rotate(10deg)"}
-                                                onMouseOut={e => e.currentTarget.style.transform = "scale(1) rotate(0)"}
-                                            >
-                                                <span style={{ fontSize: '20px' }}>🔔</span>
-                                                <div style={{
-                                                    position: 'absolute',
-                                                    top: '-6px',
-                                                    right: '-6px',
-                                                    background: '#FF5252',
-                                                    color: 'white',
-                                                    fontSize: '10px',
-                                                    fontWeight: 900,
-                                                    minWidth: '20px',
-                                                    height: '20px',
-                                                    padding: '0 4px',
-                                                    borderRadius: '10px',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    border: '2px solid white',
-                                                    boxShadow: '0 2px 6px rgba(255,82,82,0.4)',
-                                                    animation: 'bounce-light 1s infinite alternate'
-                                                }}>
-                                                    {notifications.filter(n => !n.is_read).length}
-                                                </div>
+                                    {/* 알림종 */}
+                                    {notifications.filter(n => !n.is_read).length > 0 && (
+                                        <div onClick={(e) => { e.stopPropagation(); setShowNotiList(!showNotiList); }} style={{ position: 'absolute', top: '-15px', right: '15px', width: '42px', height: '42px', background: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 16px rgba(0,0,0,0.12)', cursor: 'pointer', zIndex: 1001, border: '2px solid #E6A4B4', animation: 'bell-swing 2s infinite ease-in-out' }} onMouseOver={e => e.currentTarget.style.transform = "scale(1.1) rotate(10deg)"} onMouseOut={e => e.currentTarget.style.transform = "scale(1) rotate(0)"}>
+                                            <span style={{ fontSize: '20px' }}>🔔</span>
+                                            <div style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#FF5252', color: 'white', fontSize: '10px', fontWeight: 900, minWidth: '20px', height: '20px', padding: '0 4px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white' }}>
+                                                {notifications.filter(n => !n.is_read).length}
                                             </div>
-                                        )}
-                                    </div>
-                                )} {/* community_visible 조건부 닫기 */}
+                                        </div>
+                                    )}
+                                </div>
                                 {renderNotificationList()}
 
                                 <div style={{ display: 'flex', gap: '8px', marginTop: '10px', width: '100%' }}>
@@ -961,12 +911,14 @@ export default function App() {
                                 user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
                                 avatar_url: user.user_metadata?.avatar_url || null,
                                 content: graceInput,
-                                church_id: churchId
+                                church_id: churchId,
+                                is_private: isPrivatePost  // ✅ 비공개 여부 전달
                             })
                         });
                         if (res.ok) {
                             const newPost = await res.json();
                             setCommunityPosts([newPost, ...communityPosts]);
+                            setIsPrivatePost(false); // 저장 후 초기화
                         }
                     } catch (e) { console.error("은혜나눔 저장 실패:", e); }
                 }
@@ -1135,7 +1087,22 @@ export default function App() {
                                     </div>
                                     <p style={{ fontSize: '14px', color: '#666', marginBottom: '16px' }}>오늘 말씀을 통해 받은 은혜를 기록해보세요.</p>
                                     <textarea value={graceInput} onChange={(e) => setGraceInput(e.target.value)} placeholder="성도들과 나누고 싶은 은혜를 자유롭게 적어주세요..." style={{ width: '100%', height: '200px', border: '1px solid #EEE', borderRadius: '15px', padding: '16px', boxSizing: 'border-box', outline: 'none', fontSize: '15px', background: 'white', fontFamily: 'inherit', lineHeight: 1.6 }} />
-                                    <div style={{ marginTop: '12px', fontSize: '12px', color: '#999', textAlign: 'center' }}>나눈 은혜는 성도들과 함께 볼 수 있습니다.</div>
+                                    {/* 비공개 토글 */}
+                                    <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <span style={{ fontSize: '12px', color: '#999' }}>
+                                            {isPrivatePost ? '🔒 나와 관리자만 볼 수 있어요' : '🌐 성도들과 함께 볼 수 있습니다'}
+                                        </span>
+                                        <button
+                                            onClick={() => setIsPrivatePost(!isPrivatePost)}
+                                            style={{
+                                                padding: '5px 12px', border: 'none', borderRadius: '20px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                                                background: isPrivatePost ? '#F3E5F5' : '#E8F5E9',
+                                                color: isPrivatePost ? '#7B1FA2' : '#2E7D32',
+                                                transition: 'all 0.2s'
+                                            }}>
+                                            {isPrivatePost ? '🔒 비공개' : '🌐 공개'}
+                                        </button>
+                                    </div>
                                 </div>
                             )}
 
@@ -1622,73 +1589,89 @@ export default function App() {
                     </div>
 
                     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        {communityPosts.map(post => (
-                            <div key={post.id} style={{ background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', animation: 'fade-in 0.5s' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#F0ECE4', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
-                                        {post.avatar_url ? <img src={post.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🐑'}
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>{post.user_name}</div>
-                                        <div style={{ fontSize: '11px', color: '#999' }}>{new Date(post.created_at || Date.now()).toLocaleString()}</div>
-                                    </div>
-                                    <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
-                                        {(user?.id === post.user_id) && (
-                                            <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#B8924A', fontWeight: 600 }}>수정</button>
-                                        )}
-                                        {isAdmin && (
-                                            <button onClick={() => handleDeletePost(post.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#999' }}>🗑️</button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {editingPostId === post.id ? (
-                                    <div style={{ marginBottom: '15px' }}>
-                                        <textarea
-                                            value={editContent}
-                                            onChange={(e) => setEditContent(e.target.value)}
-                                            style={{ width: '100%', minHeight: '100px', border: '1px solid #DDD', borderRadius: '12px', padding: '12px', boxSizing: 'border-box', marginBottom: '8px', fontSize: '14px', fontFamily: 'inherit' }}
-                                        />
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button onClick={handleUpdatePost} style={{ padding: '8px 16px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>저장</button>
-                                            <button onClick={() => setEditingPostId(null)} style={{ padding: '8px 16px', background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>취소</button>
+                        {communityPosts
+                            // ✅ 비공개 게시글 필터: 관리자는 전체, 본인관은 본인 작성 비공개글, 일반 성도는 공개글만
+                            .filter(post => {
+                                if (!post.is_private) return true;           // 공개글: 모두
+                                if (isAdmin) return true;                    // 로니는 전체
+                                if (user?.id === post.user_id) return true;  // 본인 비공개글
+                                return false;
+                            })
+                            .map(post => (
+                                <div key={post.id} style={{ background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', animation: 'fade-in 0.5s' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#F0ECE4', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                                            {post.avatar_url ? <img src={post.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🐑'}
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                {post.user_name}
+                                                {/* 표 비공개 배지 */}
+                                                {post.is_private && (
+                                                    <span style={{ fontSize: '10px', background: '#F3E5F5', color: '#7B1FA2', padding: '2px 7px', borderRadius: '8px', fontWeight: 700 }}>
+                                                        🔒 비공개
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div style={{ fontSize: '11px', color: '#999' }}>{new Date(post.created_at || Date.now()).toLocaleString()}</div>
+                                        </div>
+                                        <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+                                            {(user?.id === post.user_id) && (
+                                                <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#B8924A', fontWeight: 600 }}>수정</button>
+                                            )}
+                                            {(isAdmin || user?.id === post.user_id) && (
+                                                <button onClick={() => handleDeletePost(post.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#999' }}>🗑️</button>
+                                            )}
                                         </div>
                                     </div>
-                                ) : (
-                                    <p style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', margin: '0 0 15px 0', whiteSpace: 'pre-line' }}>{post.content}</p>
-                                )}
 
-                                {/* Comments Section */}
-                                <div style={{ borderTop: '1px solid #F5F5F5', paddingTop: '15px' }}>
-                                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', marginBottom: '10px' }}>댓글 {post.comments?.length || 0}개</div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
-                                        {post.comments && Array.isArray(post.comments) && post.comments.map((comment: any) => (
-                                            <div key={comment.id} style={{ background: '#FAFAFA', padding: '10px 15px', borderRadius: '12px', fontSize: '13px' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                                    <span style={{ fontWeight: 700, color: '#555' }}>{comment.user_name || '성도'}</span>
-                                                    <span style={{ fontSize: '10px', color: '#AAA' }}>
-                                                        {comment.created_at ? new Date(comment.created_at).toLocaleTimeString() : '방금 전'}
-                                                    </span>
-                                                </div>
-                                                <div style={{ color: '#666' }}>{comment.content}</div>
+                                    {editingPostId === post.id ? (
+                                        <div style={{ marginBottom: '15px' }}>
+                                            <textarea
+                                                value={editContent}
+                                                onChange={(e) => setEditContent(e.target.value)}
+                                                style={{ width: '100%', minHeight: '100px', border: '1px solid #DDD', borderRadius: '12px', padding: '12px', boxSizing: 'border-box', marginBottom: '8px', fontSize: '14px', fontFamily: 'inherit' }}
+                                            />
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <button onClick={handleUpdatePost} style={{ padding: '8px 16px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>저장</button>
+                                                <button onClick={() => setEditingPostId(null)} style={{ padding: '8px 16px', background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>취소</button>
                                             </div>
-                                        ))}
-                                    </div>
-                                    {/* Comment Input */}
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <input
-                                            type="text"
-                                            value={commentInputs[post.id] || ""}
-                                            onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
-                                            onKeyDown={(e) => e.key === 'Enter' && handleAddComment(post.id)}
-                                            placeholder="따뜻한 격려의 댓글을 달아주세요..."
-                                            style={{ flex: 1, padding: '10px 12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }}
-                                        />
-                                        <button onClick={() => handleAddComment(post.id)} style={{ background: '#333', color: 'white', border: 'none', borderRadius: '10px', padding: '0 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>등록</button>
+                                        </div>
+                                    ) : (
+                                        <p style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', margin: '0 0 15px 0', whiteSpace: 'pre-line' }}>{post.content}</p>
+                                    )}
+
+                                    {/* Comments Section */}
+                                    <div style={{ borderTop: '1px solid #F5F5F5', paddingTop: '15px' }}>
+                                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', marginBottom: '10px' }}>댓글 {post.comments?.length || 0}개</div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
+                                            {post.comments && Array.isArray(post.comments) && post.comments.map((comment: any) => (
+                                                <div key={comment.id} style={{ background: '#FAFAFA', padding: '10px 15px', borderRadius: '12px', fontSize: '13px' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                        <span style={{ fontWeight: 700, color: '#555' }}>{comment.user_name || '성도'}</span>
+                                                        <span style={{ fontSize: '10px', color: '#AAA' }}>
+                                                            {comment.created_at ? new Date(comment.created_at).toLocaleTimeString() : '방금 전'}
+                                                        </span>
+                                                    </div>
+                                                    <div style={{ color: '#666' }}>{comment.content}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {/* Comment Input */}
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <input
+                                                type="text"
+                                                value={commentInputs[post.id] || ""}
+                                                onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
+                                                onKeyDown={(e) => e.key === 'Enter' && handleAddComment(post.id)}
+                                                placeholder="따뜻한 격려의 댓글을 달아주세요..."
+                                                style={{ flex: 1, padding: '10px 12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }}
+                                            />
+                                            <button onClick={() => handleAddComment(post.id)} style={{ background: '#333', color: 'white', border: 'none', borderRadius: '10px', padding: '0 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>등록</button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
                     </div>
                 </div>
             );

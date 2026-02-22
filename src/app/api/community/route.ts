@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { user_id, user_name, avatar_url, content, church_id } = body;
+        const { user_id, user_name, avatar_url, content, church_id, is_private } = body;
 
         const { data, error } = await supabaseAdmin
             .from('community_posts')
@@ -44,7 +44,8 @@ export async function POST(req: NextRequest) {
                 user_name,
                 avatar_url,
                 content,
-                church_id: church_id || 'jesus-in'
+                church_id: church_id || 'jesus-in',
+                is_private: is_private ?? false  // ✅ 비공개 여부 저장
             }])
             .select()
             .single();
@@ -100,13 +101,16 @@ export async function DELETE(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
     try {
         const body = await req.json();
-        const { id, content } = body;
+        const { id, content, is_private } = body;
 
         if (!id || !content) return NextResponse.json({ error: 'ID and content are required' }, { status: 400 });
 
+        const updateData: any = { content };
+        if (is_private !== undefined) updateData.is_private = is_private; // 비공개 변경도 허용
+
         const { data, error } = await supabaseAdmin
             .from('community_posts')
-            .update({ content })
+            .update(updateData)
             .eq('id', id)
             .select()
             .single();
