@@ -195,6 +195,17 @@ export default function App() {
                     prayer: qt.prayer,
                 });
                 setAnswers(new Array([qt.question1, qt.question2, qt.question3].filter(Boolean).length).fill(''));
+            } else {
+                // 데이터가 없을 경우 기본값으로 리셋
+                setQtData({
+                    date: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
+                    reference: QT_DATA.reference,
+                    fullPassage: QT_DATA.fullPassage,
+                    verse: QT_DATA.verse,
+                    questions: QT_DATA.questions,
+                    prayer: QT_DATA.prayer,
+                });
+                setAnswers(new Array(QT_DATA.questions.length).fill(''));
             }
         } catch (e) {
             console.error("큐티 로딩 실패:", e);
@@ -674,7 +685,11 @@ export default function App() {
                                     💬 소미와 대화하기
                                 </button>
 
-                                <button onClick={() => { setQtStep("read"); setView("qt"); }} style={{
+                                <button onClick={() => {
+                                    fetchQt(); // 최신 큐티 데이터 다시 불러오기
+                                    setQtStep("read");
+                                    setView("qt");
+                                }} style={{
                                     width: "100%", padding: "18px",
                                     background: "white", color: "#333",
                                     fontWeight: 700, fontSize: "17px", borderRadius: "18px",
