@@ -2443,48 +2443,32 @@ export default function App() {
                     <div style={{
                         display: 'flex',
                         alignItems: 'flex-end',
-                        gap: '2px',
-                        height: '24px',
-                        marginBottom: '6px'
+                        gap: '3px',
+                        height: '30px',
                     }}>
-                        {[...Array(8)].map((_, i) => (
+                        {[...Array(10)].map((_, i) => (
                             <div key={i} style={{
-                                width: '3px',
+                                width: '4px',
                                 background: isCcmPlaying ? '#00FF41' : '#333',
-                                borderRadius: '1px',
-                                height: isCcmPlaying ? '100%' : '2px',
+                                borderRadius: '1.5px',
+                                height: isCcmPlaying ? '100%' : '3px',
                                 transition: 'height 0.2s',
-                                animation: isCcmPlaying ? `wave-music ${0.5 + i * 0.1}s infinite ease-in-out` : 'none'
+                                animation: isCcmPlaying ? `wave-music ${0.6 + i * 0.15}s infinite ease-in-out` : 'none'
                             }} />
                         ))}
                     </div>
-
-                    <div style={{
-                        fontSize: '9px',
-                        color: isCcmPlaying ? '#00FF41' : '#888',
-                        fontWeight: 900,
-                        whiteSpace: 'nowrap',
-                        width: '100%',
-                        textAlign: 'center',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        fontFamily: 'monospace',
-                        textShadow: isCcmPlaying ? '0 0 8px rgba(0,255,65,0.6)' : 'none'
-                    }}>
-                        {CCM_LIST[ccmIndex]?.title || todayCcm?.title}
-                    </div>
                 </div>
 
-                {/* 2. 클릭 휠 (Click Wheel) */}
+                {/* 2. 클릭 휠 (Click Wheel) - 크기 100px로 확장 및 간격 최적화 */}
                 <div
                     onClick={togglePlay}
                     style={{
-                        width: '80px',
-                        height: '80px',
+                        width: '100px',
+                        height: '100px',
                         background: '#FFF',
                         borderRadius: '50%',
                         position: 'relative',
-                        boxShadow: '0 4px 10px rgba(0,0,0,0.1), inset 0 2px 5px rgba(0,0,0,0.05)',
+                        boxShadow: '0 6px 15px rgba(0,0,0,0.12), inset 0 2px 5px rgba(0,0,0,0.05)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -2497,32 +2481,36 @@ export default function App() {
                 >
                     <div
                         onClick={(e) => { e.stopPropagation(); setPlayRequested(true); initPlayer(); }}
-                        style={{ fontSize: '9px', color: '#B8924A', position: 'absolute', top: '7px', fontWeight: 800, letterSpacing: '0.5px' }}
+                        style={{ fontSize: '9px', color: '#B8924A', position: 'absolute', top: '8px', fontWeight: 800, letterSpacing: '0.5px' }}
                     > RESET </div>
+
+                    {/* 이전 곡 버튼 - 영역 확장 */}
                     <div
                         onClick={(e) => { e.stopPropagation(); handlePrevCcm(); }}
                         style={{
-                            fontSize: '14px',
-                            color: '#AAA',
+                            fontSize: '16px',
+                            color: '#777',
                             position: 'absolute',
-                            left: '2px', // 더 바깥쪽으로 이동
+                            left: '0px',
                             cursor: 'pointer',
-                            padding: '15px',
+                            padding: '20px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             zIndex: 3
                         }}
                     >⏮</div>
+
+                    {/* 다음 곡 버튼 - 영역 확장 */}
                     <div
                         onClick={(e) => { e.stopPropagation(); handleNextCcm(); }}
                         style={{
-                            fontSize: '14px',
-                            color: '#AAA',
+                            fontSize: '16px',
+                            color: '#777',
                             position: 'absolute',
-                            right: '2px', // 더 바깥쪽으로 이동
+                            right: '0px',
                             cursor: 'pointer',
-                            padding: '15px',
+                            padding: '20px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -2532,16 +2520,16 @@ export default function App() {
 
                     {/* 중앙 선택 버튼 */}
                     <div style={{
-                        width: '42px',
-                        height: '42px',
+                        width: '45px',
+                        height: '45px',
                         borderRadius: '50%',
                         background: 'linear-gradient(135deg, #FFFFFF 0%, #E0E0E0 100%)',
                         border: '1px solid #BBB',
-                        boxShadow: '0 4px 8px rgba(0,0,0,0.15), inset 0 1px 2px white',
+                        boxShadow: '0 4px 10px rgba(0,0,0,0.15), inset 0 1px 2px white',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: '20px',
+                        fontSize: '22px',
                         color: '#333',
                         transition: 'all 0.1s'
                     }}>
