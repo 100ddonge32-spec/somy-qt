@@ -112,6 +112,7 @@ export default function App() {
 
     const [playerStatus, setPlayerStatus] = useState("Wait API...");
     const initAttempts = useRef(0);
+    const pauseCooldown = useRef(false); // 일시정지 후 쿨다운 (유령 재생 방지용)
 
     const handleNextCcm = useCallback(() => {
         setPlayRequested(true);
@@ -216,6 +217,13 @@ export default function App() {
                     'onStateChange': (event: any) => {
                         const state = event.data;
                         const YTState = (window as any).YT.PlayerState;
+
+                        // 재생 의도가 없는데 재생이 시작된 경우 (유령 재생)
+                        if (!playRequestedRef.current && (state === YTState.PLAYING || state === YTState.BUFFERING)) {
+                            event.target.pauseVideo();
+                            return;
+                        }
+
                         if (state === YTState.PLAYING) {
                             setIsCcmPlaying(true);
                             setPlayerStatus("Playing");
@@ -260,23 +268,27 @@ export default function App() {
     // 강력한 자동 재생 및 유령 재생 방지 통합 감시 루틴
     useEffect(() => {
         const watchdog = setInterval(() => {
-            if (!playerRef.current || typeof playerRef.current.getPlayerState !== 'function') return;
+            if (!playerRef.current || typeof playerRef.current.getPlayerState !== 'function' || pauseCooldown.current) return;
 
             const state = playerRef.current.getPlayerState();
-            // 재생 요청 중인데 멈춰있거나 로드되지 않은 경우 강제 조치
+            const YTState = (window as any).YT.PlayerState;
+
+            // 1. 재생 요청 중인데 멈춰있는 경우 (자동 재생 복구)
             if (playRequestedRef.current) {
-                if (state !== 1 && state !== 3) { // NOT PLAYING nor BUFFERING
+                if (state !== YTState.PLAYING && state !== YTState.BUFFERING) {
                     try {
                         playerRef.current.unMute();
                         playerRef.current.playVideo();
                     } catch (e) { }
                 }
             }
-            // 재생 요청이 없는데 재생 중인 경우 (유령 재생 발견!) 강제 정지
-            else if (state === 1 || state === 3) {
-                try { playerRef.current.pauseVideo(); } catch (e) { }
+            // 2. 재생 요청이 없는데 재생 중인 경우 (유령 재생 차단)
+            else if (state === YTState.PLAYING || state === YTState.BUFFERING) {
+                try {
+                    playerRef.current.pauseVideo();
+                } catch (e) { }
             }
-        }, 1000);
+        }, 800); // 0.8초 주기로 감시
 
         return () => clearInterval(watchdog);
     }, []);
@@ -2351,7 +2363,6 @@ export default function App() {
         const togglePlay = (e: React.MouseEvent) => {
             e.stopPropagation();
             if (!playerRef.current) {
-                setPlayerStatus("Repairing..");
                 setPlayRequested(true);
                 initPlayer();
                 return;
@@ -2359,26 +2370,21 @@ export default function App() {
 
             try {
                 const state = playerRef.current.getPlayerState?.();
-                if (state === 1) { // PLAYING -> PAUSE
-                    setPlayRequested(false); // 명확한 멈춤 의도 잠금
+                if (state === 1) { // 현재 재생 중이면 -> 멈춤
+                    // 쿨다운 시작 (감시 시스템과의 충돌 방지)
+                    pauseCooldown.current = true;
+                    setPlayRequested(false);
                     playerRef.current.pauseVideo();
                     setPlayerStatus("Paused");
-                } else { // PAUSED -> PLAY
-                    setPlayRequested(true); // 명확한 재생 의도 활성화
-                    playerRef.current.unMute(); // 재생 시 음소거 해제 보장
+                    // 1.5초 후 감시 재개
+                    setTimeout(() => { pauseCooldown.current = false; }, 1500);
+                } else { // 현재 멈춤 상태면 -> 재생
+                    setPlayRequested(true);
+                    playerRef.current.unMute();
                     playerRef.current.playVideo();
-
-                    // 만약 0.5초 뒤에도 재생 상태가 아니라면 강제 로드
-                    setTimeout(() => {
-                        const curState = playerRef.current?.getPlayerState?.();
-                        // ★중요: 비동기 시점에도 '재생 의도'가 여전히 true일 때만 강제 실행 (유령 재생 방지)
-                        if (playRequestedRef.current && curState !== 1 && curState !== 3) {
-                            playerRef.current?.loadVideoById(CCM_LIST[ccmIndex].youtubeId);
-                        }
-                    }, 500);
+                    setPlayerStatus("Playing");
                 }
             } catch (err) {
-                console.log("Resetting Engine...");
                 setPlayRequested(true);
                 initPlayer();
             }
