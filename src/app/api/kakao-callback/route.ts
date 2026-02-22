@@ -9,9 +9,12 @@ const supabaseAdmin = createClient(
 
 const KAKAO_CLIENT_ID = 'c205e6ad80a115b72fc7b53749e204d9';
 const KAKAO_CLIENT_SECRET = 'QWgDkVCdUj74tqYCpGUsks4wbuLY1h0R';
-const APP_URL = 'https://somy-qt.vercel.app';
-
 export async function GET(req: NextRequest) {
+    // 로컬 개발 환경과 배포 환경에 따라 APP_URL 동적 결정
+    const host = req.headers.get('host') || 'somy-qt.vercel.app';
+    const protocol = host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https';
+    const APP_URL = `${protocol}://${host}`;
+
     const { searchParams } = new URL(req.url);
     const code = searchParams.get('code');
     const error = searchParams.get('error');

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import OpenAI from 'openai';
+import { getTodayReading } from '@/lib/reading-plan';
 
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -7,29 +9,123 @@ const supabaseAdmin = createClient(
     { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
 // 한국 시간 기준 오늘 날짜 반환
 function getKoreaDateString(): string {
     return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
 }
 
-// 오늘 큐티 조회
+// 자동 큐티 생성 로직 (성경 읽기표 기반)
+async function generateAutoQt(date: string) {
+    const reference = getTodayReading();
+
+    try {
+        // 1. 성경 본문 가져오기 (OpenAI 활용)
+        const bibleRes = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [
+                {
+                    role: 'system',
+                    content: `성경 본문을 개역개정판 기준으로 제공해주세요. JSON 형식으로만 답하세요:
+{"passage":"본문 내용 (줄바꿈은 \\n으로)"}`
+                },
+                { role: 'user', content: `성경구절: ${reference}` }
+            ],
+            temperature: 0.2,
+        });
+
+        const bibleContent = bibleRes.choices[0]?.message?.content || '';
+        const bibleJson = JSON.parse(bibleContent.match(/\{[\s\S]*\}/)![0]);
+        const passage = bibleJson.passage;
+
+        // 2. 묵상 질문 + 기도문 생성
+        const qtRes = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [
+                {
+                    role: 'system',
+                    content: `큐티 묵상 질문 3개와 마무리 기도문을 작성해주세요. 반드시 JSON 형식으로만 답하세요:
+{"question1":"질문1","question2":"질문2","question3":"질문3","prayer":"기도문"}`
+                },
+                { role: 'user', content: `성경구절: ${reference}\n본문:\n${passage}` }
+            ],
+            temperature: 0.7,
+        });
+
+        const qtContent = qtRes.choices[0]?.message?.content || '';
+        const qtJson = JSON.parse(qtContent.match(/\{[\s\S]*\}/)![0]);
+
+        const newQt = {
+            date,
+            reference,
+            passage,
+            question1: qtJson.question1,
+            question2: qtJson.question2,
+            question3: qtJson.question3,
+            prayer: qtJson.prayer,
+            ai_generated: true,
+        };
+
+        // DB에 저장 (다음 사람을 위해)
+        await supabaseAdmin.from('daily_qt').upsert(newQt, { onConflict: 'date' });
+
+        return newQt;
+    } catch (err) {
+        console.error('Auto QT Generation Error:', err);
+        return null;
+    }
+}
+
+// 오늘 큐티 조회 (수동 등록 본문 우선, 유료 버전 한정 자동 생성)
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const date = searchParams.get('date') || getKoreaDateString();
 
-    const { data, error } = await supabaseAdmin
-        .from('daily_qt')
-        .select('*')
-        .eq('date', date)
-        .single();
+    console.log(`[QT API] Request for date: ${date}`);
 
-    if (error || !data) {
+    try {
+        // 1. 오늘의 수동 등록 큐티 데이터 조회
+        const { data: manualQt, error: qtError } = await supabaseAdmin
+            .from('daily_qt')
+            .select('*')
+            .eq('date', date)
+            .single();
+
+        if (!qtError && manualQt) {
+            console.log(`[QT API] Found manual entry for ${date}`);
+            return NextResponse.json({ qt: manualQt });
+        }
+
+        // 2. 큐티 데이터가 없을 경우, 교회 설정을 확인
+        const { data: settings, error: settingsError } = await supabaseAdmin
+            .from('church_settings')
+            .select('plan')
+            .eq('id', 1)
+            .single();
+
+        if (settingsError) {
+            console.log(`[QT API] Settings not found or error: ${settingsError.message}`);
+        }
+
+        // 3. 유료 버전(premium)인 경우에만 자동 생성 수행
+        // 만약 설정이 아예 없더라도 테스트 편의를 위해 일단 에러 로그만 남기고 진행 여부 결정
+        if (settings?.plan === 'premium') {
+            console.log(`[QT API] Premium plan detected. Generating auto QT...`);
+            const autoQt = await generateAutoQt(date);
+            return NextResponse.json({ qt: autoQt });
+        }
+
+        console.log(`[QT API] Free plan or no data for ${date}. Returning fallback.`);
         return NextResponse.json({ qt: null });
+
+    } catch (err: any) {
+        console.error(`[QT API] Unexpected Error:`, err);
+        return NextResponse.json({ qt: null, error: err.message });
     }
-    return NextResponse.json({ qt: data });
 }
 
-// 큐티 저장/수정 (관리자)
+// 큐티 저장/수정 (관리자 직접 입력 버전)
 export async function POST(req: NextRequest) {
     const body = await req.json();
     const { date, reference, passage, question1, question2, question3, prayer, ai_generated } = body;
