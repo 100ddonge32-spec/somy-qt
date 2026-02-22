@@ -88,10 +88,59 @@ export default function App() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [showNotiList, setShowNotiList] = useState(false);
     const [todayCcm, setTodayCcm] = useState<CcmVideo | null>(null);
+    const [ccmVolume, setCcmVolume] = useState(50);
+    const [isCcmPlaying, setIsCcmPlaying] = useState(false);
+    const playerRef = useRef<any>(null);
 
     useEffect(() => {
         setTodayCcm(getTodayCcm());
+
+        // YouTube API 스크립트 추가
+        if (!(window as any).YT) {
+            const tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+        }
+
+        (window as any).onYouTubeIframeAPIReady = () => {
+            console.log("YouTube API Ready");
+        };
     }, []);
+
+    useEffect(() => {
+        if (view === "ccm" && todayCcm && (window as any).YT && (window as any).YT.Player) {
+            if (!playerRef.current) {
+                playerRef.current = new (window as any).YT.Player('ccm-player-hidden', {
+                    height: '1',
+                    width: '1',
+                    videoId: todayCcm.youtubeId,
+                    playerVars: {
+                        'autoplay': 1,
+                        'controls': 0,
+                        'showinfo': 0,
+                        'rel': 0,
+                        'iv_load_policy': 3
+                    },
+                    events: {
+                        'onReady': (event: any) => {
+                            event.target.setVolume(ccmVolume);
+                            event.target.playVideo();
+                            setIsCcmPlaying(true);
+                        },
+                        'onStateChange': (event: any) => {
+                            const state = event.data;
+                            if (state === (window as any).YT.PlayerState.PLAYING) setIsCcmPlaying(true);
+                            else setIsCcmPlaying(false);
+                        }
+                    }
+                });
+            } else {
+                playerRef.current.loadVideoById(todayCcm.youtubeId);
+                playerRef.current.playVideo();
+            }
+        }
+    }, [view, todayCcm]);
 
     // 승인 상태 및 교회 정보 체크 함수 (서버와 동기화 포함)
     const checkApprovalStatus = useCallback(async () => {
@@ -1825,44 +1874,63 @@ export default function App() {
 
         if (view === "ccm") {
             return (
-                <div style={{ minHeight: "100vh", background: "white", maxWidth: "480px", margin: "0 auto", ...baseFont }}>
+                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "480px", margin: "0 auto", ...baseFont }}>
                     {styles}
                     <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #EEE", position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
-                        <div style={{ fontWeight: 800, color: "#333", fontSize: "16px" }}>오늘의 CCM</div>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "16px" }}>소미 라디오 🎵</div>
                     </div>
 
                     <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div style={{ background: '#F9F9F7', borderRadius: '30px', padding: '24px', textAlign: 'center', border: '1px solid #F0ECE4' }}>
-                            <div style={{ fontSize: '40px', marginBottom: '16px' }}>🎵</div>
-                            <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>오늘의 추천 찬양</h3>
-                            <p style={{ fontSize: '14px', color: '#999', marginBottom: '24px' }}>주님과 함께하는 향기로운 멜로디 🌿</p>
+                        <div style={{ background: 'white', borderRadius: '35px', padding: '32px', textAlign: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.05)', border: '1px solid #F0ECE4' }}>
+                            {/* Hidden Player */}
+                            <div id="ccm-player-hidden" style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}></div>
 
-                            {todayCcm ? (
-                                <div style={{ background: 'white', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 15px 40px rgba(0,0,0,0.08)', border: '1px solid #F0F0F0' }}>
-                                    <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden' }}>
-                                        <iframe
-                                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
-                                            src={`https://www.youtube.com/embed/${todayCcm.youtubeId}?rel=0`}
-                                            title={todayCcm.title}
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                            allowFullScreen
-                                        ></iframe>
-                                    </div>
-                                    <div style={{ padding: '20px', textAlign: 'left', background: 'linear-gradient(to right, #FDFCFB, #FFF)' }}>
-                                        <div style={{ fontSize: '17px', fontWeight: 800, color: '#333', marginBottom: '4px' }}>{todayCcm.title}</div>
-                                        <div style={{ fontSize: '14px', color: '#B8924A', fontWeight: 700 }}>{todayCcm.artist}</div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div style={{ padding: '40px', color: '#999' }}>찬양을 준비 중입니다... 🐑</div>
-                            )}
+                            <div style={{ width: '120px', height: '120px', background: 'linear-gradient(135deg, #FFF9C4 0%, #FBC02D 100%)', borderRadius: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '50px', margin: '0 auto 24px', boxShadow: '0 15px 30px rgba(251,192,45,0.2)', animation: isCcmPlaying ? 'pulse 2s infinite' : 'none' }}>
+                                📻
+                            </div>
+
+                            <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>{todayCcm?.title || "찬양 제목"}</h3>
+                            <p style={{ fontSize: '15px', color: '#B8924A', fontWeight: 700, marginBottom: '32px' }}>{todayCcm?.artist || "아티스트"}</p>
+
+                            {/* Play Controls */}
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '30px', marginBottom: '40px' }}>
+                                <button
+                                    onClick={() => {
+                                        if (playerRef.current) {
+                                            if (isCcmPlaying) playerRef.current.pauseVideo();
+                                            else playerRef.current.playVideo();
+                                        }
+                                    }}
+                                    style={{ width: '70px', height: '70px', borderRadius: '50%', background: '#333', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.2)' }}
+                                >
+                                    {isCcmPlaying ? '⏸' : '▶️'}
+                                </button>
+                            </div>
+
+                            {/* Volume Slider */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', background: '#F9F9F9', padding: '15px 20px', borderRadius: '20px' }}>
+                                <span style={{ fontSize: '16px' }}>{ccmVolume === 0 ? '🔇' : ccmVolume < 50 ? '🔉' : '🔊'}</span>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={ccmVolume}
+                                    onChange={(e) => {
+                                        const vol = parseInt(e.target.value);
+                                        setCcmVolume(vol);
+                                        if (playerRef.current) playerRef.current.setVolume(vol);
+                                    }}
+                                    style={{ flex: 1, accentColor: '#333', cursor: 'pointer' }}
+                                />
+                                <span style={{ fontSize: '12px', fontWeight: 700, color: '#999', width: '30px' }}>{ccmVolume}</span>
+                            </div>
                         </div>
 
-                        <div style={{ background: '#FFF9C4', borderRadius: '20px', padding: '20px', display: 'flex', gap: '15px', alignItems: 'center', border: '1px solid #FBC02D' }}>
-                            <div style={{ fontSize: '24px' }}>💡</div>
-                            <div style={{ fontSize: '13px', color: '#827717', lineHeight: 1.6, fontWeight: 600 }}>
-                                <strong>김부장의 팁!</strong> 유튜브 창 오른쪽 하단의 '전체 화면' 버튼을 누르면 더 크게 감상하실 수 있습니다. 묵상 중에 틀어두시면 은혜가 두 배!
+                        <div style={{ background: '#FFF3F5', borderRadius: '20px', padding: '20px', display: 'flex', gap: '15px', alignItems: 'center', border: '1px solid #FFD1DC' }}>
+                            <div style={{ fontSize: '24px' }}>🐑</div>
+                            <div style={{ fontSize: '13px', color: '#D81B60', lineHeight: 1.6, fontWeight: 600 }}>
+                                <strong>소미의 팁!</strong> 찬양을 틀어두고 뒤로가기를 눌러보세요. 음악을 들으며 소미와 대화하거나 말씀을 묵상할 수 있어요! 🎵
                             </div>
                         </div>
 
