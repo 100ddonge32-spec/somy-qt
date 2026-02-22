@@ -665,10 +665,8 @@ export default function App() {
                                     ☀️ 오늘의 큐티 시작
                                 </button>
 
-                                <button onClick={async () => {
-                                    if (notifications.filter(n => !n.is_read).length > 0) {
-                                        setShowNotiList(true);
-                                    } else {
+                                <div style={{ position: 'relative', width: '100%' }}>
+                                    <button onClick={async () => {
                                         setView("community");
                                         // 게시판 진입 시 현재 소속 교회 데이터만 로드
                                         try {
@@ -676,46 +674,74 @@ export default function App() {
                                             const data = await res.json();
                                             if (Array.isArray(data)) setCommunityPosts(data);
                                         } catch (e) { console.error("게시판 로드 실패:", e); }
-                                    }
-                                }} style={{
-                                    width: "100%", padding: "18px",
-                                    background: "#E6A4B4", color: "white",
-                                    fontWeight: 700, fontSize: "17px", borderRadius: "18px",
-                                    border: "none", cursor: "pointer",
-                                    boxShadow: "0 4px 12px rgba(230,164,180,0.3)",
-                                    position: 'relative',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '10px',
-                                    transition: 'all 0.2s'
-                                }} onMouseOver={e => e.currentTarget.style.transform = "scale(1.02)"} onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}>
-                                    <span style={{ fontSize: '20px', animation: notifications.filter(n => !n.is_read).length > 0 ? 'bell-swing 2s infinite ease-in-out' : 'none' }}>🔔</span>
-                                    📝 은혜나눔 게시판
-                                    {notifications.filter(n => !n.is_read).length > 0 && (
-                                        <div style={{
+                                    }} style={{
+                                        width: "100%", padding: "18px",
+                                        background: "#E6A4B4", color: "white",
+                                        fontWeight: 700, fontSize: "17px", borderRadius: "18px",
+                                        border: "none", cursor: "pointer",
+                                        boxShadow: "0 4px 12px rgba(230,164,180,0.3)",
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '10px',
+                                        transition: 'all 0.2s'
+                                    }} onMouseOver={e => e.currentTarget.style.transform = "scale(1.01)"} onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}>
+                                        📝 은혜나눔 게시판
+                                    </button>
+
+                                    {/* 입체형 부유 알림종 */}
+                                    <div
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowNotiList(!showNotiList);
+                                        }}
+                                        style={{
                                             position: 'absolute',
-                                            top: '-10px',
-                                            right: '10px',
-                                            background: '#FF5252',
-                                            color: 'white',
-                                            fontSize: '11px',
-                                            fontWeight: 900,
-                                            minWidth: '24px',
-                                            height: '24px',
-                                            padding: '0 6px',
-                                            borderRadius: '12px',
+                                            top: '-15px',
+                                            right: '15px',
+                                            width: '42px',
+                                            height: '42px',
+                                            background: 'white',
+                                            borderRadius: '50%',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            border: '3px solid white',
-                                            boxShadow: '0 4px 10px rgba(255,82,82,0.4)',
-                                            animation: 'bounce-light 1s infinite alternate'
-                                        }}>
-                                            {notifications.filter(n => !n.is_read).length}
-                                        </div>
-                                    )}
-                                </button>
+                                            boxShadow: '0 6px 16px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.05)',
+                                            cursor: 'pointer',
+                                            zIndex: 20,
+                                            border: '2px solid #E6A4B4',
+                                            transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                            animation: notifications.filter(n => !n.is_read).length > 0 ? 'bell-swing 2s infinite ease-in-out' : 'none'
+                                        }}
+                                        onMouseOver={e => e.currentTarget.style.transform = "scale(1.1) rotate(10deg)"}
+                                        onMouseOut={e => e.currentTarget.style.transform = "scale(1) rotate(0)"}
+                                    >
+                                        <span style={{ fontSize: '20px' }}>🔔</span>
+                                        {notifications.filter(n => !n.is_read).length > 0 && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                top: '-6px',
+                                                right: '-6px',
+                                                background: '#FF5252',
+                                                color: 'white',
+                                                fontSize: '10px',
+                                                fontWeight: 900,
+                                                minWidth: '20px',
+                                                height: '20px',
+                                                padding: '0 4px',
+                                                borderRadius: '10px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                border: '2px solid white',
+                                                boxShadow: '0 2px 6px rgba(255,82,82,0.4)',
+                                                animation: 'bounce-light 1s infinite alternate'
+                                            }}>
+                                                {notifications.filter(n => !n.is_read).length}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
 
                                 <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
                                     <button onClick={async () => {
