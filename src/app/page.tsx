@@ -1703,7 +1703,64 @@ export default function App() {
 
         if (view === "admin") {
             return (
-                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "480px", margin: "0 auto", ...baseFont, padding: '24px 20px' }}>
+                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "480px", margin: "0 auto", ...baseFont, padding: '24px 20px', position: 'relative' }}>
+
+                    {/* 교회 설정 모달 - admin 뷰 안에서 직접 오버레이 */}
+                    {showSettings && (
+                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                            <div style={{ background: 'white', borderRadius: '20px', padding: '28px', width: '100%', maxWidth: '400px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', maxHeight: '85vh', overflowY: 'auto' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>⚙️ {adminTab === 'settings' ? '교회 설정' : adminTab === 'members' ? '성도 관리' : '슈퍼 관리'}</h2>
+                                    <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#999' }}>✕</button>
+                                </div>
+                                <div style={{ display: 'flex', gap: '5px', marginBottom: '20px', background: '#F5F5F5', padding: '4px', borderRadius: '10px' }}>
+                                    <button onClick={() => setAdminTab('settings')} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'settings' ? 'white' : 'transparent', cursor: 'pointer' }}>🎨 설정</button>
+                                    <button onClick={async () => { setAdminTab('members'); setIsManagingMembers(true); try { const r = await fetch('/api/admin?action=list_members'); const data = await r.json(); if (Array.isArray(data)) setMemberList(data); } finally { setIsManagingMembers(false); } }} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'members' ? 'white' : 'transparent', cursor: 'pointer' }}>👥 성도</button>
+                                    {isSuperAdmin && <button onClick={() => setAdminTab('master')} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'master' ? 'white' : 'transparent', cursor: 'pointer' }}>👑 마스터</button>}
+                                </div>
+                                {adminTab === 'settings' ? (
+                                    <>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                            {[['church_name', '교회 이름', '예: 예수인교회'], ['app_subtitle', '앱 부제목', '예: 큐티 동반자'], ['church_logo_url', '교회 로고 URL', 'https://...'], ['church_url', '교회 홈페이지 URL', 'https://...']].map(([key, label, placeholder]) => (
+                                                <div key={key}>
+                                                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>{label}</label>
+                                                    <input type="text" value={settingsForm[key as keyof typeof settingsForm]} onChange={e => setSettingsForm(prev => ({ ...prev, [key]: e.target.value }))} placeholder={placeholder} style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }} />
+                                                </div>
+                                            ))}
+                                            <div>
+                                                <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>💎 요금제</label>
+                                                <select value={settingsForm.plan} onChange={e => setSettingsForm(prev => ({ ...prev, plan: e.target.value }))} style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', outline: 'none', background: 'white' }}>
+                                                    <option value="free">무료 버전 (수동 관리)</option>
+                                                    <option value="premium">유료 버전 (AI 자동 생성)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                                            <button onClick={() => setShowSettings(false)} style={{ flex: 1, padding: '12px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '10px', fontWeight: 600, cursor: 'pointer' }}>취소</button>
+                                            <button onClick={handleSaveSettings} disabled={settingsSaving} style={{ flex: 2, padding: '12px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', opacity: settingsSaving ? 0.7 : 1 }}>{settingsSaving ? '저장 중...' : '💾 저장하기'}</button>
+                                        </div>
+                                    </>
+                                ) : adminTab === 'members' ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '350px', overflowY: 'auto' }}>
+                                        {isManagingMembers ? <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>로딩 중...</div> :
+                                            memberList.length === 0 ? <div style={{ textAlign: 'center', padding: '20px', color: '#999', fontSize: '13px' }}>등록된 성도가 없습니다.</div> :
+                                                memberList.map(member => (
+                                                    <div key={member.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#F9F9F9', borderRadius: '14px' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#333' }}>{member.full_name || '이름 없음'}</div>
+                                                            <div style={{ fontSize: '10px', color: '#999' }}>{member.email}</div>
+                                                        </div>
+                                                        <button onClick={async () => { const newStatus = !member.is_approved; const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve_user', user_id: member.id, is_approved: newStatus }) }); if (res.ok) setMemberList(memberList.map(m => m.id === member.id ? { ...m, is_approved: newStatus } : m)); }} style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: member.is_approved ? '#E8F5E9' : '#333', color: member.is_approved ? '#2E7D32' : 'white' }}>{member.is_approved ? '승인됨' : '승인하기'}</button>
+                                                    </div>
+                                                ))
+                                        }
+                                    </div>
+                                ) : (
+                                    <div style={{ fontSize: '13px', color: '#666', background: '#F5F5F3', padding: '14px', borderRadius: '12px' }}>🛡️ 슈퍼 관리자 전용 기능입니다.</div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                     <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "32px" }}>
                         <button onClick={() => setView("home")} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
                         <div style={{ fontWeight: 800, color: "#333", fontSize: "18px" }}>관리자 센터</div>
