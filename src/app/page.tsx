@@ -112,7 +112,7 @@ export default function App() {
     const [playerPos, setPlayerPos] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [showIpod, setShowIpod] = useState(true); // 아이팟 표시 여부
-    const [showSomyIntro, setShowSomyIntro] = useState(false); // 소미 소개 카드 표시 여부 (기본 닫힘)
+    const [showWelcome, setShowWelcome] = useState(false); // 소미 소개 카드 표시 여부 (기본 닫힘)
     const dragOffset = useRef({ x: 0, y: 0 });
     const playerRef = useRef<any>(null);
 
@@ -148,7 +148,7 @@ export default function App() {
         // 첫 방문 여부 확인 (소미 소개 카드 토글용)
         const introSeen = localStorage.getItem('somy_intro_seen');
         if (!introSeen) {
-            setShowSomyIntro(true);
+            setShowWelcome(true);
             localStorage.setItem('somy_intro_seen', 'true');
         }
     }, []);
@@ -462,11 +462,10 @@ export default function App() {
     const [adminTab, setAdminTab] = useState<"settings" | "members" | "master">("settings");
     const [memberList, setMemberList] = useState<any[]>([]);
     const [isManagingMembers, setIsManagingMembers] = useState(false);
-    const [showWelcome, setShowWelcome] = useState(false);
     const [isHistoryMode, setIsHistoryMode] = useState(false);
 
     useEffect(() => {
-        const hasVisited = localStorage.getItem('somy_visited');
+        const hasVisited = localStorage.getItem('somy_intro_seen'); // Changed from somy_visited to somy_intro_seen
         if (!hasVisited) {
             setShowWelcome(true);
         }
@@ -773,42 +772,65 @@ export default function App() {
                     maxWidth: "480px", margin: "0 auto", ...baseFont,
                     position: 'relative'
                 }}>
-                    {/* 우측 상단 사용자 정보 */}
-                    {user && (
-                        <div style={{
-                            position: 'absolute', top: '15px', right: '15px',
-                            display: 'flex', alignItems: 'center', gap: '8px',
-                            background: 'rgba(255,255,255,0.7)', padding: '6px 12px',
-                            borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                            fontSize: '12px', border: '1px solid rgba(255,255,255,0.8)',
-                            backdropFilter: 'blur(5px)', zIndex: 10
-                        }}>
-                            <span style={{ color: '#333', fontWeight: 700 }}>{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
-                            <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontWeight: 600, fontSize: '11px' }}>로그아웃</button>
+                    {/* 우측 상단 소미 & 사용자 정보 */}
+                    <div style={{ position: 'absolute', top: '15px', right: '15px', display: 'flex', alignItems: 'center', gap: '10px', zIndex: 10 }}>
+                        {user && (
+                            <div style={{
+                                display: 'flex', alignItems: 'center', gap: '8px',
+                                background: 'rgba(255,255,255,0.7)', padding: '6px 12px',
+                                borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                                fontSize: '12px', border: '1px solid rgba(255,255,255,0.8)',
+                                backdropFilter: 'blur(5px)'
+                            }}>
+                                <span style={{ color: '#333', fontWeight: 700 }}>{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
+                                <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontWeight: 600, fontSize: '11px', padding: 0 }}>로그아웃</button>
+                            </div>
+                        )}
+                        {/* 소미 미니 아바타 (누르면 인트로 다시 보기) */}
+                        <div onClick={() => setShowWelcome(true)} style={{ width: "38px", height: "38px", borderRadius: "50%", background: "white", border: "2px solid #D4AF37", overflow: "hidden", boxShadow: "0 4px 10px rgba(0,0,0,0.1)", cursor: "pointer", transition: "transform 0.2s" }} onMouseOver={e => e.currentTarget.style.transform = "scale(1.05)"} onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}>
+                            <img src={SOMY_IMG} alt="소미" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         </div>
-                    )}
+                    </div>
                     {styles}
 
-                    {/* 환영 모달 */}
+                    {/* 환영 모달 (인트로 스크린) */}
                     {showWelcome && (
-                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '30px' }}>
-                            <div style={{ background: 'white', borderRadius: '30px', padding: '40px 30px', width: '100%', maxWidth: '380px', boxShadow: '0 20px 60px rgba(0,0,0,0.1)', textAlign: 'center', animation: 'fade-in 1s ease-out' }}>
-                                <div style={{ fontSize: '50px', marginBottom: '25px' }}>🌿</div>
-                                <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#333', marginBottom: '15px', lineHeight: 1.4 }}>환영합니다</h2>
-                                <p style={{ fontSize: '15px', color: '#666', lineHeight: 1.8, marginBottom: '30px', wordBreak: 'keep-all' }}>
-                                    성도 여러분을 쉴만한 물가로 인도할 묵상 챗봇으로 오신 것을 환영합니다.<br /><br />
-                                    이제 바쁜 삶 속에서도 말씀을 손에서 놓지 않는 성도님들이 되시길 바랍니다.
-                                </p>
-                                <button
-                                    onClick={() => {
-                                        setShowWelcome(false);
-                                        localStorage.setItem('somy_visited', 'true');
-                                    }}
-                                    style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '18px', fontSize: '16px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.2)' }}>
-                                    들어가기
-                                </button>
-                                <div style={{ marginTop: '15px', fontSize: '12px', color: '#999' }}>소미와 함께 따뜻한 성경 이야기를 시작해볼까요?</div>
+                        <div style={{ position: 'fixed', inset: 0, background: "linear-gradient(180deg, #FFF8F0 0%, #FEF0D8 100%)", zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px' }}>
+                            <div style={{ position: "relative", perspective: "600px", marginBottom: "30px" }}>
+                                <div style={{ position: "absolute", top: "-14px", left: "50%", width: "80px", height: "14px", border: "3px solid #D4AF37", borderRadius: "999px", animation: "halo-pulse 3s ease-in-out infinite", zIndex: 2 }} />
+                                <div style={{ width: "170px", height: "170px", borderRadius: "50%", background: "white", boxShadow: "0 15px 45px rgba(212,175,55,.3), 0 5px 15px rgba(0,0,0,.08)", border: "4px solid white", overflow: "hidden", animation: "float 4s ease-in-out infinite" }}>
+                                    <img src={SOMY_IMG} alt="소미" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                </div>
+                                <div style={{ position: "absolute", bottom: "-20px", left: "50%", width: "100px", height: "14px", background: "radial-gradient(ellipse,rgba(180,140,60,.3) 0%,transparent 70%)", animation: "shadow-pulse 4s ease-in-out infinite", borderRadius: "50%" }} />
                             </div>
+
+                            <div style={{ animation: "fade-in 1s ease-out", textAlign: "center", marginBottom: "30px" }}>
+                                <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#333", margin: "0 0 10px 0", letterSpacing: "-0.5px" }}>
+                                    저는 당신의 큐티도우미 <span style={{ color: "#D4AF37" }}>소미</span> 입니다
+                                </h1>
+                                <p style={{ fontSize: "16px", color: "#B8924A", fontWeight: 600, margin: 0 }}>{churchSettings.church_name} {churchSettings.app_subtitle}</p>
+                            </div>
+
+                            <div style={{ background: "rgba(255, 255, 255, 0.6)", padding: "24px", borderRadius: "24px", border: "1px solid rgba(212, 175, 55, 0.2)", maxWidth: "320px", boxShadow: "0 10px 30px rgba(0,0,0,0.03)", textAlign: "center", marginBottom: "40px", animation: "fade-in 1.2s ease-out" }}>
+                                <p style={{ fontSize: "15px", color: "#8B6E3F", lineHeight: 1.6, margin: "0 0 12px 0", wordBreak: 'keep-all', fontWeight: 500 }}>
+                                    <strong style={{ color: "#D4AF37", fontSize: "16px" }}>소미(SOMY)</strong>는 <strong style={{ color: "#D4AF37" }}>'포솜포솜한 양'</strong>과 <br />
+                                    하나님의 <strong style={{ color: "#D4AF37" }}>'말씀의 소리(Sori)'</strong>를 합친 이름이에요.
+                                </p>
+                                <div style={{ height: '1px', background: 'rgba(212, 175, 55, 0.1)', margin: '15px 0' }} />
+                                <p style={{ fontSize: "14px", color: "#8B6E3F", lineHeight: 1.6, margin: 0 }}>
+                                    매일 아침, 포근한 양의 모습으로 찾아와 <br />
+                                    말씀의 세미한 음성을 들려주는 동반자랍니다. ✨
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    setShowWelcome(false);
+                                    localStorage.setItem('somy_intro_seen', 'true');
+                                }}
+                                style={{ width: '100%', maxWidth: '300px', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '18px', fontSize: '17px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.2)' }}>
+                                은혜의 자리로 들어가기
+                            </button>
                         </div>
                     )}
 
@@ -977,77 +999,7 @@ export default function App() {
 
 
                     {/* Character Section */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", flex: 1, justifyContent: 'center' }}>
-                        <div style={{ position: "relative", perspective: "600px" }}>
-                            <div style={{ position: "absolute", top: "-14px", left: "50%", width: "80px", height: "14px", border: "3px solid #D4AF37", borderRadius: "999px", animation: "halo-pulse 3s ease-in-out infinite", zIndex: 2 }} />
-                            <div style={{
-                                width: "170px", height: "170px", borderRadius: "50%",
-                                background: "white",
-                                boxShadow: "0 15px 45px rgba(212,175,55,.3), 0 5px 15px rgba(0,0,0,.08)",
-                                border: "4px solid white", overflow: "hidden",
-                                animation: "float 4s ease-in-out infinite",
-                            }}>
-                                <img src={SOMY_IMG} alt="소미" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                            </div>
-                            <div style={{ position: "absolute", bottom: "-20px", left: "50%", width: "100px", height: "14px", background: "radial-gradient(ellipse,rgba(180,140,60,.3) 0%,transparent 70%)", animation: "shadow-pulse 4s ease-in-out infinite", borderRadius: "50%" }} />
-                        </div>
-
-                        <div style={{ animation: "fade-in 1s ease-out" }}>
-                            <h1 style={{ fontSize: "22px", fontWeight: 800, color: "#333", margin: "0 0 8px 0", letterSpacing: "-0.5px", lineHeight: 1.3 }}>
-                                저는 당신의 큐티도우미 <span style={{ color: "#D4AF37" }}>소미</span> 입니다
-                            </h1>
-                            <p style={{ fontSize: "15px", color: "#B8924A", fontWeight: 600, margin: "0 0 10px 0" }}>{churchSettings.church_name} {churchSettings.app_subtitle}</p>
-
-                            {/* 소미 이름 의미 소개 토글 버튼 추가 */}
-                            <button
-                                onClick={() => setShowSomyIntro(!showSomyIntro)}
-                                style={{
-                                    background: "rgba(255, 255, 255, 0.6)",
-                                    border: "1px solid rgba(212, 175, 55, 0.3)",
-                                    borderRadius: "20px",
-                                    padding: "6px 14px",
-                                    fontSize: "12px",
-                                    color: "#B8924A",
-                                    fontWeight: 700,
-                                    cursor: "pointer",
-                                    marginTop: "5px",
-                                    marginBottom: showSomyIntro ? "5px" : "15px",
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: "4px",
-                                    transition: "all 0.2s ease"
-                                }}
-                            >
-                                소미란? {showSomyIntro ? '▲' : '▼'}
-                            </button>
-
-                            {/* 소미 이름 의미 소개 카드 (상태에 따라 표시) */}
-                            {showSomyIntro && (
-                                <div style={{
-                                    background: "rgba(255, 255, 255, 0.4)",
-                                    padding: "16px",
-                                    borderRadius: "20px",
-                                    marginTop: "10px",
-                                    marginBottom: "15px",
-                                    border: "1px solid rgba(212, 175, 55, 0.15)",
-                                    maxWidth: "300px",
-                                    backdropFilter: "blur(5px)",
-                                    boxShadow: "0 4px 15px rgba(0,0,0,0.02)",
-                                    animation: "fade-in 0.3s ease-out"
-                                }}>
-                                    <p style={{ fontSize: "14px", color: "#8B6E3F", lineHeight: 1.6, margin: "0 0 8px 0", wordBreak: 'keep-all', fontWeight: 500 }}>
-                                        <strong style={{ color: "#D4AF37", fontSize: "15px" }}>소미(SOMY)</strong>는 <strong style={{ color: "#D4AF37" }}>'포솜포솜한 양'</strong>과 <br />
-                                        하나님의 <strong style={{ color: "#D4AF37" }}>'말씀의 소리(Sori)'</strong>를 합친 이름이에요.
-                                    </p>
-                                    <div style={{ height: '1px', background: 'rgba(212, 175, 55, 0.1)', margin: '10px 0' }} />
-                                    <p style={{ fontSize: "13px", color: "#8B6E3F", lineHeight: 1.5, margin: 0 }}>
-                                        매일 아침, 포근한 양의 모습으로 찾아와 <br />
-                                        말씀의 세미한 음성을 들려주는 동반자랍니다. ✨
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", flex: 1, justifyContent: 'center', width: "100%" }}>
                         <div style={{
                             background: "rgba(255, 255, 255, 0.9)",
                             borderRadius: "24px",
