@@ -818,25 +818,25 @@ export default function App() {
                     </div>
 
                     <div style={{ padding: '0 20px 40px 20px', width: '100%', maxWidth: '360px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
-                        <div style={{ padding: '0 20px 40px 20px', width: '100%', maxWidth: '360px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
-                            {isAdmin ? (
-                                <button onClick={() => setView('admin')} style={{
-                                    width: '100%', padding: "16px",
-                                    background: "#333", color: "white",
-                                    fontWeight: 800, fontSize: "15px", borderRadius: "18px",
-                                    border: "none", cursor: "pointer",
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                                    boxShadow: '0 8px 20px rgba(0,0,0,0.15)'
-                                }}>
-                                    ⚙️ 관리자 센터 들어가기
-                                </button>
-                            ) : user && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'white', padding: '10px 20px', borderRadius: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', fontSize: '14px', border: '1px solid #F0ECE4' }}>
-                                    <span style={{ color: '#333', fontWeight: 700 }}>{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
-                                    <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontWeight: 600 }}>로그아웃</button>
-                                </div>
-                            )}
-                        </div>
+                        {user && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'white', padding: '10px 20px', borderRadius: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', fontSize: '14px', border: '1px solid #F0ECE4' }}>
+                                <span style={{ color: '#333', fontWeight: 700 }}>{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
+                                <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontWeight: 600 }}>로그아웃</button>
+                            </div>
+                        )}
+
+                        {isAdmin && (
+                            <button onClick={() => setView('admin')} style={{
+                                width: '100%', padding: "16px",
+                                background: "#333", color: "white",
+                                fontWeight: 800, fontSize: "15px", borderRadius: "18px",
+                                border: "none", cursor: "pointer",
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                                boxShadow: '0 8px 20px rgba(0,0,0,0.15)'
+                            }}>
+                                ⚙️ 관리자 센터 들어가기
+                            </button>
+                        )}
                     </div>
                 </div>
             );
@@ -1623,7 +1623,7 @@ export default function App() {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <button onClick={() => { setSettingsForm({ ...churchSettings }); setShowSettings(true); }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
+                        <button onClick={() => { setAdminTab('settings'); setSettingsForm({ ...churchSettings }); setShowSettings(true); }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
                             <div style={{ width: '48px', height: '48px', background: '#FFF9C4', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>⛪</div>
                             <div style={{ flex: 1 }}>
                                 <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '2px' }}>교회 정보 및 환경 설정</div>
