@@ -97,8 +97,8 @@ export default function App() {
     const [editContent, setEditContent] = useState("");
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [showNotiList, setShowNotiList] = useState(false);
-    const [ccmIndex, setCcmIndex] = useState(() => Math.floor(Math.random() * CCM_LIST.length));
-    const [todayCcm, setTodayCcm] = useState<CcmVideo>(CCM_LIST[ccmIndex]);
+    const [ccmIndex, setCcmIndex] = useState<number | null>(null);
+    const [todayCcm, setTodayCcm] = useState<CcmVideo | null>(null);
     const [ccmVolume, setCcmVolume] = useState(50);
     const [isCcmPlaying, setIsCcmPlaying] = useState(false);
     const [isApiReady, setIsApiReady] = useState(false);
@@ -128,17 +128,25 @@ export default function App() {
 
     const handleNextCcm = useCallback(() => {
         setPlayRequested(true);
-        setCcmIndex(prev => (prev + 1) % CCM_LIST.length);
+        setCcmIndex(prev => prev !== null ? (prev + 1) % CCM_LIST.length : 0);
         setPlayerStatus("Next Song..");
     }, []);
 
     const handlePrevCcm = useCallback(() => {
         setPlayRequested(true);
-        setCcmIndex(prev => (prev - 1 + CCM_LIST.length) % CCM_LIST.length);
+        setCcmIndex(prev => prev !== null ? (prev - 1 + CCM_LIST.length) % CCM_LIST.length : 0);
         setPlayerStatus("Prev Song..");
     }, []);
 
     useEffect(() => {
+        // [초강력 랜덤 시스템] 클라이언트 마운트 시점에 단 한 번 무작위 곡 선정 (Refresh 시 무조건 변경)
+        const randomIdx = Math.floor(Math.random() * CCM_LIST.length);
+        console.log("🎲 Random Pick Index:", randomIdx);
+        setCcmIndex(randomIdx);
+    }, []);
+
+    useEffect(() => {
+        if (ccmIndex === null) return;
         setTodayCcm(CCM_LIST[ccmIndex]);
         // 곡이 바뀌면 재생 시도
         if (playerRef.current && playerRef.current.loadVideoById) {
@@ -183,7 +191,7 @@ export default function App() {
     }, []);
 
     const initPlayer = useCallback(() => {
-        if (!isApiReady || !todayCcm || playerRef.current) return;
+        if (!isApiReady || !todayCcm || playerRef.current || ccmIndex === null) return;
 
         const container = document.getElementById('ccm-player-hidden-global');
         if (!container) return;
