@@ -714,35 +714,35 @@ export default function App() {
                                         📝 은혜나눔 게시판
                                     </button>
 
-                                    {/* 입체형 부유 알림종 */}
-                                    <div
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setShowNotiList(!showNotiList);
-                                        }}
-                                        style={{
-                                            position: 'absolute',
-                                            top: '-15px',
-                                            right: '15px',
-                                            width: '42px',
-                                            height: '42px',
-                                            background: 'white',
-                                            borderRadius: '50%',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            boxShadow: '0 6px 16px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.05)',
-                                            cursor: 'pointer',
-                                            zIndex: 20,
-                                            border: '2px solid #E6A4B4',
-                                            transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                                            animation: notifications.filter(n => !n.is_read).length > 0 ? 'bell-swing 2s infinite ease-in-out' : 'none'
-                                        }}
-                                        onMouseOver={e => e.currentTarget.style.transform = "scale(1.1) rotate(10deg)"}
-                                        onMouseOut={e => e.currentTarget.style.transform = "scale(1) rotate(0)"}
-                                    >
-                                        <span style={{ fontSize: '20px' }}>🔔</span>
-                                        {notifications.filter(n => !n.is_read).length > 0 && (
+                                    {/* 입체형 부유 알림종 (읽지 않은 알림이 있을 때만 표시) */}
+                                    {notifications.filter(n => !n.is_read).length > 0 && (
+                                        <div
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShowNotiList(!showNotiList);
+                                            }}
+                                            style={{
+                                                position: 'absolute',
+                                                top: '-15px',
+                                                right: '15px',
+                                                width: '42px',
+                                                height: '42px',
+                                                background: 'white',
+                                                borderRadius: '50%',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                boxShadow: '0 6px 16px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.05)',
+                                                cursor: 'pointer',
+                                                zIndex: 1001,
+                                                border: '2px solid #E6A4B4',
+                                                transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                                animation: 'bell-swing 2s infinite ease-in-out'
+                                            }}
+                                            onMouseOver={e => e.currentTarget.style.transform = "scale(1.1) rotate(10deg)"}
+                                            onMouseOut={e => e.currentTarget.style.transform = "scale(1) rotate(0)"}
+                                        >
+                                            <span style={{ fontSize: '20px' }}>🔔</span>
                                             <div style={{
                                                 position: 'absolute',
                                                 top: '-6px',
@@ -764,8 +764,10 @@ export default function App() {
                                             }}>
                                                 {notifications.filter(n => !n.is_read).length}
                                             </div>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
+                                    {/* 알림 리스트 팝업 호출 위치 이동 */}
+                                    {renderNotificationList()}
                                 </div>
 
                                 <div style={{ display: 'flex', gap: '8px', marginTop: '10px', width: '100%' }}>
@@ -1695,7 +1697,7 @@ export default function App() {
     const renderNotificationList = () => {
         if (!showNotiList) return null;
         return (
-            <div style={{ position: 'absolute', top: '50px', left: '50%', transform: 'translateX(-50%)', width: '320px', background: 'white', borderRadius: '24px', boxShadow: '0 15px 50px rgba(0,0,0,0.2)', zIndex: 1000, border: '1px solid #F0ECE4', overflow: 'hidden', animation: 'slide-up 0.3s ease-out' }}>
+            <div style={{ position: 'absolute', bottom: '60px', left: '50%', transform: 'translateX(-50%)', width: '320px', background: 'white', borderRadius: '24px', boxShadow: '0 15px 50px rgba(0,0,0,0.2)', zIndex: 1100, border: '2px solid #E6A4B4', overflow: 'hidden', animation: 'slide-up 0.3s ease-out' }}>
                 <div style={{ padding: '15px', borderBottom: '1px solid #F5F5F5', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FDFCFB' }}>
                     <span style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>새 소식</span>
                     <button onClick={() => setShowNotiList(false)} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '12px' }}>닫기</button>
@@ -1734,7 +1736,6 @@ export default function App() {
     // 최종 렌더링
     return (
         <div style={{ position: 'relative', maxWidth: '480px', margin: '0 auto' }}>
-            {renderNotificationList()}
             {renderContent()}
         </div>
     );
