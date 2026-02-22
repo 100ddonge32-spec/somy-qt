@@ -97,11 +97,22 @@ const READING_PLAN: string[] = [
     "누가복음 21-22",
 ];
 
-export function getTodayReading(): string {
-    // 한국 시간 기준 올해 몇 번째 날인지 계산
-    const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
+/**
+ * 특정 날짜 또는 오늘 날짜에 해당하는 성경 읽기표 구절을 반환합니다.
+ * @param dateStr "YYYY-MM-DD" 형식의 날짜 문자열 (옵션)
+ */
+export function getTodayReading(dateStr?: string): string {
+    let now: Date;
+
+    if (dateStr) {
+        now = new Date(dateStr);
+    } else {
+        // 한국 시간 기준
+        now = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    }
+
     const startOfYear = new Date(now.getFullYear(), 0, 1);
     const dayOfYear = Math.floor((now.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
-    const index = dayOfYear % READING_PLAN.length;
+    const index = Math.max(0, dayOfYear) % READING_PLAN.length;
     return READING_PLAN[index];
 }

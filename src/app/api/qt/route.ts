@@ -18,7 +18,7 @@ function getKoreaDateString(): string {
 
 // 자동 큐티 생성 로직 (성경 읽기표 기반)
 async function generateAutoQt(date: string) {
-    const reference = getTodayReading();
+    const baseReference = getTodayReading(date);
 
     try {
         // 1. 성경 본문 가져오기 (OpenAI 활용)
@@ -32,15 +32,15 @@ async function generateAutoQt(date: string) {
 
 **[엄격 준수 사항 - 위반 시 무효]**
 1. **요약/의역 금지**: 절대로 내용을 요약하거나 현대어로 풀어서 쓰지 마세요. 성경책에 적힌 텍스트 그대로여야 합니다.
-2. **숫자 정확도**: 인구 조사 숫자, 연도, 날짜 등을 절대로 임의로 변경하지 마세요. (예: 46,500을 465,052로 바꾸는 등의 행위 절대 엄금)
+2. **숫자 정확도**: 인구 조사 숫자, 연도, 날짜 등을 절대로 임의로 변경하지 마세요.
 3. **분량 조절**: 주어진 범위의 **시작점부터 연속된 약 15~20개 절**을 누락 없이 순서대로 제공하세요.
 4. **절 번호 필수**: 각 절의 시작에 반드시 숫자로 절 번호를 기입하세요. (예: 1. 여호와께서... 2. 이스라엘...).
-5. **언어**: 반드시 한국어 개역개정판을 사용하세요. 개역한글과 혼동하지 마세요.
+5. **결과 형식**: 당신이 실제로 추출한 **정확한 장:절 범위를 포함**해야 합니다. (예: "민수기 1:1-19 절")
 
 반드시 아래 JSON 형식으로만 답하세요:
-{"passage":"본문 내용 (줄바꿈은 \\n으로)"}`
+{"reference":"정확한 범위 (예: 민수기 1:1-20 절)","passage":"본문 내용 (줄바꿈은 \\n으로)"}`
                 },
-                { role: 'user', content: `성경구절: ${reference}` }
+                { role: 'user', content: `성경구절: ${baseReference}` }
             ],
             temperature: 0,
             max_tokens: 2000,
@@ -49,6 +49,7 @@ async function generateAutoQt(date: string) {
         const bibleContent = bibleRes.choices[0]?.message?.content || '';
         const bibleJson = JSON.parse(bibleContent.match(/\{[\s\S]*\}/)![0]);
         const passage = bibleJson.passage;
+        const actualReference = bibleJson.reference || baseReference;
 
         // 2. 묵상 질문 + 기도문 생성
         const qtRes = await openai.chat.completions.create({
@@ -64,7 +65,7 @@ async function generateAutoQt(date: string) {
 반드시 아래 JSON 형식으로만 답하세요:
 {"question1":"질문1","question2":"질문2","question3":"질문3","prayer":"기도문"}`
                 },
-                { role: 'user', content: `성경구절: ${reference}\n본문:\n${passage}` }
+                { role: 'user', content: `성경구절: ${actualReference}\n본문:\n${passage}` }
             ],
             temperature: 0.7,
         });
@@ -74,7 +75,7 @@ async function generateAutoQt(date: string) {
 
         const newQt = {
             date,
-            reference,
+            reference: actualReference,
             passage,
             question1: qtJson.question1,
             question2: qtJson.question2,
