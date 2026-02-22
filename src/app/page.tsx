@@ -166,6 +166,7 @@ export default function App() {
     const [memberList, setMemberList] = useState<any[]>([]);
     const [isManagingMembers, setIsManagingMembers] = useState(false);
     const [showWelcome, setShowWelcome] = useState(false);
+    const [isHistoryMode, setIsHistoryMode] = useState(false);
 
     useEffect(() => {
         const hasVisited = localStorage.getItem('somy_visited');
@@ -180,6 +181,7 @@ export default function App() {
 
     const fetchQt = async () => {
         setIsQtLoading(true);
+        setIsHistoryMode(false); // 새로운 큐티이므로 히스토리 모드 해제
         try {
             const r = await fetch('/api/qt', { cache: 'no-store' });
             const { qt } = await r.json();
@@ -858,7 +860,12 @@ export default function App() {
                     <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #EEE", position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
                         <button onClick={() => setView("home")} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
                         <img src={CHURCH_LOGO} alt="로고" style={{ height: "24px" }} />
-                        <div style={{ fontWeight: 700, color: "#333", fontSize: "14px" }}>오늘의 큐티</div>
+                        <div style={{ fontWeight: 700, color: "#333", fontSize: "14px" }}>
+                            {isHistoryMode ? "지난 묵상 기록" : "오늘의 큐티"}
+                        </div>
+                        {isHistoryMode && (
+                            <div style={{ background: "#709176", color: "white", fontSize: "10px", padding: "2px 6px", borderRadius: "10px", fontWeight: 700 }}>다시보기</div>
+                        )}
                         <div style={{ marginLeft: 'auto', fontSize: '11px', color: '#999' }}>{qtData.date}</div>
                     </div>
 
@@ -1005,6 +1012,12 @@ export default function App() {
                         )}
                         {qtStep === 'pray' && (
                             <button onClick={async () => {
+                                // 히스토리 모드일 때는 저장하지 않고 바로 종료
+                                if (isHistoryMode) {
+                                    setQtStep('done');
+                                    return;
+                                }
+
                                 // 큐티 완료 기록
                                 if (user) {
                                     try {
@@ -1559,7 +1572,8 @@ export default function App() {
                                                 prayer: qt.prayer,
                                             });
                                             setAnswers(h.answers || []);
-                                            setQtStep('done');
+                                            setIsHistoryMode(true); // 히스토리 모드 활성화
+                                            setQtStep('read'); // 처음부터 다시보기
                                             setView('qt');
                                         }
                                     }} style={{ width: '100%', marginTop: '15px', padding: '12px', background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '12px', color: '#666', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
