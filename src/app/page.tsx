@@ -2423,24 +2423,45 @@ export default function App() {
                     onClick={() => setView('ccm')}
                     style={{
                         width: '100%',
-                        height: '60px',
-                        background: '#222',
-                        borderRadius: '6px',
+                        height: '65px',
+                        background: '#111',
+                        borderRadius: '8px',
                         marginBottom: '15px',
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'center',
                         alignItems: 'center',
-                        padding: '6px',
+                        padding: '10px 6px',
                         overflow: 'hidden',
                         cursor: 'pointer',
-                        boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.5)',
-                        border: '1.5px solid #111'
+                        boxShadow: 'inset 0 2px 15px rgba(0,0,0,0.8)',
+                        border: '1px solid #333',
+                        position: 'relative'
                     }}
                 >
+                    {/* 실시간 파형 애니메이션 (Visual Waveform) */}
                     <div style={{
-                        fontSize: '10px',
-                        color: '#00FF41',
+                        display: 'flex',
+                        alignItems: 'flex-end',
+                        gap: '2px',
+                        height: '24px',
+                        marginBottom: '6px'
+                    }}>
+                        {[...Array(8)].map((_, i) => (
+                            <div key={i} style={{
+                                width: '3px',
+                                background: isCcmPlaying ? '#00FF41' : '#333',
+                                borderRadius: '1px',
+                                height: isCcmPlaying ? '100%' : '2px',
+                                transition: 'height 0.2s',
+                                animation: isCcmPlaying ? `wave-music ${0.5 + i * 0.1}s infinite ease-in-out` : 'none'
+                            }} />
+                        ))}
+                    </div>
+
+                    <div style={{
+                        fontSize: '9px',
+                        color: isCcmPlaying ? '#00FF41' : '#888',
                         fontWeight: 900,
                         whiteSpace: 'nowrap',
                         width: '100%',
@@ -2448,23 +2469,10 @@ export default function App() {
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         fontFamily: 'monospace',
-                        textShadow: '0 0 5px rgba(0,255,65,0.5)'
+                        textShadow: isCcmPlaying ? '0 0 8px rgba(0,255,65,0.6)' : 'none'
                     }}>
                         {CCM_LIST[ccmIndex]?.title || todayCcm?.title}
                     </div>
-                    <div style={{ fontSize: '7px', color: '#888', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                        {playerStatus}
-                    </div>
-                    {isCcmPlaying && (
-                        <div style={{ width: '80%', height: '3px', background: '#333', marginTop: '6px', borderRadius: '2px', overflow: 'hidden' }}>
-                            <div style={{
-                                height: '100%',
-                                width: '100%',
-                                background: 'linear-gradient(90deg, transparent, #00FF41, transparent)',
-                                animation: 'halo-pulse 1.5s infinite linear'
-                            }}></div>
-                        </div>
-                    )}
                 </div>
 
                 {/* 2. 클릭 휠 (Click Wheel) */}
@@ -2494,29 +2502,31 @@ export default function App() {
                     <div
                         onClick={(e) => { e.stopPropagation(); handlePrevCcm(); }}
                         style={{
-                            fontSize: '12px',
-                            color: '#BBB',
+                            fontSize: '14px',
+                            color: '#AAA',
                             position: 'absolute',
-                            left: '6px',
+                            left: '2px', // 더 바깥쪽으로 이동
                             cursor: 'pointer',
-                            padding: '12px',
+                            padding: '15px',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            justifyContent: 'center',
+                            zIndex: 3
                         }}
                     >⏮</div>
                     <div
                         onClick={(e) => { e.stopPropagation(); handleNextCcm(); }}
                         style={{
-                            fontSize: '12px',
-                            color: '#BBB',
+                            fontSize: '14px',
+                            color: '#AAA',
                             position: 'absolute',
-                            right: '6px',
+                            right: '2px', // 더 바깥쪽으로 이동
                             cursor: 'pointer',
-                            padding: '12px',
+                            padding: '15px',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            justifyContent: 'center',
+                            zIndex: 3
                         }}
                     >⏭</div>
 
@@ -2563,4 +2573,25 @@ export default function App() {
             {renderInstallGuide()}
         </div>
     );
+}
+
+// 글로벌 스타일 추가
+if (typeof document !== 'undefined') {
+    const styleId = 'somy-ipod-styles';
+    if (!document.getElementById(styleId)) {
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+            @keyframes wave-music {
+                0%, 100% { height: 4px; }
+                50% { height: 24px; }
+            }
+            @keyframes halo-pulse {
+                0% { opacity: 0.3; transform: scaleX(1); }
+                50% { opacity: 1; transform: scaleX(1.5); }
+                100% { opacity: 0.3; transform: scaleX(1); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
 }
