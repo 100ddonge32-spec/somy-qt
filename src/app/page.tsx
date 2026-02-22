@@ -103,30 +103,24 @@ export default function App() {
         }
     }, []);
 
-    const [playerStatus, setPlayerStatus] = useState("Initializing...");
+    const [playerStatus, setPlayerStatus] = useState("Wait API...");
+    const initAttempts = useRef(0);
 
     useEffect(() => {
         setTodayCcm(getTodayCcm());
 
-        // YouTube API 준비 함수
-        (window as any).onYouTubeIframeAPIReady = () => {
-            console.log("🚀 YouTube API Ready Event");
-            setIsApiReady(true);
-            setPlayerStatus("API Ready");
-        };
-
-        // API 로드 체크 루틴
+        // 1. YouTube 전역 오브젝트 확인용 루틴
         const checkYT = setInterval(() => {
-            if ((window as any).YT && (window as any).YT.Player) {
-                console.log("✅ YT discovered via polling");
+            if (typeof window !== 'undefined' && (window as any).YT && (window as any).YT.Player) {
+                console.log("📥 YouTube API Found");
                 setIsApiReady(true);
-                setPlayerStatus("API Ready");
+                setPlayerStatus("API OK");
                 clearInterval(checkYT);
             }
-        }, 1000);
+        }, 500);
 
-        // 스크립트 추가
-        if (!(window as any).YT) {
+        // 2. 스크립트 강제 주입
+        if (typeof window !== 'undefined' && !(window as any).YT) {
             const tag = document.createElement('script');
             tag.src = "https://www.youtube.com/iframe_api";
             tag.async = true;
@@ -136,71 +130,78 @@ export default function App() {
         return () => clearInterval(checkYT);
     }, []);
 
-    useEffect(() => {
+    const initPlayer = useCallback(() => {
         const container = document.getElementById('ccm-player-hidden-global');
-        if (isApiReady && todayCcm && container && !playerRef.current) {
-            console.log("🛠 Creating YT Player instance...");
-            setPlayerStatus("Starting...");
-            try {
-                // 이미 존재한다면 정리
-                const existing = document.getElementById('ccm-player-hidden-global');
-                if (existing && existing.innerHTML !== '') {
-                    existing.innerHTML = '';
-                    playerRef.current = null;
-                }
+        if (!isApiReady || !todayCcm || !container) {
+            console.log("⚠️ Init deferred:", { isApiReady, hasCcm: !!todayCcm, hasContainer: !!container });
+            return;
+        }
 
-                playerRef.current = new (window as any).YT.Player('ccm-player-hidden-global', {
-                    height: '100',
-                    width: '100',
-                    videoId: todayCcm.youtubeId,
-                    playerVars: {
-                        'autoplay': 0,
-                        'controls': 0,
-                        'showinfo': 0,
-                        'rel': 0,
-                        'iv_load_policy': 3,
-                        'enablejsapi': 1,
-                        'playsinline': 1,
-                        'origin': typeof window !== 'undefined' ? window.location.origin : '',
-                        'widget_referrer': typeof window !== 'undefined' ? window.location.href : '',
-                        'modestbranding': 1
+        if (playerRef.current) {
+            try { playerRef.current.destroy(); } catch (e) { }
+            playerRef.current = null;
+        }
+
+        console.log("🏗 Creating New Player Instance...");
+        setPlayerStatus("Building...");
+
+        try {
+            playerRef.current = new (window as any).YT.Player('ccm-player-hidden-global', {
+                height: '360', // 브라우저 배터리 세이버 방지를 위해 실물 크기 할당
+                width: '640',
+                videoId: todayCcm.youtubeId,
+                playerVars: {
+                    'autoplay': 0,
+                    'controls': 0,
+                    'showinfo': 0,
+                    'rel': 0,
+                    'iv_load_policy': 3,
+                    'enablejsapi': 1,
+                    'playsinline': 1,
+                    'origin': window.location.origin
+                },
+                events: {
+                    'onReady': (event: any) => {
+                        console.log("✅ Player Ready!");
+                        setPlayerStatus("iPod Ready");
                     },
-                    events: {
-                        'onReady': (event: any) => {
-                            console.log("🎸 Player Ready!");
-                            setPlayerStatus("iPod Ready");
-                            event.target.setVolume(ccmVolume);
-                        },
-                        'onStateChange': (event: any) => {
-                            const state = event.data;
-                            const YTState = (window as any).YT.PlayerState;
-                            console.log("State:", state);
-                            if (state === YTState.PLAYING) {
-                                setIsCcmPlaying(true);
-                                setPlayerStatus("Playing");
-                            } else if (state === YTState.PAUSED) {
-                                setIsCcmPlaying(false);
-                                setPlayerStatus("Paused");
-                            } else if (state === YTState.BUFFERING) {
-                                setPlayerStatus("Buffering..");
-                            } else if (state === YTState.CUED) {
-                                setPlayerStatus("Cued");
-                            }
-                        },
-                        'onError': (e: any) => {
-                            console.error("❌ YT Error:", e.data);
-                            setPlayerStatus("Engine Err:" + e.data);
-                            // 에러 발생 시 초기화 시도
-                            playerRef.current = null;
+                    'onStateChange': (event: any) => {
+                        const state = event.data;
+                        const YTState = (window as any).YT.PlayerState;
+                        if (state === YTState.PLAYING) {
+                            setIsCcmPlaying(true);
+                            setPlayerStatus("Playing");
+                        } else if (state === YTState.PAUSED) {
+                            setIsCcmPlaying(false);
+                            setPlayerStatus("Paused");
+                        } else if (state === YTState.BUFFERING) {
+                            setPlayerStatus("Loading..");
+                        } else if (state === YTState.CUED) {
+                            setPlayerStatus("Cued");
+                        }
+                    },
+                    'onError': (e: any) => {
+                        console.error("❌ Player Error:", e.data);
+                        setPlayerStatus("Err: " + e.data);
+                        // 에러 시 소미가 한 번 더 시도
+                        if (initAttempts.current < 3) {
+                            initAttempts.current++;
+                            setTimeout(initPlayer, 2000);
                         }
                     }
-                });
-            } catch (err) {
-                console.error("Critical Init Error:", err);
-                setPlayerStatus("Failed: " + String(err).substring(0, 10));
-            }
+                }
+            });
+        } catch (err) {
+            console.error("Fatal Player Init Error:", err);
+            setPlayerStatus("Fatal Error");
         }
     }, [isApiReady, todayCcm]);
+
+    useEffect(() => {
+        if (isApiReady && todayCcm && !playerRef.current) {
+            initPlayer();
+        }
+    }, [isApiReady, todayCcm, initPlayer]);
 
     // 승인 상태 및 교회 정보 체크 함수 (서버와 동기화 포함)
     const checkApprovalStatus = useCallback(async () => {
@@ -2251,9 +2252,8 @@ export default function App() {
         const togglePlay = (e: React.MouseEvent) => {
             e.stopPropagation();
             if (!playerRef.current) {
-                setPlayerStatus("Not Loaded");
-                setIsApiReady(false); // 재트리거
-                setTimeout(() => setIsApiReady(true), 100);
+                setPlayerStatus("Repairing..");
+                initPlayer();
                 return;
             }
 
@@ -2261,23 +2261,19 @@ export default function App() {
                 const state = playerRef.current.getPlayerState?.();
                 if (state === 1) { // PLAYING
                     playerRef.current.pauseVideo();
-                } else {
-                    // 강제 재생 시도: 바로 playVideo()가 안 될 수 있으므로 loadVideoById 사용
-                    if (state === -1 || state === 5 || state === 0) { // UNSTARTED, CUED, ENDED
-                        playerRef.current.loadVideoById(todayCcm.youtubeId);
-                    } else {
-                        playerRef.current.playVideo();
-                    }
+                } else if (state === 2 || state === -1 || state === 5 || state === 0) {
+                    // PAUSED, UNSTARTED, CUED, ENDED
+                    playerRef.current.playVideo();
+                    // 만약 1초 뒤에도 재생 상태가 아니라면 강제 로드
+                    setTimeout(() => {
+                        if (playerRef.current && playerRef.current.getPlayerState?.() !== 1) {
+                            playerRef.current.loadVideoById(todayCcm.youtubeId);
+                        }
+                    }, 1000);
                 }
             } catch (err) {
-                console.log("Force Recovery...");
-                setPlayerStatus("Recovering..");
-                try {
-                    playerRef.current.loadVideoById(todayCcm.youtubeId);
-                    playerRef.current.playVideo();
-                } catch (e2) {
-                    setPlayerStatus("Fatal Err");
-                }
+                console.log("Resetting Engine...");
+                initPlayer();
             }
         };
 
@@ -2380,7 +2376,10 @@ export default function App() {
                     onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.96)'}
                     onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                    <div style={{ fontSize: '9px', color: '#AAA', position: 'absolute', top: '8px', fontWeight: 800 }}>MENU</div>
+                    <div
+                        onClick={(e) => { e.stopPropagation(); initPlayer(); }}
+                        style={{ fontSize: '9px', color: '#B8924A', position: 'absolute', top: '8px', fontWeight: 800 }}
+                    > RESET </div>
                     <div style={{ fontSize: '10px', color: '#AAA', position: 'absolute', bottom: '8px' }}>{isCcmPlaying ? '⏸' : '▶️'}</div>
                     <div style={{ fontSize: '10px', color: '#AAA', position: 'absolute', left: '10px' }}>⏮</div>
                     <div style={{ fontSize: '10px', color: '#AAA', position: 'absolute', right: '10px' }}>⏭</div>
@@ -2410,17 +2409,15 @@ export default function App() {
     // 최종 렌더링
     return (
         <div style={{ position: 'relative', maxWidth: '480px', margin: '0 auto' }}>
-            {/* 실제 플레이어 프레임 (완전 숨김 대신 구석에 1x1로 배치하여 브라우저 제한 완화) */}
+            {/* 실제 플레이어 프레임 (유튜브 정책에 따라 화면 밖으로 충분한 크기로 밀어냄) */}
             <div id="ccm-player-container" style={{
                 position: 'fixed',
-                bottom: '10px',
-                right: '10px',
-                width: '1px',
-                height: '1px',
-                opacity: 0.01,
+                bottom: '-500px',
+                right: '-500px',
+                width: '300px',
+                height: '300px',
                 zIndex: -1,
-                overflow: 'hidden',
-                pointerEvents: 'none'
+                opacity: 0.01
             }}>
                 <div id="ccm-player-hidden-global"></div>
             </div>
