@@ -89,23 +89,26 @@ async function generateAutoQt(date: string) {
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const date = searchParams.get('date') || getKoreaDateString();
+    const force = searchParams.get('force') === 'true';
 
-    console.log(`[QT API] Request for date: ${date}`);
+    console.log(`[QT API] Request for date: ${date}, force: ${force}`);
 
     try {
-        // 1. 오늘의 수동 등록 큐티 데이터 조회
-        const { data: manualQt, error: qtError } = await supabaseAdmin
-            .from('daily_qt')
-            .select('*')
-            .eq('date', date)
-            .single();
+        // 1. force가 아닐 때만 기존 데이터 조회
+        if (!force) {
+            const { data: manualQt, error: qtError } = await supabaseAdmin
+                .from('daily_qt')
+                .select('*')
+                .eq('date', date)
+                .single();
 
-        if (!qtError && manualQt) {
-            console.log(`[QT API] Found manual entry for ${date}`);
-            return NextResponse.json({ qt: manualQt });
+            if (!qtError && manualQt) {
+                console.log(`[QT API] Found manual entry for ${date}`);
+                return NextResponse.json({ qt: manualQt });
+            }
         }
 
-        // 2. 큐티 데이터가 없을 경우, 교회 설정을 확인
+        // 2. 큐티 데이터가 없거나 force인 경우, 교회 설정을 확인
         const { data: settings, error: settingsError } = await supabaseAdmin
             .from('church_settings')
             .select('plan')
@@ -116,10 +119,9 @@ export async function GET(req: NextRequest) {
             console.log(`[QT API] Settings not found or error: ${settingsError.message}`);
         }
 
-        // 3. 유료 버전(premium)인 경우에만 자동 생성 수행
-        // 만약 설정이 아예 없더라도 테스트 편의를 위해 일단 에러 로그만 남기고 진행 여부 결정
-        if (settings?.plan === 'premium') {
-            console.log(`[QT API] Premium plan detected. Generating auto QT...`);
+        // 3. 유료 버전(premium)인 경우 또는 force인 경우 자동 생성 수행
+        if (settings?.plan === 'premium' || force) {
+            console.log(`[QT API] ${force ? 'Force refresh' : 'Premium plan'} detected. Generating auto QT...`);
             const autoQt = await generateAutoQt(date);
             return NextResponse.json({ qt: autoQt });
         }

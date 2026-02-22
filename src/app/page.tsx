@@ -993,7 +993,7 @@ export default function App() {
                             <button onClick={async () => {
                                 setAiLoading(true);
                                 try {
-                                    const res = await fetch('/api/qt?date=' + qtForm.date);
+                                    const res = await fetch(`/api/qt?date=${qtForm.date}&force=true`);
                                     const { qt } = await res.json();
                                     if (qt) {
                                         setQtForm({
