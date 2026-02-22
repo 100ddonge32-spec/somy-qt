@@ -91,7 +91,17 @@ export default function App() {
     const [ccmVolume, setCcmVolume] = useState(50);
     const [isCcmPlaying, setIsCcmPlaying] = useState(false);
     const [isApiReady, setIsApiReady] = useState(false);
+    const [playerPos, setPlayerPos] = useState({ x: 0, y: 0 }); // 초기 좌표는 useEffect에서 설정
+    const [isDragging, setIsDragging] = useState(false);
+    const dragOffset = useRef({ x: 0, y: 0 });
     const playerRef = useRef<any>(null);
+
+    useEffect(() => {
+        // 화면 하단 오른쪽에 초기 위치 설정
+        if (typeof window !== 'undefined') {
+            setPlayerPos({ x: window.innerWidth - 85, y: window.innerHeight - 180 });
+        }
+    }, []);
 
     useEffect(() => {
         setTodayCcm(getTodayCcm());
@@ -117,36 +127,49 @@ export default function App() {
         const container = document.getElementById('ccm-player-hidden-global');
         if (isApiReady && todayCcm && container) {
             if (!playerRef.current) {
-                console.log("Initializing Player with:", todayCcm.title);
-                playerRef.current = new (window as any).YT.Player('ccm-player-hidden-global', {
-                    height: '0',
-                    width: '0',
-                    videoId: todayCcm.youtubeId,
-                    playerVars: {
-                        'autoplay': 0,
-                        'controls': 0,
-                        'showinfo': 0,
-                        'rel': 0,
-                        'iv_load_policy': 3,
-                        'enablejsapi': 1
-                    },
-                    events: {
-                        'onReady': (event: any) => {
-                            event.target.setVolume(ccmVolume);
+                console.log("Initializing Global Player:", todayCcm.title);
+                try {
+                    playerRef.current = new (window as any).YT.Player('ccm-player-hidden-global', {
+                        height: '0',
+                        width: '0',
+                        videoId: todayCcm.youtubeId,
+                        playerVars: {
+                            'autoplay': 0,
+                            'controls': 0,
+                            'showinfo': 0,
+                            'rel': 0,
+                            'iv_load_policy': 3,
+                            'enablejsapi': 1,
+                            'origin': typeof window !== 'undefined' ? window.location.origin : ''
                         },
-                        'onStateChange': (event: any) => {
-                            const state = event.data;
-                            // YT.PlayerState.PLAYING = 1, PAUSED = 2, BUFFERING = 3, CUED = 5
-                            if (state === 1) setIsCcmPlaying(true);
-                            else if (state === 2 || state === 0 || state === 5) setIsCcmPlaying(false);
+                        events: {
+                            'onReady': (event: any) => {
+                                event.target.setVolume(ccmVolume);
+                                console.log("Player Ready ✅");
+                            },
+                            'onStateChange': (event: any) => {
+                                const state = event.data;
+                                // 1: PLAYING, 2: PAUSED, 0: ENDED, -1: UNSTARTED, 5: CUED
+                                if (state === 1) setIsCcmPlaying(true);
+                                else setIsCcmPlaying(false);
+                            },
+                            'onError': (e: any) => {
+                                console.error("YT Player Error:", e.data);
+                            }
                         }
-                    }
-                });
-            } else {
+                    });
+                } catch (err) {
+                    console.error("Player Init Failed:", err);
+                }
+            } else if (playerRef.current.cueVideoById) {
                 // 이미 플레이어가 있으면 영상 ID 체크 후 다르면 로드
-                const currentVideoUrl = playerRef.current.getVideoUrl?.() || "";
-                if (currentVideoUrl && !currentVideoUrl.includes(todayCcm.youtubeId)) {
-                    playerRef.current.cueVideoById(todayCcm.youtubeId);
+                try {
+                    const currentUrl = playerRef.current.getVideoUrl?.() || "";
+                    if (currentUrl && !currentUrl.includes(todayCcm.youtubeId)) {
+                        playerRef.current.cueVideoById(todayCcm.youtubeId);
+                    }
+                } catch (e) {
+                    console.log("Sync error (silent):", e);
                 }
             }
         }
@@ -2165,65 +2188,126 @@ export default function App() {
         );
     };
 
-    // 하단 고정 플레이어 바
+    // 하단 고정 플레이어 바 (이제는 드래그 가능한 플로팅 코인으로 변경!)
     const renderMiniPlayer = () => {
-        if (!todayCcm || view === 'ccm') return null; // CCM 상세 뷰에서는 숨김
+        if (!todayCcm || view === 'ccm') return null;
 
+        const handleStart = (clientX: number, clientY: number) => {
+            setIsDragging(true);
+            dragOffset.current = {
+                x: clientX - playerPos.x,
+                y: clientY - playerPos.y
+            };
+        };
+
+        const handleMove = (clientX: number, clientY: number) => {
+            if (!isDragging) return;
+            // 화면 경계 제한
+            const newX = Math.max(0, Math.min(window.innerWidth - 70, clientX - dragOffset.current.x));
+            const newY = Math.max(0, Math.min(window.innerHeight - 70, clientY - dragOffset.current.y));
+            setPlayerPos({ x: newX, y: newY });
+        };
+
+        const handleEnd = () => {
+            setIsDragging(false);
+        };
+
+        // 전역 마우스/터치 업 이벤트를 위해 임시 핸들러 (실제로는 여기서만)
         return (
-            <div style={{
-                position: 'fixed',
-                bottom: '20px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: 'calc(100% - 40px)',
-                maxWidth: '440px',
-                background: 'rgba(255, 255, 255, 0.95)',
-                backdropFilter: 'blur(10px)',
-                borderRadius: '20px',
-                padding: '12px 20px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-                zIndex: 1000,
-                border: '1px solid #EEE',
-                animation: 'slide-up 0.4s ease-out'
-            }}>
+            <div
+                style={{
+                    position: 'fixed',
+                    left: `${playerPos.x}px`,
+                    top: `${playerPos.y}px`,
+                    width: '70px',
+                    height: '70px',
+                    zIndex: 2000,
+                    cursor: isDragging ? 'grabbing' : 'grab',
+                    transition: isDragging ? 'none' : 'all 0.1s ease-out',
+                    userSelect: 'none',
+                    touchAction: 'none'
+                }}
+                onMouseDown={(e) => handleStart(e.clientX, e.clientY)}
+                onMouseMove={(e) => handleMove(e.clientX, e.clientY)}
+                onMouseUp={handleEnd}
+                onMouseLeave={handleEnd}
+                onTouchStart={(e) => handleStart(e.touches[0].clientX, e.touches[0].clientY)}
+                onTouchMove={(e) => handleMove(e.touches[0].clientX, e.touches[0].clientY)}
+                onTouchEnd={handleEnd}
+            >
+                {/* 메인 원형 플레이어 보디 */}
                 <div style={{
-                    width: '40px',
-                    height: '40px',
-                    background: '#FBC02D',
-                    borderRadius: '12px',
+                    width: '100%',
+                    height: '100%',
+                    background: 'linear-gradient(135deg, #FFF9C4 0%, #FBC02D 100%)',
+                    borderRadius: '50%',
+                    boxShadow: '0 8px 30px rgba(251,192,45,0.4), inset 0 2px 5px rgba(255,255,255,0.8), inset 0 -4px 10px rgba(0,0,0,0.1)',
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '20px',
+                    border: '3px solid white',
+                    position: 'relative',
+                    overflow: 'visible',
                     animation: isCcmPlaying ? 'pulse 2s infinite' : 'none'
                 }}>
-                    📻
-                </div>
-                <div style={{ flex: 1, overflow: 'hidden' }} onClick={() => setView('ccm')}>
-                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{todayCcm.title}</div>
-                    <div style={{ fontSize: '11px', color: '#B8924A', fontWeight: 700 }}>{todayCcm.artist}</div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ fontSize: '24px', marginBottom: '-5px' }}>{isCcmPlaying ? '🎵' : '📻'}</div>
+                    <div style={{ fontSize: '9px', fontWeight: 900, color: '#827717', maxWidth: '55px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {todayCcm.title}
+                    </div>
+
+                    {/* 재생/일시정지 플로팅 버튼 */}
                     <button
-                        onClick={() => {
+                        onClick={(e) => {
+                            e.stopPropagation();
                             if (playerRef.current) {
                                 if (isCcmPlaying) playerRef.current.pauseVideo();
                                 else playerRef.current.playVideo();
                             }
                         }}
-                        style={{ background: '#333', color: 'white', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', cursor: 'pointer' }}
+                        style={{
+                            position: 'absolute',
+                            bottom: '-5px',
+                            right: '-5px',
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '50%',
+                            background: '#333',
+                            color: 'white',
+                            border: '2px solid white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
+                        }}
                     >
                         {isCcmPlaying ? '⏸' : '▶️'}
                     </button>
-                    <button
+
+                    {/* 정보 배지 (제목 클릭 시 상세로) */}
+                    <div
                         onClick={() => setView('ccm')}
-                        style={{ background: 'none', border: 'none', color: '#999', fontSize: '18px', cursor: 'pointer', padding: '4px' }}
+                        style={{
+                            position: 'absolute',
+                            top: '-10px',
+                            left: '-10px',
+                            width: '24px',
+                            height: '24px',
+                            background: 'white',
+                            borderRadius: '50%',
+                            border: '2px solid #EEE',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                        }}
                     >
-                        ✕
-                    </button>
+                        🔍
+                    </div>
                 </div>
             </div>
         );
