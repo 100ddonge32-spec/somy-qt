@@ -2394,17 +2394,17 @@ export default function App() {
                     position: 'fixed',
                     left: `${playerPos.x}px`,
                     top: `${playerPos.y}px`,
-                    width: '100px',
-                    height: '165px',
+                    width: '120px',
+                    height: '200px',
                     zIndex: 2000,
                     cursor: isDragging ? 'grabbing' : 'grab',
                     background: '#F5F5F7',
-                    borderRadius: '16px',
-                    padding: '10px',
+                    borderRadius: '24px',
+                    padding: '12px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    boxShadow: '0 25px 50px rgba(0,0,0,0.25), inset 0 1px 2px white',
+                    boxShadow: '0 30px 60px rgba(0,0,0,0.3)',
                     border: '1px solid #CCC',
                     transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                     userSelect: 'none',
@@ -2423,20 +2423,17 @@ export default function App() {
                     onClick={() => setView('ccm')}
                     style={{
                         width: '100%',
-                        height: '65px',
-                        background: '#111',
-                        borderRadius: '8px',
-                        marginBottom: '15px',
+                        height: '75px',
+                        background: '#000',
+                        borderRadius: '12px',
+                        marginBottom: '20px',
                         display: 'flex',
-                        flexDirection: 'column',
                         justifyContent: 'center',
                         alignItems: 'center',
-                        padding: '10px 6px',
                         overflow: 'hidden',
                         cursor: 'pointer',
-                        boxShadow: 'inset 0 2px 15px rgba(0,0,0,0.8)',
-                        border: '1px solid #333',
-                        position: 'relative'
+                        boxShadow: 'inset 0 2px 20px rgba(0,0,0,1)',
+                        border: '1px solid #222'
                     }}
                 >
                     {/* 실시간 파형 애니메이션 (Visual Waveform) */}
@@ -2459,7 +2456,7 @@ export default function App() {
                     </div>
                 </div>
 
-                {/* 2. 클릭 휠 (Click Wheel) - 크기 100px로 확장 및 간격 최적화 */}
+                {/* 2. 클릭 휠 (Classic Click Wheel) */}
                 <div
                     onClick={togglePlay}
                     style={{
@@ -2479,62 +2476,46 @@ export default function App() {
                     onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.96)'}
                     onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
+                    {/* RESET (MENU - Top) */}
                     <div
                         onClick={(e) => { e.stopPropagation(); setPlayRequested(true); initPlayer(); }}
-                        style={{ fontSize: '9px', color: '#B8924A', position: 'absolute', top: '8px', fontWeight: 800, letterSpacing: '0.5px' }}
-                    > RESET </div>
+                        style={{ position: 'absolute', top: '8px', fontSize: '9px', fontWeight: 900, color: '#B8924A', cursor: 'pointer', zIndex: 5 }}
+                    >RESET</div>
 
                     {/* 이전 곡 버튼 - 영역 확장 */}
+                    {/* PREV ⏮ (West) */}
                     <div
                         onClick={(e) => { e.stopPropagation(); handlePrevCcm(); }}
-                        style={{
-                            fontSize: '16px',
-                            color: '#777',
-                            position: 'absolute',
-                            left: '0px',
-                            cursor: 'pointer',
-                            padding: '20px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            zIndex: 3
-                        }}
+                        style={{ position: 'absolute', left: '8px', fontSize: '12px', color: '#BBB', padding: '10px', cursor: 'pointer', zIndex: 5 }}
                     >⏮</div>
 
                     {/* 다음 곡 버튼 - 영역 확장 */}
+                    {/* NEXT ⏭ (East) */}
                     <div
                         onClick={(e) => { e.stopPropagation(); handleNextCcm(); }}
-                        style={{
-                            fontSize: '16px',
-                            color: '#777',
-                            position: 'absolute',
-                            right: '0px',
-                            cursor: 'pointer',
-                            padding: '20px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            zIndex: 3
-                        }}
+                        style={{ position: 'absolute', right: '8px', fontSize: '12px', color: '#BBB', padding: '10px', cursor: 'pointer', zIndex: 5 }}
                     >⏭</div>
 
-                    {/* 중앙 선택 버튼 */}
-                    <div style={{
-                        width: '45px',
-                        height: '45px',
-                        borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #FFFFFF 0%, #E0E0E0 100%)',
-                        border: '1px solid #BBB',
-                        boxShadow: '0 4px 10px rgba(0,0,0,0.15), inset 0 1px 2px white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '22px',
-                        color: '#333',
-                        transition: 'all 0.1s'
-                    }}>
-                        {isCcmPlaying ? '⏸' : '▶️'}
-                    </div>
+                    {/* PLAY/PAUSE ▶️⏸ (South) */}
+                    <div
+                        onClick={(e) => { e.stopPropagation(); togglePlay(e); }}
+                        style={{ position: 'absolute', bottom: '8px', fontSize: '12px', color: '#BBB', padding: '10px', cursor: 'pointer', zIndex: 5 }}
+                    >{isCcmPlaying ? '⏸' : '▶️'}</div>
+
+                    {/* Center Center Select Button */}
+                    <div
+                        onClick={togglePlay}
+                        style={{
+                            width: '42px',
+                            height: '42px',
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #F9F9F9 0%, #DCDCDC 100%)',
+                            border: '1px solid #CCC',
+                            boxShadow: '2px 2px 5px rgba(0,0,0,0.1)',
+                            cursor: 'pointer',
+                            zIndex: 2
+                        }}
+                    />
                 </div>
             </div>
         );
