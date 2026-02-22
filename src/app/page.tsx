@@ -2415,7 +2415,7 @@ export default function App() {
             }
         };
 
-        const hapticClick = (e: React.MouseEvent, action: () => void) => {
+        const hapticClick = (e: React.MouseEvent | React.TouchEvent, action: () => void) => {
             e.stopPropagation();
             if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(12);
             action();
@@ -2534,14 +2534,30 @@ export default function App() {
                     {/* RESET (MENU - Top) */}
                     <div
                         onClick={(e) => hapticClick(e, () => { setPlayRequested(true); initPlayer(); })}
-                        style={{ position: 'absolute', top: '8px', fontSize: '10px', fontWeight: 900, color: '#B8924A', cursor: 'pointer', zIndex: 5, transition: 'transform 0.1s' }}
+                        onTouchStart={(e) => hapticClick(e, () => { setPlayRequested(true); initPlayer(); })}
+                        style={{ position: 'absolute', top: '8px', fontSize: '10px', fontWeight: 900, color: '#B8924A', cursor: 'pointer', zIndex: 15, transition: 'transform 0.1s' }}
                         onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.85)'}
                         onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     >RESET</div>
 
+                    {/* PREV ⏮ (West - Very Small, between circles) */}
+                    <div
+                        onClick={(e) => hapticClick(e, handlePrevCcm)}
+                        onTouchStart={(e) => hapticClick(e, handlePrevCcm)}
+                        style={{ position: 'absolute', left: '12px', fontSize: '11px', color: '#BBB', cursor: 'pointer', zIndex: 11 }}
+                    >⏮</div>
+
+                    {/* NEXT ⏭ (East - Very Small, between circles) */}
+                    <div
+                        onClick={(e) => hapticClick(e, handleNextCcm)}
+                        onTouchStart={(e) => hapticClick(e, handleNextCcm)}
+                        style={{ position: 'absolute', right: '12px', fontSize: '11px', color: '#BBB', cursor: 'pointer', zIndex: 11 }}
+                    >⏭</div>
+
                     {/* Center Center Play Button - Enlarged and Iconized */}
                     <div
                         onClick={(e) => hapticClick(e, () => togglePlay(e))}
+                        onTouchStart={(e) => hapticClick(e, () => togglePlay(e as any))}
                         style={{
                             width: '48px',
                             height: '48px',
