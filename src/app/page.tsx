@@ -593,15 +593,6 @@ export default function App() {
                         </div>
                     )}
 
-                    {user && (
-                        <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 100 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'white', padding: '6px 12px', borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', fontSize: '12px' }}>
-                                <span style={{ color: '#333', fontWeight: 600 }}>{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
-                                {isAdmin && <button onClick={() => { setSettingsForm({ ...churchSettings }); setShowSettings(true); }} style={{ background: 'none', border: 'none', color: '#B8924A', cursor: 'pointer', padding: '5px', fontSize: '18px' }} title="교회 설정">⚙️</button>}
-                                <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', padding: 0 }}>로그아웃</button>
-                            </div>
-                        </div>
-                    )}
 
                     {/* Character Section */}
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", flex: 1, justifyContent: 'center' }}>
@@ -826,8 +817,16 @@ export default function App() {
                         )}
                     </div>
 
-                    {isAdmin && (
-                        <div style={{ padding: '0 20px 40px 20px', width: '100%', maxWidth: '320px', margin: '0 auto' }}>
+                    <div style={{ padding: '0 20px 40px 20px', width: '100%', maxWidth: '360px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+                        {user && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'white', padding: '10px 20px', borderRadius: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', fontSize: '14px', border: '1px solid #F0ECE4' }}>
+                                <span style={{ color: '#333', fontWeight: 700 }}>{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
+                                {isAdmin && <button onClick={() => { setSettingsForm({ ...churchSettings }); setShowSettings(true); }} style={{ background: 'none', border: 'none', color: '#B8924A', cursor: 'pointer', padding: '5px', fontSize: '18px' }} title="교회 설정">⚙️</button>}
+                                <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontWeight: 600 }}>로그아웃</button>
+                            </div>
+                        )}
+
+                        {isAdmin && (
                             <button onClick={() => {
                                 const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
                                 setQtForm({ date: today, reference: '', passage: '', question1: '', question2: '', question3: '', prayer: '' });
@@ -841,8 +840,8 @@ export default function App() {
                             }}>
                                 ⚙️ 관리자 모드 들어가기
                             </button>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             );
         }
