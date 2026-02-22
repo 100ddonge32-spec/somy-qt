@@ -986,6 +986,38 @@ export default function App() {
                         <div style={{ fontWeight: 700, color: "#333", fontSize: "14px" }}>📝 큐티 본문 관리</div>
                     </div>
                     <div style={{ padding: "24px 20px", display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ background: '#FDFCFB', padding: '16px', borderRadius: '15px', border: '1px solid #F0ECE4', marginBottom: '8px' }}>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                ✨ AI 추천 기능
+                            </div>
+                            <button onClick={async () => {
+                                setAiLoading(true);
+                                try {
+                                    const res = await fetch('/api/qt?date=' + qtForm.date);
+                                    const { qt } = await res.json();
+                                    if (qt) {
+                                        setQtForm({
+                                            date: qt.date,
+                                            reference: qt.reference,
+                                            passage: qt.passage,
+                                            question1: qt.question1 || '',
+                                            question2: qt.question2 || '',
+                                            question3: qt.question3 || '',
+                                            prayer: qt.prayer || '',
+                                        });
+                                    } else {
+                                        alert('오늘의 자동 생성 본문을 가져올 수 없습니다. 유료 버전 설정을 확인해주세요.');
+                                    }
+                                } catch { alert('데이터 로드 실패'); }
+                                finally { setAiLoading(false); }
+                            }} disabled={aiLoading} style={{ width: '100%', padding: '12px', background: '#333', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
+                                {aiLoading ? '🔄 로딩 중...' : '📅 오늘 성경 통독 본문 불러오기'}
+                            </button>
+                            <p style={{ fontSize: '11px', color: '#999', marginTop: '8px', textAlign: 'center' }}>
+                                * 성경 읽기표에 따른 오늘 분량의 말씀과 내용을 자동으로 채워줍니다.
+                            </p>
+                        </div>
+
                         <div>
                             <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>📅 날짜</label>
                             <input type="date" value={qtForm.date} onChange={e => setQtForm(p => ({ ...p, date: e.target.value }))} style={inputStyle} />

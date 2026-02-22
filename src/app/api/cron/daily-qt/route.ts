@@ -48,7 +48,9 @@ export async function GET(req: NextRequest) {
             messages: [
                 {
                     role: 'system',
-                    content: `성경 본문을 개역개정판 기준으로 제공해주세요. JSON 형식으로만 답하세요:
+                    content: `당신은 신중한 목회자이며, 오늘의 QT를 위해 성경 본문을 추출합니다.
+반드시 주어진 범위 내에서 가장 핵심적인 20절 이하의 본문만 선택하여 제공하세요. 
+내용은 개역개정판 기준이어야 하며, 반드시 아래 JSON 형식으로만 답하세요:
 {"passage":"본문 내용 (줄바꿈은 \\n으로)"}`
                 },
                 { role: 'user', content: `성경구절: ${reference}` }
@@ -67,8 +69,12 @@ export async function GET(req: NextRequest) {
             messages: [
                 {
                     role: 'system',
-                    content: `큐티 묵상 질문 3개와 마무리 기도문을 작성해주세요.
-JSON 형식으로만 답하세요:
+                    content: `당신은 신중한 목회자이자 큐티 전문가입니다. 성도들이 말씀을 깊이 묵상하고 삶에 적용할 수 있도록 돕습니다.
+주어진 성경 본문을 바탕으로:
+1. 묵상 질문 3개 (성도의 삶에 울림을 주는 실질적이고 따뜻한 질문)
+2. 마무리 기도문 1개 (본문의 은혜를 갈구하는 간절한 기도)
+
+반드시 아래 JSON 형식으로만 답하세요:
 {"question1":"질문1","question2":"질문2","question3":"질문3","prayer":"기도문"}`
                 },
                 { role: 'user', content: `성경구절: ${reference}\n본문:\n${passage}` }
