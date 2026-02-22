@@ -109,38 +109,34 @@ export default function App() {
     }, []);
 
     useEffect(() => {
-        if (view === "ccm" && todayCcm && (window as any).YT && (window as any).YT.Player) {
-            if (!playerRef.current) {
-                playerRef.current = new (window as any).YT.Player('ccm-player-hidden', {
-                    height: '1',
-                    width: '1',
-                    videoId: todayCcm.youtubeId,
-                    playerVars: {
-                        'autoplay': 1,
-                        'controls': 0,
-                        'showinfo': 0,
-                        'rel': 0,
-                        'iv_load_policy': 3
+        // Player div가 존재하고 API가 준비되었을 때만 초기화
+        const container = document.getElementById('ccm-player-container');
+        if (container && todayCcm && (window as any).YT && (window as any).YT.Player && !playerRef.current) {
+            playerRef.current = new (window as any).YT.Player('ccm-player-hidden-global', {
+                height: '0',
+                width: '0',
+                videoId: todayCcm.youtubeId,
+                playerVars: {
+                    'autoplay': 0,
+                    'controls': 0,
+                    'showinfo': 0,
+                    'rel': 0,
+                    'iv_load_policy': 3
+                },
+                events: {
+                    'onReady': (event: any) => {
+                        event.target.setVolume(ccmVolume);
+                        console.log("Global Player Ready");
                     },
-                    events: {
-                        'onReady': (event: any) => {
-                            event.target.setVolume(ccmVolume);
-                            event.target.playVideo();
-                            setIsCcmPlaying(true);
-                        },
-                        'onStateChange': (event: any) => {
-                            const state = event.data;
-                            if (state === (window as any).YT.PlayerState.PLAYING) setIsCcmPlaying(true);
-                            else setIsCcmPlaying(false);
-                        }
+                    'onStateChange': (event: any) => {
+                        const state = event.data;
+                        if (state === (window as any).YT.PlayerState.PLAYING) setIsCcmPlaying(true);
+                        else if (state === (window as any).YT.PlayerState.PAUSED || state === (window as any).YT.PlayerState.ENDED) setIsCcmPlaying(false);
                     }
-                });
-            } else {
-                playerRef.current.loadVideoById(todayCcm.youtubeId);
-                playerRef.current.playVideo();
-            }
+                }
+            });
         }
-    }, [view, todayCcm]);
+    }, [todayCcm]); // todayCcm이 로드되면 한 번만 초기화
 
     // 승인 상태 및 교회 정보 체크 함수 (서버와 동기화 포함)
     const checkApprovalStatus = useCallback(async () => {
@@ -1883,9 +1879,6 @@ export default function App() {
 
                     <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                         <div style={{ background: 'white', borderRadius: '35px', padding: '32px', textAlign: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.05)', border: '1px solid #F0ECE4' }}>
-                            {/* Hidden Player */}
-                            <div id="ccm-player-hidden" style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}></div>
-
                             <div style={{ width: '120px', height: '120px', background: 'linear-gradient(135deg, #FFF9C4 0%, #FBC02D 100%)', borderRadius: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '50px', margin: '0 auto 24px', boxShadow: '0 15px 30px rgba(251,192,45,0.2)', animation: isCcmPlaying ? 'pulse 2s infinite' : 'none' }}>
                                 📻
                             </div>
@@ -2158,10 +2151,79 @@ export default function App() {
         );
     };
 
+    // 하단 고정 플레이어 바
+    const renderMiniPlayer = () => {
+        if (!todayCcm || view === 'ccm') return null; // CCM 상세 뷰에서는 숨김
+
+        return (
+            <div style={{
+                position: 'fixed',
+                bottom: '20px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: 'calc(100% - 40px)',
+                maxWidth: '440px',
+                background: 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: '20px',
+                padding: '12px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+                zIndex: 1000,
+                border: '1px solid #EEE',
+                animation: 'slide-up 0.4s ease-out'
+            }}>
+                <div style={{
+                    width: '40px',
+                    height: '40px',
+                    background: '#FBC02D',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '20px',
+                    animation: isCcmPlaying ? 'pulse 2s infinite' : 'none'
+                }}>
+                    📻
+                </div>
+                <div style={{ flex: 1, overflow: 'hidden' }} onClick={() => setView('ccm')}>
+                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{todayCcm.title}</div>
+                    <div style={{ fontSize: '11px', color: '#B8924A', fontWeight: 700 }}>{todayCcm.artist}</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                        onClick={() => {
+                            if (playerRef.current) {
+                                if (isCcmPlaying) playerRef.current.pauseVideo();
+                                else playerRef.current.playVideo();
+                            }
+                        }}
+                        style={{ background: '#333', color: 'white', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', cursor: 'pointer' }}
+                    >
+                        {isCcmPlaying ? '⏸' : '▶️'}
+                    </button>
+                    <button
+                        onClick={() => setView('ccm')}
+                        style={{ background: 'none', border: 'none', color: '#999', fontSize: '18px', cursor: 'pointer', padding: '4px' }}
+                    >
+                        ✕
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
     // 최종 렌더링
     return (
         <div style={{ position: 'relative', maxWidth: '480px', margin: '0 auto' }}>
+            <div id="ccm-player-container" style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}>
+                <div id="ccm-player-hidden-global"></div>
+            </div>
             {renderContent()}
+            {renderNotificationList()}
+            {renderMiniPlayer()}
             {renderInstallGuide()}
         </div>
     );
