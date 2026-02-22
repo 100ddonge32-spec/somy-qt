@@ -987,8 +987,25 @@ export default function App() {
                                 저는 당신의 큐티도우미 <span style={{ color: "#D4AF37" }}>소미</span> 입니다
                             </h1>
                             <p style={{ fontSize: "15px", color: "#B8924A", fontWeight: 600, margin: "0 0 10px 0" }}>{churchSettings.church_name} {churchSettings.app_subtitle}</p>
-                            <p style={{ fontSize: "16px", color: "#B8924A", fontWeight: 700, margin: "0 0 6px 0", letterSpacing: "0.5px" }}>바쁜 현대인을 위한 큐티 챗봇</p>
-                            <p style={{ fontSize: "14px", color: "#777", lineHeight: 1.6, margin: 0 }}>내 삶 속에 예수 그리스도! 🐑</p>
+
+                            {/* 소미 이름 의미 소개 카드로 통합 */}
+                            <div style={{
+                                background: "rgba(255, 255, 255, 0.4)",
+                                padding: "16px",
+                                borderRadius: "20px",
+                                marginTop: "15px",
+                                border: "1px solid rgba(212, 175, 55, 0.15)",
+                                maxWidth: "300px",
+                                backdropFilter: "blur(5px)",
+                                boxShadow: "0 4px 15px rgba(0,0,0,0.02)"
+                            }}>
+                                <p style={{ fontSize: "14px", color: "#8B6E3F", lineHeight: 1.6, margin: "0 0 8px 0", wordBreak: 'keep-all', fontWeight: 500 }}>
+                                    <strong style={{ color: "#D4AF37", fontSize: "15px" }}>소미(SOMY)</strong>는 <strong style={{ color: "#D4AF37" }}>Social Mystery</strong>의 약자로,<br />
+                                    일상 속 하나님의 신비로운 은혜를 함께 찾아가는 동반자라는 뜻이에요.
+                                </p>
+                                <div style={{ height: '1px', background: 'rgba(212, 175, 55, 0.1)', margin: '10px 0' }} />
+                                <p style={{ fontSize: "13px", color: "#B8924A", fontWeight: 700, margin: 0, letterSpacing: "0.2px" }}>바쁜 현대인을 위한 큐티 동반자 🐑✨</p>
+                            </div>
                         </div>
 
                         <div style={{
