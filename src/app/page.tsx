@@ -151,7 +151,7 @@ export default function App() {
                 setPlayerStatus("API OK");
                 clearInterval(checkYT);
             }
-        }, 300); // 체크 간격 단축
+        }, 200); // 체크 간격 더 단축
 
         // 2. 스크립트 강제 주입
         if (typeof window !== 'undefined' && !(window as any).YT) {
@@ -306,7 +306,7 @@ export default function App() {
                     } catch (e) { }
                 }
             }
-        }, 1000);
+        }, 500); // 0.5초 주기로 정밀 감시 (초기 재생 속도 향상)
 
         return () => clearInterval(watchdog);
     }, [ccmVolume]);
@@ -2587,15 +2587,17 @@ export default function App() {
     // 최종 렌더링
     return (
         <div style={{ position: 'relative', maxWidth: '480px', margin: '0 auto' }}>
-            {/* 실제 플레이어 프레임 (유튜브 정책에 따라 화면 밖으로 충분한 크기로 밀어냄) */}
+            {/* 실제 플레이어 프레임 (브라우저 지연 로딩 회피를 위해 1x1 크기로 상단 배치) */}
             <div id="ccm-player-container" style={{
                 position: 'fixed',
-                bottom: '-500px',
-                right: '-500px',
-                width: '300px',
-                height: '300px',
+                top: 0,
+                left: 0,
+                width: '1px',
+                height: '1px',
                 zIndex: -1,
-                opacity: 0.01
+                opacity: 0.001,
+                pointerEvents: 'none',
+                overflow: 'hidden'
             }}>
                 <div id="ccm-player-hidden-global"></div>
             </div>
