@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { getGraceVerse } from '@/lib/navigator-verses';
-import { getTodayCcm, CcmVideo } from "@/lib/ccm";
+import { getTodayCcm, CcmVideo, CCM_LIST } from "@/lib/ccm";
 
 type View = "home" | "chat" | "qt" | "community" | "qtManage" | "stats" | "history" | "admin" | "ccm";
 
@@ -87,6 +87,7 @@ export default function App() {
     const [editContent, setEditContent] = useState("");
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [showNotiList, setShowNotiList] = useState(false);
+    const [ccmIndex, setCcmIndex] = useState(0);
     const [todayCcm, setTodayCcm] = useState<CcmVideo | null>(null);
     const [ccmVolume, setCcmVolume] = useState(50);
     const [isCcmPlaying, setIsCcmPlaying] = useState(false);
@@ -106,10 +107,32 @@ export default function App() {
     const [playerStatus, setPlayerStatus] = useState("Wait API...");
     const initAttempts = useRef(0);
 
-    useEffect(() => {
-        setTodayCcm(getTodayCcm());
+    const handleNextCcm = useCallback(() => {
+        setCcmIndex(prev => (prev + 1) % CCM_LIST.length);
+        setPlayerStatus("Next Song..");
+    }, []);
 
-        // 1. YouTube 전역 오브젝트 확인용 루틴
+    const handlePrevCcm = useCallback(() => {
+        setCcmIndex(prev => (prev - 1 + CCM_LIST.length) % CCM_LIST.length);
+        setPlayerStatus("Prev Song..");
+    }, []);
+
+    useEffect(() => {
+        const today = getTodayCcm();
+        const initialIdx = CCM_LIST.findIndex(c => c.youtubeId === today.youtubeId);
+        setCcmIndex(initialIdx >= 0 ? initialIdx : 0);
+    }, []);
+
+    useEffect(() => {
+        setTodayCcm(CCM_LIST[ccmIndex]);
+        // 곡이 바뀌면 플레이어에 새 영상 로드
+        if (playerRef.current && playerRef.current.loadVideoById) {
+            playerRef.current.loadVideoById(CCM_LIST[ccmIndex].youtubeId);
+            setPlayerStatus("Switching..");
+        }
+    }, [ccmIndex]);
+
+    useEffect(() => {
         const checkYT = setInterval(() => {
             if (typeof window !== 'undefined' && (window as any).YT && (window as any).YT.Player) {
                 console.log("📥 YouTube API Found");
@@ -182,11 +205,17 @@ export default function App() {
                     },
                     'onError': (e: any) => {
                         console.error("❌ Player Error:", e.data);
-                        setPlayerStatus("Err: " + e.data);
-                        // 에러 시 소미가 한 번 더 시도
-                        if (initAttempts.current < 3) {
-                            initAttempts.current++;
-                            setTimeout(initPlayer, 2000);
+                        const errCode = e.data;
+                        if (errCode === 150 || errCode === 101) {
+                            setPlayerStatus("RESTRICTED!");
+                            // 임베딩 제한이면 2초 뒤 자동 다음 곡
+                            setTimeout(handleNextCcm, 2000);
+                        } else {
+                            setPlayerStatus("Err: " + errCode);
+                            if (initAttempts.current < 2) {
+                                initAttempts.current++;
+                                setTimeout(initPlayer, 2000);
+                            }
                         }
                     }
                 }
@@ -2380,8 +2409,14 @@ export default function App() {
                         onClick={(e) => { e.stopPropagation(); initPlayer(); }}
                         style={{ fontSize: '9px', color: '#B8924A', position: 'absolute', top: '8px', fontWeight: 800 }}
                     > RESET </div>
-                    <div style={{ fontSize: '10px', color: '#AAA', position: 'absolute', left: '10px' }}>⏮</div>
-                    <div style={{ fontSize: '10px', color: '#AAA', position: 'absolute', right: '10px' }}>⏭</div>
+                    <div
+                        onClick={(e) => { e.stopPropagation(); handlePrevCcm(); }}
+                        style={{ fontSize: '10px', color: '#AAA', position: 'absolute', left: '10px', cursor: 'pointer', padding: '10px' }}
+                    >⏮</div>
+                    <div
+                        onClick={(e) => { e.stopPropagation(); handleNextCcm(); }}
+                        style={{ fontSize: '10px', color: '#AAA', position: 'absolute', right: '10px', cursor: 'pointer', padding: '10px' }}
+                    >⏭</div>
 
                     {/* 중앙 선택 버튼 (더 크게 개선) */}
                     <div style={{
