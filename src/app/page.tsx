@@ -92,8 +92,9 @@ export default function App() {
     const [ccmVolume, setCcmVolume] = useState(50);
     const [isCcmPlaying, setIsCcmPlaying] = useState(false);
     const [isApiReady, setIsApiReady] = useState(false);
-    const [playRequested, _setPlayRequested] = useState(true); // 자동 재생 의도 기본값 true
+    const [playRequested, _setPlayRequested] = useState(true);
     const playRequestedRef = useRef(true);
+    const hasInteracted = useRef(false); // 사용자 터치 여부 (오디오 잠금 해제용)
     const setPlayRequested = (val: boolean) => {
         playRequestedRef.current = val;
         _setPlayRequested(val);
@@ -217,14 +218,20 @@ export default function App() {
                         const state = event.data;
                         const YTState = (window as any).YT.PlayerState;
 
-                        // 재생 의도가 없는데 재생이 시작된 경우 (유령 재생)
+                        // [강력 필터] 재생 의도가 없는데 재생/버퍼링 시 즉각 차단
                         if (!playRequestedRef.current && (state === YTState.PLAYING || state === YTState.BUFFERING)) {
+                            event.target.mute(); // 일단 소리부터 끄기
                             event.target.pauseVideo();
                             return;
                         }
 
                         if (state === YTState.PLAYING) {
                             setIsCcmPlaying(true);
+                            // 사용자가 터치한 적이 있다면 소리 켜기 (유도)
+                            if (hasInteracted.current) {
+                                event.target.unMute();
+                                event.target.setVolume(ccmVolume);
+                            }
                             setPlayerStatus("Playing");
                         } else if (state === YTState.PAUSED) {
                             setIsCcmPlaying(false);
@@ -232,7 +239,10 @@ export default function App() {
                         } else if (state === YTState.BUFFERING) {
                             setPlayerStatus("Loading..");
                         } else if (state === YTState.CUED) {
-                            setPlayerStatus("Cued");
+                            // 브라우저가 자동재생을 막은 경우 (터치 대기)
+                            if (playRequestedRef.current && !hasInteracted.current) {
+                                setPlayerStatus("Tap twice");
+                            }
                         }
                     },
                     'onError': (e: any) => {
@@ -272,40 +282,53 @@ export default function App() {
             const state = playerRef.current.getPlayerState();
             const YTState = (window as any).YT.PlayerState;
 
-            // 1. 재생 요청 중인데 멈춰있는 경우 (자동 재생 복구)
+            // 1. 재생 요청 중 (자동 재생 및 복구)
             if (playRequestedRef.current) {
                 if (state !== YTState.PLAYING && state !== YTState.BUFFERING) {
                     try {
-                        playerRef.current.unMute();
+                        // 사용자 터치 전이면 일단 mute 상태로라도 재생 (정책 우회)
+                        if (!hasInteracted.current) playerRef.current.mute();
+                        else {
+                            playerRef.current.unMute();
+                            playerRef.current.setVolume(ccmVolume);
+                        }
                         playerRef.current.playVideo();
                     } catch (e) { }
                 }
             }
-            // 2. 재생 요청이 없는데 재생 중인 경우 (유령 재생 차단)
-            else if (state === YTState.PLAYING || state === YTState.BUFFERING) {
-                try {
-                    playerRef.current.pauseVideo();
-                } catch (e) { }
+            // 2. 재생 요청 없음 (유령 재생 차단)
+            else {
+                if (state === YTState.PLAYING || state === YTState.BUFFERING) {
+                    try {
+                        playerRef.current.mute(); // 소리부터 무조건 끄기 (MediaSession 차단)
+                        playerRef.current.pauseVideo();
+                    } catch (e) { }
+                }
             }
-        }, 800); // 0.8초 주기로 감시
+        }, 1000);
 
         return () => clearInterval(watchdog);
-    }, []);
+    }, [ccmVolume]);
 
-    // 유저 전역 점화 시스템 (첫 클릭 시 오디오 엔진 완벽 부팅)
+    // 유저 전역 점화 시스템 (터치 이력이 생기는 순간 모든 오디오 엔진 부팅)
     useEffect(() => {
         const igniteEngine = () => {
-            console.log("🔥 Gospel Ignition: User Interaction Detected");
+            if (hasInteracted.current) return;
+            console.log("🔥 Gospel Ignition: User Interacted");
+            hasInteracted.current = true;
+
             if (playerRef.current && playRequestedRef.current) {
                 try {
                     playerRef.current.unMute();
                     playerRef.current.setVolume(ccmVolume);
                     playerRef.current.playVideo();
+                    setPlayerStatus("Playing");
                 } catch (e) { }
             }
         };
-        window.addEventListener('click', igniteEngine, { once: true });
-        window.addEventListener('touchstart', igniteEngine, { once: true });
+        // 'once'를 쓰지 않고 명시적으로 플래그 체크 (더 확실함)
+        window.addEventListener('click', igniteEngine);
+        window.addEventListener('touchstart', igniteEngine);
         return () => {
             window.removeEventListener('click', igniteEngine);
             window.removeEventListener('touchstart', igniteEngine);
@@ -2372,11 +2395,13 @@ export default function App() {
                     // 쿨다운 시작 (감시 시스템과의 충돌 방지)
                     pauseCooldown.current = true;
                     setPlayRequested(false);
+                    playerRef.current.mute(); // [중요] 일시정지 시 뮤트 병행 (유령 재생의 소리 차단)
                     playerRef.current.pauseVideo();
                     setPlayerStatus("Paused");
                     // 1.5초 후 감시 재개
                     setTimeout(() => { pauseCooldown.current = false; }, 1500);
                 } else { // 현재 멈춤 상태면 -> 재생
+                    hasInteracted.current = true; // 버튼 클릭도 사용장 상호작용
                     setPlayRequested(true);
                     playerRef.current.unMute();
                     playerRef.current.playVideo();
