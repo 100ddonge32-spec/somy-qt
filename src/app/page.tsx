@@ -2380,7 +2380,6 @@ export default function App() {
                         onClick={(e) => { e.stopPropagation(); initPlayer(); }}
                         style={{ fontSize: '9px', color: '#B8924A', position: 'absolute', top: '8px', fontWeight: 800 }}
                     > RESET </div>
-                    <div style={{ fontSize: '10px', color: '#AAA', position: 'absolute', bottom: '8px' }}>{isCcmPlaying ? '⏸' : '▶️'}</div>
                     <div style={{ fontSize: '10px', color: '#AAA', position: 'absolute', left: '10px' }}>⏮</div>
                     <div style={{ fontSize: '10px', color: '#AAA', position: 'absolute', right: '10px' }}>⏭</div>
 
