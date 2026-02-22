@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { getGraceVerse } from '@/lib/navigator-verses';
 
-type View = "home" | "chat" | "qt" | "community" | "qtManage" | "stats" | "history";
+type View = "home" | "chat" | "qt" | "community" | "qtManage" | "stats" | "history" | "admin";
 
 const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://cdn.imweb.me/thumbnail/20210813/569458bf12dd0.png";
@@ -818,29 +818,25 @@ export default function App() {
                     </div>
 
                     <div style={{ padding: '0 20px 40px 20px', width: '100%', maxWidth: '360px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
-                        {user && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'white', padding: '10px 20px', borderRadius: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', fontSize: '14px', border: '1px solid #F0ECE4' }}>
-                                <span style={{ color: '#333', fontWeight: 700 }}>{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
-                                {isAdmin && <button onClick={() => { setSettingsForm({ ...churchSettings }); setShowSettings(true); }} style={{ background: 'none', border: 'none', color: '#B8924A', cursor: 'pointer', padding: '5px', fontSize: '18px' }} title="교회 설정">⚙️</button>}
-                                <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontWeight: 600 }}>로그아웃</button>
-                            </div>
-                        )}
-
-                        {isAdmin && (
-                            <button onClick={() => {
-                                const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
-                                setQtForm({ date: today, reference: '', passage: '', question1: '', question2: '', question3: '', prayer: '' });
-                                setView('qtManage');
-                            }} style={{
-                                width: '100%', padding: "14px",
-                                background: "#F9F9F9", color: "#999",
-                                fontWeight: 700, fontSize: "13px", borderRadius: "14px",
-                                border: "1px solid #EEE", cursor: "pointer",
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-                            }}>
-                                ⚙️ 관리자 모드 들어가기
-                            </button>
-                        )}
+                        <div style={{ padding: '0 20px 40px 20px', width: '100%', maxWidth: '360px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+                            {isAdmin ? (
+                                <button onClick={() => setView('admin')} style={{
+                                    width: '100%', padding: "16px",
+                                    background: "#333", color: "white",
+                                    fontWeight: 800, fontSize: "15px", borderRadius: "18px",
+                                    border: "none", cursor: "pointer",
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                                    boxShadow: '0 8px 20px rgba(0,0,0,0.15)'
+                                }}>
+                                    ⚙️ 관리자 센터 들어가기
+                                </button>
+                            ) : user && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'white', padding: '10px 20px', borderRadius: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', fontSize: '14px', border: '1px solid #F0ECE4' }}>
+                                    <span style={{ color: '#333', fontWeight: 700 }}>{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
+                                    <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontWeight: 600 }}>로그아웃</button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             );
@@ -1611,9 +1607,47 @@ export default function App() {
             );
         }
 
-        /* ══════════════════════════════
-           CHAT PAGE (Default)
-        ══════════════════════════════ */
+        if (view === "admin") {
+            return (
+                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "480px", margin: "0 auto", ...baseFont, padding: '24px 20px' }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "32px" }}>
+                        <button onClick={() => setView("home")} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "18px" }}>관리자 센터</div>
+                    </div>
+
+                    <div style={{ background: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', marginBottom: '24px', textAlign: 'center', border: '1px solid #F0ECE4' }}>
+                        <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#F5F2EA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', margin: '0 auto 16px' }}>👑</div>
+                        <div style={{ fontSize: '16px', fontWeight: 800, color: '#333', marginBottom: '4px' }}>{user?.user_metadata?.full_name || '관리자'}님, 반갑습니다. </div>
+                        <div style={{ fontSize: '13px', color: '#999', marginBottom: '16px' }}>{user?.email}</div>
+                        <button onClick={handleLogout} style={{ padding: '8px 20px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>시스템 로그아웃</button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <button onClick={() => { setSettingsForm({ ...churchSettings }); setShowSettings(true); }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
+                            <div style={{ width: '48px', height: '48px', background: '#FFF9C4', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>⛪</div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '2px' }}>교회 정보 및 환경 설정</div>
+                                <div style={{ fontSize: '12px', color: '#999' }}>로고, 이름, 홈페이지, 요금제 등을 관리합니다.</div>
+                            </div>
+                        </button>
+
+                        <button onClick={() => {
+                            const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
+                            setQtForm({ date: today, reference: '', passage: '', question1: '', question2: '', question3: '', prayer: '' });
+                            setView('qtManage');
+                        }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
+                            <div style={{ width: '48px', height: '48px', background: '#E3F2FD', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📖</div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '2px' }}>오늘의 큐티 말씀 관리</div>
+                                <div style={{ fontSize: '12px', color: '#999' }}>매일의 묵상 본문과 질문을 수정하고 등록합니다.</div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <button onClick={() => setView('home')} style={{ marginTop: '32px', width: '100%', padding: '16px', background: '#F5F5F5', color: '#333', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 돌아가기</button>
+                </div>
+            );
+        }
         return (
             <div style={{ display: "flex", flexDirection: "column", height: "100vh", maxWidth: "480px", margin: "0 auto", background: "white", ...baseFont, position: 'relative' }}>
                 <div style={{ padding: "15px 20px", borderBottom: "1px solid #EEE", display: "flex", alignItems: "center", gap: "12px" }}>
