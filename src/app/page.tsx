@@ -997,18 +997,76 @@ export default function App() {
                                         <div style={{ fontSize: '15px', fontWeight: 800, color: '#B8924A', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <span style={{ fontSize: '18px' }}>📍</span> {qtData.reference}
                                         </div>
-                                        <div style={{
-                                            lineHeight: 2.1,
-                                            color: '#333',
-                                            fontSize: '16px',
-                                            whiteSpace: 'pre-line',
-                                            margin: 0,
-                                            textAlign: 'left',
-                                            wordBreak: 'keep-all',
-                                            letterSpacing: '-0.3px',
-                                            fontWeight: 400
-                                        }}>
-                                            {qtData.fullPassage}
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                            {(() => {
+                                                const text = qtData.fullPassage || '';
+                                                // 절 번호 패턴: 숫자+마침표+공백 으로 시작하는 줄 감지
+                                                const lines = text.split('\n').filter(l => l.trim() !== '');
+                                                const verses: { num: string; text: string }[] = [];
+                                                let currentNum = '';
+                                                let currentText = '';
+                                                lines.forEach(line => {
+                                                    const match = line.match(/^(\d+)\.\s+(.*)/);
+                                                    if (match) {
+                                                        if (currentText) verses.push({ num: currentNum, text: currentText.trim() });
+                                                        currentNum = match[1];
+                                                        currentText = match[2];
+                                                    } else {
+                                                        currentText += (currentText ? ' ' : '') + line.trim();
+                                                    }
+                                                });
+                                                if (currentText) verses.push({ num: currentNum, text: currentText.trim() });
+
+                                                // 절 구조가 없으면 그냥 텍스트로 표시
+                                                if (verses.length === 0 || (verses.length === 1 && !verses[0].num)) {
+                                                    return (
+                                                        <p style={{ fontSize: '16px', lineHeight: 2, color: '#333', margin: 0, wordBreak: 'keep-all', whiteSpace: 'pre-line' }}>
+                                                            {text}
+                                                        </p>
+                                                    );
+                                                }
+
+                                                return verses.map((v, i) => (
+                                                    <div key={i} style={{
+                                                        display: 'flex',
+                                                        gap: '10px',
+                                                        alignItems: 'flex-start',
+                                                        padding: '10px 0',
+                                                        borderBottom: i < verses.length - 1 ? '1px solid #F5F0E8' : 'none',
+                                                    }}>
+                                                        {v.num && (
+                                                            <div style={{
+                                                                minWidth: '26px',
+                                                                height: '26px',
+                                                                background: '#F5F2EA',
+                                                                color: '#B8924A',
+                                                                fontWeight: 800,
+                                                                fontSize: '12px',
+                                                                borderRadius: '8px',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                marginTop: '2px',
+                                                                flexShrink: 0,
+                                                                border: '1px solid #EEE'
+                                                            }}>
+                                                                {v.num}
+                                                            </div>
+                                                        )}
+                                                        <p style={{
+                                                            fontSize: '15px',
+                                                            lineHeight: 1.9,
+                                                            color: '#333',
+                                                            margin: 0,
+                                                            wordBreak: 'keep-all',
+                                                            letterSpacing: '-0.2px',
+                                                            flex: 1,
+                                                        }}>
+                                                            {v.text}
+                                                        </p>
+                                                    </div>
+                                                ));
+                                            })()}
                                         </div>
                                     </div>
 
