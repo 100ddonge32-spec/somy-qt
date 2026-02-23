@@ -619,11 +619,12 @@ export default function App() {
             const { qt } = await r.json();
             if (qt) {
                 const { fullPassage, interpretation } = parsePassage(qt.passage);
+                console.log("[fetchQt] Parsed Qt:", { fullPassage: fullPassage.substring(0, 20), interpretation: interpretation?.substring(0, 20) });
                 setQtData({
                     date: new Date(qt.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
                     reference: qt.reference,
                     fullPassage,
-                    interpretation,
+                    interpretation: interpretation || "",
                     verse: fullPassage.split('\n')[0],
                     questions: [qt.question1, qt.question2, qt.question3].filter(Boolean),
                     prayer: qt.prayer,
@@ -1367,7 +1368,10 @@ export default function App() {
                                 </button>
 
                                 {churchSettings.sermon_url && (
-                                    <button onClick={() => setView('sermon')} style={{
+                                    <button onClick={() => {
+                                        console.log("Setting view to sermon, url:", churchSettings.sermon_url);
+                                        setView('sermon');
+                                    }} style={{
                                         width: "100%", padding: "14px",
                                         background: "#FFF3E0", color: "#E65100",
                                         fontWeight: 700, fontSize: "13px", borderRadius: "18px",
@@ -1456,14 +1460,14 @@ export default function App() {
                     {/* Header */}
                     <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #EEE", position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
-                        <img src={CHURCH_LOGO} alt="로고" style={{ height: "24px" }} />
+                        <img src={churchSettings.church_logo_url} alt="로고" style={{ height: "24px", objectFit: 'contain' }} />
                         <div style={{ fontWeight: 700, color: "#333", fontSize: "14px" }}>
                             {isHistoryMode ? "지난 묵상 기록" : "오늘의 큐티"}
                         </div>
                         {isHistoryMode && (
                             <div style={{ background: "#709176", color: "white", fontSize: "10px", padding: "2px 6px", borderRadius: "10px", fontWeight: 700 }}>다시보기</div>
                         )}
-                        <div style={{ marginLeft: 'auto', fontSize: '11px', color: '#999' }}>{qtData.date}</div>
+                        <div style={{ marginLeft: 'auto', fontSize: '11px', color: '#999' }}>{qtData.date || "날짜정보 없음"}</div>
                     </div>
 
                     <div style={{ padding: "24px 20px", display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '120px' }}>
@@ -1629,7 +1633,7 @@ export default function App() {
                             {qtStep === 'grace' && (
                                 <div style={{ background: "#FDFCFB", borderRadius: "20px", padding: "24px", border: "1px solid #F0ECE4" }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                                        <div style={{ width: 22, height: 22, background: '#E6A4B4', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>✨</div>
+                                        <div style={{ width: 22, height: 22, background: '#E6A4B4', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>4</div>
                                         <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>은혜나눔</h3>
                                     </div>
                                     <p style={{ fontSize: '14px', color: '#666', marginBottom: '16px' }}>오늘 말씀을 통해 받은 은혜를 기록해보세요.</p>
@@ -1656,7 +1660,7 @@ export default function App() {
                             {qtStep === 'pray' && (
                                 <div style={{ background: "#FDFCFB", borderRadius: "20px", padding: "24px", border: "1px solid #F0ECE4" }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                                        <div style={{ width: 22, height: 22, background: '#8E9775', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>3</div>
+                                        <div style={{ width: 22, height: 22, background: '#8E9775', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>5</div>
                                         <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>마무리 기도</h3>
                                     </div>
                                     <div style={{ padding: '24px', background: 'rgba(142,151,117,0.05)', borderRadius: '15px', borderLeft: '4px solid #8E9775' }}>
@@ -2539,6 +2543,57 @@ export default function App() {
                     </div>
 
                     <button onClick={() => setView('home')} style={{ marginTop: '32px', width: '100%', padding: '16px', background: '#F5F5F5', color: '#333', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 돌아가기</button>
+                </div>
+            );
+        }
+
+        /* ══════════════════════════════
+           SERMON VIEW
+        ══════════════════════════════ */
+        if (view === "sermon") {
+            const getYoutubeId = (url: string) => {
+                const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+                const match = url.match(regExp);
+                return (match && match[2].length === 11) ? match[2] : null;
+            };
+            const videoId = getYoutubeId(churchSettings.sermon_url || "");
+
+            return (
+                <div style={{ minHeight: "100vh", background: "white", maxWidth: "480px", margin: "0 auto", ...baseFont }}>
+                    {styles}
+                    <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #EEE", position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
+                        <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "16px" }}>🎥 담임목사님 말씀 설교</div>
+                    </div>
+                    <div style={{ padding: "20px" }}>
+                        <div style={{ background: '#FFF3E0', padding: '15px', borderRadius: '15px', marginBottom: '20px', border: '1px solid #FFCC80' }}>
+                            <p style={{ margin: 0, fontSize: '14px', color: '#E65100', fontWeight: 600, textAlign: 'center' }}>
+                                아래 영상을 눌러 오늘의 말씀을 시청하세요 ✨
+                            </p>
+                        </div>
+                        {videoId ? (
+                            <div style={{ position: 'relative', width: '100%', paddingBottom: '56.25%', borderRadius: '15px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
+                                <iframe
+                                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                                    src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
+                                    title="YouTube video player"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                ></iframe>
+                            </div>
+                        ) : (
+                            <div style={{ textAlign: 'center', padding: '100px 20px', color: '#999' }}>
+                                등록된 설교 영상이 없거나 주소가 올바르지 않습니다.
+                            </div>
+                        )}
+                        <div style={{ marginTop: '30px', background: '#F9F9F9', padding: '20px', borderRadius: '20px' }}>
+                            <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 10px 0' }}>💡 말씀과 함께하는 묵상</h3>
+                            <p style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, margin: 0 }}>
+                                말씀 설교를 시청하신 후, 오늘의 큐티를 통해 한 번 더 깊이 묵상하는 시간을 가져보세요. 하나님의 풍성한 은혜를 누리시는 오늘 하루 되시길 축복합니다.
+                            </p>
+                        </div>
+                        <button onClick={() => setView('home')} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', marginTop: '30px' }}>홈으로 이동</button>
+                    </div>
                 </div>
             );
         }
