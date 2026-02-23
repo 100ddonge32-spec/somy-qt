@@ -1567,9 +1567,29 @@ export default function App() {
                                             </span>
                                         </a>
                                     </div>
-                                    <p style={{ fontSize: '16px', lineHeight: 1.8, color: '#333', margin: 0, wordBreak: 'keep-all', whiteSpace: 'pre-line', fontWeight: 500 }}>
-                                        {qtData.fullPassage || '본문을 불러오는 중입니다...'}
-                                    </p>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        {(qtData.fullPassage || '').split('\n').filter(l => l.trim()).map((line, idx) => {
+                                            const match = line.match(/^(\d+)[\.\s]+(.*)/);
+                                            if (match) {
+                                                return (
+                                                    <div key={idx} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                                                        <span style={{ color: '#D4AF37', fontSize: '13px', fontWeight: 800, minWidth: '20px', textAlign: 'right', paddingTop: '4px', fontStyle: 'italic' }}>
+                                                            {match[1]}
+                                                        </span>
+                                                        <span style={{ fontSize: '16px', lineHeight: 1.8, color: '#333', flex: 1, wordBreak: 'keep-all', fontWeight: 500 }}>
+                                                            {match[2]}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            }
+                                            return (
+                                                <p key={idx} style={{ margin: 0, fontSize: '16px', lineHeight: 1.8, color: '#333', wordBreak: 'keep-all', fontWeight: 500, paddingLeft: '30px' }}>
+                                                    {line}
+                                                </p>
+                                            );
+                                        })}
+                                        {!qtData.fullPassage && <p style={{ color: '#999', textAlign: 'center' }}>본문을 불러오는 중입니다...</p>}
+                                    </div>
                                 </div>
                             )}
 
