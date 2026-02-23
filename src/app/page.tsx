@@ -2610,7 +2610,19 @@ export default function App() {
                                 </p>
                             )}
                         </div>
-                        <button onClick={() => setView('home')} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', marginTop: '30px' }}>홈으로 이동</button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '30px' }}>
+                            <button onClick={async () => {
+                                setView("community");
+                                try {
+                                    const res = await fetch(`/api/community?church_id=${churchId}`);
+                                    const data = await res.json();
+                                    if (Array.isArray(data)) setCommunityPosts(data);
+                                } catch (e) { console.error("게시판 로드 실패:", e); }
+                            }} style={{ width: '100%', padding: '16px', background: 'linear-gradient(145deg, #ffffff 0%, #fff0f5 100%)', color: '#9E2A5B', border: '1px solid #f2cddb', borderRadius: '15px', fontWeight: 800, fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 8px 16px rgba(173, 20, 87, 0.08)' }}>
+                                <span style={{ fontSize: '18px' }}>📝</span> 은혜나눔 게시판에 은혜 나누기
+                            </button>
+                            <button onClick={() => setView('home')} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 이동</button>
+                        </div>
                     </div>
                 </div>
             );
