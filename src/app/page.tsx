@@ -895,11 +895,11 @@ export default function App() {
     ══════════════════════════════ */
     const styles = (
         <style>{`
-      @keyframes float { 0%,100%{ transform:translateY(0) rotateY(0deg); } 50%{ transform:translateY(-15px) rotateY(5deg); } }
+      @keyframes float-gentle { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(0); } } /* 흔들림 완전 차단 */
       @keyframes halo-pulse { 0%,100%{ opacity:.7; transform:translateX(-50%) scaleX(1); } 50%{ opacity:1; transform:translateX(-50%) scaleX(1.1); } }
       @keyframes shadow-pulse { 0%,100%{ transform:translateX(-50%) scaleX(1); opacity:.2; } 50%{ transform:translateX(-50%) scaleX(.7); opacity:.1; } }
-      @keyframes fade-in { from{ opacity:0; transform:translateY(20px); } to{ opacity:1; transform:translateY(0); } }
-      @keyframes slide-right { from{ opacity:0; transform:translateX(20px); } to{ opacity:1; transform:translateX(0); } }
+      @keyframes fade-in { from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
+      @keyframes slide-right { from{ opacity:0; transform:translateX(10px); } to{ opacity:1; transform:translateX(0); } }
       @keyframes bounce-dot { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-7px); } }
       @keyframes bell-swing {
           0%, 100% { transform: rotate(0); }
@@ -999,7 +999,7 @@ export default function App() {
                             </div>
                         )}
                         {/* 소미 미니 아바타 (누르면 인트로 다시 보기) */}
-                        <div onClick={() => setShowWelcome(true)} style={{ width: "38px", height: "38px", borderRadius: "50%", background: "white", border: "2px solid #D4AF37", overflow: "hidden", boxShadow: "0 4px 10px rgba(0,0,0,0.1)", cursor: "pointer", transition: "transform 0.2s" }} onMouseOver={e => e.currentTarget.style.transform = "scale(1.05)"} onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}>
+                        <div onClick={() => setShowWelcome(true)} style={{ width: "38px", height: "38px", borderRadius: "50%", background: "white", border: "2px solid #D4AF37", overflow: "hidden", boxShadow: "0 4px 10px rgba(0,0,0,0.1)", cursor: "pointer" }}>
                             <img src={SOMY_IMG} alt="소미" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         </div>
                     </div>
@@ -1008,14 +1008,15 @@ export default function App() {
                     {/* 환영 모달 (인트로 스크린) */}
                     {showWelcome && (
                         <div style={{ position: 'fixed', inset: 0, background: "linear-gradient(180deg, #FFF8F0 0%, #FEF0D8 100%)", zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px' }}>
-                            <div style={{ position: "relative", perspective: "600px", marginBottom: "30px" }}>
-                                <div style={{ position: "absolute", top: "-14px", left: "50%", width: "80px", height: "14px", border: "3px solid #D4AF37", borderRadius: "999px", animation: "halo-pulse 3s ease-in-out infinite", zIndex: 2 }} />
-                                <div style={{ width: "170px", height: "170px", borderRadius: "50%", background: "white", boxShadow: "0 15px 45px rgba(212,175,55,.3), 0 5px 15px rgba(0,0,0,.08)", border: "4px solid white", overflow: "hidden", animation: "float 4s ease-in-out infinite" }}>
-                                    <img src={SOMY_IMG} alt="소미" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            <div style={{ display: "flex", justifyContent: "center", marginBottom: "30px" }}>
+                                <div style={{ position: "relative" }}>
+                                    <div style={{ position: "absolute", top: "-10px", left: "50%", width: "120px", height: "15px", border: "3px solid #D4AF37", borderRadius: "999px", zIndex: 2 }} />
+                                    <div style={{ width: "170px", height: "170px", borderRadius: "50%", background: "white", boxShadow: "0 15px 45px rgba(212,175,55,.3), 0 5px 15px rgba(0,0,0,.08)", border: "4px solid white", overflow: "hidden" }}>
+                                        <img src={SOMY_IMG} alt="소미" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                    </div>
+                                    <div style={{ position: "absolute", bottom: "-20px", left: "50%", width: "100px", height: "14px", background: "radial-gradient(ellipse,rgba(180,140,60,.3) 0%,transparent 70%)", borderRadius: "50%" }} />
                                 </div>
-                                <div style={{ position: "absolute", bottom: "-20px", left: "50%", width: "100px", height: "14px", background: "radial-gradient(ellipse,rgba(180,140,60,.3) 0%,transparent 70%)", animation: "shadow-pulse 4s ease-in-out infinite", borderRadius: "50%" }} />
                             </div>
-
                             <div style={{ animation: "fade-in 1s ease-out", textAlign: "center", marginBottom: "30px" }}>
                                 <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#333", margin: "0 0 10px 0", letterSpacing: "-0.5px" }}>
                                     저는 당신의 큐티도우미 <span style={{ color: "#D4AF37" }}>소미</span> 입니다
@@ -1211,22 +1212,27 @@ export default function App() {
 
 
                     {/* Character Section */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", flex: 1, justifyContent: 'center', width: "100%" }}>
-                        <div style={{
-                            background: "rgba(255, 255, 255, 0.9)",
-                            borderRadius: "24px",
-                            padding: "24px",
-                            width: "100%",
-                            maxWidth: "300px",
-                            boxShadow: "0 10px 30px rgba(0,0,0,0.04)",
-                            border: "1px solid #F5F5F5",
-                            animation: "fade-in 1.2s ease-out",
-                            minHeight: "120px",
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'center',
-                            backdropFilter: 'blur(5px)'
-                        }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", flex: 1, justifyContent: 'center', width: "100%", minHeight: '400px' }}>
+                        <div
+                            style={{
+                                background: "rgba(255, 255, 255, 0.9)",
+                                borderRadius: "24px",
+                                padding: "24px",
+                                width: "100%",
+                                maxWidth: "320px",
+                                boxShadow: "0 10px 40px rgba(0,0,0,0.06)",
+                                border: "1px solid #F0ECE4",
+                                animation: "fade-in 0.8s ease-out",
+                                minHeight: "330px",
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'flex-start',
+                                textAlign: 'left',
+                                backdropFilter: 'blur(10px)',
+                                transition: 'none', // 급격한 변화 방지
+                                transform: 'none', // 물리적인 움직임 원천 차단
+                                userSelect: 'none' // 드래그로 인한 흔들림 방지
+                            }}>
                             {(() => {
                                 const graceVerse = getGraceVerse();
                                 return (
@@ -1338,9 +1344,9 @@ export default function App() {
                                     fontWeight: 800, fontSize: "17px", borderRadius: "18px",
                                     border: "1px solid #B2DFDB", cursor: "pointer",
                                     boxShadow: "0 6px 15px rgba(0,105,92,0.15), inset 0 1px 0 rgba(255,255,255,0.5)",
-                                    transition: "all .3s ease",
+                                    transition: "none",
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-                                }} onMouseOver={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 20px rgba(0,105,92,0.2)"; }} onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 15px rgba(0,105,92,0.15), inset 0 1px 0 rgba(255,255,255,0.5)"; }}>
+                                }}>
                                     <span style={{ fontSize: '20px' }}>💬</span> 소미와 대화하기
                                 </button>
 
@@ -1354,9 +1360,9 @@ export default function App() {
                                     fontWeight: 800, fontSize: "17px", borderRadius: "18px",
                                     border: "1px solid #FFF59D", cursor: "pointer",
                                     boxShadow: "0 6px 15px rgba(130,119,23,0.15), inset 0 1px 0 rgba(255,255,255,0.5)",
-                                    transition: "all .3s ease",
+                                    transition: "none",
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-                                }} onMouseOver={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 20px rgba(130,119,23,0.2)"; }} onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 15px rgba(130,119,23,0.15), inset 0 1px 0 rgba(255,255,255,0.5)"; }}>
+                                }}>
                                     <span style={{ fontSize: '20px' }}>☀️</span> 오늘의 큐티 시작
                                 </button>
 
@@ -1375,8 +1381,8 @@ export default function App() {
                                         border: "1px solid #F8BBD0", cursor: "pointer",
                                         boxShadow: "0 6px 15px rgba(173,20,87,0.15), inset 0 1px 0 rgba(255,255,255,0.5)",
                                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                        transition: 'all 0.3s ease'
-                                    }} onMouseOver={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 10px 20px rgba(173,20,87,0.2)"; }} onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 15px rgba(173,20,87,0.15), inset 0 1px 0 rgba(255,255,255,0.5)"; }}>
+                                        transition: 'none'
+                                    }}>
                                         <span style={{ fontSize: '20px' }}>📝</span> 은혜나눔 게시판
                                     </button>
 
@@ -1574,9 +1580,9 @@ export default function App() {
 
                         {/* Somy mini float */}
                         <div style={{ display: "flex", justifyContent: "center" }}>
-                            <div style={{ position: "relative", perspective: "400px" }}>
+                            <div style={{ position: "relative" }}>
                                 <div style={{ position: "absolute", top: "-10px", left: "50%", width: "50px", height: "10px", border: "2.5px solid #D4AF37", borderRadius: "999px", animation: "halo-pulse 3s ease-in-out infinite", zIndex: 2 }} />
-                                <div style={{ width: "70px", height: "70px", borderRadius: "50%", border: "3px solid white", overflow: "hidden", boxShadow: "0 8px 25px rgba(212,175,55,.25)", animation: "float 4s ease-in-out infinite" }}>
+                                <div style={{ width: "70px", height: "70px", borderRadius: "50%", border: "3px solid white", overflow: "hidden", boxShadow: "0 8px 25px rgba(212,175,55,.25)" }}>
                                     <img src={SOMY_IMG} alt="소미" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                 </div>
                                 <div style={{ position: "absolute", bottom: "-10px", left: "50%", width: "45px", height: "8px", background: "radial-gradient(ellipse,rgba(180,140,60,.3) 0%,transparent 70%)", animation: "shadow-pulse 4s ease-in-out infinite", borderRadius: "50%" }} />
@@ -2829,12 +2835,12 @@ export default function App() {
                     left: `${playerPos.x}px`,
                     top: `${playerPos.y}px`,
                     width: '120px',
-                    height: '200px',
+                    height: '210px', // 여백 확보를 위해 높이 약간 조절
                     zIndex: 2000,
                     cursor: isDragging ? 'grabbing' : 'grab',
                     background: '#F5F5F7',
                     borderRadius: '24px',
-                    padding: '12px',
+                    padding: '35px 12px 12px 12px', // 상단 패딩을 기존 12px에서 35px로 대폭 늘려 버튼 공간 확보
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -2852,26 +2858,32 @@ export default function App() {
                 onTouchMove={(e) => handleMove(e.touches[0].clientX, e.touches[0].clientY)}
                 onTouchEnd={handleEnd}
             >
-                {/* 닫기 버튼 (Hide iPod) */}
+                {/* 닫기 버튼 (iPod 몸체 밖 우측 상단으로 이동) */}
                 <div
-                    onClick={(e) => hapticClick(e, () => setShowIpod(false))}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        hapticClick(e, () => setShowIpod(false));
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
                     style={{
                         position: 'absolute',
-                        top: '6px',
-                        right: '10px',
-                        width: '18px',
-                        height: '18px',
-                        background: '#EEE',
+                        top: '-12px', // 몸체 위쪽으로 돌출
+                        right: '-12px', // 몸체 오른쪽으로 돌출
+                        width: '28px',
+                        height: '28px',
+                        background: '#FF5252', // 강렬한 빨간색으로 변경
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: '9px',
-                        color: '#999',
+                        fontSize: '14px',
+                        color: '#FFF',
                         cursor: 'pointer',
-                        zIndex: 10,
-                        boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
-                        border: '1px solid #DDD'
+                        zIndex: 9999, // 어떤 레이어보다도 위에 표시
+                        boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+                        border: '2px solid white',
+                        fontWeight: 'bold',
+                        pointerEvents: 'auto' // 클릭 보장
                     }}
                 >✕</div>
                 {/* 1. 아이팟 LCD 스크린 영역 */}
