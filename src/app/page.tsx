@@ -1183,7 +1183,7 @@ export default function App() {
                                         <div style={{ width: '100%', height: '1px', background: 'repeating-linear-gradient(to right, #EEEEEE 0, #EEEEEE 4px, transparent 4px, transparent 8px)', margin: '20px 0' }} />
 
                                         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                                            <div style={{ fontSize: '11px', color: '#999', fontWeight: 700, letterSpacing: '0.5px' }}>💡 오늘의 한 줄 묵상</div>
+                                            <div style={{ fontSize: '13px', color: '#999', fontWeight: 700, letterSpacing: '0.5px' }}>💡 오늘의 한줄!</div>
                                             {(() => {
                                                 const quotes = [
                                                     "하나님은 우리가 감당할 수 없는 시련을 주시지는 않는다. - 고린도전서 10:13 강해 중",
