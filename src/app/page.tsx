@@ -279,13 +279,14 @@ export default function App() {
                 playerVars: {
                     'autoplay': 0,
                     'mute': 1,
-                    'controls': 0,
+                    'controls': 1,
                     'showinfo': 0,
                     'rel': 0,
                     'iv_load_policy': 3,
                     'enablejsapi': 1,
                     'playsinline': 1,
-                    'origin': window.location.origin
+                    'origin': window.location.origin,
+                    ...(todayCcm.playlistId ? { listType: 'playlist', list: todayCcm.playlistId } : {})
                 },
                 events: {
                     'onReady': (event: any) => {
@@ -1409,7 +1410,7 @@ export default function App() {
                                             >
                                                 {qtData.reference}
                                                 <span style={{ fontSize: '11px', background: '#FDF3DF', padding: '3px 8px', borderRadius: '6px', whiteSpace: 'nowrap', color: '#8A6A27', fontWeight: 700, border: '1px solid #F5E0BB', letterSpacing: '-0.3px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                    <span style={{ fontSize: '12px' }}>🕊️</span> YouVersion 읽기
+                                                    <span style={{ fontSize: '12px' }}>📖</span> 클릭 개역개정 보기
                                                 </span>
                                             </a>
                                         </div>
@@ -1645,7 +1646,7 @@ export default function App() {
                             <button onClick={() => setView('home')} style={{ width: '100%', padding: '16px', background: '#EEE', color: '#333', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 이동</button>
                         )}
                     </div>
-                </div>
+                </div >
             );
         }
         /* ══════════════════════════════
@@ -2753,7 +2754,7 @@ export default function App() {
                     width: view === 'ccm' ? 'calc(100% - 88px)' : '10px',
                     height: view === 'ccm' ? '180px' : '10px',
                     maxWidth: view === 'ccm' ? '392px' : 'none',
-                    pointerEvents: 'none',
+                    pointerEvents: view === 'ccm' ? 'auto' : 'none',
                     zIndex: view === 'ccm' ? 1000 : -100,
                     borderRadius: '16px',
                     overflow: 'hidden',
