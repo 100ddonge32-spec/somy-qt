@@ -138,6 +138,18 @@ export default function App() {
     const [lastToggleTime, setLastToggleTime] = useState(0); // 이중 트리거 방지용
     const [commentInputs, setCommentInputs] = useState<{ [key: number]: string }>({});
     const [passageInput, setPassageInput] = useState("");
+
+    // VAPID 키를 위한 Base64 변환 유틸
+    const urlBase64ToUint8Array = (base64String: string) => {
+        const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+        const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    };
     const [passageChat, setPassageChat] = useState<{ role: string; content: string }[]>([]);
     const [isPassageLoading, setIsPassageLoading] = useState(false);
     const [user, setUser] = useState<any>(null);
@@ -522,6 +534,42 @@ export default function App() {
                 .then(r => r.ok ? r.json() : [])
                 .then(data => setNotifications(data))
                 .catch(err => console.error("알림 로드 실패:", err));
+
+            // [푸시 알림] 서비스 워커 등록 및 구독 처리
+            if ('serviceWorker' in navigator && user) {
+                navigator.serviceWorker.register('/sw.js').then(async (reg) => {
+                    console.log('Service Worker Registered');
+
+                    // 권한 확인 및 요청
+                    if (Notification.permission === 'default') {
+                        setTimeout(() => {
+                            if (confirm('오늘의 큐티 알림을 받아보시겠어요? 😊')) {
+                                Notification.requestPermission();
+                            }
+                        }, 3000);
+                    }
+
+                    if (Notification.permission === 'granted') {
+                        try {
+                            const subscribeOptions = {
+                                userVisibleOnly: true,
+                                applicationServerKey: urlBase64ToUint8Array('BCpTn0SHIYSZzjST5xxL1Cv9svmlp3f9Xmvt9FSALBvo4QwLQCBlo_mu4ThoMHgINRmAk4c9sxwVwI2QtDyHr1I')
+                            };
+                            const subscription = await reg.pushManager.subscribe(subscribeOptions);
+                            console.log('Push Subscribed:', subscription);
+
+                            // 서버(Supabase)에 구독 정보 저장
+                            await fetch('/api/push-subscribe', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ user_id: user.id, subscription })
+                            });
+                        } catch (e) {
+                            console.error('Push Subscription Error:', e);
+                        }
+                    }
+                });
+            }
 
             return () => clearInterval(backgroundPoller);
         } else {
@@ -2683,6 +2731,25 @@ export default function App() {
                                 <div style={{ flex: 1 }}>
                                     <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '2px' }}>주일 설교 요약 및 질문 관리</div>
                                     <div style={{ fontSize: '12px', color: '#999' }}>설교 원고를 입력하여 AI로 자동 요약하고 묵상 질문을 만듭니다.</div>
+                                </div>
+                            </button>
+                            <button onClick={async () => {
+                                if (confirm('모든 성도님들께 오늘의 큐티 알림을 전송하시겠습니까?')) {
+                                    try {
+                                        const res = await fetch('/api/push-send-daily?secret=somy-push-secret-123');
+                                        const data = await res.json();
+                                        if (data.success) {
+                                            alert(`성공적으로 전송되었습니다! (성공: ${data.sentCount}명, 실패: ${data.failedCount}명)`);
+                                        } else {
+                                            alert('전송 실패: ' + data.error);
+                                        }
+                                    } catch (e) { alert('네트워크 오류가 발생했습니다.'); }
+                                }
+                            }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
+                                <div style={{ width: '48px', height: '48px', background: '#E8F5E9', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🔔</div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '2px' }}>큐티 시작 알림 전송</div>
+                                    <div style={{ fontSize: '12px', color: '#999' }}>모든 성도님께 오늘의 말씀 페이지로 연결되는 푸시 알림을 보냅니다.</div>
                                 </div>
                             </button>
                         </div>

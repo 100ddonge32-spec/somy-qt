@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import webpush from 'web-push';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,6 +8,13 @@ const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
+);
+
+// VAPID 설정
+webpush.setVapidDetails(
+    'mailto:pastorbaek@kakao.com',
+    'BCpTn0SHIYSZzjST5xxL1Cv9svmlp3f9Xmvt9FSALBvo4QwLQCBlo_mu4ThoMHgINRmAk4c9sxwVwI2QtDyHr1I',
+    'LAAS6aJenIKYBShIGZsWVKhXNOMKwkuXvpf2NLCGZAI' // 실제로는 환경변수에서 가져오지만 지금은 명시
 );
 
 // 댓글 작성 및 알림 생성
@@ -31,8 +39,9 @@ export async function POST(req: NextRequest) {
             .eq('id', post_id)
             .single();
 
-        // 3. 알림 생성
+        // 3. 알림 생성 및 푸시 전송
         if (!postError && post) {
+            // DB 알림 저장
             await supabaseAdmin
                 .from('notifications')
                 .insert([{
@@ -42,6 +51,27 @@ export async function POST(req: NextRequest) {
                     post_id: post_id,
                     is_read: false
                 }]);
+
+            // [푸시 알림] 받는 사람의 구독 정보 가져오기
+            const { data: subData } = await supabaseAdmin
+                .from('push_subscriptions')
+                .select('subscription')
+                .eq('user_id', post.user_id)
+                .single();
+
+            if (subData && subData.subscription) {
+                try {
+                    const pushPayload = JSON.stringify({
+                        title: '🔔 새로운 댓글이 달렸어요!',
+                        body: `${user_name}님이 성도님의 은혜나눔에 댓글을 남기셨습니다.`,
+                        url: '/?view=community'
+                    });
+                    await webpush.sendNotification(subData.subscription, pushPayload);
+                    console.log('Push Notification Sent Success');
+                } catch (pushErr) {
+                    console.error('Push Notification Send Failed:', pushErr);
+                }
+            }
         }
 
         return NextResponse.json(comment);
