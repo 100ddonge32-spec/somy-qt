@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { getGraceVerse } from '@/lib/navigator-verses';
 import { getTodayCcm, CcmVideo, CCM_LIST } from "@/lib/ccm";
 
-type View = "home" | "chat" | "qt" | "community" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage";
+type View = "home" | "chat" | "qt" | "community" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide";
 
 const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://cdn.imweb.me/thumbnail/20210813/569458bf12dd0.png";
@@ -1439,6 +1439,19 @@ export default function App() {
                     </div>
 
                     <div style={{ padding: '0 20px 40px 20px', width: '100%', maxWidth: '360px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+                        <button onClick={() => setView('guide')} style={{
+                            width: '100%', padding: "16px",
+                            background: "linear-gradient(135deg, #F9F7F2 0%, #F4F0E6 100%)",
+                            color: "#8B6B38",
+                            fontWeight: 800, fontSize: "15px", borderRadius: "18px",
+                            border: "1px solid #E8DCC4", cursor: "pointer",
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                            boxShadow: '0 4px 12px rgba(139,107,56,0.1)',
+                            transition: 'all 0.2s'
+                        }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                            📖 소미 활용 가이드 보기
+                        </button>
+
                         {isAdmin && (
                             <button onClick={() => setView('admin')} style={{
                                 width: '100%', padding: "16px",
@@ -3131,6 +3144,10 @@ export default function App() {
             );
         }
 
+        if (view === "guide") {
+            return renderGuidePage();
+        }
+
         return null; // 모든 뷰에 해당하지 않을 때
     };
 
@@ -3206,6 +3223,62 @@ export default function App() {
                     )}
                 </div>
             </>
+        );
+    };
+
+    // 사용 가이드 페이지
+    const renderGuidePage = () => {
+        const guideItems = [
+            { title: "📖 오늘의 큐티", desc: "매일 아침 배달되는 성경 본문을 읽고, 5단계(읽기-해설-질문-나눔-기도) 과정을 통해 깊이 있는 묵상을 할 수 있습니다.", icon: "✨" },
+            { title: "💬 소미와 대화하기", desc: "말씀을 보다가 궁금한 점이 생기면 AI 친구 '소미'에게 물어보세요. 따뜻하고 지혜로운 답변을 해줍니다.", icon: "🐑" },
+            { title: "✍️ 은혜나눔 게시판", desc: "묵상한 내용을 성도들과 나누어 보세요. 서로의 글에 따뜻한 댓글과 격려로 풍성한 공동체를 만듭니다.", icon: "💌" },
+            { title: "🎵 찬양 플레이어", desc: "화면 어딘가에 떠 있는 아이패드 스타일 플레이어를 통해 추천 CCM을 들으며 묵상에 집중해 보세요.", icon: "🎧" },
+            { title: "📽️ 주일 설교 리뷰", desc: "주일 설교를 다시 보고, AI가 요약해준 핵심 내용과 묵상 질문으로 은혜를 되새길 수 있습니다.", icon: "🎙️" },
+            { title: "🔔 푸시 알림 설정", desc: "매일 아침 8시, 큐티 시간을 알려드려요! 앱 접속 시 나타나는 알림 권한을 반드시 '허용'해 주세요.", icon: "📱" },
+        ];
+
+        return (
+            <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "480px", margin: "0 auto", padding: "30px 24px", ...baseFont }}>
+                {/* 헤더 */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
+                    <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
+                    <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0 }}>소미 활용 가이드</h2>
+                </div>
+
+                {/* 메인 배너 */}
+                <div style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #B8924A 100%)', borderRadius: '24px', padding: '25px', color: 'white', marginBottom: '30px', boxShadow: '0 10px 25px rgba(184,146,74,0.2)' }}>
+                    <div style={{ fontSize: '24px', marginBottom: '10px' }}>😇</div>
+                    <div style={{ fontSize: '18px', fontWeight: 800, marginBottom: '8px' }}>말씀과 더 가까워지는 법</div>
+                    <div style={{ fontSize: '13px', lineHeight: 1.6, opacity: 0.9 }}>
+                        예수인교회 성도님들의 풍성한 신앙 생활을 위해<br />
+                        소미가 준비한 기능들을 소개합니다.
+                    </div>
+                </div>
+
+                {/* 가이드 리스트 */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {guideItems.map((item, idx) => (
+                        <div key={idx} style={{ background: 'white', padding: '20px', borderRadius: '20px', border: '1px solid #F0ECE4', display: 'flex', gap: '16px', alignItems: 'flex-start', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                            <div style={{ width: '40px', height: '40px', minWidth: '40px', background: '#F9F7F2', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>{item.icon}</div>
+                            <div>
+                                <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '6px' }}>{item.title}</div>
+                                <div style={{ fontSize: '13px', color: '#666', lineHeight: 1.5 }}>{item.desc}</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* 마무리 인사 */}
+                <div style={{ marginTop: '40px', textAlign: 'center', padding: '30px 0', borderTop: '1px solid #EEE' }}>
+                    <div style={{ fontSize: '30px', marginBottom: '15px' }}>🐑</div>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '8px' }}>매일 아침 소미와 함께해요!</div>
+                    <div style={{ fontSize: '13px', color: '#999', lineHeight: 1.5, marginBottom: '25px' }}>
+                        궁금한 점이 있거나 이용에 어려운 점이 있다면<br />
+                        언제든지 소미에게 물어보세요.
+                    </div>
+                    <button onClick={() => setView('home')} style={{ padding: '14px 40px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 5px 15px rgba(0,0,0,0.1)' }}>홈으로 돌아가기</button>
+                </div>
+            </div>
         );
     };
 
