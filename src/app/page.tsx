@@ -479,7 +479,12 @@ export default function App() {
 
             if (data) {
                 setIsApproved(data.is_approved);
-                if (data.church_id) setChurchId(data.church_id);
+                if (data.church_id) {
+                    console.log(`[Approval] Church ID found: ${data.church_id}`);
+                    setChurchId(data.church_id);
+                } else {
+                    setChurchId('jesus-in'); // 기본값 강제
+                }
             }
         } catch (err) {
             console.error("상태 확인 중 오류:", err);
@@ -2638,23 +2643,20 @@ export default function App() {
         ══════════════════════════════ */
         if (view === "sermon") {
             const getYoutubeEmbedUrl = (url: string) => {
-                if (!url) return null;
+                const targetUrl = url || "https://www.youtube.com/watch?v=dQw4w9WgXcQ"; // 영상 없을 때 기본 안내용 영상(또는 샘플)
 
-                // 1. 유튜브 채널 ID인 경우 (UC... 로 시작) -> 최신 영상 자동 갱신 모드
-                // 유튜브의 '전체 업로드' 플레이리스트 ID는 채널 ID의 UC를 UU로 바꾸면 됨
-                if (url.startsWith('UC') && url.length > 20) {
-                    const playlistId = 'UU' + url.substring(2);
+                if (targetUrl.startsWith('UC') && targetUrl.length > 20) {
+                    const playlistId = 'UU' + targetUrl.substring(2);
                     return `https://www.youtube.com/embed?listType=playlist&list=${playlistId}`;
                 }
 
-                // 2. 일반 영상 URL인 경우 ID 추출
                 const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-                const match = url.match(regExp);
+                const match = targetUrl.match(regExp);
                 const videoId = (match && match[2].length === 11) ? match[2] : null;
 
                 return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1` : null;
             };
-            const embedUrl = getYoutubeEmbedUrl(churchSettings.sermon_url || "");
+            const embedUrl = getYoutubeEmbedUrl(churchSettings?.sermon_url || "");
 
             return (
                 <div style={{

@@ -11,17 +11,28 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const churchId = searchParams.get('church_id');
 
-    let query = supabaseAdmin.from('church_settings').select('*');
+    console.log(`[API Settings] Requesting for church_id: ${churchId}`);
 
-    if (churchId) {
-        query = query.eq('church_id', churchId);
-    } else {
-        query = query.eq('id', 1);
+    let { data, error } = await supabaseAdmin
+        .from('church_settings')
+        .select('*')
+        .eq('church_id', churchId)
+        .maybeSingle(); // 에러 대신 null 반환
+
+    // 만약 해당 교회 아이디로 데이터가 없으면 기본값(ID 1) 조회
+    if (!data) {
+        console.log(`[API Settings] No data for ${churchId}, falling back to ID 1`);
+        const { data: defaultData, error: defaultError } = await supabaseAdmin
+            .from('church_settings')
+            .select('*')
+            .eq('id', 1)
+            .single();
+
+        data = defaultData;
+        error = defaultError;
     }
 
-    const { data, error } = await query.single();
-
-    if (error) {
+    if (error && !data) {
         return NextResponse.json({ settings: null, error: error.message });
     }
     return NextResponse.json({ settings: data });
