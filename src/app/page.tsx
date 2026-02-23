@@ -2639,7 +2639,7 @@ export default function App() {
                                 </label>
                             </div>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '30px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '30px', padding: '0 20px 30px' }}>
                             <button onClick={async () => {
                                 if (!sermonReflection.mainGrace.trim() && !sermonReflection.q1.trim() && !sermonReflection.q2.trim() && !sermonReflection.q3.trim()) {
                                     alert('나눌 은혜나 질문에 대한 답변을 한 가지 이상 적어주세요!');
@@ -2686,10 +2686,26 @@ export default function App() {
                                     console.error("게시판 등록 실패:", e);
                                     alert("오류가 발생했습니다.");
                                 }
-                            }} style={{ width: '100%', padding: '16px', background: 'linear-gradient(145deg, #ffffff 0%, #fff0f5 100%)', color: '#9E2A5B', border: '1px solid #f2cddb', borderRadius: '15px', fontWeight: 800, fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 8px 16px rgba(173, 20, 87, 0.08)' }}>
-                                <span style={{ fontSize: '18px' }}>📝</span> 은혜 나누기
+                            }} style={{
+                                width: '100%',
+                                padding: '14px',
+                                background: (sermonReflection.mainGrace.trim() || sermonReflection.q1.trim() || sermonReflection.q2.trim() || sermonReflection.q3.trim()) ? '#C2185B' : '#E6A4B4',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '15px',
+                                fontWeight: 800,
+                                fontSize: '15px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
+                                boxShadow: '0 4px 12px rgba(173, 20, 87, 0.1)',
+                                transition: 'background-color 0.4s ease'
+                            }}>
+                                <span style={{ fontSize: '16px' }}>📝</span> 은혜 나누기
                             </button>
-                            <button onClick={() => setView('home')} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 이동</button>
+                            <button onClick={() => setView('home')} style={{ width: '100%', padding: '14px', background: '#F5F5F5', color: '#555', border: '1px solid #EEE', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', fontSize: '14px' }}>홈으로 이동</button>
                         </div>
                     </div>
                 </div>
