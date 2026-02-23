@@ -2651,16 +2651,8 @@ export default function App() {
                                     return;
                                 }
 
-                                let user_name = user.email.split('@')[0];
-                                let avatar_url = '';
-                                try {
-                                    const r = await fetch(`/api/user?id=${user.id}`);
-                                    const d = await r.json();
-                                    if (d) {
-                                        user_name = d.name || user_name;
-                                        avatar_url = d.avatar_url;
-                                    }
-                                } catch (e) { }
+                                let user_name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도";
+                                let avatar_url = user.user_metadata?.avatar_url || '';
 
                                 let combinedContent = "";
                                 if (sermonReflection.q1) combinedContent += `[질문 1] ${churchSettings.sermon_q1}\n나의 묵상: ${sermonReflection.q1}\n\n`;
