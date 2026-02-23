@@ -2154,6 +2154,30 @@ export default function App() {
                 } catch (e) { console.error("수정 중 오류:", e); }
             };
 
+            const handlePost = async () => {
+                if (!graceInput.trim() || !user) return;
+                try {
+                    const res = await fetch('/api/community', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: user.id,
+                            user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
+                            avatar_url: user.user_metadata?.avatar_url || null,
+                            content: graceInput,
+                            church_id: churchId,
+                            is_private: isPrivatePost
+                        })
+                    });
+                    if (res.ok) {
+                        const newPost = await res.json();
+                        setCommunityPosts([newPost, ...communityPosts]);
+                        setGraceInput("");
+                        setIsPrivatePost(false);
+                    }
+                } catch (e) { console.error("게시글 등록 실패:", e); }
+            };
+
             return (
                 <div style={{
                     minHeight: "100vh",
@@ -2180,6 +2204,49 @@ export default function App() {
                     </div>
 
                     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        {/* 직접 글쓰기 영역 */}
+                        <div style={{ background: 'white', borderRadius: '20px', padding: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F0ECE4', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
+                                    {user?.user_metadata?.avatar_url ? <img src={user.user_metadata.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🐑'}
+                                </div>
+                                <span style={{ fontSize: '14px', fontWeight: 700, color: '#555' }}>
+                                    {user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "성도님"}
+                                </span>
+                            </div>
+                            <textarea
+                                value={graceInput}
+                                onChange={(e) => setGraceInput(e.target.value)}
+                                placeholder="성도들과 나누고 싶은 은혜를 적어보세요..."
+                                style={{ width: '100%', minHeight: '80px', border: '1px solid #F5F5F5', borderRadius: '12px', padding: '12px', boxSizing: 'border-box', outline: 'none', fontSize: '14px', background: '#FAFAFA', resize: 'none', fontFamily: 'inherit' }}
+                            />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div
+                                    onClick={() => setIsPrivatePost(!isPrivatePost)}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: isPrivatePost ? '#7B1FA2' : '#666', background: isPrivatePost ? '#F3E5F5' : '#F5F5F5', padding: '4px 10px', borderRadius: '20px', fontWeight: 600, transition: 'all 0.2s' }}
+                                >
+                                    <span>{isPrivatePost ? '🔒 나만 보기' : '🌐 함께 나누기'}</span>
+                                </div>
+                                <button
+                                    onClick={handlePost}
+                                    disabled={!graceInput.trim()}
+                                    style={{
+                                        padding: '8px 20px',
+                                        background: graceInput.trim() ? '#333' : '#EEE',
+                                        color: graceInput.trim() ? 'white' : '#AAA',
+                                        border: 'none',
+                                        borderRadius: '12px',
+                                        fontSize: '13px',
+                                        fontWeight: 800,
+                                        cursor: graceInput.trim() ? 'pointer' : 'default',
+                                        transition: 'all 0.3s'
+                                    }}
+                                >
+                                    은혜 나누기
+                                </button>
+                            </div>
+                        </div>
+
                         {communityPosts
                             // ✅ 비공개 게시글 필터: 관리자는 전체, 본인관은 본인 작성 비공개글, 일반 성도는 공개글만
                             .filter(post => {
