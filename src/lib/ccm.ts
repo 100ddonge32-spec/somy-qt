@@ -6,17 +6,13 @@ export interface CcmVideo {
     title: string;
     artist: string;
     youtubeId: string;
-    playlistId?: string;
 }
 
 export const CCM_LIST: CcmVideo[] = [
-    // 밤의 별TV 영상은 유튜브 정책(퍼가기 클릭 금지)으로 앱 내 재생이 불가하여 임시로 다른 영상으로 교체했습니다.
-    // 대표님, 앱에서 재생 가능한 '다른' 저작권 프리 찬양 영상 주시면 바로 반영하겠습니다!
-    {
-        title: "은혜로운 피아노 찬양 (앱 내 재생 호환)",
-        artist: "소미 추천 BGM",
-        youtubeId: "W3a4gV9R_r4"
-    }
+    { title: "피아노 찬양 연주 1", artist: "추천 BGM", youtubeId: "0wcxl81QclQ" },
+    { title: "잔잔한 묵상 찬양 2", artist: "추천 BGM", youtubeId: "IA2pklNBJNM" },
+    { title: "은혜로운 기도 음악 3", artist: "추천 BGM", youtubeId: "f742p7mQ0Ic" },
+    { title: "평안한 피아노 모음 4", artist: "추천 BGM", youtubeId: "i9HNOJmCVi8" }
 ];
 
 /**

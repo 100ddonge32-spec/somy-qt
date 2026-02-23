@@ -285,8 +285,7 @@ export default function App() {
                     'iv_load_policy': 3,
                     'enablejsapi': 1,
                     'playsinline': 1,
-                    'origin': window.location.origin,
-                    ...(todayCcm.playlistId ? { listType: 'playlist', list: todayCcm.playlistId } : {})
+                    'origin': window.location.origin
                 },
                 events: {
                     'onReady': (event: any) => {
