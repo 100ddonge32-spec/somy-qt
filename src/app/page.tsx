@@ -2089,6 +2089,30 @@ export default function App() {
                 } catch (e) { console.error("댓글 저장 실패:", e); }
             };
 
+            const handleDeleteComment = async (postId: any, commentId: any) => {
+                if (!confirm("이 댓글을 삭제하시겠습니까?")) return;
+                try {
+                    const res = await fetch('/api/community/comments', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: commentId })
+                    });
+                    if (res.ok) {
+                        setCommunityPosts(communityPosts.map(post => {
+                            if (post.id === postId) {
+                                return { ...post, comments: post.comments.filter((c: any) => c.id !== commentId) };
+                            }
+                            return post;
+                        }));
+                    } else {
+                        alert("댓글 삭제에 실패했습니다.");
+                    }
+                } catch (e) {
+                    console.error("댓글 삭제 실패:", e);
+                    alert("오류가 발생했습니다.");
+                }
+            };
+
             const handleDeletePost = async (postId: any) => {
                 if (!confirm("이 게시글을 정말 삭제하시겠습니까?")) return;
                 try {
@@ -2237,8 +2261,11 @@ export default function App() {
                                                 <div key={comment.id} style={{ background: '#FAFAFA', padding: '10px 15px', borderRadius: '12px', fontSize: '13px' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                                                         <span style={{ fontWeight: 700, color: '#555' }}>{comment.user_name || '성도'}</span>
-                                                        <span style={{ fontSize: '10px', color: '#AAA' }}>
+                                                        <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                             {comment.created_at ? new Date(comment.created_at).toLocaleTimeString() : '방금 전'}
+                                                            {(isAdmin || user?.id === comment.user_id) && (
+                                                                <button onClick={() => handleDeleteComment(post.id, comment.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>✕</button>
+                                                            )}
                                                         </span>
                                                     </div>
                                                     <div style={{ color: '#666' }}>{comment.content}</div>

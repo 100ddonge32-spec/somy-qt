@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
             .eq('id', post_id)
             .single();
 
-        // 3. 알림 생성 (본인 글이 아닐 때만)
-        if (!postError && post && post.user_id !== user_id) {
+        // 3. 알림 생성
+        if (!postError && post) {
             await supabaseAdmin
                 .from('notifications')
                 .insert([{
@@ -45,6 +45,25 @@ export async function POST(req: NextRequest) {
         }
 
         return NextResponse.json(comment);
+    } catch (err: any) {
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}
+
+export async function DELETE(req: NextRequest) {
+    try {
+        const body = await req.json();
+        const { id } = body;
+
+        if (!id) return NextResponse.json({ error: 'Comment ID is required' }, { status: 400 });
+
+        const { error } = await supabaseAdmin
+            .from('community_comments')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+        return NextResponse.json({ success: true });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
