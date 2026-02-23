@@ -18,6 +18,7 @@
     "react-dom": "^18",
     "tailwind-merge": "^2.2.1",
     "web-push": "^3.6.7",
+    "xlsx": "^0.18.5",
     "youtube-transcript": "^1.2.1"
   },
   "devDependencies": {

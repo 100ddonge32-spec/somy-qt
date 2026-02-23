@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { getGraceVerse } from '@/lib/navigator-verses';
 import { getTodayCcm, CcmVideo, CCM_LIST } from "@/lib/ccm";
 
-type View = "home" | "chat" | "qt" | "community" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide";
+type View = "home" | "chat" | "qt" | "community" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "profile";
 
 const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://cdn.imweb.me/thumbnail/20210813/569458bf12dd0.png";
@@ -1439,6 +1439,19 @@ export default function App() {
                     </div>
 
                     <div style={{ padding: '0 20px 40px 20px', width: '100%', maxWidth: '360px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+                        <button onClick={() => setView('profile')} style={{
+                            width: '100%', padding: "16px",
+                            background: "linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)",
+                            color: "#1976D2",
+                            fontWeight: 800, fontSize: "15px", borderRadius: "18px",
+                            border: "1px solid #90CAF9", cursor: "pointer",
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                            boxShadow: '0 4px 12px rgba(25,118,210,0.1)',
+                            transition: 'all 0.2s'
+                        }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                            👤 내 프로필 & 정보 수정
+                        </button>
+
                         <button onClick={() => setView('guide')} style={{
                             width: '100%', padding: "16px",
                             background: "linear-gradient(135deg, #F9F7F2 0%, #F4F0E6 100%)",
@@ -3148,6 +3161,10 @@ export default function App() {
             return renderGuidePage();
         }
 
+        if (view === "profile") {
+            return renderProfilePage();
+        }
+
         return null; // 모든 뷰에 해당하지 않을 때
     };
 
@@ -3281,6 +3298,96 @@ export default function App() {
                         언제든지 소미에게 물어보세요.
                     </div>
                     <button onClick={() => setView('home')} style={{ padding: '14px 40px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 5px 15px rgba(0,0,0,0.1)' }}>홈으로 돌아가기</button>
+                </div>
+            </div>
+        );
+    };
+
+    // 내 프로필 정보 수정 및 공개 설정 페이지
+    const renderProfilePage = () => {
+        const [profileForm, setProfileForm] = useState({
+            full_name: user?.user_metadata?.full_name || '',
+            phone: '',
+            birthdate: '',
+            address: '',
+            is_phone_public: false,
+            is_birthdate_public: false,
+            is_address_public: false
+        });
+        const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+        useEffect(() => {
+            const loadProfile = async () => {
+                const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+                if (data) {
+                    setProfileForm({
+                        full_name: data.full_name || user?.user_metadata?.full_name || '',
+                        phone: data.phone || '',
+                        birthdate: data.birthdate || '',
+                        address: data.address || '',
+                        is_phone_public: data.is_phone_public || false,
+                        is_birthdate_public: data.is_birthdate_public || false,
+                        is_address_public: data.is_address_public || false
+                    });
+                }
+            };
+            if (user) loadProfile();
+        }, [user]);
+
+        const handleSubmit = async () => {
+            setIsSavingProfile(true);
+            try {
+                const { error } = await supabase.from('profiles').update(profileForm).eq('id', user.id);
+                if (error) throw error;
+                alert('프로필 정보가 저장되었습니다! ✨');
+            } catch (e) {
+                alert('저장 실패: ' + (e as Error).message);
+            } finally {
+                setIsSavingProfile(false);
+            }
+        };
+
+        return (
+            <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "480px", margin: "0 auto", padding: "30px 24px", ...baseFont }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
+                    <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
+                    <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0 }}>내 프로필 관리</h2>
+                </div>
+
+                <div style={{ background: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', marginBottom: '24px', border: '1px solid #F0ECE4' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div>
+                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>👤 성함</label>
+                            <input type="text" value={profileForm.full_name} onChange={e => setProfileForm({ ...profileForm, full_name: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none' }} />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>📞 전화번호</label>
+                            <input type="tel" value={profileForm.phone} onChange={e => setProfileForm({ ...profileForm, phone: e.target.value })} placeholder="010-0000-0000" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none' }} />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                                <input type="checkbox" id="phone_pub" checked={profileForm.is_phone_public} onChange={e => setProfileForm({ ...profileForm, is_phone_public: e.target.checked })} />
+                                <label htmlFor="phone_pub" style={{ fontSize: '12px', color: '#888' }}>다른 성도님들께 전화번호를 공개합니다.</label>
+                            </div>
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>🎂 생년월일</label>
+                            <input type="date" value={profileForm.birthdate} onChange={e => setProfileForm({ ...profileForm, birthdate: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none' }} />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                                <input type="checkbox" id="birth_pub" checked={profileForm.is_birthdate_public} onChange={e => setProfileForm({ ...profileForm, is_birthdate_public: e.target.checked })} />
+                                <label htmlFor="birth_pub" style={{ fontSize: '12px', color: '#888' }}>다른 성도님들께 생일을 공개합니다.</label>
+                            </div>
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>🏠 주소</label>
+                            <input type="text" value={profileForm.address} onChange={e => setProfileForm({ ...profileForm, address: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none' }} />
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                                <input type="checkbox" id="address_pub" checked={profileForm.is_address_public} onChange={e => setProfileForm({ ...profileForm, is_address_public: e.target.checked })} />
+                                <label htmlFor="address_pub" style={{ fontSize: '12px', color: '#888' }}>다른 성도님들께 주소를 공개합니다.</label>
+                            </div>
+                        </div>
+                    </div>
+                    <button onClick={handleSubmit} disabled={isSavingProfile} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', marginTop: '30px' }}>
+                        {isSavingProfile ? '저장 중...' : '💾 정보 수정하기'}
+                    </button>
                 </div>
             </div>
         );
@@ -3594,7 +3701,55 @@ export default function App() {
                                 </div>
                             </>
                         ) : adminTab === 'members' ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '400px', overflowY: 'auto', paddingRight: '5px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '500px', overflowY: 'auto' }}>
+                                {/* 엑셀 업로드 영역 */}
+                                <div style={{ background: '#F9F7F2', padding: '15px', borderRadius: '15px', border: '1px dashed #D4AF37' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#333', marginBottom: '10px' }}>📊 성도 명단 엑셀 업로드</div>
+                                    <input type="file" accept=".xlsx, .xls" onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+
+                                        const formData = new FormData();
+                                        formData.append('file', file);
+                                        formData.append('church_id', churchId);
+
+                                        try {
+                                            const res = await fetch('/api/admin/bulk-upload', {
+                                                method: 'POST',
+                                                body: formData
+                                            });
+                                            const result = await res.json();
+                                            if (result.success) {
+                                                alert(`${result.count}명의 성도 정보가 업데이트 되었습니다!`);
+                                                // 리스트 새로고침
+                                                const r = await fetch('/api/admin?action=list_members');
+                                                const data = await r.json();
+                                                if (Array.isArray(data)) setMemberList(data);
+                                            } else {
+                                                alert('업로드 실패: ' + result.error);
+                                            }
+                                        } catch (e) { alert('파일 처리 중 오류가 발생했습니다.'); }
+                                    }} style={{ fontSize: '12px' }} />
+                                    <p style={{ fontSize: '11px', color: '#999', marginTop: '8px' }}>* 양식: 이름 | 이메일 | 전화번호 | 생일(YYYY-MM-DD) | 주소</p>
+                                </div>
+
+                                {/* 오늘의 생일 알림 */}
+                                {(() => {
+                                    const today = new Date().toISOString().slice(5, 10); // MM-DD
+                                    const birthdayBoys = memberList.filter(m => m.birthdate && m.birthdate.slice(5, 10) === today);
+                                    if (birthdayBoys.length > 0) {
+                                        return (
+                                            <div style={{ background: '#FFF9C4', padding: '12px 16px', borderRadius: '12px', border: '1px solid #FFF176', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <span style={{ fontSize: '18px' }}>🎂</span>
+                                                <div style={{ fontSize: '13px', color: '#333', fontWeight: 600 }}>
+                                                    오늘 생일이신 분: {birthdayBoys.map(m => m.full_name).join(', ')}
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+
                                 {isManagingMembers ? <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>로딩 중...</div> :
                                     memberList.length === 0 ? <div style={{ textAlign: 'center', padding: '20px', color: '#999', fontSize: '13px' }}>등록된 성도가 없습니다.</div> :
                                         memberList.map(member => (
