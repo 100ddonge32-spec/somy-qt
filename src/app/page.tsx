@@ -1079,153 +1079,6 @@ export default function App() {
                         <div style={{ fontSize: "12px", color: "#666", letterSpacing: "1px", fontWeight: 500 }}>{(churchSettings.church_name || "").toUpperCase()}</div>
                     </a>
 
-                    {/* 설정 모달 */}
-                    {showSettings && (
-                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                            <div style={{ background: 'white', borderRadius: '20px', padding: '28px', width: '100%', maxWidth: '400px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>⚙️ {adminTab === 'settings' ? '교회 설정' : adminTab === 'members' ? '성도 관리' : '슈퍼 관리'}</h2>
-                                    <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
-                                </div>
-
-                                {/* 설정 탭 메뉴 */}
-                                <div style={{ display: 'flex', gap: '5px', marginBottom: '20px', background: '#F5F5F5', padding: '4px', borderRadius: '10px' }}>
-                                    <button onClick={() => setAdminTab('settings')} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'settings' ? 'white' : 'transparent', boxShadow: adminTab === 'settings' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer' }}>🎨 설정</button>
-                                    <button onClick={async () => {
-                                        setAdminTab('members');
-                                        setIsManagingMembers(true);
-                                        try {
-                                            const r = await fetch('/api/admin?action=list_members');
-                                            const data = await r.json();
-                                            if (Array.isArray(data)) setMemberList(data);
-                                        } finally { setIsManagingMembers(false); }
-                                    }} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'members' ? 'white' : 'transparent', boxShadow: adminTab === 'members' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer' }}>👥 성도</button>
-                                    {isSuperAdmin && (
-                                        <button onClick={() => setAdminTab('master')} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'master' ? 'white' : 'transparent', boxShadow: adminTab === 'master' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer' }}>👑 마스터</button>
-                                    )}
-                                </div>
-
-                                {adminTab === 'settings' ? (
-                                    <>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                                            {(
-                                                [
-                                                    ['church_name', '교회 이름', '예: 예수인교회'],
-                                                    ['app_subtitle', '앱 부제목', '예: 큐티 동반자'],
-                                                    ['church_logo_url', '교회 로고 URL', 'https://...'],
-                                                    ['church_url', '교회 홈페이지 URL', 'https://...']
-                                                ] as [string, string, string][]
-                                            ).map(([key, label, placeholder]) => (
-                                                <div key={key}>
-                                                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>{label}</label>
-                                                    <input
-                                                        type="text"
-                                                        value={String(settingsForm[key as keyof typeof settingsForm])}
-                                                        onChange={e => setSettingsForm(prev => ({ ...prev, [key]: e.target.value }))}
-                                                        placeholder={placeholder}
-                                                        style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }}
-                                                    />
-                                                </div>
-                                            ))}
-                                            <div>
-                                                <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>💎 요금제 설정</label>
-                                                <select
-                                                    value={settingsForm.plan}
-                                                    onChange={e => setSettingsForm(prev => ({ ...prev, plan: e.target.value }))}
-                                                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', outline: 'none', background: 'white' }}
-                                                >
-                                                    <option value="free">무료 버전 (수동 관리)</option>
-                                                    <option value="premium">유료 버전 (AI 자동 생성)</option>
-                                                </select>
-                                                <p style={{ fontSize: '11px', color: '#999', marginTop: '6px', lineHeight: 1.4 }}>
-                                                    * 유료 버전은 말씀이 준비되지 않았을 때 AI가 자동으로 성경 읽기표에 맞춰 말씀을 생성합니다.
-                                                </p>
-                                                <div>
-                                                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>📋 은혜 게시판 공개 설정</label>
-                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: '10px', border: '1px solid #EEE', background: '#FAFAFA' }}>
-                                                        <span style={{ fontSize: '13px', color: '#555' }}>{settingsForm.community_visible ? '🟢 공개 (성도 누구나 볼 수 있음)' : '🔴 비공개 (관리자만 볼 수 있음)'}</span>
-                                                        <button onClick={() => setSettingsForm(prev => ({ ...prev, community_visible: !prev.community_visible }))} style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: settingsForm.community_visible ? '#E8F5E9' : '#FFEBEE', color: settingsForm.community_visible ? '#2E7D32' : '#C62828' }}>
-                                                            {settingsForm.community_visible ? '비공개로 전환' : '공개로 전환'}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                                            <button onClick={() => setShowSettings(false)} style={{ flex: 1, padding: '12px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '10px', fontWeight: 600, cursor: 'pointer' }}>취소</button>
-                                            <button onClick={handleSaveSettings} disabled={settingsSaving} style={{ flex: 2, padding: '12px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', opacity: settingsSaving ? 0.7 : 1 }}>
-                                                {settingsSaving ? '저장 중...' : '💾 저장하기'}
-                                            </button>
-                                        </div>
-                                    </>
-                                ) : adminTab === 'members' ? (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '400px', overflowY: 'auto', paddingRight: '5px' }}>
-                                        {isManagingMembers ? <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>로딩 중...</div> :
-                                            memberList.length === 0 ? <div style={{ textAlign: 'center', padding: '20px', color: '#999', fontSize: '13px' }}>등록된 성도가 없습니다.</div> :
-                                                memberList.map(member => (
-                                                    <div key={member.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#F9F9F9', borderRadius: '14px', border: '1px solid #F0F0F0' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                            <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#EEE', overflow: 'hidden' }}>
-                                                                <img src={member.avatar_url || 'https://via.placeholder.com/32'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                            </div>
-                                                            <div>
-                                                                <div style={{ fontSize: '13px', fontWeight: 700, color: '#333' }}>{member.full_name || '이름 없음'}</div>
-                                                                <div style={{ fontSize: '10px', color: '#999' }}>{member.email}</div>
-                                                            </div>
-                                                        </div>
-                                                        <button
-                                                            onClick={async () => {
-                                                                const newStatus = !member.is_approved;
-                                                                const res = await fetch('/api/admin', {
-                                                                    method: 'POST',
-                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({ action: 'approve_user', user_id: member.id, is_approved: newStatus })
-                                                                });
-                                                                if (res.ok) {
-                                                                    setMemberList(memberList.map(m => m.id === member.id ? { ...m, is_approved: newStatus } : m));
-                                                                }
-                                                            }}
-                                                            style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: member.is_approved ? '#E8F5E9' : '#333', color: member.is_approved ? '#2E7D32' : 'white', boxShadow: member.is_approved ? 'none' : '0 2px 6px rgba(0,0,0,0.1)' }}>
-                                                            {member.is_approved ? '승인됨' : '승인하기'}
-                                                        </button>
-                                                    </div>
-                                                ))
-                                        }
-                                    </div>
-                                ) : (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                        <div style={{ fontSize: '13px', color: '#666', background: '#F5F5F3', padding: '14px', borderRadius: '12px', lineHeight: 1.5 }}>
-                                            🛡️ <strong>슈퍼 관리자 전용</strong><br />
-                                            새로운 교회 관리자나 부관리자를 임명합니다. 해당 이메일 사용자는 관리자 모드에 접근할 수 있습니다.
-                                        </div>
-                                        <div>
-                                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>추가할 관리자 이메일</label>
-                                            <div style={{ display: 'flex', gap: '8px' }}>
-                                                <input id="admin-email-input" type="email" placeholder="example@kakao.com" style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }} />
-                                                <button onClick={async () => {
-                                                    const emailInput = document.getElementById('admin-email-input') as HTMLInputElement;
-                                                    const email = emailInput?.value;
-                                                    if (!email) { alert('이메일을 입력해주세요.'); return; }
-                                                    const res = await fetch('/api/admin', {
-                                                        method: 'POST',
-                                                        headers: { 'Content-Type': 'application/json' },
-                                                        body: JSON.stringify({ action: 'add_admin', email, role: 'church_admin', church_id: 'jesus-in' })
-                                                    });
-                                                    if (res.ok) {
-                                                        alert('성공적으로 등록되었습니다!');
-                                                        emailInput.value = '';
-                                                    } else {
-                                                        alert('등록에 실패했습니다.');
-                                                    }
-                                                }} style={{ padding: '0 18px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>등록</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
 
                     {/* Character Section */}
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", flex: 1, justifyContent: 'center', width: "100%", minHeight: '400px' }}>
@@ -3022,6 +2875,153 @@ export default function App() {
                 </div>
             </div>
             {renderContent()}
+            {/* 전역으로 분리한 설정 모달 */}
+            {showSettings && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                    <div style={{ background: 'white', borderRadius: '20px', padding: '28px', width: '100%', maxWidth: '400px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>⚙️ {adminTab === 'settings' ? '교회 설정' : adminTab === 'members' ? '성도 관리' : '슈퍼 관리'}</h2>
+                            <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
+                        </div>
+
+                        {/* 설정 탭 메뉴 */}
+                        <div style={{ display: 'flex', gap: '5px', marginBottom: '20px', background: '#F5F5F5', padding: '4px', borderRadius: '10px' }}>
+                            <button onClick={() => setAdminTab('settings')} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'settings' ? 'white' : 'transparent', boxShadow: adminTab === 'settings' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer' }}>🎨 설정</button>
+                            <button onClick={async () => {
+                                setAdminTab('members');
+                                setIsManagingMembers(true);
+                                try {
+                                    const r = await fetch('/api/admin?action=list_members');
+                                    const data = await r.json();
+                                    if (Array.isArray(data)) setMemberList(data);
+                                } finally { setIsManagingMembers(false); }
+                            }} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'members' ? 'white' : 'transparent', boxShadow: adminTab === 'members' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer' }}>👥 성도</button>
+                            {isSuperAdmin && (
+                                <button onClick={() => setAdminTab('master')} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'master' ? 'white' : 'transparent', boxShadow: adminTab === 'master' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer' }}>👑 마스터</button>
+                            )}
+                        </div>
+
+                        {adminTab === 'settings' ? (
+                            <>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                    {(
+                                        [
+                                            ['church_name', '교회 이름', '예: 예수인교회'],
+                                            ['app_subtitle', '앱 부제목', '예: 큐티 동반자'],
+                                            ['church_logo_url', '교회 로고 URL', 'https://...'],
+                                            ['church_url', '교회 홈페이지 URL', 'https://...'],
+                                            ['sermon_url', '교회 유튜브 채널 ID (또는 URL)', '예: UC... 혹은 https://...']
+                                        ] as [string, string, string][]
+                                    ).map(([key, label, placeholder]) => (
+                                        <div key={key}>
+                                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>{label}</label>
+                                            <input
+                                                type="text"
+                                                value={String(settingsForm[key as keyof typeof settingsForm])}
+                                                onChange={e => setSettingsForm(prev => ({ ...prev, [key]: e.target.value }))}
+                                                placeholder={placeholder}
+                                                style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }}
+                                            />
+                                        </div>
+                                    ))}
+                                    <div>
+                                        <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>💎 요금제 설정</label>
+                                        <select
+                                            value={settingsForm.plan}
+                                            onChange={e => setSettingsForm(prev => ({ ...prev, plan: e.target.value }))}
+                                            style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', outline: 'none', background: 'white' }}
+                                        >
+                                            <option value="free">무료 버전 (수동 관리)</option>
+                                            <option value="premium">유료 버전 (AI 자동 생성)</option>
+                                        </select>
+                                        <p style={{ fontSize: '11px', color: '#999', marginTop: '6px', lineHeight: 1.4 }}>
+                                            * 유료 버전은 말씀이 준비되지 않았을 때 AI가 자동으로 성경 읽기표에 맞춰 말씀을 생성합니다.
+                                        </p>
+                                        <div>
+                                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>📋 은혜 게시판 공개 설정</label>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: '10px', border: '1px solid #EEE', background: '#FAFAFA' }}>
+                                                <span style={{ fontSize: '13px', color: '#555' }}>{settingsForm.community_visible ? '🟢 공개 (성도 누구나 볼 수 있음)' : '🔴 비공개 (관리자만 볼 수 있음)'}</span>
+                                                <button onClick={() => setSettingsForm(prev => ({ ...prev, community_visible: !prev.community_visible }))} style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: settingsForm.community_visible ? '#E8F5E9' : '#FFEBEE', color: settingsForm.community_visible ? '#2E7D32' : '#C62828' }}>
+                                                    {settingsForm.community_visible ? '비공개로 전환' : '공개로 전환'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                                    <button onClick={() => setShowSettings(false)} style={{ flex: 1, padding: '12px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '10px', fontWeight: 600, cursor: 'pointer' }}>취소</button>
+                                    <button onClick={handleSaveSettings} disabled={settingsSaving} style={{ flex: 2, padding: '12px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', opacity: settingsSaving ? 0.7 : 1 }}>
+                                        {settingsSaving ? '저장 중...' : '💾 저장하기'}
+                                    </button>
+                                </div>
+                            </>
+                        ) : adminTab === 'members' ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '400px', overflowY: 'auto', paddingRight: '5px' }}>
+                                {isManagingMembers ? <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>로딩 중...</div> :
+                                    memberList.length === 0 ? <div style={{ textAlign: 'center', padding: '20px', color: '#999', fontSize: '13px' }}>등록된 성도가 없습니다.</div> :
+                                        memberList.map(member => (
+                                            <div key={member.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#F9F9F9', borderRadius: '14px', border: '1px solid #F0F0F0' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#EEE', overflow: 'hidden' }}>
+                                                        <img src={member.avatar_url || 'https://via.placeholder.com/32'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#333' }}>{member.full_name || '이름 없음'}</div>
+                                                        <div style={{ fontSize: '10px', color: '#999' }}>{member.email}</div>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={async () => {
+                                                        const newStatus = !member.is_approved;
+                                                        const res = await fetch('/api/admin', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({ action: 'approve_user', user_id: member.id, is_approved: newStatus })
+                                                        });
+                                                        if (res.ok) {
+                                                            setMemberList(memberList.map(m => m.id === member.id ? { ...m, is_approved: newStatus } : m));
+                                                        }
+                                                    }}
+                                                    style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: member.is_approved ? '#E8F5E9' : '#333', color: member.is_approved ? '#2E7D32' : 'white', boxShadow: member.is_approved ? 'none' : '0 2px 6px rgba(0,0,0,0.1)' }}>
+                                                    {member.is_approved ? '승인됨' : '승인하기'}
+                                                </button>
+                                            </div>
+                                        ))
+                                }
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                <div style={{ fontSize: '13px', color: '#666', background: '#F5F5F3', padding: '14px', borderRadius: '12px', lineHeight: 1.5 }}>
+                                    🛡️ <strong>슈퍼 관리자 전용</strong><br />
+                                    새로운 교회 관리자나 부관리자를 임명합니다. 해당 이메일 사용자는 관리자 모드에 접근할 수 있습니다.
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>추가할 관리자 이메일</label>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <input id="admin-email-input" type="email" placeholder="example@kakao.com" style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }} />
+                                        <button onClick={async () => {
+                                            const emailInput = document.getElementById('admin-email-input') as HTMLInputElement;
+                                            const email = emailInput?.value;
+                                            if (!email) { alert('이메일을 입력해주세요.'); return; }
+                                            const res = await fetch('/api/admin', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ action: 'add_admin', email, role: 'church_admin', church_id: 'jesus-in' })
+                                            });
+                                            if (res.ok) {
+                                                alert('성공적으로 등록되었습니다!');
+                                                emailInput.value = '';
+                                            } else {
+                                                alert('등록에 실패했습니다.');
+                                            }
+                                        }} style={{ padding: '0 18px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>등록</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
             {renderNotificationList()}
             {showIpod ? renderMiniPlayer() : (
                 <div
