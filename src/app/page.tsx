@@ -2194,36 +2194,15 @@ export default function App() {
                                 justifyContent: 'space-between',
                                 position: 'relative'
                             }}>
-                                {/* Album Art or Icon Zone */}
-                                <div style={{
-                                    width: '80px',
-                                    height: '80px',
-                                    background: 'linear-gradient(135deg, #FFF9C4 0%, #FBC02D 100%)',
-                                    borderRadius: '12px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '40px',
-                                    boxShadow: '0 8px 16px rgba(0,0,0,0.5)',
-                                    animation: isCcmPlaying ? 'pulse 2s infinite' : 'none'
-                                }}>
-                                    📻
-                                </div>
-                                {/* Expanded Dynamic Waveform Visualizer */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', height: '60px', marginBottom: '10px' }}>
-                                    {[...Array(24)].map((_, i) => (
-                                        <div key={i} style={{
-                                            width: '4px',
-                                            background: isCcmPlaying ? '#00FF41' : '#222',
-                                            borderRadius: '2px',
-                                            height: isCcmPlaying ? '100%' : '10%',
-                                            transition: 'height 0.3s ease',
-                                            boxShadow: isCcmPlaying ? '0 0 10px rgba(0,255,65,0.5)' : 'none',
-                                            animation: isCcmPlaying ? `wave-music ${0.4 + (i % 7) * 0.15}s infinite ease-in-out` : 'none',
-                                            opacity: 0.3 + (i % 5) * 0.15
-                                        }} />
-                                    ))}
-                                </div>
+                                {/* 유튜브 Iframe Video Container */}
+                                <div
+                                    id="ccm-player-hidden-global"
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        pointerEvents: 'none' // 터치하여 외부 이탈 방지
+                                    }}
+                                ></div>
                             </div>
 
                             {/* 2. Large Interactive Click Wheel */}
@@ -2308,7 +2287,7 @@ export default function App() {
                                 <img src={SOMY_IMG} alt="소미" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             </div>
                             <div style={{ fontSize: '13px', color: '#D81B60', lineHeight: 1.6, fontWeight: 600 }}>
-                                <strong>소미의 은사!</strong> 찬양을 틀어두고 뒤로가기를 눌러보세요. 음악을 들으며 소미와 대화하거나 말씀을 묵상할 수 있어요! 🎵
+                                <strong>소미의 팁!</strong> 찬양을 틀어두고 뒤로가기를 눌러보세요. 음악을 들으며 소미와 대화하거나 말씀을 묵상할 수 있어요! 🎵
                             </div>
                         </div>
 
@@ -2627,16 +2606,10 @@ export default function App() {
                         border: '1px solid #222'
                     }}
                 >
-                    {/* 유튜브 Iframe이 생성될 컨테이너 (실제 화면 보임) */}
-                    <div
-                        id="ccm-player-hidden-global"
-                        style={{
-                            width: '100%',
-                            height: '100%',
-                            display: 'block',     // 숨김 해제
-                            pointerEvents: 'none' // 클릭 방지 (플레이리스트 제어는 휠로만)
-                        }}
-                    ></div>
+                    {/* 유튜브 Iframe 대신 단순 재생 상태 텍스트 (아이디 중복 방지) */}
+                    <div style={{ color: 'white', fontSize: '11px', fontWeight: 800, letterSpacing: '1px' }}>
+                        {isCcmPlaying ? '🎵 재생 중...' : 'BGM 일시정지'}
+                    </div>
                 </div>
 
                 {/* 2. 클릭 휠 (Classic Click Wheel) */}
@@ -2711,7 +2684,24 @@ export default function App() {
     // 최종 렌더링
     return (
         <div style={{ position: 'relative', maxWidth: '480px', margin: '0 auto' }}>
-            {/* 실제 플레이어 프레임 컨테이너 삭제 (대신 아이팟 스크린 내부에 배치됨) */}
+            {/* 유튜브 진짜 Iframe (미니 플레이어일 때는 숨기고, ccm 뷰일 때는 팝업처럼 겹쳐서 표시) */}
+            <div
+                id="ccm-player-hidden-global"
+                style={{
+                    position: 'fixed',
+                    top: view === 'ccm' ? '146px' : '-500px',
+                    left: view === 'ccm' ? '50%' : '-500px',
+                    transform: view === 'ccm' ? 'translateX(-50%)' : 'none',
+                    width: view === 'ccm' ? 'calc(100% - 88px)' : '10px',
+                    height: view === 'ccm' ? '180px' : '10px',
+                    maxWidth: view === 'ccm' ? '392px' : 'none',
+                    pointerEvents: 'none',
+                    zIndex: view === 'ccm' ? 1 : -100,
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                    transition: 'top 0.3s'
+                }}
+            ></div>
             {renderContent()}
             {renderNotificationList()}
             {showIpod ? renderMiniPlayer() : (
