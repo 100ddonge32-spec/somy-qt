@@ -32,12 +32,13 @@ async function generateAutoQt(date: string) {
 
 주어진 성경 범위를 바탕으로 다음을 작성하세요:
 1. 실제 범위: 주어진 본문의 대략적인 15절 내외의 정확한 장:절 범위를 판단해주세요. (예: "창세기 1:1-15 절")
-2. 본문 해설: 본문의 내용을 요약하고 이면에 담긴 영적인 의미를 3~4문장의 따뜻한 문체로 해설해주세요. (절대 성경 본문을 그대로 적지 마세요)
-3. 묵상 질문 3개: 성도의 삶에 울림을 주는 실질적이고 따뜻한 질문
-4. 마무리 기도문: 본문의 은혜를 갈구하는 간절한 기도
+2. 본문 요약: 실제 성경 본문의 흐름을 알 수 있도록 주요 내용을 3줄 내외로 요약해주세요.
+3. 본문 해설: 본문의 이면에 담긴 영적인 의미와 적용점을 3~4문장의 따뜻한 문체로 해설해주세요. (절대 본문을 그대로 적지 마세요)
+4. 묵상 질문 3개: 성도의 삶에 울림을 주는 실질적이고 따뜻한 질문
+5. 마무리 기도문: 본문의 은혜를 갈구하는 간절한 기도
 
 반드시 아래 JSON 형식으로만 답하세요:
-{"actualReference":"실제 범위","explanation":"본문 해설","question1":"질문1","question2":"질문2","question3":"질문3","prayer":"기도문"}`
+{"actualReference":"실제 범위","passageSummary":"본문 요약","explanation":"본문 해설","question1":"질문1","question2":"질문2","question3":"질문3","prayer":"기도문"}`
                 },
                 { role: 'user', content: `오늘의 성경구절 기점: ${baseReference}` }
             ],
@@ -53,7 +54,7 @@ async function generateAutoQt(date: string) {
         const newQt = {
             date,
             reference: actualReference,
-            passage: `[AI 본문 해설]\n${qtJson.explanation}`, // 본문 대신 해설을 저장
+            passage: `${qtJson.passageSummary}|||${qtJson.explanation}`, // 요약본과 해설을 ||| 구분자로 병합 저장
             question1: qtJson.question1,
             question2: qtJson.question2,
             question3: qtJson.question3,

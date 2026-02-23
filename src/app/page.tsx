@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { getGraceVerse } from '@/lib/navigator-verses';
 import { getTodayCcm, CcmVideo, CCM_LIST } from "@/lib/ccm";
 
-type View = "home" | "chat" | "qt" | "community" | "qtManage" | "stats" | "history" | "admin" | "ccm";
+type View = "home" | "chat" | "qt" | "community" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon";
 
 const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://cdn.imweb.me/thumbnail/20210813/569458bf12dd0.png";
@@ -24,6 +24,7 @@ const QT_DATA = {
 쉴 만한 물 가으로 인도하시는도다
 내 영혼을 소생시키시고
 자기 이름을 위하여 의의 길로 인도하시는도다`,
+    interpretation: `하나님은 우리 삶의 선한 목자가 되셔서, 가장 필요한 것을 푸른 풀밭과 쉴 만한 물가처럼 넉넉히 공급해 주십니다. 때로는 우리가 걷는 길이 험난해 보일지라도, 목자 되신 주님께서 앞서 걸으시며 우리의 영혼을 회복시키시고 가장 올바른 의의 길로 인도하고 계심을 확신할 수 있습니다.`,
     questions: [
         "오늘 하나님께서 나의 어떤 필요를 채워주셨나요?",
         "내 삶에서 '부족함이 없다'고 느껴지는 영역은 어디인가요?",
@@ -129,7 +130,7 @@ export default function App() {
     const [isLoading, setIsLoading] = useState(false);
     const [answers, setAnswers] = useState<string[]>(new Array(QT_DATA.questions.length).fill(""));
     const [graceInput, setGraceInput] = useState("");
-    const [qtStep, setQtStep] = useState<"read" | "reflect" | "grace" | "pray" | "done">("read");
+    const [qtStep, setQtStep] = useState<"read" | "interpret" | "reflect" | "grace" | "pray" | "done">("read");
     const [communityPosts, setCommunityPosts] = useState<Post[]>([]);
     const [isPrivatePost, setIsPrivatePost] = useState(false); // 은혜나눔 비공개 여부
     const [lastToggleTime, setLastToggleTime] = useState(0); // 이중 트리거 방지용
@@ -522,11 +523,12 @@ export default function App() {
         date: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
         reference: QT_DATA.reference,
         fullPassage: QT_DATA.fullPassage,
+        interpretation: QT_DATA.interpretation,
         verse: QT_DATA.verse,
         questions: QT_DATA.questions,
         prayer: QT_DATA.prayer,
     });
-    const [qtForm, setQtForm] = useState({ date: '', reference: '', passage: '', question1: '', question2: '', question3: '', prayer: '' });
+    const [qtForm, setQtForm] = useState({ date: '', reference: '', passage: '', interpretation: '', question1: '', question2: '', question3: '', prayer: '' });
     const [aiLoading, setAiLoading] = useState(false);
     const [stats, setStats] = useState<{ today: { count: number; members: { user_name: string; avatar_url: string | null }[] }; ranking: { name: string; avatar: string | null; count: number }[]; totalCompletions: number } | null>(null);
     const [statsError, setStatsError] = useState<string | null>(null);
@@ -534,6 +536,7 @@ export default function App() {
         church_name: CHURCH_NAME,
         church_logo_url: CHURCH_LOGO,
         church_url: CHURCH_URL,
+        sermon_url: "", // 설교 영상 URL 추가
         app_subtitle: APP_SUBTITLE,
         plan: 'free',
         community_visible: true, // 은혜 게시판 공개 여부
@@ -543,6 +546,7 @@ export default function App() {
         church_name: CHURCH_NAME,
         church_logo_url: CHURCH_LOGO,
         church_url: CHURCH_URL,
+        sermon_url: "",
         app_subtitle: APP_SUBTITLE,
         plan: 'free',
         community_visible: true,
@@ -599,6 +603,14 @@ export default function App() {
 
     const [isQtLoading, setIsQtLoading] = useState(false);
 
+    const parsePassage = (raw: string) => {
+        if (raw.includes('|||')) {
+            const parts = raw.split('|||');
+            return { fullPassage: parts[0], interpretation: parts[1] };
+        }
+        return { fullPassage: raw, interpretation: '' };
+    };
+
     const fetchQt = async () => {
         setIsQtLoading(true);
         setIsHistoryMode(false); // 새로운 큐티이므로 히스토리 모드 해제
@@ -606,11 +618,13 @@ export default function App() {
             const r = await fetch('/api/qt', { cache: 'no-store' });
             const { qt } = await r.json();
             if (qt) {
+                const { fullPassage, interpretation } = parsePassage(qt.passage);
                 setQtData({
                     date: new Date(qt.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
                     reference: qt.reference,
-                    fullPassage: qt.passage,
-                    verse: qt.passage.split('\n')[0],
+                    fullPassage,
+                    interpretation,
+                    verse: fullPassage.split('\n')[0],
                     questions: [qt.question1, qt.question2, qt.question3].filter(Boolean),
                     prayer: qt.prayer,
                 });
@@ -621,6 +635,7 @@ export default function App() {
                     date: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
                     reference: QT_DATA.reference,
                     fullPassage: QT_DATA.fullPassage,
+                    interpretation: QT_DATA.interpretation,
                     verse: QT_DATA.verse,
                     questions: QT_DATA.questions,
                     prayer: QT_DATA.prayer,
@@ -710,7 +725,8 @@ export default function App() {
 
     const handleBack = () => {
         if (view === "qt") {
-            if (qtStep === "reflect") setQtStep("read");
+            if (qtStep === "interpret") setQtStep("read");
+            else if (qtStep === "reflect") setQtStep("interpret");
             else if (qtStep === "grace") setQtStep("reflect");
             else if (qtStep === "pray") setQtStep("grace");
             else setView("home");
@@ -1159,14 +1175,16 @@ export default function App() {
                                         <div style={{ width: '100%', height: '1px', background: 'repeating-linear-gradient(to right, #EEEEEE 0, #EEEEEE 4px, transparent 4px, transparent 8px)', margin: '20px 0' }} />
 
                                         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                                            <div style={{ fontSize: '11px', color: '#999', fontWeight: 700, letterSpacing: '0.5px' }}>💡 소미의 한 줄 묵상</div>
+                                            <div style={{ fontSize: '11px', color: '#999', fontWeight: 700, letterSpacing: '0.5px' }}>💡 오늘의 한 줄 묵상</div>
                                             {(() => {
                                                 const quotes = [
-                                                    "하나님은 우리가 감당할 수 없는 시련을 주시지는 않는다. 다만 우리가 감당할 수 있는 방법을 아직 찾지 못했을 뿐이다.",
-                                                    "기도는 하나님의 팔을 움직이는 가장 조용한 힘이다. 내 능력이 끝나는 곳에서 하나님의 능력이 시작된다.",
-                                                    "폭풍 속에서도 새는 노래한다. 그 새는 나뭇가지가 부러질 것을 두려워하지 않는다. 자신에게 날개가 있음을 알기 때문이다.",
-                                                    "오늘의 눈물이 내일의 기쁨 거름이 될 것이다. 하나님은 결코 우리의 눈물을 낭비하지 않으신다.",
-                                                    "성경을 읽는 것은 하나님이 내게 쓰신 편지를 뜯어보는 것과 같다. 매일 그 러브레터를 읽어보자."
+                                                    "하나님은 우리가 감당할 수 없는 시련을 주시지는 않는다. - 고린도전서 10:13 강해 중",
+                                                    "기도는 하나님의 팔을 움직이는 가장 조용한 힘이다. - 찰스 스펄전",
+                                                    "하나님께서 나의 계획을 무너뜨리시는 것은, 나의 계획이 나를 무너뜨릴 수 있기 때문이다. - 코리 텐 붐",
+                                                    "우리가 하나님을 온전히 신뢰할 때, 하나님은 우리의 모든 상황을 그분의 목적을 위해 사용하신다. - A.W. 토저",
+                                                    "고난은 하나님의 변장된 축복이다. 그것은 우리를 하나님께로 더 가까이 이끈다. - C.S. 루이스",
+                                                    "우리가 하나님 외에 다른 곳에서 만족을 찾으려 할 때, 우리는 결코 만족을 얻을 수 없다. - 어거스틴",
+                                                    "성경은 단순히 읽기 위한 책이 아니라, 우리 삶이 읽혀지기 위한 거울이다. - D.L. 무디"
                                                 ];
                                                 const todayIndex = new Date().getDate() % quotes.length;
                                                 return (
@@ -1347,6 +1365,20 @@ export default function App() {
                                 }}>
                                     <span style={{ fontSize: '18px' }}>🎵</span> 오늘의 CCM 듣기
                                 </button>
+
+                                {churchSettings.sermon_url && (
+                                    <button onClick={() => setView('sermon')} style={{
+                                        width: "100%", padding: "14px",
+                                        background: "#FFF3E0", color: "#E65100",
+                                        fontWeight: 700, fontSize: "13px", borderRadius: "18px",
+                                        border: "1px solid #FFCC80", cursor: "pointer",
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                                        boxShadow: '0 4px 12px rgba(230,81,0,0.1)',
+                                        marginTop: '10px'
+                                    }}>
+                                        <span style={{ fontSize: '18px' }}>🎥</span> 담임목사님 말씀 설교
+                                    </button>
+                                )}
                             </>
                         )}
                     </div>
@@ -1564,10 +1596,22 @@ export default function App() {
                                 </div>
                             )}
 
+                            {qtStep === 'interpret' && (
+                                <div style={{ background: "#FDFCFB", borderRadius: "20px", padding: "24px", border: "1px solid #F0ECE4", animation: "slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1)" }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                                        <div style={{ width: 22, height: 22, background: '#D4AF37', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>2</div>
+                                        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>말씀 해설 및 묵상 가이드</h3>
+                                    </div>
+                                    <div style={{ fontSize: '15px', color: '#444', lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'keep-all', padding: '15px', background: 'rgba(212, 175, 55, 0.05)', borderRadius: '12px', borderLeft: '3px solid #D4AF37' }}>
+                                        {qtData.interpretation || "기록된 본문 해설이 없습니다. 성령님의 내밀한 음성에 귀 기울이며 각자 본문을 묵상해 보세요."}
+                                    </div>
+                                </div>
+                            )}
+
                             {qtStep === 'reflect' && (
                                 <div style={{ background: "#FDFCFB", borderRadius: "20px", padding: "24px", border: "1px solid #F0ECE4" }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-                                        <div style={{ width: 22, height: 22, background: '#D4AF37', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>2</div>
+                                        <div style={{ width: 22, height: 22, background: '#D4AF37', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>3</div>
                                         <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>묵상 질문</h3>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -1651,6 +1695,9 @@ export default function App() {
                     {/* Footer Fix Action Button */}
                     <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', padding: '15px 20px', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', borderTop: '1px solid #EEE', boxSizing: 'border-box' }}>
                         {qtStep === 'read' && (
+                            <button onClick={() => setQtStep('interpret')} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>말씀 해설 보기</button>
+                        )}
+                        {qtStep === 'interpret' && (
                             <button onClick={() => setQtStep('reflect')} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>묵상 질문으로</button>
                         )}
                         {qtStep === 'reflect' && (
@@ -1715,10 +1762,14 @@ export default function App() {
                     return;
                 }
                 try {
+                    const payload = {
+                        ...qtForm,
+                        passage: `${qtForm.passage}|||${qtForm.interpretation}`
+                    };
                     const res = await fetch('/api/qt', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(qtForm),
+                        body: JSON.stringify(payload),
                     });
                     const data = await res.json();
                     if (data.success) {
@@ -1729,6 +1780,7 @@ export default function App() {
                                 date: new Date(qtForm.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
                                 reference: qtForm.reference,
                                 fullPassage: qtForm.passage,
+                                interpretation: qtForm.interpretation,
                                 verse: qtForm.passage.split('\n')[0],
                                 questions: [qtForm.question1, qtForm.question2, qtForm.question3].filter(Boolean),
                                 prayer: qtForm.prayer,
@@ -1759,6 +1811,7 @@ export default function App() {
                     if (data.question1) {
                         setQtForm(prev => ({
                             ...prev,
+                            interpretation: data.interpretation || '',
                             question1: data.question1,
                             question2: data.question2,
                             question3: data.question3,
@@ -1794,10 +1847,12 @@ export default function App() {
                                     const res = await fetch(`/api/qt?date=${qtForm.date}&force=true`);
                                     const { qt } = await res.json();
                                     if (qt) {
+                                        const { fullPassage, interpretation } = parsePassage(qt.passage);
                                         setQtForm({
                                             date: qt.date,
                                             reference: qt.reference,
-                                            passage: qt.passage,
+                                            passage: fullPassage,
+                                            interpretation: interpretation,
                                             question1: qt.question1 || '',
                                             question2: qt.question2 || '',
                                             question3: qt.question3 || '',
@@ -1869,6 +1924,10 @@ export default function App() {
                         <div>
                             <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>📜 성경 본문</label>
                             <textarea value={qtForm.passage} onChange={e => setQtForm(p => ({ ...p, passage: e.target.value }))} placeholder="위 버튼으로 자동 가져오거나 직접 입력하세요" style={{ ...inputStyle, height: '120px' }} />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>💡 본문 해설 (AI 추천 생성을 누르면 자동 채워집니다)</label>
+                            <textarea value={qtForm.interpretation} onChange={e => setQtForm(p => ({ ...p, interpretation: e.target.value }))} placeholder="본문 해설이나 묵상 포인트를 입력하세요" style={{ ...inputStyle, height: '100px' }} />
                         </div>
                         <button onClick={handleAiGenerate} disabled={aiLoading} style={{
                             width: '100%', padding: '14px', background: aiLoading ? '#ccc' : 'linear-gradient(135deg, #D4AF37, #B8924A)',
@@ -2238,11 +2297,13 @@ export default function App() {
                                     <button onClick={() => {
                                         const qt = h.daily_qt;
                                         if (qt) {
+                                            const { fullPassage, interpretation } = parsePassage(qt.passage);
                                             setQtData({
                                                 date: new Date(qt.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
                                                 reference: qt.reference,
-                                                fullPassage: qt.passage,
-                                                verse: qt.verse || qt.passage.split('\n')[0],
+                                                fullPassage,
+                                                interpretation,
+                                                verse: fullPassage.split('\n')[0],
                                                 questions: [qt.question1, qt.question2, qt.question3].filter(Boolean),
                                                 prayer: qt.prayer,
                                             });
@@ -2397,7 +2458,13 @@ export default function App() {
                                 {adminTab === 'settings' ? (
                                     <>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                                            {[['church_name', '교회 이름', '예: 예수인교회'], ['app_subtitle', '앱 부제목', '예: 큐티 동반자'], ['church_logo_url', '교회 로고 URL', 'https://...'], ['church_url', '교회 홈페이지 URL', 'https://...']].map(([key, label, placeholder]) => (
+                                            {[
+                                                ['church_name', '교회 이름', '예: 예수인교회'],
+                                                ['app_subtitle', '앱 부제목', '예: 큐티 동반자'],
+                                                ['church_logo_url', '교회 로고 URL', 'https://...'],
+                                                ['church_url', '교회 홈페이지 URL', 'https://...'],
+                                                ['sermon_url', '담임목사님 설교 유튜브 URL', 'https://youtube.com/...']
+                                            ].map(([key, label, placeholder]) => (
                                                 <div key={key}>
                                                     <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>{label}</label>
                                                     <input type="text" value={String(settingsForm[key as keyof typeof settingsForm])} onChange={e => setSettingsForm(prev => ({ ...prev, [key]: e.target.value }))} placeholder={placeholder} style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }} />
@@ -2460,7 +2527,7 @@ export default function App() {
 
                         <button onClick={() => {
                             const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
-                            setQtForm({ date: today, reference: '', passage: '', question1: '', question2: '', question3: '', prayer: '' });
+                            setQtForm({ date: today, reference: '', passage: '', interpretation: '', question1: '', question2: '', question3: '', prayer: '' });
                             setView('qtManage');
                         }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
                             <div style={{ width: '48px', height: '48px', background: '#E3F2FD', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📖</div>

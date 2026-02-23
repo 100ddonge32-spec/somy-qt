@@ -22,7 +22,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
     const body = await req.json();
-    const { church_name, church_logo_url, church_url, app_subtitle, plan } = body;
+    const { church_name, church_logo_url, church_url, app_subtitle, plan, sermon_url } = body;
 
     const { error } = await supabaseAdmin
         .from('church_settings')
@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
             church_url,
             app_subtitle,
             plan: plan || 'free', // 'free' 또는 'premium'
+            sermon_url,
         });
 
     if (error) {
