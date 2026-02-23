@@ -637,13 +637,11 @@ export default function App() {
             return { fullPassage: parts[0]?.trim(), interpretation: parts[1]?.trim() };
         }
 
-        // 2. '[AI 본문 해설]' 또는 '[해설]' 키워드 확인 (구분자 누락 대비)
-        const keywords = ['[AI 본문 해설]', '[본문 해설]', '[해설]'];
-        for (const kw of keywords) {
-            if (raw.includes(kw)) {
-                const parts = raw.split(kw);
-                return { fullPassage: parts[0]?.trim(), interpretation: parts[1]?.trim() };
-            }
+        // 2. 키워드 기반 분리 시도
+        const kw = '[AI 본문 해설]';
+        if (raw.includes(kw)) {
+            const parts = raw.split(kw);
+            return { fullPassage: parts[0]?.trim() || '본문 요약 준비 중...', interpretation: parts[1]?.trim() };
         }
 
         return { fullPassage: raw.trim(), interpretation: '' };
@@ -1500,9 +1498,9 @@ export default function App() {
                     {/* Header */}
                     <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #EEE", position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
-                        <img src={churchSettings.church_logo_url} alt="로고" style={{ height: "24px", objectFit: 'contain', border: '1px solid #D4AF37', borderRadius: '4px', padding: '1px' }} />
+                        <img src={churchSettings.church_logo_url} alt="로고" style={{ height: "24px", objectFit: 'contain' }} />
                         <div style={{ fontWeight: 700, color: "#333", fontSize: "14px" }}>
-                            {isHistoryMode ? "지난 묵상 기록" : "오늘의 큐티 [v1.2 - 최신]"}
+                            {isHistoryMode ? "지난 묵상 기록" : "오늘의 큐티"}
                         </div>
                         {isHistoryMode && (
                             <div style={{ background: "#709176", color: "white", fontSize: "10px", padding: "2px 6px", borderRadius: "10px", fontWeight: 700 }}>다시보기</div>
@@ -1531,93 +1529,22 @@ export default function App() {
                                         <div style={{ width: 22, height: 22, background: '#333', color: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>1</div>
                                         <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>말씀 읽기</h3>
                                     </div>
-                                    <div style={{ marginBottom: '20px', background: 'white', padding: '20px', borderRadius: '15px', border: '1px solid #F5F5F5', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
-                                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#B8924A', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <span style={{ fontSize: '18px' }}>📍</span>
-                                            <a
-                                                href={getYouVersionUrl(qtData.reference)}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                style={{ color: '#B8924A', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', borderBottom: '1px solid #B8924A', paddingBottom: '1px' }}
-                                            >
-                                                {qtData.reference}
-                                                <span style={{ fontSize: '11px', background: '#FDF3DF', padding: '3px 8px', borderRadius: '6px', whiteSpace: 'nowrap', color: '#8A6A27', fontWeight: 700, border: '1px solid #F5E0BB', letterSpacing: '-0.3px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                    <span style={{ fontSize: '12px' }}>📖</span> 클릭 개역한글 보기
-                                                </span>
-                                            </a>
-                                        </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                            {(() => {
-                                                const text = qtData.fullPassage || '';
-                                                // 절 번호 패턴: 숫자+마침표+공백 으로 시작하는 줄 감지
-                                                const lines = text.split('\n').filter(l => l.trim() !== '');
-                                                const verses: { num: string; text: string }[] = [];
-                                                let currentNum = '';
-                                                let currentText = '';
-                                                lines.forEach(line => {
-                                                    const match = line.match(/^(\d+)\.\s+(.*)/);
-                                                    if (match) {
-                                                        if (currentText) verses.push({ num: currentNum, text: currentText.trim() });
-                                                        currentNum = match[1];
-                                                        currentText = match[2];
-                                                    } else {
-                                                        currentText += (currentText ? ' ' : '') + line.trim();
-                                                    }
-                                                });
-                                                if (currentText) verses.push({ num: currentNum, text: currentText.trim() });
-
-                                                // 절 구조가 없으면 그냥 텍스트로 표시
-                                                if (verses.length === 0 || (verses.length === 1 && !verses[0].num)) {
-                                                    return (
-                                                        <p style={{ fontSize: '16px', lineHeight: 2, color: '#333', margin: 0, wordBreak: 'keep-all', whiteSpace: 'pre-line' }}>
-                                                            {text}
-                                                        </p>
-                                                    );
-                                                }
-
-                                                return verses.map((v, i) => (
-                                                    <div key={i} style={{
-                                                        display: 'flex',
-                                                        gap: '10px',
-                                                        alignItems: 'flex-start',
-                                                        padding: '10px 0',
-                                                        borderBottom: i < verses.length - 1 ? '1px solid #F5F0E8' : 'none',
-                                                    }}>
-                                                        {v.num && (
-                                                            <div style={{
-                                                                minWidth: '26px',
-                                                                height: '26px',
-                                                                background: '#F5F2EA',
-                                                                color: '#B8924A',
-                                                                fontWeight: 800,
-                                                                fontSize: '12px',
-                                                                borderRadius: '8px',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                marginTop: '2px',
-                                                                flexShrink: 0,
-                                                                border: '1px solid #EEE'
-                                                            }}>
-                                                                {v.num}
-                                                            </div>
-                                                        )}
-                                                        <p style={{
-                                                            fontSize: '15px',
-                                                            lineHeight: 1.9,
-                                                            color: '#333',
-                                                            margin: 0,
-                                                            wordBreak: 'keep-all',
-                                                            letterSpacing: '-0.2px',
-                                                            flex: 1,
-                                                        }}>
-                                                            {v.text}
-                                                        </p>
-                                                    </div>
-                                                ));
-                                            })()}
-                                        </div>
+                                    <div style={{ marginBottom: '16px', borderBottom: '1px solid #F5F0E8', paddingBottom: '12px' }}>
+                                        <a
+                                            href={getYouVersionUrl(qtData.reference)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ color: '#B8924A', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800, fontSize: '15px' }}
+                                        >
+                                            📍 {qtData.reference}
+                                            <span style={{ fontSize: '11px', background: '#FDF3DF', padding: '3px 8px', borderRadius: '6px', color: '#8A6A27', fontWeight: 700, border: '1px solid #F5E0BB' }}>
+                                                📖 성경 본문 보기
+                                            </span>
+                                        </a>
                                     </div>
+                                    <p style={{ fontSize: '16px', lineHeight: 1.8, color: '#333', margin: 0, wordBreak: 'keep-all', whiteSpace: 'pre-line', fontWeight: 500 }}>
+                                        {qtData.fullPassage || '본문을 불러오는 중입니다...'}
+                                    </p>
                                 </div>
                             )}
 
