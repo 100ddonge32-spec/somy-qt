@@ -508,18 +508,22 @@ export default function App() {
             // 최초 1회 체크 및 동기화
             checkApprovalStatus();
 
-            // 승인 대기 중일 때 15초마다 자동으로 상태 재확인
-            const approvalPoller = setInterval(() => {
+            // 승인 대기 중일 때 15초마다 자동으로 상태 재확인 & 알림 폴링 (알림 배지 실시간 갱신용)
+            const backgroundPoller = setInterval(() => {
                 checkApprovalStatus();
+                fetch(`/api/notifications?user_id=${user.id}`)
+                    .then(r => r.ok ? r.json() : [])
+                    .then(data => setNotifications(data))
+                    .catch(e => { });
             }, 15000);
 
-            // 알림 가져오기
+            // 알림 최초 1회 로드
             fetch(`/api/notifications?user_id=${user.id}`)
                 .then(r => r.ok ? r.json() : [])
                 .then(data => setNotifications(data))
                 .catch(err => console.error("알림 로드 실패:", err));
 
-            return () => clearInterval(approvalPoller);
+            return () => clearInterval(backgroundPoller);
         } else {
             setAdminInfo(null);
             setIsApproved(false);
@@ -2202,7 +2206,28 @@ export default function App() {
                                             </div>
                                         </div>
                                     ) : (
-                                        <p style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', margin: '0 0 15px 0', whiteSpace: 'pre-line' }}>{post.content}</p>
+                                        <div style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', margin: '0 0 15px 0', wordBreak: 'break-word' }}>
+                                            {post.content.split('\n').map((line: string, i: number) => {
+                                                const trimmed = line.trim();
+                                                if (trimmed === '[말씀묵상]') {
+                                                    return (
+                                                        <div key={i} style={{ fontSize: "15px", fontWeight: 800, color: "#9E7B31", letterSpacing: '-0.2px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            <span>✨</span> 오늘의 묵상
+                                                        </div>
+                                                    );
+                                                }
+                                                if (trimmed.startsWith('[나의 결단과 은혜]')) {
+                                                    return <div key={i} style={{ fontSize: "14px", fontWeight: 800, color: "#9E2A5B", marginTop: '16px', marginBottom: '6px' }}>💡 나의 결단과 은혜</div>;
+                                                }
+                                                if (trimmed.startsWith('[질문')) {
+                                                    return <div key={i} style={{ fontSize: "13px", fontWeight: 800, color: "#333", marginTop: '14px', paddingLeft: '4px', borderLeft: '3px solid #D4AF37' }}>{line}</div>;
+                                                }
+                                                if (trimmed.startsWith('나의 묵상:')) {
+                                                    return <div key={i} style={{ color: '#555', marginTop: '4px', marginBottom: '8px', paddingLeft: '7px' }}>{line}</div>;
+                                                }
+                                                return <span key={i}>{line}<br /></span>;
+                                            })}
+                                        </div>
                                     )}
 
                                     {/* Comments Section */}
