@@ -1045,7 +1045,30 @@ export default function App() {
                                                 "{graceVerse.verse}"
                                             </p>
                                         </div>
-                                        <p style={{ fontSize: "13px", color: "#B8924A", fontWeight: 700, margin: 0, textAlign: 'right' }}>— {graceVerse.book} {graceVerse.ref}</p>
+                                        <p style={{ fontSize: "13px", color: "#B8924A", fontWeight: 700, margin: 0, textAlign: 'right' }}>
+                                            — {graceVerse.book} {graceVerse.ref} <span style={{ fontSize: '10px', color: '#CCC', fontWeight: 400 }}>(개역한글)</span>
+                                        </p>
+
+                                        <div style={{ width: '100%', height: '1px', background: 'repeating-linear-gradient(to right, #EEEEEE 0, #EEEEEE 4px, transparent 4px, transparent 8px)', margin: '20px 0' }} />
+
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                            <div style={{ fontSize: '11px', color: '#999', fontWeight: 700, letterSpacing: '0.5px' }}>💡 소미의 한 줄 묵상</div>
+                                            {(() => {
+                                                const quotes = [
+                                                    "하나님은 우리가 감당할 수 없는 시련을 주시지는 않는다. 다만 우리가 감당할 수 있는 방법을 아직 찾지 못했을 뿐이다.",
+                                                    "기도는 하나님의 팔을 움직이는 가장 조용한 힘이다. 내 능력이 끝나는 곳에서 하나님의 능력이 시작된다.",
+                                                    "폭풍 속에서도 새는 노래한다. 그 새는 나뭇가지가 부러질 것을 두려워하지 않는다. 자신에게 날개가 있음을 알기 때문이다.",
+                                                    "오늘의 눈물이 내일의 기쁨 거름이 될 것이다. 하나님은 결코 우리의 눈물을 낭비하지 않으신다.",
+                                                    "성경을 읽는 것은 하나님이 내게 쓰신 편지를 뜯어보는 것과 같다. 매일 그 러브레터를 읽어보자."
+                                                ];
+                                                const todayIndex = new Date().getDate() % quotes.length;
+                                                return (
+                                                    <div style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, wordBreak: 'keep-all', fontStyle: 'italic' }}>
+                                                        "{quotes[todayIndex]}"
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
                                     </>
                                 );
                             })()}
