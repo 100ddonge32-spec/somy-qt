@@ -349,31 +349,62 @@ export default function App() {
         }
     }, [isApiReady, todayCcm, initPlayer]);
 
-    // YouTube 플로팅/대형 화면 이동 로직 (포털 DOM 조작)
+    // YouTube 오버레이 동기화 로직 (DOM 구조는 고정하고 좌표만 추적해 Iframe 리로드 에러 원천 차단)
     useEffect(() => {
-        // React 렌더링 직후 DOM 요소가 확실히 마운트되도록 딜레이
-        const timer = setTimeout(() => {
+        const updatePosition = () => {
+            const portal = document.getElementById('youtube-portal-storage');
             const wrapper = document.getElementById('ccm-player-hidden-global-wrapper');
-            const storage = document.getElementById('youtube-portal-storage');
-            if (!wrapper || !storage) return;
+            if (!portal || !wrapper) return;
 
             const largeScreen = document.getElementById('ccm-large-screen');
             const miniScreen = document.getElementById('ccm-mini-screen');
 
+            // 포털 자체를 화면 맨 위 z-index로 부유시킴
+            portal.style.position = 'fixed';
+            portal.style.transition = isDragging ? 'none' : 'top 0.3s, left 0.3s, width 0.3s, height 0.3s';
+            portal.style.overflow = 'hidden';
+
             if (view === 'ccm' && largeScreen) {
-                largeScreen.appendChild(wrapper);
-                wrapper.style.pointerEvents = 'auto'; // 대형 화면에선 터치 조작 허용
+                const rect = largeScreen.getBoundingClientRect();
+                portal.style.top = `${rect.top}px`;
+                portal.style.left = `${rect.left}px`;
+                portal.style.width = `${rect.width}px`;
+                portal.style.height = `${rect.height}px`;
+                portal.style.zIndex = '1000';
+                portal.style.borderRadius = '16px';
+                portal.style.pointerEvents = 'auto';
+                wrapper.style.pointerEvents = 'auto'; // allow click to play
+                portal.style.opacity = '1';
+                portal.style.visibility = 'visible';
             } else if (showIpod && miniScreen) {
-                miniScreen.appendChild(wrapper);
-                wrapper.style.pointerEvents = 'none'; // 미니 화면에선 휠 터치 방해 금지
+                const rect = miniScreen.getBoundingClientRect();
+                portal.style.top = `${rect.top}px`;
+                portal.style.left = `${rect.left}px`;
+                portal.style.width = `${rect.width}px`;
+                portal.style.height = `${rect.height}px`;
+                portal.style.zIndex = '2100'; // 미니 플레이어(2000)보다 높게
+                portal.style.borderRadius = '12px';
+                portal.style.pointerEvents = 'none'; // 미니 플레이어에선 터치 통과 (휠 우선)
+                wrapper.style.pointerEvents = 'none';
+                portal.style.opacity = '1';
+                portal.style.visibility = 'visible';
             } else {
-                storage.appendChild(wrapper);
+                portal.style.top = '-5000px';
+                portal.style.left = '-5000px';
+                portal.style.opacity = '0';
+                portal.style.pointerEvents = 'none';
                 wrapper.style.pointerEvents = 'none';
             }
-        }, 50);
+        };
 
-        return () => clearTimeout(timer);
-    }, [view, showIpod]);
+        const timer = setTimeout(updatePosition, 10); // DOM 회복 딜레이
+
+        window.addEventListener('resize', updatePosition);
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('resize', updatePosition);
+        };
+    }, [view, showIpod, playerPos, isDragging]);
 
     // 강력한 재생 보장 watchdog
     useEffect(() => {
