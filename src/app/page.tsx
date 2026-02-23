@@ -2922,6 +2922,8 @@ export default function App() {
     };
 
     // 최종 렌더링
+    if (!isMounted) return <div style={{ minHeight: "100vh", background: "#FFF8F0" }} />;
+
     return (
         <div style={{ position: 'relative', maxWidth: '480px', margin: '0 auto' }}>
             {/* 유튜브 진짜 Iframe 보관소 (어디에도 안 띄워야 할 경우 숨겨둘 투명 금고 역할) */}
