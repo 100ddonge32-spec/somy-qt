@@ -223,8 +223,8 @@ export default function App() {
 
         try {
             playerRef.current = new (window as any).YT.Player('ccm-player-hidden-global', {
-                height: '360',
-                width: '640',
+                height: '100%',
+                width: '100%',
                 videoId: todayCcm.youtubeId,
                 playerVars: {
                     'autoplay': 0,
@@ -2194,15 +2194,10 @@ export default function App() {
                                 justifyContent: 'space-between',
                                 position: 'relative'
                             }}>
-                                {/* 유튜브 Iframe Video Container */}
-                                <div
-                                    id="ccm-player-hidden-global"
-                                    style={{
-                                        width: '100%',
-                                        height: '100%',
-                                        pointerEvents: 'none' // 터치하여 외부 이탈 방지
-                                    }}
-                                ></div>
+                                {/* 빈 공간 유지 (글로벌 유튜브 Iframe이 이 영역 위로 포개짐) */}
+                                <div style={{ color: '#555', fontSize: '12px', fontWeight: 800 }}>
+                                    {isCcmPlaying ? '🎵 재생 중' : 'BGM 일시정지'}
+                                </div>
                             </div>
 
                             {/* 2. Large Interactive Click Wheel */}
@@ -2606,9 +2601,23 @@ export default function App() {
                         border: '1px solid #222'
                     }}
                 >
-                    {/* 유튜브 Iframe 대신 단순 재생 상태 텍스트 (아이디 중복 방지) */}
-                    <div style={{ color: 'white', fontSize: '11px', fontWeight: 800, letterSpacing: '1px' }}>
-                        {isCcmPlaying ? '🎵 재생 중...' : 'BGM 일시정지'}
+                    {/* 실시간 파형 애니메이션 (Visual Waveform) - 미니 플레이어는 파형 복구! */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'flex-end',
+                        gap: '3px',
+                        height: '30px',
+                    }}>
+                        {[...Array(10)].map((_, i) => (
+                            <div key={i} style={{
+                                width: '4px',
+                                background: isCcmPlaying ? '#00FF41' : '#333',
+                                borderRadius: '1.5px',
+                                height: isCcmPlaying ? '100%' : '3px',
+                                transition: 'height 0.2s',
+                                animation: isCcmPlaying ? `wave-music ${0.6 + i * 0.15}s infinite ease-in-out` : 'none'
+                            }} />
+                        ))}
                     </div>
                 </div>
 
@@ -2686,7 +2695,6 @@ export default function App() {
         <div style={{ position: 'relative', maxWidth: '480px', margin: '0 auto' }}>
             {/* 유튜브 진짜 Iframe (미니 플레이어일 때는 숨기고, ccm 뷰일 때는 팝업처럼 겹쳐서 표시) */}
             <div
-                id="ccm-player-hidden-global"
                 style={{
                     position: 'fixed',
                     top: view === 'ccm' ? '146px' : '-500px',
@@ -2696,12 +2704,15 @@ export default function App() {
                     height: view === 'ccm' ? '180px' : '10px',
                     maxWidth: view === 'ccm' ? '392px' : 'none',
                     pointerEvents: 'none',
-                    zIndex: view === 'ccm' ? 1 : -100,
+                    zIndex: view === 'ccm' ? 1000 : -100,
                     borderRadius: '16px',
                     overflow: 'hidden',
                     transition: 'top 0.3s'
                 }}
-            ></div>
+            >
+                {/* 유튜브 API가 div를 iframe으로 덮어씌웁니다. 겉의 컨테이너를 React가 조종해야 에러가 안 납니다! */}
+                <div id="ccm-player-hidden-global"></div>
+            </div>
             {renderContent()}
             {renderNotificationList()}
             {showIpod ? renderMiniPlayer() : (
