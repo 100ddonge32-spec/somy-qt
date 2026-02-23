@@ -2627,24 +2627,16 @@ export default function App() {
                         border: '1px solid #222'
                     }}
                 >
-                    {/* 실시간 파형 애니메이션 (Visual Waveform) */}
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'flex-end',
-                        gap: '3px',
-                        height: '30px',
-                    }}>
-                        {[...Array(10)].map((_, i) => (
-                            <div key={i} style={{
-                                width: '4px',
-                                background: isCcmPlaying ? '#00FF41' : '#333',
-                                borderRadius: '1.5px',
-                                height: isCcmPlaying ? '100%' : '3px',
-                                transition: 'height 0.2s',
-                                animation: isCcmPlaying ? `wave-music ${0.6 + i * 0.15}s infinite ease-in-out` : 'none'
-                            }} />
-                        ))}
-                    </div>
+                    {/* 유튜브 Iframe이 생성될 컨테이너 (실제 화면 보임) */}
+                    <div
+                        id="ccm-player-hidden-global"
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            display: 'block',     // 숨김 해제
+                            pointerEvents: 'none' // 클릭 방지 (플레이리스트 제어는 휠로만)
+                        }}
+                    ></div>
                 </div>
 
                 {/* 2. 클릭 휠 (Classic Click Wheel) */}
@@ -2719,21 +2711,7 @@ export default function App() {
     // 최종 렌더링
     return (
         <div style={{ position: 'relative', maxWidth: '480px', margin: '0 auto' }}>
-            {/* 실제 플레이어 프레임 (브라우저 쓰로틀링 방지를 위해 실물 크기로 상단 고정) */}
-            <div id="ccm-player-container" style={{
-                position: 'fixed',
-                top: '-500px', // 화면 밖으로 멀리 배치 (절전 모드 방지)
-                left: '-500px',
-                width: '320px', // 실제 크기 확보
-                height: '240px',
-                zIndex: -100,
-                opacity: 1, // 투명도 1로 유지하여 '보이는 플레이어'로 인식 유도
-                pointerEvents: 'none',
-                overflow: 'hidden',
-                background: '#000'
-            }}>
-                <div id="ccm-player-hidden-global"></div>
-            </div>
+            {/* 실제 플레이어 프레임 컨테이너 삭제 (대신 아이팟 스크린 내부에 배치됨) */}
             {renderContent()}
             {renderNotificationList()}
             {showIpod ? renderMiniPlayer() : (
