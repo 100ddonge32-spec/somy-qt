@@ -1086,14 +1086,13 @@ export default function App() {
                         flexDirection: "column",
                         alignItems: "center",
                         gap: "8px",
+                        marginTop: "30px", // 겹침 방지를 위해 위쪽 여백 추가
                         marginBottom: "20px",
                         animation: "fade-in 0.8s ease-out"
                     }}>
                         <img src={churchSettings.church_logo_url} alt={`${churchSettings.church_name} 로고`} style={{ height: "45px", objectFit: "contain" }} />
-                        <div style={{ fontSize: "12px", color: "#666", letterSpacing: "1px", fontWeight: 500 }}>{(churchSettings.church_name || "").toUpperCase()}</div>
+                        <div style={{ fontSize: "12px", color: "#666", letterSpacing: "1px", fontWeight: 700 }}>홈페이지</div>
                     </a>
-
-
                     {/* Character Section */}
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", flex: 1, justifyContent: 'center', width: "100%", minHeight: '400px' }}>
                         <div
