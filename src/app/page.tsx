@@ -678,14 +678,16 @@ export default function App() {
         fetch('/api/settings', { cache: 'no-store' })
             .then(r => r.json())
             .then(({ settings }) => {
+                console.log("[Settings] Loaded:", settings);
                 if (settings) {
                     setChurchSettings(settings);
                     setSettingsForm(settings);
                 }
             })
-            .catch(() => { });
+            .catch(err => console.error("[Settings] Load Failed:", err));
 
         // 오늘의 큐티 로드
+        console.log("[FetchQt] Starting...");
         fetchQt();
 
         // 인증 상태 변화 감지 (supabase logic)
