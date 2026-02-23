@@ -1342,7 +1342,10 @@ export default function App() {
 
                                 {churchSettings.sermon_url && (
                                     <button onClick={() => {
-                                        console.log("Setting view to sermon, url:", churchSettings.sermon_url);
+                                        if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
+                                            playerRef.current.pauseVideo();
+                                            setPlayRequested(false);
+                                        }
                                         setView('sermon');
                                     }} style={{
                                         width: "100%", padding: "16px 20px",
