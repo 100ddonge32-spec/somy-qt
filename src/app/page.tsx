@@ -629,11 +629,24 @@ export default function App() {
     const [isQtLoading, setIsQtLoading] = useState(false);
 
     const parsePassage = (raw: string) => {
+        if (!raw) return { fullPassage: '', interpretation: '' };
+
+        // 1. 표준 구분자 '|||' 확인
         if (raw.includes('|||')) {
             const parts = raw.split('|||');
-            return { fullPassage: parts[0], interpretation: parts[1] };
+            return { fullPassage: parts[0]?.trim(), interpretation: parts[1]?.trim() };
         }
-        return { fullPassage: raw, interpretation: '' };
+
+        // 2. '[AI 본문 해설]' 또는 '[해설]' 키워드 확인 (구분자 누락 대비)
+        const keywords = ['[AI 본문 해설]', '[본문 해설]', '[해설]'];
+        for (const kw of keywords) {
+            if (raw.includes(kw)) {
+                const parts = raw.split(kw);
+                return { fullPassage: parts[0]?.trim(), interpretation: parts[1]?.trim() };
+            }
+        }
+
+        return { fullPassage: raw.trim(), interpretation: '' };
     };
 
     const fetchQt = async () => {
@@ -1489,7 +1502,7 @@ export default function App() {
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
                         <img src={churchSettings.church_logo_url} alt="로고" style={{ height: "24px", objectFit: 'contain' }} />
                         <div style={{ fontWeight: 700, color: "#333", fontSize: "14px" }}>
-                            {isHistoryMode ? "지난 묵상 기록" : "오늘의 큐티"}
+                            {isHistoryMode ? "지난 묵상 기록" : "오늘의 큐티 [v1.1]"}
                         </div>
                         {isHistoryMode && (
                             <div style={{ background: "#709176", color: "white", fontSize: "10px", padding: "2px 6px", borderRadius: "10px", fontWeight: 700 }}>다시보기</div>
