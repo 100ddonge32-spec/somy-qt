@@ -10,11 +10,11 @@ const supabaseAdmin = createClient(
     { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
-// VAPID 설정
+// VAPID 설정 (환경변수 권장)
 webpush.setVapidDetails(
     'mailto:pastorbaek@kakao.com',
-    'BCpTn0SHIYSZzjST5xxL1Cv9svmlp3f9Xmvt9FSALBvo4QwLQCBlo_mu4ThoMHgINRmAk4c9sxwVwI2QtDyHr1I',
-    'LAAS6aJenIKYBShIGZsWVKhXNOMKwkuXvpf2NLCGZAI' // 실제로는 환경변수에서 가져오지만 지금은 명시
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BCpTn0SHIYSZzjST5xxL1Cv9svmlp3f9Xmvt9FSALBvo4QwLQCBlo_mu4ThoMHgINRmAk4c9sxwVwI2QtDyHr1I',
+    process.env.VAPID_PRIVATE_KEY || 'LAAS6aJenIKYBShIGZsWVKhXNOMKwkuXvpf2NLCGZAI'
 );
 
 // 댓글 작성 및 알림 생성
@@ -39,8 +39,8 @@ export async function POST(req: NextRequest) {
             .eq('id', post_id)
             .single();
 
-        // 3. 알림 생성 및 푸시 전송
-        if (!postError && post) {
+        // 3. 알림 생성 및 푸시 전송 (자신이 쓴 댓글은 알림 제외)
+        if (!postError && post && post.user_id !== user_id) {
             // DB 알림 저장
             await supabaseAdmin
                 .from('notifications')

@@ -540,25 +540,15 @@ export default function App() {
                 navigator.serviceWorker.register('/sw.js').then(async (reg) => {
                     console.log('Service Worker Registered');
 
-                    // 권한 확인 및 요청
-                    if (Notification.permission === 'default') {
-                        setTimeout(() => {
-                            if (confirm('오늘의 큐티 알림을 받아보시겠어요? 😊')) {
-                                Notification.requestPermission();
-                            }
-                        }, 3000);
-                    }
-
-                    if (Notification.permission === 'granted') {
+                    const subscribeUser = async () => {
                         try {
                             const subscribeOptions = {
                                 userVisibleOnly: true,
-                                applicationServerKey: urlBase64ToUint8Array('BCpTn0SHIYSZzjST5xxL1Cv9svmlp3f9Xmvt9FSALBvo4QwLQCBlo_mu4ThoMHgINRmAk4c9sxwVwI2QtDyHr1I')
+                                applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BCpTn0SHIYSZzjST5xxL1Cv9svmlp3f9Xmvt9FSALBvo4QwLQCBlo_mu4ThoMHgINRmAk4c9sxwVwI2QtDyHr1I')
                             };
                             const subscription = await reg.pushManager.subscribe(subscribeOptions);
                             console.log('Push Subscribed:', subscription);
 
-                            // 서버(Supabase)에 구독 정보 저장
                             await fetch('/api/push-subscribe', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
@@ -567,6 +557,17 @@ export default function App() {
                         } catch (e) {
                             console.error('Push Subscription Error:', e);
                         }
+                    };
+
+                    if (Notification.permission === 'default') {
+                        setTimeout(async () => {
+                            if (confirm('오늘의 큐티 알림을 받아보시겠어요? 😊')) {
+                                const permission = await Notification.requestPermission();
+                                if (permission === 'granted') await subscribeUser();
+                            }
+                        }, 3000);
+                    } else if (Notification.permission === 'granted') {
+                        await subscribeUser();
                     }
                 });
             }
@@ -682,6 +683,15 @@ export default function App() {
 
     useEffect(() => {
         setIsMounted(true);
+
+        // ✅ URL 파라미터에서 교회 ID 읽어오기 (?church=교회ID)
+        const params = new URLSearchParams(window.location.search);
+        const churchFromUrl = params.get('church');
+        if (churchFromUrl) {
+            setChurchId(churchFromUrl);
+            console.log(`[Initialize] Church set from URL: ${churchFromUrl}`);
+        }
+
         const hasVisited = localStorage.getItem('somy_intro_seen');
         if (!hasVisited) {
             setShowWelcome(true);
