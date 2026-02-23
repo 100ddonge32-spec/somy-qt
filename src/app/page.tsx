@@ -130,6 +130,7 @@ export default function App() {
     const [isLoading, setIsLoading] = useState(false);
     const [answers, setAnswers] = useState<string[]>(new Array(QT_DATA.questions.length).fill(""));
     const [graceInput, setGraceInput] = useState("");
+    const [sermonReflection, setSermonReflection] = useState({ q1: '', q2: '', q3: '', mainGrace: '', isPrivate: false });
     const [qtStep, setQtStep] = useState<"read" | "interpret" | "reflect" | "grace" | "pray" | "done">("read");
     const [isMounted, setIsMounted] = useState(false); // 마운트 상태 추적
     const [communityPosts, setCommunityPosts] = useState<Post[]>([]);
@@ -2596,30 +2597,102 @@ export default function App() {
                                             <span key={i}>{line}<br /></span>
                                         ))}
                                     </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                        {[churchSettings.sermon_q1, churchSettings.sermon_q2, churchSettings.sermon_q3].filter(Boolean).map((q, idx) => (
-                                            <div key={idx} style={{ padding: '12px 16px', background: '#FFF9C4', borderRadius: '12px', fontSize: '13px', color: '#333', fontWeight: 600, borderLeft: '4px solid #D4AF37' }}>
-                                                {idx + 1}. {q}
-                                            </div>
-                                        ))}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                        {[churchSettings.sermon_q1, churchSettings.sermon_q2, churchSettings.sermon_q3].map((q, idx) => {
+                                            if (!q) return null;
+                                            return (
+                                                <div key={idx} style={{ padding: '15px', background: '#FFF9C4', borderRadius: '15px', borderLeft: '4px solid #D4AF37' }}>
+                                                    <div style={{ fontSize: '14px', color: '#333', fontWeight: 600, marginBottom: '10px' }}>
+                                                        {idx + 1}. {q}
+                                                    </div>
+                                                    <textarea
+                                                        value={sermonReflection[`q${idx + 1}` as keyof typeof sermonReflection] as string}
+                                                        onChange={(e) => setSermonReflection(prev => ({ ...prev, [`q${idx + 1}`]: e.target.value }))}
+                                                        placeholder="나의 생각이나 결단을 적어보세요..."
+                                                        style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EBE4A5', outline: 'none', fontSize: '13px', minHeight: '80px', background: 'white', resize: 'vertical' }}
+                                                    />
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </>
                             ) : (
-                                <p style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, margin: 0 }}>
-                                    말씀 설교를 시청하신 후, 오늘의 큐티를 통해 한 번 더 깊이 묵상하는 시간을 가져보세요. 하나님의 풍성한 은혜를 누리시는 오늘 하루 되시길 축복합니다.
+                                <p style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, margin: 0, marginBottom: '20px' }}>
+                                    말씀 설교를 시청하신 후, 하나님의 풍성한 은혜를 누리시는 오늘 하루 되시길 축복합니다.
                                 </p>
                             )}
+
+                            <div style={{ marginTop: '20px' }}>
+                                <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', marginBottom: '10px' }}>📝 전체적인 은혜 나누기</div>
+                                <textarea
+                                    value={sermonReflection.mainGrace}
+                                    onChange={(e) => setSermonReflection(prev => ({ ...prev, mainGrace: e.target.value }))}
+                                    placeholder="전체적으로 깨달은 점, 개인적으로 적용하고 싶은 결단이나 다짐 등을 자유롭게 적어주세요!"
+                                    style={{ width: '100%', padding: '15px', borderRadius: '15px', border: '1px solid #E7E7E7', outline: 'none', fontSize: '14px', minHeight: '120px', resize: 'vertical', background: 'white' }}
+                                />
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginTop: '10px', fontSize: '13px', color: '#666' }}>
+                                    <input type="checkbox" checked={sermonReflection.isPrivate} onChange={e => setSermonReflection(prev => ({ ...prev, isPrivate: e.target.checked }))} style={{ width: '16px', height: '16px' }} />
+                                    나만 보기 (체크 시 게시판에 공개되지 않습니다)
+                                </label>
+                            </div>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '30px' }}>
                             <button onClick={async () => {
-                                setView("community");
+                                if (!sermonReflection.mainGrace.trim() && !sermonReflection.q1.trim() && !sermonReflection.q2.trim() && !sermonReflection.q3.trim()) {
+                                    alert('나눌 은혜나 질문에 대한 답변을 한 가지 이상 적어주세요!');
+                                    return;
+                                }
+
+                                if (!user) {
+                                    alert("로그인이 필요합니다.");
+                                    return;
+                                }
+
+                                let user_name = user.email.split('@')[0];
+                                let avatar_url = '';
                                 try {
-                                    const res = await fetch(`/api/community?church_id=${churchId}`);
-                                    const data = await res.json();
-                                    if (Array.isArray(data)) setCommunityPosts(data);
-                                } catch (e) { console.error("게시판 로드 실패:", e); }
+                                    const r = await fetch(`/api/user?id=${user.id}`);
+                                    const d = await r.json();
+                                    if (d) {
+                                        user_name = d.name || user_name;
+                                        avatar_url = d.avatar_url;
+                                    }
+                                } catch (e) { }
+
+                                let combinedContent = "";
+                                if (sermonReflection.q1) combinedContent += `[질문 1] ${churchSettings.sermon_q1}\n나의 묵상: ${sermonReflection.q1}\n\n`;
+                                if (sermonReflection.q2) combinedContent += `[질문 2] ${churchSettings.sermon_q2}\n나의 묵상: ${sermonReflection.q2}\n\n`;
+                                if (sermonReflection.q3) combinedContent += `[질문 3] ${churchSettings.sermon_q3}\n나의 묵상: ${sermonReflection.q3}\n\n`;
+                                if (sermonReflection.mainGrace) combinedContent += `[나의 결단과 은혜]\n${sermonReflection.mainGrace}`;
+
+                                try {
+                                    const postRes = await fetch('/api/community', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            user_id: user.id,
+                                            user_name,
+                                            avatar_url,
+                                            content: '[말씀묵상] \n' + combinedContent.trim(),
+                                            is_private: sermonReflection.isPrivate,
+                                            church_id: churchId
+                                        })
+                                    });
+                                    if (postRes.ok) {
+                                        setSermonReflection({ q1: '', q2: '', q3: '', mainGrace: '', isPrivate: false });
+                                        setView("community");
+                                        const res = await fetch(`/api/community?church_id=${churchId}`);
+                                        const data = await res.json();
+                                        if (Array.isArray(data)) setCommunityPosts(data);
+                                    } else {
+                                        alert("게시물 등록에 실패했습니다.");
+                                    }
+                                } catch (e) {
+                                    console.error("게시판 등록 실패:", e);
+                                    alert("오류가 발생했습니다.");
+                                }
                             }} style={{ width: '100%', padding: '16px', background: 'linear-gradient(145deg, #ffffff 0%, #fff0f5 100%)', color: '#9E2A5B', border: '1px solid #f2cddb', borderRadius: '15px', fontWeight: 800, fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 8px 16px rgba(173, 20, 87, 0.08)' }}>
-                                <span style={{ fontSize: '18px' }}>📝</span> 은혜나눔 게시판에 은혜 나누기
+                                <span style={{ fontSize: '18px' }}>📝</span> 은혜 나누기
                             </button>
                             <button onClick={() => setView('home')} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 이동</button>
                         </div>
