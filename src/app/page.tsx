@@ -631,20 +631,45 @@ export default function App() {
     const parsePassage = (raw: string) => {
         if (!raw) return { fullPassage: '', interpretation: '' };
 
-        // 1. 표준 구분자 '|||' 확인
+        let fullPassage = '';
+        let interpretation = '';
+
+        // 1. 표준 구분자 '|||' 확인 (서버에서 이 포맷으로 전달됨)
         if (raw.includes('|||')) {
             const parts = raw.split('|||');
-            return { fullPassage: parts[0]?.trim(), interpretation: parts[1]?.trim() };
+            fullPassage = parts[0]?.trim() || '';
+            interpretation = parts[1]?.trim() || '';
+        }
+        // 2. 키워드 기반 분리 시도 (구분자가 깨졌을 경우 대비)
+        else if (raw.includes('[AI 본문 해설]')) {
+            const parts = raw.split('[AI 본문 해설]');
+            fullPassage = parts[0]?.trim();
+            interpretation = parts[1]?.trim();
+        }
+        else {
+            fullPassage = raw.trim();
+            interpretation = '';
         }
 
-        // 2. 키워드 기반 분리 시도
-        const kw = '[AI 본문 해설]';
-        if (raw.includes(kw)) {
-            const parts = raw.split(kw);
-            return { fullPassage: parts[0]?.trim() || '본문 요약 준비 중...', interpretation: parts[1]?.trim() };
+        // [최종 데이터 세정] 
+        // 본문 안에 해설 유도 태그가 남아있거나, 본문 자체가 해설처럼 보일 때의 보정
+        const tags = ['[AI 본문 해설]', '본문 요약:', '묵상 포인트:', '해설:'];
+        tags.forEach(tag => {
+            if (fullPassage.includes(tag)) {
+                // 만약 본문 칸에 해설 태그가 들어있다면, 그 이후는 해설로 넘김
+                const parts = fullPassage.split(tag);
+                if (parts[1]) interpretation = parts[1].trim();
+                fullPassage = parts[0].trim();
+            }
+            fullPassage = fullPassage.replace(tag, '').trim();
+        });
+
+        // 결과가 비정상적일 때의 보강
+        if (!fullPassage && interpretation) {
+            fullPassage = "본문을 불러오지 못했습니다. 잠시 후 다시 '불러오기'를 눌러주세요.";
         }
 
-        return { fullPassage: raw.trim(), interpretation: '' };
+        return { fullPassage, interpretation };
     };
 
     const fetchQt = async () => {
@@ -1815,7 +1840,7 @@ export default function App() {
                             <button onClick={async () => {
                                 setAiLoading(true);
                                 try {
-                                    const res = await fetch(`/api/qt?date=${qtForm.date}&force=true`);
+                                    const res = await fetch(`/api/qt?date=${qtForm.date}&force=true`, { cache: 'no-store' });
                                     const { qt } = await res.json();
                                     if (qt) {
                                         const { fullPassage, interpretation } = parsePassage(qt.passage);
