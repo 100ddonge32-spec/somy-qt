@@ -16,7 +16,7 @@ const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.c
 
 
 const QT_DATA = {
-    date: new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" }),
+    date: "", // 하이드레이션 오류 방지를 위해 초기값 비움
     verse: "여호와는 나의 목자시니 내게 부족함이 없으리로다",
     reference: "시편 23:1",
     fullPassage: `여호와는 나의 목자시니 내게 부족함이 없으리로다
@@ -131,6 +131,7 @@ export default function App() {
     const [answers, setAnswers] = useState<string[]>(new Array(QT_DATA.questions.length).fill(""));
     const [graceInput, setGraceInput] = useState("");
     const [qtStep, setQtStep] = useState<"read" | "interpret" | "reflect" | "grace" | "pray" | "done">("read");
+    const [isMounted, setIsMounted] = useState(false); // 마운트 상태 추적
     const [communityPosts, setCommunityPosts] = useState<Post[]>([]);
     const [isPrivatePost, setIsPrivatePost] = useState(false); // 은혜나눔 비공개 여부
     const [lastToggleTime, setLastToggleTime] = useState(0); // 이중 트리거 방지용
@@ -520,7 +521,7 @@ export default function App() {
         }
     }, [user]);
     const [qtData, setQtData] = useState({
-        date: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
+        date: "",
         reference: QT_DATA.reference,
         fullPassage: QT_DATA.fullPassage,
         interpretation: QT_DATA.interpretation,
@@ -593,9 +594,33 @@ export default function App() {
     const [isHistoryMode, setIsHistoryMode] = useState(false);
 
     useEffect(() => {
-        const hasVisited = localStorage.getItem('somy_intro_seen'); // Changed from somy_visited to somy_intro_seen
+        setIsMounted(true);
+        const hasVisited = localStorage.getItem('somy_intro_seen');
         if (!hasVisited) {
             setShowWelcome(true);
+        }
+
+        // 초기 날짜 설정
+        const todayStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+        setQtData(prev => ({ ...prev, date: todayStr }));
+
+        // 글로벌 스타일 동적 주입
+        const styleId = 'somy-ipod-styles';
+        if (!document.getElementById(styleId)) {
+            const style = document.createElement('style');
+            style.id = styleId;
+            style.textContent = `
+                @keyframes wave-music {
+                    0%, 100% { height: 4px; }
+                    50% { height: 24px; }
+                }
+                @keyframes halo-pulse {
+                    0% { opacity: 0.3; transform: scaleX(1); }
+                    50% { opacity: 1; transform: scaleX(1.5); }
+                    100% { opacity: 0.3; transform: scaleX(1); }
+                }
+            `;
+            document.head.appendChild(style);
         }
     }, []);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -1469,7 +1494,7 @@ export default function App() {
                         {isHistoryMode && (
                             <div style={{ background: "#709176", color: "white", fontSize: "10px", padding: "2px 6px", borderRadius: "10px", fontWeight: 700 }}>다시보기</div>
                         )}
-                        <div style={{ marginLeft: 'auto', fontSize: '11px', color: '#999' }}>{qtData.date || "날짜정보 없음"}</div>
+                        <div style={{ marginLeft: 'auto', fontSize: '11px', color: '#999' }}>{qtData.date || "날짜 로딩 중..."}</div>
                     </div>
 
                     <div style={{ padding: "24px 20px", display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '120px' }}>
@@ -2935,25 +2960,4 @@ export default function App() {
             {renderInstallGuide()}
         </div>
     );
-}
-
-// 글로벌 스타일 추가
-if (typeof document !== 'undefined') {
-    const styleId = 'somy-ipod-styles';
-    if (!document.getElementById(styleId)) {
-        const style = document.createElement('style');
-        style.id = styleId;
-        style.textContent = `
-            @keyframes wave-music {
-                0%, 100% { height: 4px; }
-                50% { height: 24px; }
-            }
-            @keyframes halo-pulse {
-                0% { opacity: 0.3; transform: scaleX(1); }
-                50% { opacity: 1; transform: scaleX(1.5); }
-                100% { opacity: 0.3; transform: scaleX(1); }
-            }
-        `;
-        document.head.appendChild(style);
-    }
 }
