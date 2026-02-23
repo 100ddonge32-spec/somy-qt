@@ -34,6 +34,23 @@ export async function GET(req: NextRequest) {
             return NextResponse.json(data);
         }
 
+        if (action === 'get_church_stats') {
+            // 모든 성도 정보를 가져와서 교회별로 그룹화
+            const { data: profiles, error } = await supabaseAdmin
+                .from('profiles')
+                .select('church_id');
+
+            if (error) throw error;
+
+            const stats: { [key: string]: number } = {};
+            profiles.forEach(p => {
+                const cid = p.church_id || 'jesus-in';
+                stats[cid] = (stats[cid] || 0) + 1;
+            });
+
+            return NextResponse.json(stats);
+        }
+
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });

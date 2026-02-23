@@ -678,6 +678,7 @@ export default function App() {
     const [memberList, setMemberList] = useState<any[]>([]);
     const [isManagingMembers, setIsManagingMembers] = useState(false);
     const [isHistoryMode, setIsHistoryMode] = useState(false);
+    const [churchStats, setChurchStats] = useState<{ [key: string]: number }>({});
 
     useEffect(() => {
         setIsMounted(true);
@@ -3785,11 +3786,36 @@ export default function App() {
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                                 <div style={{ fontSize: '13px', color: '#666', background: '#F5F5F3', padding: '14px', borderRadius: '12px', lineHeight: 1.5 }}>
-                                    🛡️ <strong>슈퍼 관리자 전용</strong><br />
-                                    새로운 교회 관리자나 부관리자를 임명합니다. 해당 이메일 사용자는 관리자 모드에 접근할 수 있습니다.
+                                    🛡️ <strong>슈퍼 관리자 전용 (마스터 모드)</strong><br />
+                                    전체 교회의 현황을 파악하고 관리자를 지정합니다.
                                 </div>
-                                <div>
-                                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>추가할 관리자 이메일</label>
+
+                                {/* 교회별 등록 인원 통계 */}
+                                <div style={{ background: '#FFF9C4', padding: '18px', borderRadius: '18px', border: '1px solid #FFF176' }}>
+                                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#333', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span>⛪ 교회별 등록 성도수</span>
+                                        <button onClick={async () => {
+                                            const r = await fetch('/api/admin?action=get_church_stats');
+                                            const data = await r.json();
+                                            if (data) setChurchStats(data);
+                                        }} style={{ background: 'white', border: '1px solid #E0E0E0', borderRadius: '8px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>새로고침</button>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {Object.keys(churchStats).length > 0 ? (
+                                            Object.entries(churchStats).map(([cid, count]) => (
+                                                <div key={cid} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.5)', padding: '8px 12px', borderRadius: '10px' }}>
+                                                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#555' }}>📍 {cid}</span>
+                                                    <span style={{ fontSize: '14px', fontWeight: 800, color: '#D4AF37' }}>{count}명</span>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div style={{ fontSize: '12px', color: '#999', textAlign: 'center', padding: '10px' }}>'새로고침'을 눌러 통계를 확인하세요.</div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div style={{ marginTop: '10px' }}>
+                                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>새 관리자 이메일 등록</label>
                                     <div style={{ display: 'flex', gap: '8px' }}>
                                         <input id="admin-email-input" type="email" placeholder="example@kakao.com" style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }} />
                                         <button onClick={async () => {
