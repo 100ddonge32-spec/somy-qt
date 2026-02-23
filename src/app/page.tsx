@@ -520,6 +520,25 @@ export default function App() {
             setNotifications([]);
         }
     }, [user]);
+
+    // [김부장의 신의 한 수] 유저의 교회 정보가 확인되면 즉시 해당 교회 설정 로드
+    useEffect(() => {
+        const loadSettings = async () => {
+            const cId = churchId || 'jesus-in';
+            console.log(`[Reactive Settings] Loading for: ${cId}`);
+            try {
+                const r = await fetch(`/api/settings?church_id=${cId}`, { cache: 'no-store' });
+                const { settings } = await r.json();
+                if (settings) {
+                    setChurchSettings(settings);
+                    setSettingsForm(settings);
+                }
+            } catch (err) {
+                console.error("[Settings] Load Failed:", err);
+            }
+        };
+        loadSettings();
+    }, [churchId]);
     const [qtData, setQtData] = useState({
         date: "",
         reference: QT_DATA.reference,
@@ -735,22 +754,9 @@ export default function App() {
         };
         checkUser();
 
-        // 교회 설정 로드 (사용자 소속 교회 기반)
-        const loadSettings = async () => {
-            const cId = churchId || 'jesus-in';
-            console.log(`[Settings] Fetching for ${cId}...`);
-            try {
-                const r = await fetch(`/api/settings?church_id=${cId}`, { cache: 'no-store' });
-                const { settings } = await r.json();
-                if (settings) {
-                    setChurchSettings(settings);
-                    setSettingsForm(settings);
-                }
-            } catch (err) {
-                console.error("[Settings] Load Failed:", err);
-            }
-        };
-        loadSettings();
+        // 오늘의 큐티 로드
+        console.log("[FetchQt] Starting...");
+        fetchQt();
 
         // 오늘의 큐티 로드
         console.log("[FetchQt] Starting...");
