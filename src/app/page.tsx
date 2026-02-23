@@ -735,17 +735,22 @@ export default function App() {
         };
         checkUser();
 
-        // 교회 설정 로드
-        fetch('/api/settings', { cache: 'no-store' })
-            .then(r => r.json())
-            .then(({ settings }) => {
-                console.log("[Settings] Loaded:", settings);
+        // 교회 설정 로드 (사용자 소속 교회 기반)
+        const loadSettings = async () => {
+            const cId = churchId || 'jesus-in';
+            console.log(`[Settings] Fetching for ${cId}...`);
+            try {
+                const r = await fetch(`/api/settings?church_id=${cId}`, { cache: 'no-store' });
+                const { settings } = await r.json();
                 if (settings) {
                     setChurchSettings(settings);
                     setSettingsForm(settings);
                 }
-            })
-            .catch(err => console.error("[Settings] Load Failed:", err));
+            } catch (err) {
+                console.error("[Settings] Load Failed:", err);
+            }
+        };
+        loadSettings();
 
         // 오늘의 큐티 로드
         console.log("[FetchQt] Starting...");
@@ -2626,12 +2631,24 @@ export default function App() {
            SERMON VIEW
         ══════════════════════════════ */
         if (view === "sermon") {
-            const getYoutubeId = (url: string) => {
+            const getYoutubeEmbedUrl = (url: string) => {
+                if (!url) return null;
+
+                // 1. 유튜브 채널 ID인 경우 (UC... 로 시작) -> 최신 영상 자동 갱신 모드
+                // 유튜브의 '전체 업로드' 플레이리스트 ID는 채널 ID의 UC를 UU로 바꾸면 됨
+                if (url.startsWith('UC') && url.length > 20) {
+                    const playlistId = 'UU' + url.substring(2);
+                    return `https://www.youtube.com/embed?listType=playlist&list=${playlistId}`;
+                }
+
+                // 2. 일반 영상 URL인 경우 ID 추출
                 const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
                 const match = url.match(regExp);
-                return (match && match[2].length === 11) ? match[2] : null;
+                const videoId = (match && match[2].length === 11) ? match[2] : null;
+
+                return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1` : null;
             };
-            const videoId = getYoutubeId(churchSettings.sermon_url || "");
+            const embedUrl = getYoutubeEmbedUrl(churchSettings.sermon_url || "");
 
             return (
                 <div style={{
@@ -2653,11 +2670,11 @@ export default function App() {
                                 아래 영상을 눌러 오늘의 말씀을 시청하세요 ✨
                             </p>
                         </div>
-                        {videoId ? (
+                        {embedUrl ? (
                             <div style={{ position: 'relative', width: '100%', paddingBottom: '56.25%', borderRadius: '15px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
                                 <iframe
                                     style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                                    src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
+                                    src={embedUrl}
                                     title="YouTube video player"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                     allowFullScreen

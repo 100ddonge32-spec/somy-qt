@@ -7,12 +7,19 @@ const supabaseAdmin = createClient(
     { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
-export async function GET() {
-    const { data, error } = await supabaseAdmin
-        .from('church_settings')
-        .select('*')
-        .eq('id', 1)
-        .single();
+export async function GET(req: NextRequest) {
+    const { searchParams } = new URL(req.url);
+    const churchId = searchParams.get('church_id');
+
+    let query = supabaseAdmin.from('church_settings').select('*');
+
+    if (churchId) {
+        query = query.eq('church_id', churchId);
+    } else {
+        query = query.eq('id', 1);
+    }
+
+    const { data, error } = await query.single();
 
     if (error) {
         return NextResponse.json({ settings: null, error: error.message });
