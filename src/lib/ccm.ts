@@ -9,26 +9,26 @@ export interface CcmVideo {
 }
 
 export const CCM_LIST: CcmVideo[] = [
-    { title: "은혜", artist: "손경민", youtubeId: "dpLtoX9uGvU" },
-    { title: "꽃들도", artist: "마커스워십", youtubeId: "vB-SAnfWf2Y" },
-    { title: "나는 믿네", artist: "어노인팅", youtubeId: "vBf4pE_W6Qo" },
-    { title: "길을 만드시는 주", artist: "레위지파", youtubeId: "nrWxqWf62eM" },
-    { title: "주 품에", artist: "어노인팅", youtubeId: "MclIn_v_oRE" },
-    { title: "소원", artist: "한웅재", youtubeId: "r7WlG7p7W4Y" },
-    { title: "하나님의 세계", artist: "홍이삭", youtubeId: "0B6Jp_r-oHw" },
-    { title: "시간을 뚫고", artist: "WELOVE", youtubeId: "mNnBQu_5WQU" },
-    { title: "요게벳의 노래", artist: "염평안", youtubeId: "6p6u8f3X3mI" },
-    { title: "시편 139편", artist: "제이어스", youtubeId: "XQxK8oGz6zM" },
-    { title: "광야를 지나며", artist: "히즈윌", youtubeId: "i7GOCn91Wq8" },
-    { title: "주의 친절한 팔에 안기세", artist: "어노인팅", youtubeId: "uCidGleW2Vw" },
-    { title: "원하고 바라고 기도합니다", artist: "민호기", youtubeId: "O9549fJm0E4" },
-    { title: "그가 다스리는 그의 나라에서", artist: "마커스워십", youtubeId: "3_K_9vDFr2Y" },
-    { title: "내 모습 이대로", artist: "제이어스", youtubeId: "rA4Y6XidM-s" },
-    { title: "주께 가오니", artist: "어노인팅", youtubeId: "Y_zpx9mN6L8" },
-    { title: "나 무엇과도 주님을", artist: "어노인팅", youtubeId: "uAByM86O9j4" },
-    { title: "예수 사랑하심은", artist: "예수전도단", youtubeId: "2hM-oQpP2iE" },
-    { title: "송축해 내 영혼", artist: "맷 레드먼", youtubeId: "XtwIT8vjV68" },
-    { title: "공감하시네", artist: "WELOVE", youtubeId: "pXq7G_P67m8" }
+    { title: "은혜로운 피아노 묵상", artist: "Worship Piano", youtubeId: "8Z5EQB6k0eU" },
+    { title: "조용한 아침의 묵상", artist: "Peaceful Strings", youtubeId: "c_sC_I0H0wA" },
+    { title: "평안을 주는 찬양 연주", artist: "Soothing Worship", youtubeId: "y1K_p1uI4pQ" },
+    { title: "마음을 위로하는 피아노", artist: "DappyTKeys", youtubeId: "WlM2R_tVItg" },
+    { title: "깊은 기도와 묵상", artist: "Instrumental", youtubeId: "1zyT1H5TJUg" },
+    { title: "치유와 회복의 시간", artist: "Healing Piano", youtubeId: "h3A0gB_0p7M" },
+    { title: "아침을 여는 찬양", artist: "Morning Worship", youtubeId: "nrWxqWf62eM" },
+    { title: "주님과 함께하는 쉼", artist: "Relaxing BGM", youtubeId: "lTRiuFIWV54" },
+    { title: "잔잔한 은혜의 선율", artist: "Graceful Piano", youtubeId: "WJToJq6L8OQ" },
+    { title: "주의 품에 안기어", artist: "Warm Worship", youtubeId: "7T_1j-V4I3E" },
+    { title: "영혼을 울리는 피아노", artist: "Soulful Piano", youtubeId: "JbTo23kLkiQ" },
+    { title: "고요한 묵상의 밤", artist: "Night Prayer", youtubeId: "-FlxM_0S2lA" },
+    { title: "은은한 기타와 건반", artist: "Acoustic Worship", youtubeId: "R7jO1BGEJqE" },
+    { title: "시편의 고백 연주", artist: "Psalms Piano", youtubeId: "bAobC2EOfxY" },
+    { title: "천국의 평안", artist: "Heavenly Peace", youtubeId: "9i4Bq_PjQpY" },
+    { title: "새 힘을 얻는 시간", artist: "Renewal Worship", youtubeId: "_M-A5gD-06c" },
+    { title: "오직 주님만 바라보며", artist: "Focus on Him", youtubeId: "LtbXzN4g_0I" },
+    { title: "성령의 단비", artist: "Holy Spirit Piano", youtubeId: "jW8x-9I_oK8" },
+    { title: "주를 향한 사랑 (Lo-Fi)", artist: "Lofi Worship", youtubeId: "jfKfPfyJRdk" },
+    { title: "내 영혼이 은총 입어", artist: "Classic Hymn Piano", youtubeId: "5qap5aO4i9A" }
 ];
 
 /**
