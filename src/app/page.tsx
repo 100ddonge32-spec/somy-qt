@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { getGraceVerse } from '@/lib/navigator-verses';
 import { getTodayCcm, CcmVideo, CCM_LIST } from "@/lib/ccm";
 
-type View = "home" | "chat" | "qt" | "community" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon";
+type View = "home" | "chat" | "qt" | "community" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage";
 
 const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://cdn.imweb.me/thumbnail/20210813/569458bf12dd0.png";
@@ -554,6 +554,7 @@ export default function App() {
         prayer: QT_DATA.prayer,
     });
     const [qtForm, setQtForm] = useState({ date: '', reference: '', passage: '', interpretation: '', question1: '', question2: '', question3: '', prayer: '' });
+    const [sermonManageForm, setSermonManageForm] = useState({ script: '', summary: '', q1: '', q2: '', q3: '' });
     const [aiLoading, setAiLoading] = useState(false);
     const [stats, setStats] = useState<{ today: { count: number; members: { user_name: string; avatar_url: string | null }[] }; ranking: { name: string; avatar: string | null; count: number }[]; totalCompletions: number } | null>(null);
     const [statsError, setStatsError] = useState<string | null>(null);
@@ -565,6 +566,10 @@ export default function App() {
         app_subtitle: APP_SUBTITLE,
         plan: 'free',
         community_visible: true, // 은혜 게시판 공개 여부
+        sermon_summary: '',
+        sermon_q1: '',
+        sermon_q2: '',
+        sermon_q3: '',
     });
     const [showSettings, setShowSettings] = useState(false);
     const [settingsForm, setSettingsForm] = useState({
@@ -575,6 +580,10 @@ export default function App() {
         app_subtitle: APP_SUBTITLE,
         plan: 'free',
         community_visible: true,
+        sermon_summary: '',
+        sermon_q1: '',
+        sermon_q2: '',
+        sermon_q3: '',
     });
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [showInstallGuide, setShowInstallGuide] = useState(false);
@@ -1337,7 +1346,7 @@ export default function App() {
                                         boxShadow: '0 4px 12px rgba(230,81,0,0.1)',
                                         marginTop: '10px'
                                     }}>
-                                        <span style={{ fontSize: '18px' }}>🎥</span> 담임목사님 말씀 설교
+                                        <span style={{ fontSize: '18px' }}>🎥</span> 담임목사 설교
                                     </button>
                                 )}
                             </>
@@ -2483,6 +2492,23 @@ export default function App() {
                                     <div style={{ fontSize: '12px', color: '#999' }}>매일의 묵상 본문과 질문을 수정하고 등록합니다.</div>
                                 </div>
                             </button>
+
+                            <button onClick={() => {
+                                setSermonManageForm({
+                                    script: '',
+                                    summary: churchSettings.sermon_summary || '',
+                                    q1: churchSettings.sermon_q1 || '',
+                                    q2: churchSettings.sermon_q2 || '',
+                                    q3: churchSettings.sermon_q3 || ''
+                                });
+                                setView('sermonManage');
+                            }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
+                                <div style={{ width: '48px', height: '48px', background: '#FCE4EC', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🎙️</div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '2px' }}>주일 설교 요약 및 질문 관리</div>
+                                    <div style={{ fontSize: '12px', color: '#999' }}>설교 원고를 입력하여 AI로 자동 요약하고 묵상 질문을 만듭니다.</div>
+                                </div>
+                            </button>
                         </div>
 
                         <button onClick={() => setView('home')} style={{ marginTop: '32px', width: '100%', padding: '16px', background: '#F5F5F5', color: '#333', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 돌아가기</button>
@@ -2523,7 +2549,7 @@ export default function App() {
                     {styles}
                     <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #F0F0F0", position: 'sticky', top: 'env(safe-area-inset-top)', background: 'white', zIndex: 10 }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333', padding: '8px' }}>←</button>
-                        <div style={{ fontWeight: 800, color: "#333", fontSize: "15px" }}>🎥 담임목사님 말씀 설교</div>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "15px" }}>🎥 담임목사 설교</div>
                     </div>
                     <div style={{ padding: "20px" }}>
                         <div style={{ background: '#FFF3E0', padding: '15px', borderRadius: '15px', marginBottom: '20px', border: '1px solid #FFCC80' }}>
@@ -2548,14 +2574,148 @@ export default function App() {
                         )}
                         <div style={{ marginTop: '30px', background: '#F9F9F9', padding: '20px', borderRadius: '20px' }}>
                             <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 10px 0' }}>💡 말씀과 함께하는 묵상</h3>
-                            <p style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, margin: 0 }}>
-                                말씀 설교를 시청하신 후, 오늘의 큐티를 통해 한 번 더 깊이 묵상하는 시간을 가져보세요. 하나님의 풍성한 은혜를 누리시는 오늘 하루 되시길 축복합니다.
-                            </p>
+
+                            {churchSettings.sermon_summary ? (
+                                <>
+                                    <div style={{ fontSize: '14px', color: '#555', lineHeight: 1.6, marginBottom: '20px', padding: '15px', background: 'white', borderRadius: '12px', border: '1px solid #EEE' }}>
+                                        {churchSettings.sermon_summary.split('\n').map((line, i) => (
+                                            <span key={i}>{line}<br /></span>
+                                        ))}
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        {[churchSettings.sermon_q1, churchSettings.sermon_q2, churchSettings.sermon_q3].filter(Boolean).map((q, idx) => (
+                                            <div key={idx} style={{ padding: '12px 16px', background: '#FFF9C4', borderRadius: '12px', fontSize: '13px', color: '#333', fontWeight: 600, borderLeft: '4px solid #D4AF37' }}>
+                                                {idx + 1}. {q}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            ) : (
+                                <p style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, margin: 0 }}>
+                                    말씀 설교를 시청하신 후, 오늘의 큐티를 통해 한 번 더 깊이 묵상하는 시간을 가져보세요. 하나님의 풍성한 은혜를 누리시는 오늘 하루 되시길 축복합니다.
+                                </p>
+                            )}
                         </div>
                         <button onClick={() => setView('home')} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', marginTop: '30px' }}>홈으로 이동</button>
                     </div>
                 </div>
             );
+        }
+
+        /* ══════════════════════════════
+           SERMON MANAGE VIEW (Admin)
+        ══════════════════════════════ */
+        if (view === "sermonManage") {
+            const handleGenerateSermon = async () => {
+                if (!sermonManageForm.script.trim()) {
+                    alert("설교 원고(또는 메모)를 입력해주세요.");
+                    return;
+                }
+                setAiLoading(true);
+                try {
+                    const res = await fetch('/api/sermon-generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ script: sermonManageForm.script })
+                    });
+                    const data = await res.json();
+                    if (data.error) {
+                        alert("AI 생성 실패: " + data.error);
+                    } else {
+                        setSermonManageForm(prev => ({
+                            ...prev,
+                            summary: data.summary || '',
+                            q1: data.question1 || '',
+                            q2: data.question2 || '',
+                            q3: data.question3 || ''
+                        }));
+                    }
+                } catch (e) {
+                    alert('AI 생성 중 오류가 발생했습니다.');
+                } finally {
+                    setAiLoading(false);
+                }
+            };
+
+            const handleSaveSermonManage = async () => {
+                const newSettings = {
+                    ...churchSettings,
+                    sermon_summary: sermonManageForm.summary,
+                    sermon_q1: sermonManageForm.q1,
+                    sermon_q2: sermonManageForm.q2,
+                    sermon_q3: sermonManageForm.q3
+                };
+
+                const res = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newSettings),
+                });
+
+                if (res.ok) {
+                    setChurchSettings(newSettings);
+                    alert("설교 요약과 질문이 성공적으로 저장되었습니다!");
+                    setView('admin');
+                } else {
+                    alert("저장에 실패했습니다.");
+                }
+            };
+
+            return (
+                <div style={{ padding: "20px", maxWidth: "480px", margin: "0 auto", background: "#FDFCFB", minHeight: "100vh", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+                        <button onClick={() => setView('admin')} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
+                        <div style={{ fontWeight: 800, fontSize: "16px", color: '#333' }}>🎙️ 주일 설교 자동 요약봇</div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <div>
+                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>📝 설교 원고 (또는 핵심 메모)</label>
+                            <textarea
+                                value={sermonManageForm.script}
+                                onChange={e => setSermonManageForm(prev => ({ ...prev, script: e.target.value }))}
+                                placeholder="여기에 설교 원고 전체나 핵심 메모를 붙여넣으세요..."
+                                style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', minHeight: '150px', outline: 'none', resize: 'vertical' }}
+                            />
+                            <button onClick={handleGenerateSermon} disabled={aiLoading} style={{ marginTop: '8px', width: '100%', padding: '14px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', opacity: aiLoading ? 0.7 : 1 }}>
+                                {aiLoading ? '✨ 소미가 설교를 열심히 요약하는 중...' : '✨ AI 자동 요약 및 묵상질문 만들기'}
+                            </button>
+                        </div>
+
+                        <div style={{ background: 'white', padding: '15px', borderRadius: '15px', border: '1px solid #F0ECE4' }}>
+                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>📖 설교 요약</label>
+                            <textarea
+                                value={sermonManageForm.summary}
+                                onChange={e => setSermonManageForm(prev => ({ ...prev, summary: e.target.value }))}
+                                style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', minHeight: '100px', outline: 'none', marginBottom: '10px' }}
+                            />
+
+                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>💬 나눔 질문 1</label>
+                            <input
+                                value={sermonManageForm.q1}
+                                onChange={e => setSermonManageForm(prev => ({ ...prev, q1: e.target.value }))}
+                                style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', outline: 'none', marginBottom: '10px' }}
+                            />
+                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>💬 나눔 질문 2</label>
+                            <input
+                                value={sermonManageForm.q2}
+                                onChange={e => setSermonManageForm(prev => ({ ...prev, q2: e.target.value }))}
+                                style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', outline: 'none', marginBottom: '10px' }}
+                            />
+                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>💬 나눔 질문 3</label>
+                            <input
+                                value={sermonManageForm.q3}
+                                onChange={e => setSermonManageForm(prev => ({ ...prev, q3: e.target.value }))}
+                                style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', outline: 'none', marginBottom: '10px' }}
+                            />
+                        </div>
+                    </div>
+
+                    <button onClick={handleSaveSermonManage} style={{ marginTop: '20px', width: '100%', padding: '16px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>
+                        💾 완성된 요약 및 질문 저장하기
+                    </button>
+                </div>
+            )
         }
 
         /* ══════════════════════════════

@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     const body = await req.json();
-    const { church_name, church_logo_url, church_url, app_subtitle, plan, sermon_url } = body;
+    const { church_name, church_logo_url, church_url, app_subtitle, plan, sermon_url, sermon_summary, sermon_q1, sermon_q2, sermon_q3 } = body;
 
     const { error } = await supabaseAdmin
         .from('church_settings')
@@ -52,6 +52,10 @@ export async function POST(req: NextRequest) {
             app_subtitle,
             plan: plan || 'free', // 'free' 또는 'premium'
             sermon_url,
+            sermon_summary,
+            sermon_q1,
+            sermon_q2,
+            sermon_q3
         });
 
     if (error) {
