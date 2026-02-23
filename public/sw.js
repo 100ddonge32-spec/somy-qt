@@ -1,4 +1,4 @@
-// Basic Service Worker for PWA installability
+// Basic Service Worker for PWA installability v1.2
 self.addEventListener('install', (event) => {
     self.skipWaiting();
 });

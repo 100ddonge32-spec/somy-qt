@@ -1500,9 +1500,9 @@ export default function App() {
                     {/* Header */}
                     <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #EEE", position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
-                        <img src={churchSettings.church_logo_url} alt="로고" style={{ height: "24px", objectFit: 'contain' }} />
+                        <img src={churchSettings.church_logo_url} alt="로고" style={{ height: "24px", objectFit: 'contain', border: '1px solid #D4AF37', borderRadius: '4px', padding: '1px' }} />
                         <div style={{ fontWeight: 700, color: "#333", fontSize: "14px" }}>
-                            {isHistoryMode ? "지난 묵상 기록" : "오늘의 큐티 [v1.1]"}
+                            {isHistoryMode ? "지난 묵상 기록" : "오늘의 큐티 [v1.2 - 최신]"}
                         </div>
                         {isHistoryMode && (
                             <div style={{ background: "#709176", color: "white", fontSize: "10px", padding: "2px 6px", borderRadius: "10px", fontWeight: 700 }}>다시보기</div>
