@@ -1218,13 +1218,13 @@ export default function App() {
                             <>
                                 <button onClick={() => setView("chat")} style={{
                                     width: "100%", padding: "16px 20px",
-                                    background: "white", color: "#333",
-                                    fontWeight: 700, fontSize: "16px", borderRadius: "20px",
-                                    border: "1px solid #F0ECE4", cursor: "pointer",
-                                    boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
+                                    background: "linear-gradient(145deg, #ffffff 0%, #f0f8f8 100%)", color: "#1A5D55",
+                                    fontWeight: 800, fontSize: "16px", borderRadius: "20px",
+                                    border: "1px solid #d9ebe9", cursor: "pointer",
+                                    boxShadow: "0 8px 20px rgba(0, 105, 92, 0.08), inset 0 3px 5px rgba(255,255,255,1), 0 -3px 0 rgba(255,255,255,0.8) inset",
                                     display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '14px'
                                 }}>
-                                    <div style={{ width: '40px', height: '40px', background: '#E0F2F1', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>💬</div>
+                                    <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>💬</div>
                                     소미와 대화하기
                                 </button>
 
@@ -1234,13 +1234,13 @@ export default function App() {
                                     setView("qt");
                                 }} style={{
                                     width: "100%", padding: "16px 20px",
-                                    background: "white", color: "#333",
-                                    fontWeight: 700, fontSize: "16px", borderRadius: "20px",
-                                    border: "1px solid #F0ECE4", cursor: "pointer",
-                                    boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
+                                    background: "linear-gradient(145deg, #ffffff 0%, #fffbea 100%)", color: "#8E754C",
+                                    fontWeight: 800, fontSize: "16px", borderRadius: "20px",
+                                    border: "1px solid #faedb1", cursor: "pointer",
+                                    boxShadow: "0 8px 20px rgba(184, 152, 0, 0.08), inset 0 3px 5px rgba(255,255,255,1), 0 -3px 0 rgba(255,255,255,0.8) inset",
                                     display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '14px'
                                 }}>
-                                    <div style={{ width: '40px', height: '40px', background: '#FFF9C4', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>☀️</div>
+                                    <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>☀️</div>
                                     오늘의 큐티 시작
                                 </button>
 
@@ -1254,21 +1254,21 @@ export default function App() {
                                         } catch (e) { console.error("게시판 로드 실패:", e); }
                                     }} style={{
                                         width: "100%", padding: "16px 20px",
-                                        background: "white", color: "#333",
-                                        fontWeight: 700, fontSize: "16px", borderRadius: "20px",
-                                        border: "1px solid #F0ECE4", cursor: "pointer",
-                                        boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
+                                        background: "linear-gradient(145deg, #ffffff 0%, #fff0f5 100%)", color: "#9E2A5B",
+                                        fontWeight: 800, fontSize: "16px", borderRadius: "20px",
+                                        border: "1px solid #f6d1df", cursor: "pointer",
+                                        boxShadow: "0 8px 20px rgba(173, 20, 87, 0.08), inset 0 3px 5px rgba(255,255,255,1), 0 -3px 0 rgba(255,255,255,0.8) inset",
                                         display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '14px'
                                     }}>
-                                        <div style={{ width: '40px', height: '40px', background: '#FCE4EC', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📝</div>
+                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>📝</div>
                                         은혜나눔 게시판
                                     </button>
 
                                     {/* 알림종 */}
                                     {notifications.filter(n => !n.is_read).length > 0 && (
-                                        <div onClick={(e) => { e.stopPropagation(); setShowNotiList(!showNotiList); }} style={{ position: 'absolute', top: '50%', right: '15px', transform: 'translateY(-50%)', width: '36px', height: '36px', background: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', cursor: 'pointer', zIndex: 1001, border: '2px solid #E6A4B4', animation: 'bell-swing 2s infinite ease-in-out' }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-50%) scale(1.1) rotate(10deg)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(-50%) scale(1) rotate(0)"}>
+                                        <div onClick={(e) => { e.stopPropagation(); setShowNotiList(!showNotiList); }} style={{ position: 'absolute', top: '50%', right: '15px', transform: 'translateY(-50%)', width: '36px', height: '36px', background: 'linear-gradient(145deg, #ffffff, #f0f0f0)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.12), inset 0 2px 4px white', cursor: 'pointer', zIndex: 1001, border: '2px solid #E6A4B4', animation: 'bell-swing 2s infinite ease-in-out' }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-50%) scale(1.1) rotate(10deg)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(-50%) scale(1) rotate(0)"}>
                                             <span style={{ fontSize: '18px' }}>🔔</span>
-                                            <div style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#FF5252', color: 'white', fontSize: '10px', fontWeight: 900, minWidth: '18px', height: '18px', padding: '0 4px', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white' }}>
+                                            <div style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, minWidth: '18px', height: '18px', padding: '0 4px', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
                                                 {notifications.filter(n => !n.is_read).length}
                                             </div>
                                         </div>
@@ -1295,13 +1295,13 @@ export default function App() {
                                         }
                                     }} style={{
                                         flex: 1, padding: "14px 10px",
-                                        background: "white", color: "#333",
-                                        fontWeight: 700, fontSize: "14px", borderRadius: "20px",
-                                        border: "1px solid #F0ECE4", cursor: "pointer",
-                                        boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
+                                        background: "linear-gradient(145deg, #ffffff 0%, #faf6ec 100%)", color: "#8B6B38",
+                                        fontWeight: 800, fontSize: "14px", borderRadius: "20px",
+                                        border: "1px solid #ede1cc", cursor: "pointer",
+                                        boxShadow: "0 6px 16px rgba(184, 146, 74, 0.08), inset 0 2px 4px rgba(255,255,255,1), 0 -2px 0 rgba(255,255,255,0.8) inset",
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px'
                                     }}>
-                                        <div style={{ width: '40px', height: '40px', background: '#F5F5F5', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>👑</div>
+                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>👑</div>
                                         <span>이달의 큐티왕</span>
                                     </button>
 
@@ -1310,26 +1310,26 @@ export default function App() {
                                         fetchHistory();
                                     }} style={{
                                         flex: 1, padding: "14px 10px",
-                                        background: "white", color: "#333",
-                                        fontWeight: 700, fontSize: "14px", borderRadius: "20px",
-                                        border: "1px solid #F0ECE4", cursor: "pointer",
-                                        boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
+                                        background: "linear-gradient(145deg, #ffffff 0%, #f1f8f3 100%)", color: "#507558",
+                                        fontWeight: 800, fontSize: "14px", borderRadius: "20px",
+                                        border: "1px solid #d4ebdc", cursor: "pointer",
+                                        boxShadow: "0 6px 16px rgba(112, 145, 118, 0.08), inset 0 2px 4px rgba(255,255,255,1), 0 -2px 0 rgba(255,255,255,0.8) inset",
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px'
                                     }}>
-                                        <div style={{ width: '40px', height: '40px', background: '#F5F5F5', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📜</div>
+                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>📜</div>
                                         <span>나의 묵상 기록</span>
                                     </button>
                                 </div>
 
                                 <button onClick={() => setView('ccm')} style={{
                                     width: "100%", padding: "16px 20px",
-                                    background: "white", color: "#333",
-                                    fontWeight: 700, fontSize: "16px", borderRadius: "20px",
-                                    border: "1px solid #F0ECE4", cursor: "pointer",
-                                    boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
+                                    background: "linear-gradient(145deg, #ffffff 0%, #f4f6fa 100%)", color: "#465293",
+                                    fontWeight: 800, fontSize: "16px", borderRadius: "20px",
+                                    border: "1px solid #d8ddf2", cursor: "pointer",
+                                    boxShadow: "0 8px 20px rgba(63, 81, 181, 0.08), inset 0 3px 5px rgba(255,255,255,1), 0 -3px 0 rgba(255,255,255,0.8) inset",
                                     display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '14px'
                                 }}>
-                                    <div style={{ width: '40px', height: '40px', background: '#E8EAF6', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🎵</div>
+                                    <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>🎵</div>
                                     오늘의 CCM 듣기
                                 </button>
 
@@ -1339,13 +1339,18 @@ export default function App() {
                                         setView('sermon');
                                     }} style={{
                                         width: "100%", padding: "16px 20px",
-                                        background: "white", color: "#333",
-                                        fontWeight: 700, fontSize: "16px", borderRadius: "20px",
-                                        border: "1px solid #F0ECE4", cursor: "pointer",
-                                        boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
+                                        background: "linear-gradient(145deg, #ffffff 0%, #fff4f2 100%)", color: "#BA2D0B",
+                                        fontWeight: 800, fontSize: "16px", borderRadius: "20px",
+                                        border: "1px solid #ffded6", cursor: "pointer",
+                                        boxShadow: "0 8px 20px rgba(230, 48, 0, 0.09), inset 0 3px 5px rgba(255,255,255,1), 0 -3px 0 rgba(255,255,255,0.8) inset",
                                         display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '14px'
                                     }}>
-                                        <div style={{ width: '40px', height: '40px', background: '#FFF3E0', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🎥</div>
+                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                                <path fillRule="evenodd" clipRule="evenodd" d="M22.95 6.643C22.71 5.717 21.996 5.002 21.071 4.762C19.167 4.25 12 4.25 12 4.25C12 4.25 4.833 4.25 2.929 4.762C2.004 5.002 1.29 5.717 1.05 6.643C0.5 8.547 0.5 12.5 0.5 12.5C0.5 12.5 0.5 16.453 1.05 18.357C1.29 19.283 2.004 19.998 2.929 20.238C4.833 20.75 12 20.75 12 20.75C12 20.75 19.167 20.75 21.071 20.238C21.996 19.998 22.71 19.283 22.95 18.357C23.5 16.453 23.5 12.5 23.5 12.5C23.5 12.5 23.5 8.547 22.95 6.643Z" fill="#FF0000" />
+                                                <path d="M9.75 16.5L16.25 12.5L9.75 8.5V16.5Z" fill="white" />
+                                            </svg>
+                                        </div>
                                         담임목사 설교
                                     </button>
                                 )}
