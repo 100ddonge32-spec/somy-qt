@@ -3313,7 +3313,7 @@ export default function App() {
                 </div>
             )}
             {renderNotificationList()}
-            {showIpod ? renderMiniPlayer() : (
+            {view !== 'sermon' && (showIpod ? renderMiniPlayer() : (
                 <div
                     onClick={() => {
                         if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(20);
@@ -3342,7 +3342,7 @@ export default function App() {
                 >
                     🎧
                 </div>
-            )}
+            ))}
             {renderInstallGuide()}
         </div>
     );
