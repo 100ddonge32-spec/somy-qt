@@ -3247,8 +3247,10 @@ export default function App() {
 
                 {/* 메인 배너 */}
                 <div style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #B8924A 100%)', borderRadius: '24px', padding: '25px', color: 'white', marginBottom: '30px', boxShadow: '0 10px 25px rgba(184,146,74,0.2)' }}>
-                    <div style={{ fontSize: '24px', marginBottom: '10px' }}>😇</div>
-                    <div style={{ fontSize: '18px', fontWeight: 800, marginBottom: '8px' }}>말씀과 더 가까워지는 법</div>
+                    <div style={{ width: '50px', height: '50px', background: 'white', borderRadius: '50%', padding: '4px', marginBottom: '12px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                        <img src={SOMY_IMG} alt="소미" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: '50%' }} />
+                    </div>
+                    <div style={{ fontSize: '18px', fontWeight: 800, marginBottom: '8px' }}>소미와 함께 말씀과 더 가까워지는 법</div>
                     <div style={{ fontSize: '13px', lineHeight: 1.6, opacity: 0.9 }}>
                         예수인교회 성도님들의 풍성한 신앙 생활을 위해<br />
                         소미가 준비한 기능들을 소개합니다.
@@ -3270,7 +3272,9 @@ export default function App() {
 
                 {/* 마무리 인사 */}
                 <div style={{ marginTop: '40px', textAlign: 'center', padding: '30px 0', borderTop: '1px solid #EEE' }}>
-                    <div style={{ fontSize: '30px', marginBottom: '15px' }}>🐑</div>
+                    <div style={{ width: '70px', height: '70px', background: 'white', borderRadius: '50%', border: '2px solid #D4AF37', padding: '5px', margin: '0 auto 15px', boxShadow: '0 8px 16px rgba(0,0,0,0.06)' }}>
+                        <img src={SOMY_IMG} alt="소미" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: '50%' }} />
+                    </div>
                     <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '8px' }}>매일 아침 소미와 함께해요!</div>
                     <div style={{ fontSize: '13px', color: '#999', lineHeight: 1.5, marginBottom: '25px' }}>
                         궁금한 점이 있거나 이용에 어려운 점이 있다면<br />
