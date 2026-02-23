@@ -10,11 +10,12 @@ export interface CcmVideo {
 }
 
 export const CCM_LIST: CcmVideo[] = [
+    // 밤의 별TV 영상은 유튜브 정책(퍼가기 클릭 금지)으로 앱 내 재생이 불가하여 임시로 다른 영상으로 교체했습니다.
+    // 대표님, 앱에서 재생 가능한 '다른' 저작권 프리 찬양 영상 주시면 바로 반영하겠습니다!
     {
-        title: "잔잔한 피아노 찬양 모음",
-        artist: "오늘의 은혜 CCM",
-        youtubeId: "IA2pklNBJNM",
-        playlistId: "PLmq1G_u7navHEgAsM6jycEQ33zdIhZbcP"
+        title: "은혜로운 피아노 찬양 (앱 내 재생 호환)",
+        artist: "소미 추천 BGM",
+        youtubeId: "W3a4gV9R_r4"
     }
 ];
 

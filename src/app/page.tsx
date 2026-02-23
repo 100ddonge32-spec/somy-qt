@@ -350,6 +350,32 @@ export default function App() {
         }
     }, [isApiReady, todayCcm, initPlayer]);
 
+    // YouTube 플로팅/대형 화면 이동 로직 (포털 DOM 조작)
+    useEffect(() => {
+        // React 렌더링 직후 DOM 요소가 확실히 마운트되도록 딜레이
+        const timer = setTimeout(() => {
+            const wrapper = document.getElementById('ccm-player-hidden-global-wrapper');
+            const storage = document.getElementById('youtube-portal-storage');
+            if (!wrapper || !storage) return;
+
+            const largeScreen = document.getElementById('ccm-large-screen');
+            const miniScreen = document.getElementById('ccm-mini-screen');
+
+            if (view === 'ccm' && largeScreen) {
+                largeScreen.appendChild(wrapper);
+                wrapper.style.pointerEvents = 'auto'; // 대형 화면에선 터치 조작 허용
+            } else if (showIpod && miniScreen) {
+                miniScreen.appendChild(wrapper);
+                wrapper.style.pointerEvents = 'none'; // 미니 화면에선 휠 터치 방해 금지
+            } else {
+                storage.appendChild(wrapper);
+                wrapper.style.pointerEvents = 'none';
+            }
+        }, 50);
+
+        return () => clearTimeout(timer);
+    }, [view, showIpod]);
+
     // 강력한 재생 보장 watchdog
     useEffect(() => {
         const watchdog = setInterval(() => {
@@ -2230,25 +2256,23 @@ export default function App() {
                             alignItems: 'center'
                         }}>
                             {/* LCD Screen Section */}
-                            <div style={{
+                            <div id="ccm-large-screen" style={{
                                 width: '100%',
                                 height: '180px',
                                 background: '#000',
                                 borderRadius: '16px',
                                 marginBottom: '25px',
-                                padding: '20px',
+                                padding: '0px',
                                 boxShadow: 'inset 0 2px 20px rgba(0,0,0,1)',
                                 border: '1px solid #333',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
-                                position: 'relative'
+                                position: 'relative',
+                                overflow: 'hidden'
                             }}>
-                                {/* 빈 공간 유지 (글로벌 유튜브 Iframe이 이 영역 위로 포개짐) */}
-                                <div style={{ color: '#555', fontSize: '12px', fontWeight: 800 }}>
-                                    {isCcmPlaying ? '🎵 재생 중' : 'BGM 일시정지'}
-                                </div>
+                                {/* 유튜브 영상이 이 안으로 쏙 들어옵니다 */}
                             </div>
 
                             {/* 2. Large Interactive Click Wheel */}
@@ -2304,27 +2328,7 @@ export default function App() {
                                 </div>
                             </div>
 
-                            {/* Volume bar at bottom of iPod frame */}
-                            <div style={{ width: '100%', marginTop: '30px', display: 'flex', alignItems: 'center', gap: '15px', padding: '0 10px' }}>
-                                <span style={{ fontSize: '14px' }}>🔉</span>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="100"
-                                    value={ccmVolume}
-                                    onChange={(e) => {
-                                        const vol = parseInt(e.target.value);
-                                        setCcmVolume(vol);
-                                        if (playerRef.current) {
-                                            playerRef.current.unMute();
-                                            playerRef.current.setVolume(vol);
-                                            hasInteracted.current = true;
-                                        }
-                                    }}
-                                    style={{ flex: 1, accentColor: '#333' }}
-                                />
-                                <span style={{ fontSize: '14px' }}>🔊</span>
-                            </div>
+                            {/* 모바일에서 작동하지 않는 가짜 볼륨 컨트롤 제거 완료 */}
                         </div>
 
                         {/* Somy's Tip Section */}
@@ -2636,6 +2640,7 @@ export default function App() {
                 >✕</div>
                 {/* 1. 아이팟 LCD 스크린 영역 */}
                 <div
+                    id="ccm-mini-screen"
                     onClick={() => setView('ccm')}
                     style={{
                         width: '100%',
@@ -2652,24 +2657,7 @@ export default function App() {
                         border: '1px solid #222'
                     }}
                 >
-                    {/* 실시간 파형 애니메이션 (Visual Waveform) - 미니 플레이어는 파형 복구! */}
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'flex-end',
-                        gap: '3px',
-                        height: '30px',
-                    }}>
-                        {[...Array(10)].map((_, i) => (
-                            <div key={i} style={{
-                                width: '4px',
-                                background: isCcmPlaying ? '#00FF41' : '#333',
-                                borderRadius: '1.5px',
-                                height: isCcmPlaying ? '100%' : '3px',
-                                transition: 'height 0.2s',
-                                animation: isCcmPlaying ? `wave-music ${0.6 + i * 0.15}s infinite ease-in-out` : 'none'
-                            }} />
-                        ))}
-                    </div>
+                    {/* 유튜브 영상이 이 안으로 쏙 들어옵니다 */}
                 </div>
 
                 {/* 2. 클릭 휠 (Classic Click Wheel) */}
@@ -2744,25 +2732,19 @@ export default function App() {
     // 최종 렌더링
     return (
         <div style={{ position: 'relative', maxWidth: '480px', margin: '0 auto' }}>
-            {/* 유튜브 진짜 Iframe (미니 플레이어일 때는 숨기고, ccm 뷰일 때는 팝업처럼 겹쳐서 표시) */}
+            {/* 유튜브 진짜 Iframe 보관소 (어디에도 안 띄워야 할 경우 숨겨둘 투명 금고 역할) */}
             <div
-                style={{
-                    position: 'fixed',
-                    top: view === 'ccm' ? '146px' : '-500px',
-                    left: view === 'ccm' ? '50%' : '-500px',
-                    transform: view === 'ccm' ? 'translateX(-50%)' : 'none',
-                    width: view === 'ccm' ? 'calc(100% - 88px)' : '10px',
-                    height: view === 'ccm' ? '180px' : '10px',
-                    maxWidth: view === 'ccm' ? '392px' : 'none',
-                    pointerEvents: view === 'ccm' ? 'auto' : 'none',
-                    zIndex: view === 'ccm' ? 1000 : -100,
-                    borderRadius: '16px',
-                    overflow: 'hidden',
-                    transition: 'top 0.3s'
-                }}
+                id="youtube-portal-storage"
+                style={{ position: 'fixed', left: '-1000px', top: '-1000px', width: '10px', height: '10px', overflow: 'hidden' }}
             >
-                {/* 유튜브 API가 div를 iframe으로 덮어씌웁니다. 겉의 컨테이너를 React가 조종해야 에러가 안 납니다! */}
-                <div id="ccm-player-hidden-global"></div>
+                {/* 이 래퍼(Wrapper) 껍데기가 DOM 사이를 순간 이동합니다! */}
+                <div
+                    id="ccm-player-hidden-global-wrapper"
+                    style={{ width: '100%', height: '100%', flex: 1, display: 'block' }}
+                >
+                    {/* 실제 유튜브 Iframe (React가 아닌 YouTube API에 의해 생성, 파괴되면 에러가 남) */}
+                    <div id="ccm-player-hidden-global"></div>
+                </div>
             </div>
             {renderContent()}
             {renderNotificationList()}
