@@ -2162,7 +2162,7 @@ export default function App() {
                     {styles}
                     <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", background: 'white', borderBottom: "1px solid #EEE" }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
-                        <div style={{ fontWeight: 800, color: "#333", fontSize: "16px" }}>소미-파드 클래식 🎵</div>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "16px" }}>소미와 함께하는 오늘의 CCM 🎵</div>
                     </div>
 
                     <div style={{ padding: '30px 20px', display: 'flex', flexDirection: 'column', gap: '30px', alignItems: 'center' }}>
