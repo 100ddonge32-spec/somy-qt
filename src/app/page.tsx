@@ -1273,7 +1273,7 @@ export default function App() {
 
                                     {/* 알림종 */}
                                     {notifications.filter(n => !n.is_read).length > 0 && (
-                                        <div onClick={(e) => { e.stopPropagation(); setShowNotiList(!showNotiList); }} style={{ position: 'absolute', top: '50%', right: '15px', transform: 'translateY(-50%)', width: '36px', height: '36px', background: 'linear-gradient(145deg, #ffffff, #f0f0f0)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 16px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1), inset 0 2px 4px white', cursor: 'pointer', zIndex: 1001, border: '2px solid #E6A4B4', animation: 'bell-swing 2s infinite ease-in-out', transition: 'all 0.2s' }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-50%) scale(1.1) rotate(10deg)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(-50%) scale(1) rotate(0)"}>
+                                        <div onClick={(e) => { e.stopPropagation(); setShowNotiList(!showNotiList); }} style={{ position: 'absolute', top: '50%', right: '15px', transform: 'translateY(-50%)', width: '36px', height: '36px', background: 'linear-gradient(145deg, #ffffff, #f0f0f0)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 16px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1), inset 0 2px 4px white', cursor: 'pointer', zIndex: 1200, border: '2px solid #E6A4B4', animation: 'bell-swing 2s infinite ease-in-out', transition: 'all 0.2s' }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-50%) scale(1.1) rotate(10deg)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(-50%) scale(1) rotate(0)"}>
                                             <span style={{ fontSize: '18px' }}>🔔</span>
                                             <div style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, minWidth: '18px', height: '18px', padding: '0 4px', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
                                                 {notifications.filter(n => !n.is_read).length}
@@ -2200,7 +2200,16 @@ export default function App() {
                         zIndex: 10
                     }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
-                        <div style={{ fontWeight: 800, color: "#333", fontSize: "16px" }}>은혜나눔 게시판</div>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "16px", flex: 1 }}>은혜나눔 게시판</div>
+                        {/* 게시판 알림종 추가 */}
+                        <div onClick={() => setShowNotiList(!showNotiList)} style={{ position: 'relative', cursor: 'pointer', padding: '4px' }}>
+                            <span style={{ fontSize: '20px' }}>🔔</span>
+                            {notifications.filter(n => !n.is_read).length > 0 && (
+                                <div style={{ position: 'absolute', top: '2px', right: '2px', background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, minWidth: '14px', height: '14px', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white' }}>
+                                    {notifications.filter(n => !n.is_read).length}
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
