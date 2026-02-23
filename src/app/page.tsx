@@ -1271,15 +1271,33 @@ export default function App() {
                                         은혜나눔 게시판
                                     </button>
 
-                                    {/* 알림종 */}
-                                    {notifications.filter(n => !n.is_read).length > 0 && (
-                                        <div onClick={(e) => { e.stopPropagation(); setShowNotiList(!showNotiList); }} style={{ position: 'absolute', top: '50%', right: '15px', transform: 'translateY(-50%)', width: '36px', height: '36px', background: 'linear-gradient(145deg, #ffffff, #f0f0f0)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 16px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1), inset 0 2px 4px white', cursor: 'pointer', zIndex: 1200, border: '2px solid #E6A4B4', animation: 'bell-swing 2s infinite ease-in-out', transition: 'all 0.2s' }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-50%) scale(1.1) rotate(10deg)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(-50%) scale(1) rotate(0)"}>
-                                            <span style={{ fontSize: '18px' }}>🔔</span>
+                                    {/* 알림종: 항상 표시하되 안 읽은 알림이 있을 때만 효과 */}
+                                    <div onClick={(e) => { e.stopPropagation(); setShowNotiList(!showNotiList); }} style={{
+                                        position: 'absolute',
+                                        top: '50%',
+                                        right: '15px',
+                                        transform: 'translateY(-50%)',
+                                        width: '36px',
+                                        height: '36px',
+                                        background: 'linear-gradient(145deg, #ffffff, #f0f0f0)',
+                                        borderRadius: '50%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        boxShadow: '0 8px 16px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1), inset 0 2px 4px white',
+                                        cursor: 'pointer',
+                                        zIndex: 1200,
+                                        border: '2px solid #E6A4B4',
+                                        animation: notifications.filter(n => !n.is_read).length > 0 ? 'bell-swing 2s infinite ease-in-out' : 'none',
+                                        transition: 'all 0.2s'
+                                    }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-50%) scale(1.1) rotate(10deg)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(-50%) scale(1) rotate(0)"}>
+                                        <span style={{ fontSize: '18px' }}>🔔</span>
+                                        {notifications.filter(n => !n.is_read).length > 0 && (
                                             <div style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, minWidth: '18px', height: '18px', padding: '0 4px', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
                                                 {notifications.filter(n => !n.is_read).length}
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div style={{ display: 'flex', gap: '14px', width: '100%' }}>
@@ -2201,11 +2219,24 @@ export default function App() {
                     }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
                         <div style={{ fontWeight: 800, color: "#333", fontSize: "16px", flex: 1 }}>은혜나눔 게시판</div>
-                        {/* 게시판 알림종 추가 */}
-                        <div onClick={() => setShowNotiList(!showNotiList)} style={{ position: 'relative', cursor: 'pointer', padding: '4px' }}>
-                            <span style={{ fontSize: '20px' }}>🔔</span>
+                        {/* 게시판 알림종: 홈 스크린과 스타일 통일 */}
+                        <div onClick={() => setShowNotiList(!showNotiList)} style={{
+                            position: 'relative',
+                            cursor: 'pointer',
+                            width: '36px',
+                            height: '36px',
+                            background: 'linear-gradient(145deg, #ffffff, #f0f0f0)',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
+                            border: '1.5px solid #E6A4B4',
+                            animation: notifications.filter(n => !n.is_read).length > 0 ? 'bell-swing 2s infinite ease-in-out' : 'none'
+                        }}>
+                            <span style={{ fontSize: '18px' }}>🔔</span>
                             {notifications.filter(n => !n.is_read).length > 0 && (
-                                <div style={{ position: 'absolute', top: '2px', right: '2px', background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, minWidth: '14px', height: '14px', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white' }}>
+                                <div style={{ position: 'absolute', top: '-2px', right: '-2px', background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, minWidth: '15px', height: '15px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white' }}>
                                     {notifications.filter(n => !n.is_read).length}
                                 </div>
                             )}
@@ -3040,39 +3071,74 @@ export default function App() {
     const renderNotificationList = () => {
         if (!showNotiList) return null;
         return (
-            <div style={{ position: 'absolute', bottom: '60px', left: '50%', transform: 'translateX(-50%)', width: '320px', background: 'white', borderRadius: '24px', boxShadow: '0 15px 50px rgba(0,0,0,0.2)', zIndex: 1100, border: '2px solid #E6A4B4', overflow: 'hidden', animation: 'slide-up 0.3s ease-out' }}>
-                <div style={{ padding: '15px', borderBottom: '1px solid #F5F5F5', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FDFCFB' }}>
-                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>새 소식</span>
-                    <button onClick={() => setShowNotiList(false)} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '12px' }}>닫기</button>
-                </div>
-                <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
-                    {notifications.length === 0 ? (
-                        <div style={{ padding: '30px 20px', textAlign: 'center', color: '#AAA', fontSize: '13px' }}>
-                            아직 도착한 소식이 없어요 🐑
-                        </div>
-                    ) : (
-                        notifications.map(n => (
-                            <div key={n.id} onClick={async () => {
-                                // 읽음 처리
-                                if (!n.is_read) {
-                                    await fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: n.id }) });
-                                    setNotifications(notifications.map(noti => noti.id === n.id ? { ...noti, is_read: true } : noti));
-                                }
-                                // 게시판으로 이동
-                                setView('community');
-                                setShowNotiList(false);
-                            }} style={{ padding: '12px 15px', borderBottom: '1px solid #F9F9F9', cursor: 'pointer', background: n.is_read ? 'white' : '#FFF9F9', transition: 'background 0.2s' }}>
-                                <div style={{ fontSize: '13px', color: '#333', lineHeight: 1.4 }}>
-                                    <strong>{n.actor_name}</strong>님이 성도님의 은혜나눔에 댓글을 남기셨습니다.
-                                </div>
-                                <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>
-                                    {new Date(n.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
-                                </div>
+            <>
+                {/* 배경 오버레이 (바깥 클릭 시 닫기) */}
+                <div onClick={() => setShowNotiList(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.1)', zIndex: 1999 }} />
+
+                <div style={{ position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)', width: '90%', maxWidth: '340px', background: 'white', borderRadius: '24px', boxShadow: '0 15px 50px rgba(0,0,0,0.2)', zIndex: 2000, border: '2px solid #E6A4B4', overflow: 'hidden', animation: 'slide-up 0.3s ease-out' }}>
+                    <div style={{ padding: '15px', borderBottom: '1px solid #F5F5F5', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FDFCFB' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>🔔 새 소식</span>
+                        <button onClick={() => setShowNotiList(false)} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>닫기</button>
+                    </div>
+                    <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                        {notifications.length === 0 ? (
+                            <div style={{ padding: '40px 20px', textAlign: 'center', color: '#AAA', fontSize: '13px' }}>
+                                아직 도착한 소식이 없어요 🐑<br />
+                                <span style={{ fontSize: '11px', opacity: 0.6, marginTop: '5px', display: 'block' }}>은혜나눔의 댓글 알림이 여기에 표시됩니다.</span>
                             </div>
-                        ))
+                        ) : (
+                            [...notifications].reverse().map(n => (
+                                <div key={n.id} onClick={async () => {
+                                    // 읽음 처리
+                                    if (!n.is_read) {
+                                        await fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: n.id }) });
+                                        setNotifications(notifications.map(noti => noti.id === n.id ? { ...noti, is_read: true } : noti));
+                                    }
+                                    // 게시판으로 이동 및 데이터 새로고침
+                                    try {
+                                        const res = await fetch(`/api/community?church_id=${churchId}`);
+                                        const data = await res.json();
+                                        if (Array.isArray(data)) setCommunityPosts(data);
+                                    } catch (e) { }
+
+                                    setView('community');
+                                    setShowNotiList(false);
+                                }} style={{ padding: '15px', borderBottom: '1px solid #F9F9F9', cursor: 'pointer', background: n.is_read ? 'white' : '#FFF9F9', transition: 'background 0.2s', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: n.is_read ? 'transparent' : '#FF3D00', marginTop: '5px', flexShrink: 0 }} />
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontSize: '13px', color: '#333', lineHeight: 1.5 }}>
+                                            <strong>{n.actor_name}</strong>님이 성도님의 은혜나눔에 따뜻한 댓글을 남기셨습니다.
+                                        </div>
+                                        <div style={{ fontSize: '11px', color: '#999', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <span>🕒</span>
+                                            {new Date(n.created_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                    {notifications.length > 0 && (
+                        <div style={{ padding: '10px 15px', textAlign: 'center', background: '#FDFCFB', borderTop: '1px solid #F0F0F0', display: 'flex', gap: '10px' }}>
+                            {notifications.some(n => !n.is_read) && (
+                                <button onClick={async (e) => {
+                                    e.stopPropagation();
+                                    // 모든 알림 읽음 처리 (API)
+                                    try {
+                                        await fetch('/api/notifications', {
+                                            method: 'PATCH',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ user_id: user.id }) // 백엔드에서 action: 'read_all' 처리하도록 구현하거나, 유저ID만 보내서 전체 처리
+                                        });
+                                        setNotifications(notifications.map(n => ({ ...n, is_read: true })));
+                                    } catch (e) { console.error("전체 읽음 처리 실패:", e); }
+                                }} style={{ flex: 1, background: '#F5F5F5', border: 'none', color: '#666', fontSize: '12px', fontWeight: 600, padding: '8px', borderRadius: '10px', cursor: 'pointer' }}>모두 읽음</button>
+                            )}
+                            <button onClick={() => setShowNotiList(false)} style={{ flex: 1, background: '#333', border: 'none', color: 'white', fontSize: '12px', fontWeight: 700, padding: '8px', borderRadius: '10px', cursor: 'pointer' }}>닫기</button>
+                        </div>
                     )}
                 </div>
-            </div>
+            </>
         );
     };
 

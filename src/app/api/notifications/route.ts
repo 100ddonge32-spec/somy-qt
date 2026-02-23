@@ -35,9 +35,19 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
     try {
         const body = await req.json();
-        const { id } = body;
+        const { id, user_id } = body;
 
-        if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+        if (user_id) {
+            // 해당 유저의 모든 알림 읽음 처리
+            const { error } = await supabaseAdmin
+                .from('notifications')
+                .update({ is_read: true })
+                .eq('user_id', user_id);
+            if (error) throw error;
+            return NextResponse.json({ success: true });
+        }
+
+        if (!id) return NextResponse.json({ error: 'ID or user_id is required' }, { status: 400 });
 
         const { error } = await supabaseAdmin
             .from('notifications')
