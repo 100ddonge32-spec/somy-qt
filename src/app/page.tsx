@@ -914,6 +914,14 @@ export default function App() {
           from { transform: translateX(-50%) translateY(20px); opacity: 0; }
           to { transform: translateX(-50%) translateY(0); opacity: 1; }
       }
+      button:active {
+          transform: scale(0.96) !important;
+          transition: transform 0.1s ease !important;
+      }
+      a:active {
+          transform: scale(0.98);
+          opacity: 0.8;
+      }
     `}</style>
     );
 
@@ -1382,7 +1390,6 @@ export default function App() {
                                         </div>
                                     )}
                                 </div>
-                                {renderNotificationList()}
 
                                 <div style={{ display: 'flex', gap: '8px', marginTop: '10px', width: '100%' }}>
                                     <button onClick={async () => {
@@ -1530,10 +1537,28 @@ export default function App() {
             };
 
             return (
-                <div style={{ minHeight: "100vh", background: "white", maxWidth: "480px", margin: "0 auto", ...baseFont, position: 'relative' }}>
+                <div style={{
+                    minHeight: "100vh",
+                    background: "white",
+                    maxWidth: "480px",
+                    margin: "0 auto",
+                    ...baseFont,
+                    position: 'relative',
+                    paddingTop: 'env(safe-area-inset-top)'
+                }}>
                     {styles}
                     {/* Header */}
-                    <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #EEE", position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
+                    <div style={{
+                        padding: "12px 20px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        borderBottom: "1px solid #F0F0F0",
+                        position: 'sticky',
+                        top: 'env(safe-area-inset-top)',
+                        background: 'white',
+                        zIndex: 10
+                    }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
                         <img src={churchSettings.church_logo_url} alt="로고" style={{ height: "24px", objectFit: 'contain' }} />
                         <div style={{ fontWeight: 700, color: "#333", fontSize: "14px" }}>
@@ -1732,7 +1757,22 @@ export default function App() {
                             <button onClick={() => setQtStep('grace')} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>은혜 나누러 가기</button>
                         )}
                         {qtStep === 'grace' && (
-                            <button onClick={handleShareGrace} style={{ width: '100%', padding: '16px', background: '#E6A4B4', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>기록하고 성도들과 나누기</button>
+                            <button
+                                onClick={handleShareGrace}
+                                style={{
+                                    width: '100%',
+                                    padding: '16px',
+                                    background: graceInput.trim().length > 0 ? '#C2185B' : '#E6A4B4',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '15px',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    transition: 'background-color 0.4s ease'
+                                }}
+                            >
+                                기록하고 성도들과 나누기
+                            </button>
                         )}
                         {qtStep === 'pray' && (
                             <button onClick={async () => {
@@ -2012,9 +2052,26 @@ export default function App() {
         if (view === "stats") {
             const medals = ['🥇', '🥈', '🥉'];
             return (
-                <div style={{ minHeight: "100vh", background: "white", maxWidth: "480px", margin: "0 auto", ...baseFont }}>
+                <div style={{
+                    minHeight: "100vh",
+                    background: "white",
+                    maxWidth: "480px",
+                    margin: "0 auto",
+                    ...baseFont,
+                    paddingTop: 'env(safe-area-inset-top)'
+                }}>
                     {styles}
-                    <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #EEE", position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
+                    <div style={{
+                        padding: "12px 20px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        borderBottom: "1px solid #F0F0F0",
+                        position: 'sticky',
+                        top: 'env(safe-area-inset-top)',
+                        background: 'white',
+                        zIndex: 10
+                    }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
                         <div style={{ fontWeight: 700, color: "#333", fontSize: "14px" }}>👑 이달의 큐티왕</div>
                     </div>
@@ -2171,9 +2228,26 @@ export default function App() {
             };
 
             return (
-                <div style={{ minHeight: "100vh", background: "#F8F8F8", maxWidth: "480px", margin: "0 auto", ...baseFont }}>
+                <div style={{
+                    minHeight: "100vh",
+                    background: "#F8F8F8",
+                    maxWidth: "480px",
+                    margin: "0 auto",
+                    ...baseFont,
+                    paddingTop: 'env(safe-area-inset-top)'
+                }}>
                     {styles}
-                    <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #EEE", position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
+                    <div style={{
+                        padding: "12px 20px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        borderBottom: "1px solid #F0F0F0",
+                        position: 'sticky',
+                        top: 'env(safe-area-inset-top)',
+                        background: 'white',
+                        zIndex: 10
+                    }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
                         <div style={{ fontWeight: 800, color: "#333", fontSize: "16px" }}>은혜나눔 게시판</div>
                     </div>
@@ -2272,11 +2346,28 @@ export default function App() {
         ══════════════════════════════ */
         if (view === "history") {
             return (
-                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "480px", margin: "0 auto", ...baseFont }}>
+                <div style={{
+                    minHeight: "100vh",
+                    background: "#FDFCFB",
+                    maxWidth: "480px",
+                    margin: "0 auto",
+                    ...baseFont,
+                    paddingTop: 'env(safe-area-inset-top)'
+                }}>
                     {styles}
-                    <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #EEE", position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
-                        <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
-                        <div style={{ fontWeight: 800, color: "#333", fontSize: "16px" }}>나의 묵상 기록</div>
+                    <div style={{
+                        padding: "12px 20px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        borderBottom: "1px solid #F0F0F0",
+                        position: 'sticky',
+                        top: 'env(safe-area-inset-top)',
+                        background: 'white',
+                        zIndex: 10
+                    }}>
+                        <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333', padding: '8px' }}>←</button>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "15px" }}>나의 묵상 기록</div>
                     </div>
 
                     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '100px' }}>
@@ -2300,7 +2391,7 @@ export default function App() {
                                         </div>
                                         {h.daily_qt?.passage ? (
                                             <p style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                                {h.daily_qt.passage.substring(0, 100)}...
+                                                {h.daily_qt.passage.split('|||')[0].substring(0, 100)}...
                                             </p>
                                         ) : (
                                             <p style={{ fontSize: '13px', color: '#999', fontStyle: 'italic', margin: 0 }}>
@@ -2308,19 +2399,6 @@ export default function App() {
                                             </p>
                                         )}
                                     </div>
-
-                                    {h.answers && Array.isArray(h.answers) && h.answers.some((a: string) => a && a.trim()) && (
-                                        <div style={{ borderTop: '1px dashed #EEE', paddingTop: '15px' }}>
-                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#709176', marginBottom: '10px' }}>나의 고백</div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                {h.answers.map((ans: string, i: number) => ans && ans.trim() && (
-                                                    <div key={i} style={{ background: '#F9FAF9', padding: '10px 14px', borderRadius: '12px', fontSize: '13px', color: '#444' }}>
-                                                        <span style={{ fontWeight: 700, color: '#709176', marginRight: '6px' }}>{i + 1}.</span> {ans}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
 
                                     <button onClick={() => {
                                         const qt = h.daily_qt;
@@ -2336,11 +2414,11 @@ export default function App() {
                                                 prayer: qt.prayer,
                                             });
                                             setAnswers(h.answers || []);
-                                            setIsHistoryMode(true); // 히스토리 모드 활성화
-                                            setQtStep('read'); // 처음부터 다시보기
+                                            setIsHistoryMode(true);
+                                            setQtStep('read');
                                             setView('qt');
                                         }
-                                    }} style={{ width: '100%', marginTop: '15px', padding: '12px', background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '12px', color: '#666', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                                    }} style={{ width: '100%', marginTop: '5px', padding: '12px', background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '12px', color: '#666', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
                                         전체 내용 다시보기
                                     </button>
                                 </div>
@@ -2352,17 +2430,39 @@ export default function App() {
             );
         }
 
+        /* ══════════════════════════════
+           CCM VIEW
+        ══════════════════════════════ */
         if (view === "ccm") {
             return (
-                <div style={{ minHeight: "100vh", background: "#F2F2F7", maxWidth: "480px", margin: "0 auto", ...baseFont, paddingBottom: '40px' }}>
+                <div style={{
+                    minHeight: "100vh",
+                    background: "white",
+                    maxWidth: "480px",
+                    margin: "0 auto",
+                    ...baseFont,
+                    paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
+                    paddingTop: 'env(safe-area-inset-top)',
+                    display: 'flex',
+                    flexDirection: 'column'
+                }}>
                     {styles}
-                    <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", background: 'white', borderBottom: "1px solid #EEE" }}>
-                        <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
-                        <div style={{ fontWeight: 800, color: "#333", fontSize: "16px" }}>소미와 함께하는 오늘의 CCM 🎵</div>
+                    <div style={{
+                        padding: "12px 20px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        background: 'white',
+                        borderBottom: "1px solid #F0F0F0",
+                        position: 'sticky',
+                        top: 'env(safe-area-inset-top)',
+                        zIndex: 10
+                    }}>
+                        <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333', padding: '8px' }}>←</button>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "15px" }}>소미와 함께하는 오늘의 CCM 🎵</div>
                     </div>
 
                     <div style={{ padding: '30px 20px', display: 'flex', flexDirection: 'column', gap: '30px', alignItems: 'center' }}>
-                        {/* 1. Large iPod Display Area */}
                         <div style={{
                             width: '100%',
                             background: '#F5F5F7',
@@ -2374,14 +2474,12 @@ export default function App() {
                             flexDirection: 'column',
                             alignItems: 'center'
                         }}>
-                            {/* LCD Screen Section */}
                             <div id="ccm-large-screen" style={{
                                 width: '100%',
                                 height: '180px',
                                 background: '#000',
                                 borderRadius: '16px',
                                 marginBottom: '25px',
-                                padding: '0px',
                                 boxShadow: 'inset 0 2px 20px rgba(0,0,0,1)',
                                 border: '1px solid #333',
                                 display: 'flex',
@@ -2391,10 +2489,8 @@ export default function App() {
                                 position: 'relative',
                                 overflow: 'hidden'
                             }}>
-                                {/* 유튜브 영상이 이 안으로 쏙 들어옵니다 */}
                             </div>
 
-                            {/* 2. Large Interactive Click Wheel */}
                             <div style={{
                                 width: '160px',
                                 height: '160px',
@@ -2412,15 +2508,8 @@ export default function App() {
                                     style={{ position: 'absolute', top: '15px', fontSize: '10px', fontWeight: 900, color: '#B8924A', cursor: 'pointer', zIndex: 15 }}
                                 >RESET</div>
 
-                                <div
-                                    onClick={(e) => hapticClick(e, handlePrevCcm)}
-                                    style={{ position: 'absolute', left: '15px', fontSize: '12px', color: '#BBB', cursor: 'pointer', zIndex: 11 }}
-                                >⏮</div>
-
-                                <div
-                                    onClick={(e) => hapticClick(e, handleNextCcm)}
-                                    style={{ position: 'absolute', right: '15px', fontSize: '12px', color: '#BBB', cursor: 'pointer', zIndex: 11 }}
-                                >⏭</div>
+                                <div onClick={(e) => hapticClick(e, handlePrevCcm)} style={{ position: 'absolute', left: '15px', fontSize: '12px', color: '#BBB', cursor: 'pointer', zIndex: 11 }}>⏮</div>
+                                <div onClick={(e) => hapticClick(e, handleNextCcm)} style={{ position: 'absolute', right: '15px', fontSize: '12px', color: '#BBB', cursor: 'pointer', zIndex: 11 }}>⏭</div>
 
                                 <div
                                     onClick={(e) => hapticClick(e, () => togglePlay(e))}
@@ -2440,17 +2529,12 @@ export default function App() {
                                         zIndex: 10,
                                         transition: 'transform 0.1s'
                                     }}
-                                    onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.92)'}
-                                    onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
                                 >
                                     {isCcmPlaying ? '⏸' : '▶️'}
                                 </div>
                             </div>
-
-                            {/* 모바일에서 작동하지 않는 가짜 볼륨 컨트롤 제거 완료 */}
                         </div>
 
-                        {/* Somy's Tip Section */}
                         <div style={{ width: '100%', background: '#FFF', borderRadius: '24px', padding: '20px', display: 'flex', gap: '15px', alignItems: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #FFD1DC' }}>
                             <div style={{ width: '50px', height: '50px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid #FFD1DC' }}>
                                 <img src={SOMY_IMG} alt="소미" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -2466,107 +2550,68 @@ export default function App() {
             );
         }
 
+        /* ══════════════════════════════
+           ADMIN PAGE
+        ══════════════════════════════ */
         if (view === "admin") {
             return (
-                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "480px", margin: "0 auto", ...baseFont, padding: '24px 20px', position: 'relative' }}>
+                <div style={{
+                    minHeight: "100vh",
+                    background: "#FDFCFB",
+                    maxWidth: "480px",
+                    margin: "0 auto",
+                    ...baseFont,
+                    padding: '0 20px 24px 20px',
+                    position: 'relative',
+                    paddingTop: 'env(safe-area-inset-top)'
+                }}>
+                    <div style={{
+                        padding: "12px 0",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        background: 'transparent',
+                        position: 'sticky',
+                        top: 'env(safe-area-inset-top)',
+                        zIndex: 10,
+                        marginBottom: '12px'
+                    }}>
+                        <button onClick={handleBack} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "15px" }}>⚙️ 교회 관리자 센터</div>
+                    </div>
 
-                    {/* 교회 설정 모달 - admin 뷰 안에서 직접 오버레이 */}
-                    {showSettings && (
-                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                            <div style={{ background: 'white', borderRadius: '20px', padding: '28px', width: '100%', maxWidth: '400px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', maxHeight: '85vh', overflowY: 'auto' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>⚙️ {adminTab === 'settings' ? '교회 설정' : adminTab === 'members' ? '성도 관리' : '슈퍼 관리'}</h2>
-                                    <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#999' }}>✕</button>
-                                </div>
-                                <div style={{ display: 'flex', gap: '5px', marginBottom: '20px', background: '#F5F5F5', padding: '4px', borderRadius: '10px' }}>
-                                    <button onClick={() => setAdminTab('settings')} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'settings' ? 'white' : 'transparent', cursor: 'pointer' }}>🎨 설정</button>
-                                    <button onClick={async () => { setAdminTab('members'); setIsManagingMembers(true); try { const r = await fetch('/api/admin?action=list_members'); const data = await r.json(); if (Array.isArray(data)) setMemberList(data); } finally { setIsManagingMembers(false); } }} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'members' ? 'white' : 'transparent', cursor: 'pointer' }}>👥 성도</button>
-                                    {isSuperAdmin && <button onClick={() => setAdminTab('master')} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'master' ? 'white' : 'transparent', cursor: 'pointer' }}>👑 마스터</button>}
-                                </div>
-                                {adminTab === 'settings' ? (
-                                    <>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                                            {[
-                                                ['church_name', '교회 이름', '예: 예수인교회'],
-                                                ['app_subtitle', '앱 부제목', '예: 큐티 동반자'],
-                                                ['church_logo_url', '교회 로고 URL', 'https://...'],
-                                                ['church_url', '교회 홈페이지 URL', 'https://...'],
-                                                ['sermon_url', '담임목사님 설교 유튜브 URL', 'https://youtube.com/...']
-                                            ].map(([key, label, placeholder]) => (
-                                                <div key={key}>
-                                                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>{label}</label>
-                                                    <input type="text" value={String(settingsForm[key as keyof typeof settingsForm])} onChange={e => setSettingsForm(prev => ({ ...prev, [key]: e.target.value }))} placeholder={placeholder} style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }} />
-                                                </div>
-                                            ))}
-                                            <div>
-                                                <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>💎 요금제</label>
-                                                <select value={settingsForm.plan} onChange={e => setSettingsForm(prev => ({ ...prev, plan: e.target.value }))} style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', outline: 'none', background: 'white' }}>
-                                                    <option value="free">무료 버전 (수동 관리)</option>
-                                                    <option value="premium">유료 버전 (AI 자동 생성)</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                                            <button onClick={() => setShowSettings(false)} style={{ flex: 1, padding: '12px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '10px', fontWeight: 600, cursor: 'pointer' }}>취소</button>
-                                            <button onClick={handleSaveSettings} disabled={settingsSaving} style={{ flex: 2, padding: '12px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', opacity: settingsSaving ? 0.7 : 1 }}>{settingsSaving ? '저장 중...' : '💾 저장하기'}</button>
-                                        </div>
-                                    </>
-                                ) : adminTab === 'members' ? (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '350px', overflowY: 'auto' }}>
-                                        {isManagingMembers ? <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>로딩 중...</div> :
-                                            memberList.length === 0 ? <div style={{ textAlign: 'center', padding: '20px', color: '#999', fontSize: '13px' }}>등록된 성도가 없습니다.</div> :
-                                                memberList.map(member => (
-                                                    <div key={member.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#F9F9F9', borderRadius: '14px' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#333' }}>{member.full_name || '이름 없음'}</div>
-                                                            <div style={{ fontSize: '10px', color: '#999' }}>{member.email}</div>
-                                                        </div>
-                                                        <button onClick={async () => { const newStatus = !member.is_approved; const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve_user', user_id: member.id, is_approved: newStatus }) }); if (res.ok) setMemberList(memberList.map(m => m.id === member.id ? { ...m, is_approved: newStatus } : m)); }} style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: member.is_approved ? '#E8F5E9' : '#333', color: member.is_approved ? '#2E7D32' : 'white' }}>{member.is_approved ? '승인됨' : '승인하기'}</button>
-                                                    </div>
-                                                ))
-                                        }
-                                    </div>
-                                ) : (
-                                    <div style={{ fontSize: '13px', color: '#666', background: '#F5F5F3', padding: '14px', borderRadius: '12px' }}>🛡️ 슈퍼 관리자 전용 기능입니다.</div>
-                                )}
-                            </div>
+                    <>
+                        <div style={{ background: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', marginBottom: '24px', textAlign: 'center', border: '1px solid #F0ECE4' }}>
+                            <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#F5F2EA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', margin: '0 auto 16px' }}>👑</div>
+                            <div style={{ fontSize: '16px', fontWeight: 800, color: '#333', marginBottom: '4px' }}>{user?.user_metadata?.full_name || '관리자'}님, 반갑습니다. </div>
+                            <div style={{ fontSize: '13px', color: '#999', marginBottom: '16px' }}>{user?.email}</div>
+                            <button onClick={handleLogout} style={{ padding: '8px 20px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>시스템 로그아웃</button>
                         </div>
-                    )}
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "32px" }}>
-                        <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
-                        <div style={{ fontWeight: 800, color: "#333", fontSize: "18px" }}>관리자 센터</div>
-                    </div>
 
-                    <div style={{ background: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', marginBottom: '24px', textAlign: 'center', border: '1px solid #F0ECE4' }}>
-                        <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#F5F2EA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', margin: '0 auto 16px' }}>👑</div>
-                        <div style={{ fontSize: '16px', fontWeight: 800, color: '#333', marginBottom: '4px' }}>{user?.user_metadata?.full_name || '관리자'}님, 반갑습니다. </div>
-                        <div style={{ fontSize: '13px', color: '#999', marginBottom: '16px' }}>{user?.email}</div>
-                        <button onClick={handleLogout} style={{ padding: '8px 20px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>시스템 로그아웃</button>
-                    </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <button onClick={() => { setAdminTab('settings'); setSettingsForm({ ...churchSettings }); setShowSettings(true); }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
+                                <div style={{ width: '48px', height: '48px', background: '#FFF9C4', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>⛪</div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '2px' }}>교회 정보 및 환경 설정</div>
+                                    <div style={{ fontSize: '12px', color: '#999' }}>로고, 이름, 홈페이지, 요금제 등을 관리합니다.</div>
+                                </div>
+                            </button>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <button onClick={() => { setAdminTab('settings'); setSettingsForm({ ...churchSettings }); setShowSettings(true); }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
-                            <div style={{ width: '48px', height: '48px', background: '#FFF9C4', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>⛪</div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '2px' }}>교회 정보 및 환경 설정</div>
-                                <div style={{ fontSize: '12px', color: '#999' }}>로고, 이름, 홈페이지, 요금제 등을 관리합니다.</div>
-                            </div>
-                        </button>
+                            <button onClick={() => {
+                                const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
+                                setQtForm({ date: today, reference: '', passage: '', interpretation: '', question1: '', question2: '', question3: '', prayer: '' });
+                                setView('qtManage');
+                            }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
+                                <div style={{ width: '48px', height: '48px', background: '#E3F2FD', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📖</div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '2px' }}>오늘의 큐티 말씀 관리</div>
+                                    <div style={{ fontSize: '12px', color: '#999' }}>매일의 묵상 본문과 질문을 수정하고 등록합니다.</div>
+                                </div>
+                            </button>
+                        </div>
 
-                        <button onClick={() => {
-                            const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
-                            setQtForm({ date: today, reference: '', passage: '', interpretation: '', question1: '', question2: '', question3: '', prayer: '' });
-                            setView('qtManage');
-                        }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
-                            <div style={{ width: '48px', height: '48px', background: '#E3F2FD', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📖</div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '2px' }}>오늘의 큐티 말씀 관리</div>
-                                <div style={{ fontSize: '12px', color: '#999' }}>매일의 묵상 본문과 질문을 수정하고 등록합니다.</div>
-                            </div>
-                        </button>
-                    </div>
-
-                    <button onClick={() => setView('home')} style={{ marginTop: '32px', width: '100%', padding: '16px', background: '#F5F5F5', color: '#333', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 돌아가기</button>
+                        <button onClick={() => setView('home')} style={{ marginTop: '32px', width: '100%', padding: '16px', background: '#F5F5F5', color: '#333', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 돌아가기</button>
+                    </>
                 </div>
             );
         }
@@ -2583,11 +2628,18 @@ export default function App() {
             const videoId = getYoutubeId(churchSettings.sermon_url || "");
 
             return (
-                <div style={{ minHeight: "100vh", background: "white", maxWidth: "480px", margin: "0 auto", ...baseFont }}>
+                <div style={{
+                    minHeight: "100vh",
+                    background: "white",
+                    maxWidth: "480px",
+                    margin: "0 auto",
+                    ...baseFont,
+                    paddingTop: 'env(safe-area-inset-top)'
+                }}>
                     {styles}
-                    <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #EEE", position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
-                        <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
-                        <div style={{ fontWeight: 800, color: "#333", fontSize: "16px" }}>🎥 담임목사님 말씀 설교</div>
+                    <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #F0F0F0", position: 'sticky', top: 'env(safe-area-inset-top)', background: 'white', zIndex: 10 }}>
+                        <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333', padding: '8px' }}>←</button>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "15px" }}>🎥 담임목사님 말씀 설교</div>
                     </div>
                     <div style={{ padding: "20px" }}>
                         <div style={{ background: '#FFF3E0', padding: '15px', borderRadius: '15px', marginBottom: '20px', border: '1px solid #FFCC80' }}>
@@ -2621,47 +2673,55 @@ export default function App() {
                 </div>
             );
         }
-        return (
-            <div style={{ display: "flex", flexDirection: "column", height: "100vh", maxWidth: "480px", margin: "0 auto", background: "white", ...baseFont, position: 'relative' }}>
-                <div style={{ padding: "15px 20px", borderBottom: "1px solid #EEE", display: "flex", alignItems: "center", gap: "12px" }}>
-                    <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer" }}>←</button>
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', border: '1px solid #EEE' }}>
-                        <img src={SOMY_IMG} alt="소미" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </div>
-                    <div>
-                        <div style={{ fontWeight: 700, color: "#333", fontSize: "14px" }}>소미 @예수인교회</div>
-                        <div style={{ fontSize: "11px", color: "#999" }}>실시간 묵상 가이드</div>
-                    </div>
-                </div>
 
-                <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "20px", background: "#FAFAFA", display: "flex", flexDirection: "column", gap: "15px" }}>
-                    {messages.map((m, i) => (
-                        <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
-                            <div style={{
-                                maxWidth: "80%", padding: "12px 16px", borderRadius: "15px",
-                                background: m.role === "user" ? "#333" : "white",
-                                color: m.role === "user" ? "white" : "#333",
-                                fontSize: "14px", lineHeight: 1.6,
-                                boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
-                                border: m.role === "user" ? "none" : "1px solid #EEE"
-                            }}>
-                                {m.content}
+        /* ══════════════════════════════
+           CHAT VIEW
+        ══════════════════════════════ */
+        if (view === "chat") {
+            return (
+                <div style={{ display: "flex", flexDirection: "column", height: "100vh", maxWidth: "480px", margin: "0 auto", background: "white", ...baseFont, position: 'relative' }}>
+                    <div style={{ padding: "15px 20px", borderBottom: "1px solid #EEE", display: "flex", alignItems: "center", gap: "12px" }}>
+                        <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer" }}>←</button>
+                        <div style={{ width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', border: '1px solid #EEE' }}>
+                            <img src={SOMY_IMG} alt="소미" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                        <div>
+                            <div style={{ fontWeight: 700, color: "#333", fontSize: "14px" }}>소미 @예수인교회</div>
+                            <div style={{ fontSize: "11px", color: "#999" }}>실시간 묵상 가이드</div>
+                        </div>
+                    </div>
+
+                    <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "20px", background: "#FAFAFA", display: "flex", flexDirection: "column", gap: "15px" }}>
+                        {messages.map((m, i) => (
+                            <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+                                <div style={{
+                                    maxWidth: "80%", padding: "12px 16px", borderRadius: "15px",
+                                    background: m.role === "user" ? "#333" : "white",
+                                    color: m.role === "user" ? "white" : "#333",
+                                    fontSize: "14px", lineHeight: 1.6,
+                                    boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
+                                    border: m.role === "user" ? "none" : "1px solid #EEE"
+                                }}>
+                                    {m.content}
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                    {isLoading && (
-                        <div style={{ background: 'white', padding: '10px 16px', borderRadius: '15px', alignSelf: 'flex-start', border: '1px solid #EEE', fontSize: '13px', color: '#B8924A', fontStyle: 'italic' }}>
-                            소미가 묵상 중...
-                        </div>
-                    )}
+                        ))}
+                        {isLoading && (
+                            <div style={{ background: 'white', padding: '10px 16px', borderRadius: '15px', alignSelf: 'flex-start', border: '1px solid #EEE', fontSize: '13px', color: '#B8924A', fontStyle: 'italic' }}>
+                                소미가 묵상 중...
+                            </div>
+                        )}
+                    </div>
+                    <div style={{ padding: "15px", borderTop: "1px solid #EEE", display: "flex", gap: "10px" }}>
+                        <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSend()} placeholder="메시지를 입력하세요..."
+                            style={{ flex: 1, padding: "12px 15px", borderRadius: "10px", border: "1px solid #DDD", outline: "none" }} />
+                        <button onClick={handleSend} style={{ padding: "12px 20px", background: "#333", color: "white", borderRadius: "10px", border: "none", fontWeight: 700 }}>전송</button>
+                    </div>
                 </div>
-                <div style={{ padding: "15px", borderTop: "1px solid #EEE", display: "flex", gap: "10px" }}>
-                    <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSend()} placeholder="메시지를 입력하세요..."
-                        style={{ flex: 1, padding: "12px 15px", borderRadius: "10px", border: "1px solid #DDD", outline: "none" }} />
-                    <button onClick={handleSend} style={{ padding: "12px 20px", background: "#333", color: "white", borderRadius: "10px", border: "none", fontWeight: 700 }}>전송</button>
-                </div>
-            </div>
-        );
+            );
+        }
+
+        return null; // 모든 뷰에 해당하지 않을 때
     };
 
     // 알림 리스트 팝업
