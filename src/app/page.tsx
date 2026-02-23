@@ -1252,7 +1252,19 @@ export default function App() {
                                                 ];
                                                 const todayIndex = new Date().getDate() % quotes.length;
                                                 return (
-                                                    <div style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, wordBreak: 'keep-all', fontStyle: 'italic' }}>
+                                                    <div style={{
+                                                        fontSize: '14.5px',
+                                                        color: '#2D2D2D',
+                                                        lineHeight: 1.7,
+                                                        wordBreak: 'keep-all',
+                                                        fontStyle: 'normal',
+                                                        fontWeight: 500,
+                                                        background: 'rgba(212, 175, 55, 0.04)',
+                                                        padding: '12px 16px',
+                                                        borderRadius: '12px',
+                                                        borderLeft: '4px solid #D4AF37',
+                                                        letterSpacing: '-0.3px'
+                                                    }}>
                                                         "{quotes[todayIndex]}"
                                                     </div>
                                                 );
@@ -1563,7 +1575,7 @@ export default function App() {
                                         >
                                             📍 {qtData.reference}
                                             <span style={{ fontSize: '11px', background: '#FDF3DF', padding: '3px 8px', borderRadius: '6px', color: '#8A6A27', fontWeight: 700, border: '1px solid #F5E0BB' }}>
-                                                📖 성경 본문 보기
+                                                📖 클릭 개역개정
                                             </span>
                                         </a>
                                     </div>
