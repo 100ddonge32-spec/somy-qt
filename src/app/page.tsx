@@ -554,7 +554,7 @@ export default function App() {
         prayer: QT_DATA.prayer,
     });
     const [qtForm, setQtForm] = useState({ date: '', reference: '', passage: '', interpretation: '', question1: '', question2: '', question3: '', prayer: '' });
-    const [sermonManageForm, setSermonManageForm] = useState({ script: '', summary: '', q1: '', q2: '', q3: '' });
+    const [sermonManageForm, setSermonManageForm] = useState({ script: '', summary: '', q1: '', q2: '', q3: '', videoUrl: '', inputType: 'text' as 'text' | 'video' });
     const [aiLoading, setAiLoading] = useState(false);
     const [stats, setStats] = useState<{ today: { count: number; members: { user_name: string; avatar_url: string | null }[] }; ranking: { name: string; avatar: string | null; count: number }[]; totalCompletions: number } | null>(null);
     const [statsError, setStatsError] = useState<string | null>(null);
@@ -1217,15 +1217,15 @@ export default function App() {
                         ) : (
                             <>
                                 <button onClick={() => setView("chat")} style={{
-                                    width: "100%", padding: "18px",
-                                    background: "#E0F2F1", color: "#00695C",
-                                    fontWeight: 800, fontSize: "17px", borderRadius: "18px",
-                                    border: "1px solid #B2DFDB", cursor: "pointer",
-                                    boxShadow: "0 6px 15px rgba(0,105,92,0.15), inset 0 1px 0 rgba(255,255,255,0.5)",
-                                    transition: "none",
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                                    width: "100%", padding: "16px 20px",
+                                    background: "white", color: "#333",
+                                    fontWeight: 700, fontSize: "16px", borderRadius: "20px",
+                                    border: "1px solid #F0ECE4", cursor: "pointer",
+                                    boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
+                                    display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '14px'
                                 }}>
-                                    <span style={{ fontSize: '20px' }}>💬</span> 소미와 대화하기
+                                    <div style={{ width: '40px', height: '40px', background: '#E0F2F1', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>💬</div>
+                                    소미와 대화하기
                                 </button>
 
                                 <button onClick={() => {
@@ -1233,15 +1233,15 @@ export default function App() {
                                     setQtStep("read");
                                     setView("qt");
                                 }} style={{
-                                    width: "100%", padding: "18px",
-                                    background: "#FFF9C4", color: "#827717",
-                                    fontWeight: 800, fontSize: "17px", borderRadius: "18px",
-                                    border: "1px solid #FFF59D", cursor: "pointer",
-                                    boxShadow: "0 6px 15px rgba(130,119,23,0.15), inset 0 1px 0 rgba(255,255,255,0.5)",
-                                    transition: "none",
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                                    width: "100%", padding: "16px 20px",
+                                    background: "white", color: "#333",
+                                    fontWeight: 700, fontSize: "16px", borderRadius: "20px",
+                                    border: "1px solid #F0ECE4", cursor: "pointer",
+                                    boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
+                                    display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '14px'
                                 }}>
-                                    <span style={{ fontSize: '20px' }}>☀️</span> 오늘의 큐티 시작
+                                    <div style={{ width: '40px', height: '40px', background: '#FFF9C4', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>☀️</div>
+                                    오늘의 큐티 시작
                                 </button>
 
                                 <div style={{ position: 'relative', width: '100%' }}>
@@ -1253,29 +1253,29 @@ export default function App() {
                                             if (Array.isArray(data)) setCommunityPosts(data);
                                         } catch (e) { console.error("게시판 로드 실패:", e); }
                                     }} style={{
-                                        width: "100%", padding: "18px",
-                                        background: "#FCE4EC", color: "#AD1457",
-                                        fontWeight: 800, fontSize: "17px", borderRadius: "18px",
-                                        border: "1px solid #F8BBD0", cursor: "pointer",
-                                        boxShadow: "0 6px 15px rgba(173,20,87,0.15), inset 0 1px 0 rgba(255,255,255,0.5)",
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                        transition: 'none'
+                                        width: "100%", padding: "16px 20px",
+                                        background: "white", color: "#333",
+                                        fontWeight: 700, fontSize: "16px", borderRadius: "20px",
+                                        border: "1px solid #F0ECE4", cursor: "pointer",
+                                        boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
+                                        display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '14px'
                                     }}>
-                                        <span style={{ fontSize: '20px' }}>📝</span> 은혜나눔 게시판
+                                        <div style={{ width: '40px', height: '40px', background: '#FCE4EC', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📝</div>
+                                        은혜나눔 게시판
                                     </button>
 
                                     {/* 알림종 */}
                                     {notifications.filter(n => !n.is_read).length > 0 && (
-                                        <div onClick={(e) => { e.stopPropagation(); setShowNotiList(!showNotiList); }} style={{ position: 'absolute', top: '-15px', right: '15px', width: '42px', height: '42px', background: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 16px rgba(0,0,0,0.12)', cursor: 'pointer', zIndex: 1001, border: '2px solid #E6A4B4', animation: 'bell-swing 2s infinite ease-in-out' }} onMouseOver={e => e.currentTarget.style.transform = "scale(1.1) rotate(10deg)"} onMouseOut={e => e.currentTarget.style.transform = "scale(1) rotate(0)"}>
-                                            <span style={{ fontSize: '20px' }}>🔔</span>
-                                            <div style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#FF5252', color: 'white', fontSize: '10px', fontWeight: 900, minWidth: '20px', height: '20px', padding: '0 4px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white' }}>
+                                        <div onClick={(e) => { e.stopPropagation(); setShowNotiList(!showNotiList); }} style={{ position: 'absolute', top: '50%', right: '15px', transform: 'translateY(-50%)', width: '36px', height: '36px', background: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', cursor: 'pointer', zIndex: 1001, border: '2px solid #E6A4B4', animation: 'bell-swing 2s infinite ease-in-out' }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-50%) scale(1.1) rotate(10deg)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(-50%) scale(1) rotate(0)"}>
+                                            <span style={{ fontSize: '18px' }}>🔔</span>
+                                            <div style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#FF5252', color: 'white', fontSize: '10px', fontWeight: 900, minWidth: '18px', height: '18px', padding: '0 4px', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white' }}>
                                                 {notifications.filter(n => !n.is_read).length}
                                             </div>
                                         </div>
                                     )}
                                 </div>
 
-                                <div style={{ display: 'flex', gap: '8px', marginTop: '10px', width: '100%' }}>
+                                <div style={{ display: 'flex', gap: '14px', width: '100%' }}>
                                     <button onClick={async () => {
                                         setView('stats');
                                         setStatsError(null);
@@ -1294,43 +1294,43 @@ export default function App() {
                                             setStatsError(e.name === 'AbortError' ? "시간 초과" : "연결 실패");
                                         }
                                     }} style={{
-                                        flex: 1, padding: "12px 4px",
-                                        background: "#F5F2EA", color: "#B8924A",
-                                        fontWeight: 700, fontSize: "11px", borderRadius: "16px",
-                                        border: "none", cursor: "pointer",
-                                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-                                        boxShadow: '0 4px 10px rgba(184,146,74,0.1)'
+                                        flex: 1, padding: "14px 10px",
+                                        background: "white", color: "#333",
+                                        fontWeight: 700, fontSize: "14px", borderRadius: "20px",
+                                        border: "1px solid #F0ECE4", cursor: "pointer",
+                                        boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
+                                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px'
                                     }}>
-                                        <span style={{ fontSize: '20px' }}>👑</span>
-                                        <span style={{ whiteSpace: 'nowrap' }}>이달의 큐티왕</span>
+                                        <div style={{ width: '40px', height: '40px', background: '#F5F5F5', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>👑</div>
+                                        <span>이달의 큐티왕</span>
                                     </button>
 
                                     <button onClick={() => {
                                         setView('history');
                                         fetchHistory();
                                     }} style={{
-                                        flex: 1, padding: "12px 4px",
-                                        background: "#F0F7F4", color: "#709176",
-                                        fontWeight: 700, fontSize: "11px", borderRadius: "16px",
-                                        border: "none", cursor: "pointer",
-                                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-                                        boxShadow: '0 4px 10px rgba(112,145,118,0.1)'
+                                        flex: 1, padding: "14px 10px",
+                                        background: "white", color: "#333",
+                                        fontWeight: 700, fontSize: "14px", borderRadius: "20px",
+                                        border: "1px solid #F0ECE4", cursor: "pointer",
+                                        boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
+                                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px'
                                     }}>
-                                        <span style={{ fontSize: '20px' }}>📜</span>
-                                        <span style={{ whiteSpace: 'nowrap' }}>나의 묵상 기록</span>
+                                        <div style={{ width: '40px', height: '40px', background: '#F5F5F5', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📜</div>
+                                        <span>나의 묵상 기록</span>
                                     </button>
                                 </div>
 
                                 <button onClick={() => setView('ccm')} style={{
-                                    width: "100%", padding: "14px",
-                                    background: "#E8EAF6", color: "#3F51B5",
-                                    fontWeight: 700, fontSize: "13px", borderRadius: "18px",
-                                    border: "1px solid #C5CAE9", cursor: "pointer",
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                                    boxShadow: '0 4px 12px rgba(63,81,181,0.1)',
-                                    marginTop: '8px'
+                                    width: "100%", padding: "16px 20px",
+                                    background: "white", color: "#333",
+                                    fontWeight: 700, fontSize: "16px", borderRadius: "20px",
+                                    border: "1px solid #F0ECE4", cursor: "pointer",
+                                    boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
+                                    display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '14px'
                                 }}>
-                                    <span style={{ fontSize: '18px' }}>🎵</span> 오늘의 CCM 듣기
+                                    <div style={{ width: '40px', height: '40px', background: '#E8EAF6', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🎵</div>
+                                    오늘의 CCM 듣기
                                 </button>
 
                                 {churchSettings.sermon_url && (
@@ -1338,15 +1338,15 @@ export default function App() {
                                         console.log("Setting view to sermon, url:", churchSettings.sermon_url);
                                         setView('sermon');
                                     }} style={{
-                                        width: "100%", padding: "14px",
-                                        background: "#FFF3E0", color: "#E65100",
-                                        fontWeight: 700, fontSize: "13px", borderRadius: "18px",
-                                        border: "1px solid #FFCC80", cursor: "pointer",
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                                        boxShadow: '0 4px 12px rgba(230,81,0,0.1)',
-                                        marginTop: '10px'
+                                        width: "100%", padding: "16px 20px",
+                                        background: "white", color: "#333",
+                                        fontWeight: 700, fontSize: "16px", borderRadius: "20px",
+                                        border: "1px solid #F0ECE4", cursor: "pointer",
+                                        boxShadow: "0 4px 12px rgba(0,0,0,0.03)",
+                                        display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '14px'
                                     }}>
-                                        <span style={{ fontSize: '18px' }}>🎥</span> 담임목사 설교
+                                        <div style={{ width: '40px', height: '40px', background: '#FFF3E0', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🎥</div>
+                                        담임목사 설교
                                     </button>
                                 )}
                             </>
@@ -2499,7 +2499,9 @@ export default function App() {
                                     summary: churchSettings.sermon_summary || '',
                                     q1: churchSettings.sermon_q1 || '',
                                     q2: churchSettings.sermon_q2 || '',
-                                    q3: churchSettings.sermon_q3 || ''
+                                    q3: churchSettings.sermon_q3 || '',
+                                    videoUrl: '',
+                                    inputType: 'text'
                                 });
                                 setView('sermonManage');
                             }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
@@ -2607,16 +2609,25 @@ export default function App() {
         ══════════════════════════════ */
         if (view === "sermonManage") {
             const handleGenerateSermon = async () => {
-                if (!sermonManageForm.script.trim()) {
+                if (sermonManageForm.inputType === 'text' && !sermonManageForm.script.trim()) {
                     alert("설교 원고(또는 메모)를 입력해주세요.");
                     return;
                 }
+                if (sermonManageForm.inputType === 'video' && !sermonManageForm.videoUrl.trim()) {
+                    alert("유튜브 영상 주소를 입력해주세요.");
+                    return;
+                }
+
                 setAiLoading(true);
                 try {
+                    const payload = sermonManageForm.inputType === 'text'
+                        ? { script: sermonManageForm.script }
+                        : { videoUrl: sermonManageForm.videoUrl };
+
                     const res = await fetch('/api/sermon-generate', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ script: sermonManageForm.script })
+                        body: JSON.stringify(payload)
                     });
                     const data = await res.json();
                     if (data.error) {
@@ -2670,15 +2681,37 @@ export default function App() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                         <div>
-                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>📝 설교 원고 (또는 핵심 메모)</label>
-                            <textarea
-                                value={sermonManageForm.script}
-                                onChange={e => setSermonManageForm(prev => ({ ...prev, script: e.target.value }))}
-                                placeholder="여기에 설교 원고 전체나 핵심 메모를 붙여넣으세요..."
-                                style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', minHeight: '150px', outline: 'none', resize: 'vertical' }}
-                            />
-                            <button onClick={handleGenerateSermon} disabled={aiLoading} style={{ marginTop: '8px', width: '100%', padding: '14px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', opacity: aiLoading ? 0.7 : 1 }}>
-                                {aiLoading ? '✨ 소미가 설교를 열심히 요약하는 중...' : '✨ AI 자동 요약 및 묵상질문 만들기'}
+                            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                                <button onClick={() => setSermonManageForm(prev => ({ ...prev, inputType: 'text' }))} style={{ flex: 1, padding: '10px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, border: 'none', background: sermonManageForm.inputType === 'text' ? '#333' : '#F5F5F5', color: sermonManageForm.inputType === 'text' ? 'white' : '#666', cursor: 'pointer' }}>📝 설교 원고 입력</button>
+                                <button onClick={() => setSermonManageForm(prev => ({ ...prev, inputType: 'video' }))} style={{ flex: 1, padding: '10px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, border: 'none', background: sermonManageForm.inputType === 'video' ? '#D4AF37' : '#F5F5F5', color: sermonManageForm.inputType === 'video' ? 'white' : '#666', cursor: 'pointer' }}>🎥 유튜브 자동 요약</button>
+                            </div>
+
+                            {sermonManageForm.inputType === 'text' ? (
+                                <>
+                                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>📝 설교 원고 (또는 핵심 메모)</label>
+                                    <textarea
+                                        value={sermonManageForm.script}
+                                        onChange={e => setSermonManageForm(prev => ({ ...prev, script: e.target.value }))}
+                                        placeholder="여기에 설교 원고 전체나 핵심 메모를 붙여넣으세요..."
+                                        style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', minHeight: '150px', outline: 'none', resize: 'vertical' }}
+                                    />
+                                </>
+                            ) : (
+                                <>
+                                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>🎥 유튜브 영상 주소</label>
+                                    <input
+                                        type="text"
+                                        value={sermonManageForm.videoUrl}
+                                        onChange={e => setSermonManageForm(prev => ({ ...prev, videoUrl: e.target.value }))}
+                                        placeholder="예: https://youtu.be/..."
+                                        style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', outline: 'none', marginBottom: '10px' }}
+                                    />
+                                    <p style={{ fontSize: '11px', color: '#999', margin: '0 0 10px 0' }}>* 해당 영상에 자동 자막(한국어)이 생성된 상태여야 정상 작동합니다.</p>
+                                </>
+                            )}
+
+                            <button onClick={handleGenerateSermon} disabled={aiLoading} style={{ marginTop: '8px', width: '100%', padding: '14px', background: sermonManageForm.inputType === 'video' ? '#D4AF37' : '#333', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', opacity: aiLoading ? 0.7 : 1 }}>
+                                {aiLoading ? '✨ 소미가 설교를 열심히 분석하고 요약하는 중...' : '✨ AI 자동 요약 및 묵상질문 만들기'}
                             </button>
                         </div>
 

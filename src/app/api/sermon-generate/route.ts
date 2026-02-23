@@ -1,14 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { YoutubeTranscript } from 'youtube-transcript';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(req: NextRequest) {
     const body = await req.json();
-    const { script } = body;
+    const { script, videoUrl } = body;
 
-    if (!script) {
-        return NextResponse.json({ error: '설교 원고가 필요합니다.' }, { status: 400 });
+    let finalScript = script;
+
+    if (videoUrl) {
+        try {
+            const transcript = await YoutubeTranscript.fetchTranscript(videoUrl);
+            finalScript = transcript.map((t: any) => t.text).join(' ');
+        } catch (error) {
+            console.error('Failed to fetch transcript:', error);
+            return NextResponse.json({ error: '유튜브 영상에서 자막을 추출할 수 없습니다. 영상 주소가 맞는지, 자동 자막이 있는지 확인해주세요.' }, { status: 400 });
+        }
+    }
+
+    if (!finalScript) {
+        return NextResponse.json({ error: '설교 원고 또는 영상 주소가 필요합니다.' }, { status: 400 });
     }
 
     try {
@@ -27,7 +40,7 @@ export async function POST(req: NextRequest) {
                 },
                 {
                     role: 'user',
-                    content: `[설교 원고/메모]\n${script}`
+                    content: `[설교 원고/메모]\n${finalScript}`
                 }
             ],
             temperature: 0.7,
