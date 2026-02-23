@@ -1327,7 +1327,18 @@ export default function App() {
                                     </div>
                                     <div style={{ marginBottom: '20px', background: 'white', padding: '20px', borderRadius: '15px', border: '1px solid #F5F5F5', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
                                         <div style={{ fontSize: '15px', fontWeight: 800, color: '#B8924A', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <span style={{ fontSize: '18px' }}>📍</span> {qtData.reference}
+                                            <span style={{ fontSize: '18px' }}>📍</span>
+                                            <a
+                                                href={`https://search.naver.com/search.naver?query=${encodeURIComponent("개역개정 " + qtData.reference)}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{ color: '#B8924A', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', borderBottom: '1px solid #B8924A', paddingBottom: '1px' }}
+                                            >
+                                                {qtData.reference}
+                                                <span style={{ fontSize: '11px', background: '#FDF3DF', padding: '3px 8px', borderRadius: '6px', whiteSpace: 'nowrap', color: '#8A6A27', fontWeight: 700, border: '1px solid #F5E0BB', letterSpacing: '-0.3px', textDecoration: 'none' }}>
+                                                    🔗 새창 원문읽기
+                                                </span>
+                                            </a>
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                             {(() => {
