@@ -1502,7 +1502,7 @@ export default function App() {
                                             >
                                                 {qtData.reference}
                                                 <span style={{ fontSize: '11px', background: '#FDF3DF', padding: '3px 8px', borderRadius: '6px', whiteSpace: 'nowrap', color: '#8A6A27', fontWeight: 700, border: '1px solid #F5E0BB', letterSpacing: '-0.3px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                    <span style={{ fontSize: '12px' }}>📖</span> 클릭 개역개정 보기
+                                                    <span style={{ fontSize: '12px' }}>📖</span> 클릭 개역한글 보기
                                                 </span>
                                             </a>
                                         </div>
@@ -1578,25 +1578,6 @@ export default function App() {
                                             })()}
                                         </div>
                                     </div>
-
-                                    {/* Passage Q&A Section */}
-                                    <div style={{ borderTop: '1px dashed #DDD', paddingTop: '20px', marginTop: '10px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
-                                            <span style={{ fontSize: '14px' }}>✨</span>
-                                            <span style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A' }}>소미에게 궁금한점을 물어보세요</span>
-                                        </div>
-                                        <div ref={passageRef} style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                            {passageChat.length === 0 && <div style={{ fontSize: '12px', color: '#999', textAlign: 'center', padding: '10px 0' }}>본문에서 궁금한 점을 아래에 입력해보세요!</div>}
-                                            {passageChat.map((chat, i) => (
-                                                <div key={i} style={{ alignSelf: chat.role === 'user' ? 'flex-end' : 'flex-start', background: chat.role === 'user' ? '#EEE' : '#F5F2EA', padding: '8px 12px', borderRadius: '12px', fontSize: '13px', maxWidth: '85%', lineHeight: 1.5, color: '#444' }}>{chat.content}</div>
-                                            ))}
-                                            {isPassageLoading && <div style={{ alignSelf: 'flex-start', fontSize: '12px', color: '#B8924A', fontStyle: 'italic' }}>소미가 본문을 묵상 중...</div>}
-                                        </div>
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <input type="text" value={passageInput} onChange={(e) => setPassageInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handlePassageAsk()} placeholder="예: '푸른 풀밭'은 어떤 의미인가요?" style={{ flex: 1, padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }} />
-                                            <button onClick={handlePassageAsk} disabled={isPassageLoading} style={{ padding: '0 15px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', opacity: isPassageLoading ? 0.6 : 1 }}>묻기</button>
-                                        </div>
-                                    </div>
                                 </div>
                             )}
 
@@ -1608,6 +1589,25 @@ export default function App() {
                                     </div>
                                     <div style={{ fontSize: '15px', color: '#444', lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'keep-all', padding: '15px', background: 'rgba(212, 175, 55, 0.05)', borderRadius: '12px', borderLeft: '3px solid #D4AF37' }}>
                                         {qtData.interpretation || "기록된 본문 해설이 없습니다. 성령님의 내밀한 음성에 귀 기울이며 각자 본문을 묵상해 보세요."}
+                                    </div>
+
+                                    {/* Passage Q&A Section moved here */}
+                                    <div style={{ borderTop: '1px dashed #DDD', paddingTop: '20px', marginTop: '10px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+                                            <span style={{ fontSize: '14px' }}>✨</span>
+                                            <span style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A' }}>소미에게 이 구절에 대해 물어보세요</span>
+                                        </div>
+                                        <div ref={passageRef} style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            {passageChat.length === 0 && <div style={{ fontSize: '12px', color: '#999', textAlign: 'center', padding: '10px 0' }}>해설을 보고 궁금한 점을 입력해보세요!</div>}
+                                            {passageChat.map((chat, i) => (
+                                                <div key={i} style={{ alignSelf: chat.role === 'user' ? 'flex-end' : 'flex-start', background: chat.role === 'user' ? '#EEE' : '#F5F2EA', padding: '8px 12px', borderRadius: '12px', fontSize: '13px', maxWidth: '85%', lineHeight: 1.5, color: '#444' }}>{chat.content}</div>
+                                            ))}
+                                            {isPassageLoading && <div style={{ alignSelf: 'flex-start', fontSize: '12px', color: '#B8924A', fontStyle: 'italic' }}>소미가 본문을 묵상 중...</div>}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <input type="text" value={passageInput} onChange={(e) => setPassageInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handlePassageAsk()} placeholder="예: '푸른 풀밭'은 어떤 의미인가요?" style={{ flex: 1, padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }} />
+                                            <button onClick={handlePassageAsk} disabled={isPassageLoading} style={{ padding: '0 15px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', opacity: isPassageLoading ? 0.6 : 1 }}>묻기</button>
+                                        </div>
                                     </div>
                                 </div>
                             )}
