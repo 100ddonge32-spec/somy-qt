@@ -70,6 +70,56 @@ if (typeof window !== 'undefined' && !document.getElementById('yt-api-script')) 
     document.head.appendChild(tag);
 }
 
+// YouVersion(bible.com) 성경 본문 직통 연결 로직 (개역한글: 88)
+const YOUVERSION_BOOKS: Record<string, string> = {
+    "창세기": "GEN", "출애굽기": "EXO", "레위기": "LEV", "민수기": "NUM", "신명기": "DEU",
+    "여호수아": "JOS", "사사기": "JDG", "룻기": "RUT", "사무엘상": "1SA", "사무엘하": "2SA",
+    "열왕기상": "1KI", "열왕기하": "2KI", "역대상": "1CH", "역대하": "2CH", "에스라": "EZR",
+    "느헤미야": "NEH", "에스더": "EST", "욥기": "JOB", "시편": "PSA", "잠언": "PRO",
+    "전도서": "ECC", "아가": "SNG", "이사야": "ISA", "예레미야": "JER", "예레미야애가": "LAM",
+    "에스겔": "EZK", "다니엘": "DAN", "호세아": "HOS", "요엘": "JOL", "아모스": "AMO",
+    "오바댜": "OBA", "요나": "JON", "미가": "MIC", "나훔": "NAM", "하박국": "HAB",
+    "스바냐": "ZEP", "학개": "HAG", "스가랴": "ZEC", "말라기": "MAL",
+    "마태복음": "MAT", "마가복음": "MRK", "누가복음": "LUK", "요한복음": "JHN", "사도행전": "ACT",
+    "로마서": "ROM", "고린도전서": "1CO", "고린도후서": "2CO", "갈라디아서": "GAL", "에베소서": "EPH",
+    "빌립보서": "PHP", "골로새서": "COL", "데살로니가전서": "1TH", "데살로니가후서": "2TH", "디모데전서": "1TI",
+    "디모데후서": "2TI", "디도서": "TIT", "빌레몬서": "PHM", "히브리서": "HEB", "야고보서": "JAS",
+    "베드로전서": "1PE", "베드로후서": "2PE", "요한일서": "1JN", "요한이서": "2JN", "요한삼서": "3JN",
+    "유다서": "JUD", "요한계시록": "REV"
+};
+
+function getYouVersionUrl(reference: string): string {
+    const cleanRef = reference.replace(/\s+/g, '');
+    const match = cleanRef.match(/^([가-힣]+(?:상|하|전|후|일|이|삼)?)([0-9]+)/);
+
+    if (match) {
+        let bookName = match[1];
+        const chapter = match[2];
+        const bookAbbrMap: Record<string, string> = {
+            "창": "창세기", "출": "출애굽기", "레": "레위기", "민": "민수기", "신": "신명기",
+            "수": "여호수아", "삿": "사사기", "룻": "룻기", "삼상": "사무엘상", "삼하": "사무엘하",
+            "왕상": "열왕기상", "왕하": "열왕기하", "대상": "역대상", "대하": "역대하", "스": "에스라",
+            "느": "느헤미야", "에": "에스더", "욥": "욥기", "시": "시편", "잠": "잠언",
+            "전": "전도서", "아": "아가", "사": "이사야", "렘": "예레미야", "애": "예레미야애가",
+            "겔": "에스겔", "단": "다니엘", "호": "호세아", "욜": "요엘", "암": "아모스",
+            "옵": "오바댜", "욘": "요나", "미": "미가", "나": "나훔", "합": "하박국",
+            "습": "스바냐", "학": "학개", "슥": "스가랴", "말": "말라기",
+            "마": "마태복음", "막": "마가복음", "눅": "누가복음", "요": "요한복음", "행": "사도행전",
+            "롬": "로마서", "고전": "고린도전서", "고후": "고린도후서", "갈": "갈라디아서", "엡": "에베소서",
+            "빌": "빌립보서", "골": "골로새서", "살전": "데살로니가전서", "살후": "데살로니가후서", "딤전": "디모데전서",
+            "딤후": "디모데후서", "딛": "디도서", "몬": "빌레몬서", "히": "히브리서", "약": "야고보서",
+            "벧전": "베드로전서", "벧후": "베드로후서", "요일": "요한일서", "요이": "요한이서", "요삼": "요한삼서",
+            "유": "유다서", "계": "요한계시록"
+        };
+        if (bookAbbrMap[bookName]) bookName = bookAbbrMap[bookName];
+
+        const bookCode = YOUVERSION_BOOKS[bookName];
+        if (bookCode && chapter) return `https://www.bible.com/bible/88/${bookCode}.${chapter}`;
+    }
+
+    return `https://www.bible.com/ko/search/bible?q=${encodeURIComponent(reference)}`;
+}
+
 export default function App() {
     const [view, setView] = useState<View>("home");
     const [messages, setMessages] = useState([
@@ -1352,7 +1402,7 @@ export default function App() {
                                         <div style={{ fontSize: '15px', fontWeight: 800, color: '#B8924A', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <span style={{ fontSize: '18px' }}>📍</span>
                                             <a
-                                                href={`https://www.bible.com/ko/search/bible?q=${encodeURIComponent(qtData.reference)}`}
+                                                href={getYouVersionUrl(qtData.reference)}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 style={{ color: '#B8924A', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', borderBottom: '1px solid #B8924A', paddingBottom: '1px' }}
