@@ -638,8 +638,12 @@ export default function App() {
                 const r = await fetch(`/api/settings?church_id=${cId}`, { cache: 'no-store' });
                 const { settings } = await r.json();
                 if (settings) {
-                    setChurchSettings(settings);
-                    setSettingsForm(settings);
+                    const saneSettings = {
+                        ...settings,
+                        community_visible: settings.community_visible ?? true
+                    };
+                    setChurchSettings(saneSettings);
+                    setSettingsForm(saneSettings);
                 }
             } catch (err) {
                 console.error("[Settings] Load Failed:", err);
@@ -1752,7 +1756,9 @@ export default function App() {
                                     <div style={{ fontSize: '40px', marginBottom: '15px' }}>💝</div>
                                     <h2 style={{ margin: '0 0 10px 0', fontSize: '24px' }}>오늘의 큐티 완료!</h2>
                                     <p style={{ fontSize: '14px', opacity: 0.8, marginBottom: '24px' }}>말씀과 함께 승리하는 하루 되세요.</p>
-                                    <button onClick={() => setView('community')} style={{ width: '100%', padding: '16px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', marginBottom: '10px' }}>은혜나눔 게시판 가기</button>
+                                    {(churchSettings.community_visible || isAdmin) && (
+                                        <button onClick={() => setView('community')} style={{ width: '100%', padding: '16px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', marginBottom: '10px' }}>은혜나눔 게시판 가기</button>
+                                    )}
                                     <button onClick={async () => {
                                         setView('stats');
                                         setStatsError(null);
@@ -2069,6 +2075,7 @@ export default function App() {
                             }} style={{ width: '100%', padding: '14px', background: '#FFF0F0', color: '#D32F2F', border: '1px solid #FFCDD2', borderRadius: '12px', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
                                 🧨 묵상 참여 기록 전체 초기화 (위험)
                             </button>
+                            <div style={{ height: '40px' }} />
                         </div>
                     </div>
                 </div>
@@ -2351,158 +2358,172 @@ export default function App() {
                         </div>
                     </div>
 
-                    <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        {/* 직접 글쓰기 영역 */}
-                        <div style={{ background: 'white', borderRadius: '20px', padding: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F0ECE4', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
-                                    {user?.user_metadata?.avatar_url ? <img src={user.user_metadata.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🐑'}
-                                </div>
-                                <span style={{ fontSize: '14px', fontWeight: 700, color: '#555' }}>
-                                    {user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "성도님"}
-                                </span>
-                            </div>
-                            <textarea
-                                value={graceInput}
-                                onChange={(e) => setGraceInput(e.target.value)}
-                                placeholder="성도들과 나누고 싶은 은혜를 적어보세요..."
-                                style={{ width: '100%', minHeight: '80px', border: '1px solid #F5F5F5', borderRadius: '12px', padding: '12px', boxSizing: 'border-box', outline: 'none', fontSize: '14px', background: '#FAFAFA', resize: 'none', fontFamily: 'inherit' }}
-                            />
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div
-                                    onClick={() => setIsPrivatePost(!isPrivatePost)}
-                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: isPrivatePost ? '#7B1FA2' : '#666', background: isPrivatePost ? '#F3E5F5' : '#F5F5F5', padding: '4px 10px', borderRadius: '20px', fontWeight: 600, transition: 'all 0.2s' }}
-                                >
-                                    <span>{isPrivatePost ? '🔒 나만 보기' : '🌐 함께 나누기'}</span>
-                                </div>
-                                <button
-                                    onClick={handlePost}
-                                    disabled={!graceInput.trim()}
-                                    style={{
-                                        padding: '8px 20px',
-                                        background: graceInput.trim() ? '#333' : '#EEE',
-                                        color: graceInput.trim() ? 'white' : '#AAA',
-                                        border: 'none',
-                                        borderRadius: '12px',
-                                        fontSize: '13px',
-                                        fontWeight: 800,
-                                        cursor: graceInput.trim() ? 'pointer' : 'default',
-                                        transition: 'all 0.3s'
-                                    }}
-                                >
-                                    은혜 나누기
-                                </button>
-                            </div>
+                    {!churchSettings.community_visible && !isAdmin ? (
+                        <div style={{ padding: '60px 40px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '50px', marginBottom: '20px' }}>🔒</div>
+                            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#333', marginBottom: '10px' }}>비공개 게시판입니다</h3>
+                            <p style={{ fontSize: '14px', color: '#666', lineHeight: 1.6 }}>
+                                현재 이 게시판은 교회 설정에 의해 <br />
+                                관리자만 접근할 수 있도록 설정되어 있습니다.
+                            </p>
+                            <button onClick={handleBack} style={{ marginTop: '24px', padding: '12px 24px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>
+                                뒤로 가기
+                            </button>
                         </div>
+                    ) : (
+                        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            {/* 직접 글쓰기 영역 */}
+                            <div style={{ background: 'white', borderRadius: '20px', padding: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F0ECE4', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
+                                        {user?.user_metadata?.avatar_url ? <img src={user.user_metadata.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🐑'}
+                                    </div>
+                                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#555' }}>
+                                        {user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "성도님"}
+                                    </span>
+                                </div>
+                                <textarea
+                                    value={graceInput}
+                                    onChange={(e) => setGraceInput(e.target.value)}
+                                    placeholder="성도들과 나누고 싶은 은혜를 적어보세요..."
+                                    style={{ width: '100%', minHeight: '80px', border: '1px solid #F5F5F5', borderRadius: '12px', padding: '12px', boxSizing: 'border-box', outline: 'none', fontSize: '14px', background: '#FAFAFA', resize: 'none', fontFamily: 'inherit' }}
+                                />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div
+                                        onClick={() => setIsPrivatePost(!isPrivatePost)}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: isPrivatePost ? '#7B1FA2' : '#666', background: isPrivatePost ? '#F3E5F5' : '#F5F5F5', padding: '4px 10px', borderRadius: '20px', fontWeight: 600, transition: 'all 0.2s' }}
+                                    >
+                                        <span>{isPrivatePost ? '🔒 나만 보기' : '🌐 함께 나누기'}</span>
+                                    </div>
+                                    <button
+                                        onClick={handlePost}
+                                        disabled={!graceInput.trim()}
+                                        style={{
+                                            padding: '8px 20px',
+                                            background: graceInput.trim() ? '#333' : '#EEE',
+                                            color: graceInput.trim() ? 'white' : '#AAA',
+                                            border: 'none',
+                                            borderRadius: '12px',
+                                            fontSize: '13px',
+                                            fontWeight: 800,
+                                            cursor: graceInput.trim() ? 'pointer' : 'default',
+                                            transition: 'all 0.3s'
+                                        }}
+                                    >
+                                        은혜 나누기
+                                    </button>
+                                </div>
+                            </div>
 
-                        {communityPosts
-                            // ✅ 비공개 게시글 필터: 관리자는 전체, 본인관은 본인 작성 비공개글, 일반 성도는 공개글만
-                            .filter(post => {
-                                if (!post.is_private) return true;           // 공개글: 모두
-                                if (isAdmin) return true;                    // 로니는 전체
-                                if (user?.id === post.user_id) return true;  // 본인 비공개글
-                                return false;
-                            })
-                            .map(post => (
-                                <div key={post.id} style={{ background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', animation: 'fade-in 0.5s' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#F0ECE4', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
-                                            {post.avatar_url ? <img src={post.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🐑'}
-                                        </div>
-                                        <div>
-                                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                {post.user_name}
-                                                {/* 표 비공개 배지 */}
-                                                {post.is_private && (
-                                                    <span style={{ fontSize: '10px', background: '#F3E5F5', color: '#7B1FA2', padding: '2px 7px', borderRadius: '8px', fontWeight: 700 }}>
-                                                        🔒 비공개
-                                                    </span>
+                            {communityPosts
+                                // ✅ 비공개 게시글 필터: 관리자는 전체, 본인관은 본인 작성 비공개글, 일반 성도는 공개글만
+                                .filter(post => {
+                                    if (!post.is_private) return true;           // 공개글: 모두
+                                    if (isAdmin) return true;                    // 로니는 전체
+                                    if (user?.id === post.user_id) return true;  // 본인 비공개글
+                                    return false;
+                                })
+                                .map(post => (
+                                    <div key={post.id} style={{ background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', animation: 'fade-in 0.5s' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                                            <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#F0ECE4', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                                                {post.avatar_url ? <img src={post.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🐑'}
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    {post.user_name}
+                                                    {/* 표 비공개 배지 */}
+                                                    {post.is_private && (
+                                                        <span style={{ fontSize: '10px', background: '#F3E5F5', color: '#7B1FA2', padding: '2px 7px', borderRadius: '8px', fontWeight: 700 }}>
+                                                            🔒 비공개
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div style={{ fontSize: '11px', color: '#999' }}>{new Date(post.created_at || Date.now()).toLocaleString()}</div>
+                                            </div>
+                                            <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+                                                {(user?.id === post.user_id) && (
+                                                    <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#B8924A', fontWeight: 600 }}>수정</button>
+                                                )}
+                                                {(isAdmin || user?.id === post.user_id) && (
+                                                    <button onClick={() => handleDeletePost(post.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#999' }}>🗑️</button>
                                                 )}
                                             </div>
-                                            <div style={{ fontSize: '11px', color: '#999' }}>{new Date(post.created_at || Date.now()).toLocaleString()}</div>
                                         </div>
-                                        <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
-                                            {(user?.id === post.user_id) && (
-                                                <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#B8924A', fontWeight: 600 }}>수정</button>
-                                            )}
-                                            {(isAdmin || user?.id === post.user_id) && (
-                                                <button onClick={() => handleDeletePost(post.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#999' }}>🗑️</button>
-                                            )}
-                                        </div>
-                                    </div>
 
-                                    {editingPostId === post.id ? (
-                                        <div style={{ marginBottom: '15px' }}>
-                                            <textarea
-                                                value={editContent}
-                                                onChange={(e) => setEditContent(e.target.value)}
-                                                style={{ width: '100%', minHeight: '100px', border: '1px solid #DDD', borderRadius: '12px', padding: '12px', boxSizing: 'border-box', marginBottom: '8px', fontSize: '14px', fontFamily: 'inherit' }}
-                                            />
+                                        {editingPostId === post.id ? (
+                                            <div style={{ marginBottom: '15px' }}>
+                                                <textarea
+                                                    value={editContent}
+                                                    onChange={(e) => setEditContent(e.target.value)}
+                                                    style={{ width: '100%', minHeight: '100px', border: '1px solid #DDD', borderRadius: '12px', padding: '12px', boxSizing: 'border-box', marginBottom: '8px', fontSize: '14px', fontFamily: 'inherit' }}
+                                                />
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <button onClick={handleUpdatePost} style={{ padding: '8px 16px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>저장</button>
+                                                    <button onClick={() => setEditingPostId(null)} style={{ padding: '8px 16px', background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>취소</button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', margin: '0 0 15px 0', wordBreak: 'break-word' }}>
+                                                {post.content.split('\n').map((line: string, i: number) => {
+                                                    const trimmed = line.trim();
+                                                    if (trimmed === '[말씀묵상]') {
+                                                        return (
+                                                            <div key={i} style={{ fontSize: "15px", fontWeight: 800, color: "#9E7B31", letterSpacing: '-0.2px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                <span>✨</span> 오늘의 묵상
+                                                            </div>
+                                                        );
+                                                    }
+                                                    if (trimmed.startsWith('[나의 결단과 은혜]')) {
+                                                        return <div key={i} style={{ fontSize: "14px", fontWeight: 800, color: "#9E2A5B", marginTop: '16px', marginBottom: '6px' }}>💡 나의 결단과 은혜</div>;
+                                                    }
+                                                    if (trimmed.startsWith('[질문')) {
+                                                        return <div key={i} style={{ fontSize: "13px", fontWeight: 800, color: "#333", marginTop: '14px', paddingLeft: '4px', borderLeft: '3px solid #D4AF37' }}>{line}</div>;
+                                                    }
+                                                    if (trimmed.startsWith('나의 묵상:')) {
+                                                        return <div key={i} style={{ color: '#555', marginTop: '4px', marginBottom: '8px', paddingLeft: '7px' }}>{line}</div>;
+                                                    }
+                                                    return <span key={i}>{line}<br /></span>;
+                                                })}
+                                            </div>
+                                        )}
+
+                                        {/* Comments Section */}
+                                        <div style={{ borderTop: '1px solid #F5F5F5', paddingTop: '15px' }}>
+                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', marginBottom: '10px' }}>댓글 {post.comments?.length || 0}개</div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
+                                                {post.comments && Array.isArray(post.comments) && post.comments.map((comment: any) => (
+                                                    <div key={comment.id} style={{ background: '#FAFAFA', padding: '10px 15px', borderRadius: '12px', fontSize: '13px' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                            <span style={{ fontWeight: 700, color: '#555' }}>{comment.user_name || '성도'}</span>
+                                                            <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                {comment.created_at ? new Date(comment.created_at).toLocaleTimeString() : '방금 전'}
+                                                                {(isAdmin || user?.id === comment.user_id) && (
+                                                                    <button onClick={() => handleDeleteComment(post.id, comment.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>✕</button>
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                        <div style={{ color: '#666' }}>{comment.content}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            {/* Comment Input */}
                                             <div style={{ display: 'flex', gap: '8px' }}>
-                                                <button onClick={handleUpdatePost} style={{ padding: '8px 16px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>저장</button>
-                                                <button onClick={() => setEditingPostId(null)} style={{ padding: '8px 16px', background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>취소</button>
+                                                <input
+                                                    type="text"
+                                                    value={commentInputs[post.id] || ""}
+                                                    onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleAddComment(post.id)}
+                                                    placeholder="따뜻한 격려의 댓글을 달아주세요..."
+                                                    style={{ flex: 1, padding: '10px 12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }}
+                                                />
+                                                <button onClick={() => handleAddComment(post.id)} style={{ background: '#333', color: 'white', border: 'none', borderRadius: '10px', padding: '0 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>등록</button>
                                             </div>
                                         </div>
-                                    ) : (
-                                        <div style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', margin: '0 0 15px 0', wordBreak: 'break-word' }}>
-                                            {post.content.split('\n').map((line: string, i: number) => {
-                                                const trimmed = line.trim();
-                                                if (trimmed === '[말씀묵상]') {
-                                                    return (
-                                                        <div key={i} style={{ fontSize: "15px", fontWeight: 800, color: "#9E7B31", letterSpacing: '-0.2px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                            <span>✨</span> 오늘의 묵상
-                                                        </div>
-                                                    );
-                                                }
-                                                if (trimmed.startsWith('[나의 결단과 은혜]')) {
-                                                    return <div key={i} style={{ fontSize: "14px", fontWeight: 800, color: "#9E2A5B", marginTop: '16px', marginBottom: '6px' }}>💡 나의 결단과 은혜</div>;
-                                                }
-                                                if (trimmed.startsWith('[질문')) {
-                                                    return <div key={i} style={{ fontSize: "13px", fontWeight: 800, color: "#333", marginTop: '14px', paddingLeft: '4px', borderLeft: '3px solid #D4AF37' }}>{line}</div>;
-                                                }
-                                                if (trimmed.startsWith('나의 묵상:')) {
-                                                    return <div key={i} style={{ color: '#555', marginTop: '4px', marginBottom: '8px', paddingLeft: '7px' }}>{line}</div>;
-                                                }
-                                                return <span key={i}>{line}<br /></span>;
-                                            })}
-                                        </div>
-                                    )}
-
-                                    {/* Comments Section */}
-                                    <div style={{ borderTop: '1px solid #F5F5F5', paddingTop: '15px' }}>
-                                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', marginBottom: '10px' }}>댓글 {post.comments?.length || 0}개</div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
-                                            {post.comments && Array.isArray(post.comments) && post.comments.map((comment: any) => (
-                                                <div key={comment.id} style={{ background: '#FAFAFA', padding: '10px 15px', borderRadius: '12px', fontSize: '13px' }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                                        <span style={{ fontWeight: 700, color: '#555' }}>{comment.user_name || '성도'}</span>
-                                                        <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                            {comment.created_at ? new Date(comment.created_at).toLocaleTimeString() : '방금 전'}
-                                                            {(isAdmin || user?.id === comment.user_id) && (
-                                                                <button onClick={() => handleDeleteComment(post.id, comment.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>✕</button>
-                                                            )}
-                                                        </span>
-                                                    </div>
-                                                    <div style={{ color: '#666' }}>{comment.content}</div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        {/* Comment Input */}
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <input
-                                                type="text"
-                                                value={commentInputs[post.id] || ""}
-                                                onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
-                                                onKeyDown={(e) => e.key === 'Enter' && handleAddComment(post.id)}
-                                                placeholder="따뜻한 격려의 댓글을 달아주세요..."
-                                                style={{ flex: 1, padding: '10px 12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }}
-                                            />
-                                            <button onClick={() => handleAddComment(post.id)} style={{ background: '#333', color: 'white', border: 'none', borderRadius: '10px', padding: '0 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>등록</button>
-                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                    </div>
+                                ))}
+                        </div>
+                    )}
                 </div>
             );
         }
@@ -3606,10 +3627,22 @@ export default function App() {
                 </div>
             </div>
             {renderContent()}
+
             {/* 전역으로 분리한 설정 모달 */}
             {showSettings && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                    <div style={{ background: 'white', borderRadius: '20px', padding: '28px', width: '100%', maxWidth: '400px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(4px)' }}>
+                    <div style={{
+                        background: 'white',
+                        borderRadius: '24px',
+                        padding: '28px',
+                        width: '100%',
+                        maxWidth: '420px',
+                        maxHeight: '85vh',
+                        overflowY: 'auto',
+                        boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+                        position: 'relative',
+                        animation: 'modal-up 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                    }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                             <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>⚙️ {adminTab === 'settings' ? '교회 설정' : adminTab === 'members' ? '성도 관리' : '슈퍼 관리'}</h2>
                             <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
@@ -3668,72 +3701,72 @@ export default function App() {
                                         <p style={{ fontSize: '11px', color: '#999', marginTop: '6px', lineHeight: 1.4 }}>
                                             * 유료 버전은 말씀이 준비되지 않았을 때 AI가 자동으로 성경 읽기표에 맞춰 말씀을 생성합니다.
                                         </p>
-                                        <div>
-                                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>📋 은혜 게시판 공개 설정</label>
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: '10px', border: '1px solid #EEE', background: '#FAFAFA' }}>
-                                                <span style={{ fontSize: '13px', color: '#555' }}>{settingsForm.community_visible ? '🟢 공개 (성도 누구나 볼 수 있음)' : '🔴 비공개 (관리자만 볼 수 있음)'}</span>
-                                                <button onClick={() => setSettingsForm((prev: any) => ({ ...prev, community_visible: !prev.community_visible }))} style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: settingsForm.community_visible ? '#E8F5E9' : '#FFEBEE', color: settingsForm.community_visible ? '#2E7D32' : '#C62828' }}>
-                                                    {settingsForm.community_visible ? '비공개로 전환' : '공개로 전환'}
-                                                </button>
-                                            </div>
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>📋 은혜 게시판 공개 설정</label>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: '10px', border: '1px solid #EEE', background: '#FAFAFA' }}>
+                                            <span style={{ fontSize: '13px', color: '#555' }}>{settingsForm.community_visible ? '🟢 공개 (성도 누구나 볼 수 있음)' : '🔴 비공개 (관리자만 볼 수 있음)'}</span>
+                                            <button onClick={() => setSettingsForm((prev: any) => ({ ...prev, community_visible: !prev.community_visible }))} style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: settingsForm.community_visible ? '#E8F5E9' : '#FFEBEE', color: settingsForm.community_visible ? '#2E7D32' : '#C62828' }}>
+                                                {settingsForm.community_visible ? '비공개로 전환' : '공개로 전환'}
+                                            </button>
                                         </div>
-                                        <div style={{ marginTop: '10px' }}>
-                                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>🎵 커스텀 CCM 목록 관리</label>
+                                    </div>
+                                    <div style={{ marginTop: '10px' }}>
+                                        <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>🎵 커스텀 CCM 목록 관리</label>
 
-                                            {/* 저작권 및 운영 안내 */}
-                                            <div style={{ background: '#F0F7FF', padding: '12px', borderRadius: '12px', marginBottom: '12px', border: '1px solid #CFE2FF' }}>
-                                                <div style={{ fontSize: '12px', fontWeight: 700, color: '#084298', marginBottom: '5px' }}>🛡️ 저작권 및 운영 안내</div>
-                                                <p style={{ margin: 0, fontSize: '11px', color: '#084298', lineHeight: 1.6 }}>
-                                                    • 본 앱은 유튜브 공식 API를 통한 <strong>단순 임베드(Embed)</strong> 방식만 제공합니다.<br />
-                                                    • 영상의 조회수와 광고 수익은 원작자에게 귀속되므로 저작권 문제에서 안전합니다.<br />
-                                                    • <strong>주의:</strong> 퍼가기가 비활성화된 영상은 재생되지 않습니다.<br />
-                                                    • 등록된 콘텐츠에 대한 최종 관리 책임은 해당 교회 관리자에게 있습니다.
-                                                </p>
-                                            </div>
+                                        {/* 저작권 및 운영 안내 */}
+                                        <div style={{ background: '#F0F7FF', padding: '12px', borderRadius: '12px', marginBottom: '12px', border: '1px solid #CFE2FF' }}>
+                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#084298', marginBottom: '5px' }}>🛡️ 저작권 및 운영 안내</div>
+                                            <p style={{ margin: 0, fontSize: '11px', color: '#084298', lineHeight: 1.6 }}>
+                                                • 본 앱은 유튜브 공식 API를 통한 <strong>단순 임베드(Embed)</strong> 방식만 제공합니다.<br />
+                                                • 영상의 조회수와 광고 수익은 원작자에게 귀속되므로 저작권 문제에서 안전합니다.<br />
+                                                • <strong>주의:</strong> 퍼가기가 비활성화된 영상은 재생되지 않습니다.<br />
+                                                • 등록된 콘텐츠에 대한 최종 관리 책임은 해당 교회 관리자에게 있습니다.
+                                            </p>
+                                        </div>
 
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                {settingsForm.custom_ccm_list?.map((ccm: any, idx: number) => (
-                                                    <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#F9F9F9', padding: '10px', borderRadius: '10px', border: '1px solid #EEE' }}>
-                                                        <div style={{ flex: 1, fontSize: '12px' }}>
-                                                            <strong>{ccm.title}</strong><br />
-                                                            <span style={{ color: '#999' }}>ID: {ccm.youtubeId}</span>
-                                                        </div>
-                                                        <button onClick={() => {
-                                                            const newList = [...settingsForm.custom_ccm_list];
-                                                            newList.splice(idx, 1);
-                                                            setSettingsForm((prev: any) => ({ ...prev, custom_ccm_list: newList }));
-                                                        }} style={{ background: '#FFEBEE', color: '#C62828', border: 'none', borderRadius: '5px', padding: '5px 8px', fontSize: '11px', cursor: 'pointer' }}>삭제</button>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            {settingsForm.custom_ccm_list?.map((ccm: any, idx: number) => (
+                                                <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#F9F9F9', padding: '10px', borderRadius: '10px', border: '1px solid #EEE' }}>
+                                                    <div style={{ flex: 1, fontSize: '12px' }}>
+                                                        <strong>{ccm.title}</strong><br />
+                                                        <span style={{ color: '#999' }}>ID: {ccm.youtubeId}</span>
                                                     </div>
-                                                ))}
-                                                <div style={{ display: 'flex', gap: '8px', marginTop: '5px' }}>
-                                                    <input id="new-ccm-title" type="text" placeholder="찬양 제목 (예: 은혜로다)" style={{ flex: 2, padding: '8px', fontSize: '12px', borderRadius: '5px', border: '1px solid #EEE', outline: 'none' }} />
-                                                    <input id="new-ccm-id" type="text" placeholder="유튜브 주소 또는 ID" style={{ flex: 2, padding: '8px', fontSize: '12px', borderRadius: '5px', border: '1px solid #EEE', outline: 'none' }} />
                                                     <button onClick={() => {
-                                                        const titleInput = document.getElementById('new-ccm-title') as HTMLInputElement;
-                                                        const idInput = document.getElementById('new-ccm-id') as HTMLInputElement;
-                                                        if (!titleInput.value || !idInput.value) return;
-
-                                                        // 유튜브 ID 추출 로직 (대표님/부장님의 실수를 방지하는 스마트 파싱!)
-                                                        let finalId = idInput.value.trim();
-                                                        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-                                                        const match = finalId.match(regExp);
-                                                        if (match && match[2].length === 11) {
-                                                            finalId = match[2];
-                                                        } else if (finalId.length > 11) {
-                                                            alert('올바른 유튜브 주소 형식이 아닙니다. 다시 확인해 주세요!');
-                                                            return;
-                                                        }
-
-                                                        const newList = [...(settingsForm.custom_ccm_list || []), {
-                                                            title: titleInput.value,
-                                                            artist: CHURCH_NAME,
-                                                            youtubeId: finalId
-                                                        }];
+                                                        const newList = [...settingsForm.custom_ccm_list];
+                                                        newList.splice(idx, 1);
                                                         setSettingsForm((prev: any) => ({ ...prev, custom_ccm_list: newList }));
-                                                        titleInput.value = '';
-                                                        idInput.value = '';
-                                                    }} style={{ flex: 1, background: '#D4AF37', color: 'white', border: 'none', borderRadius: '5px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>추가</button>
+                                                    }} style={{ background: '#FFEBEE', color: '#C62828', border: 'none', borderRadius: '5px', padding: '5px 8px', fontSize: '11px', cursor: 'pointer' }}>삭제</button>
                                                 </div>
+                                            ))}
+                                            <div style={{ display: 'flex', gap: '8px', marginTop: '5px' }}>
+                                                <input id="new-ccm-title" type="text" placeholder="찬양 제목 (예: 은혜로다)" style={{ flex: 2, padding: '8px', fontSize: '12px', borderRadius: '5px', border: '1px solid #EEE', outline: 'none' }} />
+                                                <input id="new-ccm-id" type="text" placeholder="유튜브 주소 또는 ID" style={{ flex: 2, padding: '8px', fontSize: '12px', borderRadius: '5px', border: '1px solid #EEE', outline: 'none' }} />
+                                                <button onClick={() => {
+                                                    const titleInput = document.getElementById('new-ccm-title') as HTMLInputElement;
+                                                    const idInput = document.getElementById('new-ccm-id') as HTMLInputElement;
+                                                    if (!titleInput.value || !idInput.value) return;
+
+                                                    // 유튜브 ID 추출 로직 (대표님/부장님의 실수를 방지하는 스마트 파싱!)
+                                                    let finalId = idInput.value.trim();
+                                                    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+                                                    const match = finalId.match(regExp);
+                                                    if (match && match[2].length === 11) {
+                                                        finalId = match[2];
+                                                    } else if (finalId.length > 11) {
+                                                        alert('올바른 유튜브 주소 형식이 아닙니다. 다시 확인해 주세요!');
+                                                        return;
+                                                    }
+
+                                                    const newList = [...(settingsForm.custom_ccm_list || []), {
+                                                        title: titleInput.value,
+                                                        artist: CHURCH_NAME,
+                                                        youtubeId: finalId
+                                                    }];
+                                                    setSettingsForm((prev: any) => ({ ...prev, custom_ccm_list: newList }));
+                                                    titleInput.value = '';
+                                                    idInput.value = '';
+                                                }} style={{ flex: 1, background: '#D4AF37', color: 'white', border: 'none', borderRadius: '5px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>추가</button>
                                             </div>
                                         </div>
                                     </div>

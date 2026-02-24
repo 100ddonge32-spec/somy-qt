@@ -51,7 +51,8 @@ export async function POST(req: NextRequest) {
         sermon_q1,
         sermon_q2,
         sermon_q3,
-        custom_ccm_list
+        custom_ccm_list,
+        community_visible
     } = body;
 
     const { error } = await supabaseAdmin
@@ -63,6 +64,7 @@ export async function POST(req: NextRequest) {
             church_url,
             app_subtitle,
             plan: plan || 'free', // 'free' 또는 'premium'
+            community_visible,
             sermon_url,
             sermon_summary,
             sermon_q1,
