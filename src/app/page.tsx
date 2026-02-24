@@ -3216,7 +3216,7 @@ export default function App() {
         }
 
         if (view === "profile") {
-            return renderProfilePage();
+            return <ProfileView user={user} supabase={supabase} setView={setView} baseFont={baseFont} />;
         }
 
         return null; // 모든 뷰에 해당하지 않을 때
@@ -3357,8 +3357,8 @@ export default function App() {
         );
     };
 
-    // 내 프로필 정보 수정 및 공개 설정 페이지
-    const renderProfilePage = () => {
+    // 내 프로필 화면 (컴포넌트로 분리하여 Hook 규칙 준수)
+    const ProfileView = ({ user, supabase, setView, baseFont }: any) => {
         const [profileForm, setProfileForm] = useState({
             full_name: user?.user_metadata?.full_name || '',
             phone: '',
@@ -3372,23 +3372,71 @@ export default function App() {
 
         useEffect(() => {
             const loadProfile = async () => {
-                const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-                if (data) {
-                    setProfileForm({
-                        full_name: data.full_name || user?.user_metadata?.full_name || '',
-                        phone: data.phone || '',
-                        birthdate: data.birthdate || '',
-                        address: data.address || '',
-                        is_phone_public: data.is_phone_public || false,
-                        is_birthdate_public: data.is_birthdate_public || false,
-                        is_address_public: data.is_address_public || false
-                    });
+                if (!user?.id) return;
+                try {
+                    // 1. ID로 먼저 시도 (기존 연결된 프로필)
+                    let { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+
+                    // 2. ID로 없으면 이메일로 매칭 시도 (엑셀 업로드 유저 구출 로직)
+                    if (!data && user.email) {
+                        console.log("ID로 프로필을 찾을 수 없어 이메일 매칭을 시도합니다:", user.email);
+                        const { data: emailMatch } = await supabase
+                            .from('profiles')
+                            .select('*')
+                            .eq('email', user.email)
+                            .is('id', null) // 아직 어떤 계정과도 연결되지 않은 행만 (또는 그냥 filter)
+                            .maybeSingle();
+
+                        // ID가 이미 있더라도 null인 경우(엑셀 자동생성) 연결
+                        if (emailMatch) {
+                            console.log("이메일 매칭 성공! 프로필을 현재 계정과 연결합니다.");
+                            const { error: linkError } = await supabase
+                                .from('profiles')
+                                .update({ id: user.id })
+                                .eq('email', user.email);
+
+                            if (!linkError) {
+                                // 성공 시 다시 로드
+                                const { data: linkedData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+                                data = linkedData;
+                            }
+                        } else {
+                            // 이메일로도 없으면, ID가 다른 행이 있을 수도 있음 (이미 누군가가 차지한 이메일 등)
+                            const { data: anyMatch } = await supabase
+                                .from('profiles')
+                                .select('*')
+                                .eq('email', user.email)
+                                .maybeSingle();
+
+                            if (anyMatch) {
+                                // 이메일은 같은데 ID가 다른 경우 -> 이 행을 현재 ID로 가져옴 (관리자 업로드 데이터 선점)
+                                console.log("이메일은 같으나 ID가 다른 데이터 발견. 현재 ID로 업데이트합니다.");
+                                await supabase.from('profiles').update({ id: user.id }).eq('email', user.email);
+                                data = { ...anyMatch, id: user.id };
+                            }
+                        }
+                    }
+
+                    if (data) {
+                        setProfileForm({
+                            full_name: data.full_name || user?.user_metadata?.full_name || '',
+                            phone: data.phone || '',
+                            birthdate: data.birthdate || '',
+                            address: data.address || '',
+                            is_phone_public: data.is_phone_public || false,
+                            is_birthdate_public: data.is_birthdate_public || false,
+                            is_address_public: data.is_address_public || false
+                        });
+                    }
+                } catch (e) {
+                    console.error("프로필 로딩 에러:", e);
                 }
             };
-            if (user) loadProfile();
-        }, [user]);
+            loadProfile();
+        }, [user, supabase]);
 
         const handleSubmit = async () => {
+            if (!user?.id) return;
             setIsSavingProfile(true);
             try {
                 const { error } = await supabase.from('profiles').update(profileForm).eq('id', user.id);
@@ -3402,7 +3450,7 @@ export default function App() {
         };
 
         return (
-            <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "480px", margin: "0 auto", padding: "30px 24px", ...baseFont }}>
+            <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "480px", margin: "0 auto", padding: "30px 24px", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
                     <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
                     <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0 }}>내 프로필 관리</h2>
