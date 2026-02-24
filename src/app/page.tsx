@@ -715,6 +715,7 @@ export default function App() {
     const [churchStats, setChurchStats] = useState<{ [key: string]: number }>({});
     const [showAddMemberModal, setShowAddMemberModal] = useState(false);
     const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+    const [showMergeModal, setShowMergeModal] = useState(false);
     const [mergeTarget, setMergeTarget] = useState<any>(null); // 통합될 데이터 (관리자 등록본)
     const [mergeDestinationId, setMergeDestinationId] = useState<string>(''); // 통합할 대상 (카카오 가입 유저 ID)
     const [mergeSearchKeyword, setMergeSearchKeyword] = useState('');
@@ -4629,7 +4630,7 @@ export default function App() {
 // === 독립 컴포넌트 구역 (App 외부에 정의하여 불필요한 리마운트 방지) ===
 
 // 내 프로필 화면 컴포넌트
-const ProfileView = ({ user, supabase, setView, baseFont }: any) => {
+function ProfileView({ user, supabase, setView, baseFont }: any) {
     const [profileForm, setProfileForm] = useState({
         full_name: user?.user_metadata?.full_name || '',
         phone: '',
@@ -4661,7 +4662,7 @@ const ProfileView = ({ user, supabase, setView, baseFont }: any) => {
                         else if (cleanPhone.startsWith('82')) cleanPhone = '0' + cleanPhone.substring(2);
                         if (cleanPhone) {
                             const formattedPhone = cleanPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
-                            const { data: phoneMatch } = await supabase.from('profiles').select('*').or(`phone.eq.${cleanPhone},phone.eq.${formattedPhone}`).filter('id', 'is', null).maybeSingle();
+                            const { data: phoneMatch } = await supabase.from('profiles').select('*').or(`phone.eq.${cleanPhone},phone.eq.${formattedPhone}`).is('id', null).maybeSingle();
                             if (phoneMatch) {
                                 await supabase.from('profiles').update({ id: user.id, email: user.email || phoneMatch.email }).eq('email', phoneMatch.email);
                                 data = { ...phoneMatch, id: user.id };
@@ -4752,10 +4753,10 @@ const ProfileView = ({ user, supabase, setView, baseFont }: any) => {
             </div>
         </div>
     );
-};
+}
 
 // 성도 검색/주소록 컴포넌트
-const MemberSearchView = ({ churchId, setView, baseFont, isAdmin }: any) => {
+function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
     const [searchTerm, setSearchTerm] = useState("");
     const [results, setResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -4882,4 +4883,4 @@ const MemberSearchView = ({ churchId, setView, baseFont, isAdmin }: any) => {
             )}
         </div>
     );
-};
+}
