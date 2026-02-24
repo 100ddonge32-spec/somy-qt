@@ -3869,8 +3869,40 @@ export default function App() {
                                         memberList.map(member => (
                                             <div key={member.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#F9F9F9', borderRadius: '14px', border: '1px solid #F0F0F0' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#EEE', overflow: 'hidden' }}>
-                                                        <img src={member.avatar_url || 'https://via.placeholder.com/32'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    <div style={{ position: 'relative', width: 32, height: 32 }}>
+                                                        <img src={member.avatar_url || 'https://via.placeholder.com/32'} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', background: '#EEE' }} />
+                                                        <label htmlFor={`avatar-upload-${member.id}`} style={{ position: 'absolute', bottom: -4, right: -4, background: 'white', borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', cursor: 'pointer', border: '1px solid #DDD', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>📸</label>
+                                                        <input
+                                                            id={`avatar-upload-${member.id}`}
+                                                            type="file"
+                                                            accept="image/*"
+                                                            style={{ display: 'none' }}
+                                                            onChange={async (e) => {
+                                                                const file = e.target.files?.[0];
+                                                                if (!file) return;
+
+                                                                // 피드백을 위해 임시로 텍스트나 로딩 표시를 줄 수 있지만, 간단히 진행
+                                                                const formData = new FormData();
+                                                                formData.append('file', file);
+                                                                formData.append('user_id', member.id);
+
+                                                                try {
+                                                                    const res = await fetch('/api/admin/upload-avatar', {
+                                                                        method: 'POST',
+                                                                        body: formData
+                                                                    });
+                                                                    const result = await res.json();
+                                                                    if (res.ok) {
+                                                                        setMemberList(memberList.map(m => m.id === member.id ? { ...m, avatar_url: result.url } : m));
+                                                                        alert('사진이 성공적으로 교체되었습니다!');
+                                                                    } else {
+                                                                        alert('사진 업로드 실패: ' + result.error);
+                                                                    }
+                                                                } catch (err) {
+                                                                    alert('사진 업로드 중 오류가 발생했습니다.');
+                                                                }
+                                                            }}
+                                                        />
                                                     </div>
                                                     <div>
                                                         <div style={{ fontSize: '13px', fontWeight: 700, color: '#333' }}>{member.full_name || '이름 없음'}</div>
