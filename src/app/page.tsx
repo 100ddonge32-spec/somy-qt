@@ -1160,7 +1160,7 @@ export default function App() {
                     background: "linear-gradient(180deg, #FFF8F0 0%, #FEF0D8 50%, #F5E0BB 100%)",
                     display: "flex", flexDirection: "column", alignItems: "center",
                     justifyContent: "space-between", padding: "40px 24px 60px 24px",
-                    maxWidth: "480px", margin: "0 auto", ...baseFont,
+                    maxWidth: "600px", margin: "0 auto", ...baseFont,
                     position: 'relative'
                 }}>
                     {/* 우측 상단 소미 & 사용자 정보 */}
@@ -1753,7 +1753,7 @@ export default function App() {
                 <div style={{
                     minHeight: "100vh",
                     background: "white",
-                    maxWidth: "480px",
+                    maxWidth: "600px",
                     margin: "0 auto",
                     ...baseFont,
                     position: 'relative',
@@ -1964,7 +1964,7 @@ export default function App() {
                     </div>
 
                     {/* Footer Fix Action Button */}
-                    <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', padding: '15px 20px', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', borderTop: '1px solid #EEE', boxSizing: 'border-box' }}>
+                    <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '600px', padding: '15px 20px', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', borderTop: '1px solid #EEE', boxSizing: 'border-box' }}>
                         {qtStep === 'read' && (
                             <button onClick={() => setQtStep('interpret')} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>말씀 해설 보기</button>
                         )}
@@ -2116,7 +2116,7 @@ export default function App() {
             const inputStyle = { width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'inherit' };
 
             return (
-                <div style={{ minHeight: "100vh", background: "white", maxWidth: "480px", margin: "0 auto", ...baseFont }}>
+                <div style={{ minHeight: "100vh", background: "white", maxWidth: "600px", margin: "0 auto", ...baseFont }}>
                     {styles}
                     <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #EEE", position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
@@ -2274,7 +2274,7 @@ export default function App() {
                 <div style={{
                     minHeight: "100vh",
                     background: "white",
-                    maxWidth: "480px",
+                    maxWidth: "600px",
                     margin: "0 auto",
                     ...baseFont,
                     paddingTop: 'env(safe-area-inset-top)'
@@ -2498,7 +2498,7 @@ export default function App() {
                 <div style={{
                     minHeight: "100vh",
                     background: "#F8F8F8",
-                    maxWidth: "480px",
+                    maxWidth: "600px",
                     margin: "0 auto",
                     ...baseFont,
                     paddingTop: 'env(safe-area-inset-top)'
@@ -2834,7 +2834,7 @@ export default function App() {
                 <div style={{
                     minHeight: "100vh",
                     background: "#FFFBF5",
-                    maxWidth: "480px",
+                    maxWidth: "600px",
                     margin: "0 auto",
                     ...baseFont,
                     paddingTop: 'env(safe-area-inset-top)'
@@ -2985,7 +2985,7 @@ export default function App() {
                 <div style={{
                     minHeight: "100vh",
                     background: "#FDFCFB",
-                    maxWidth: "480px",
+                    maxWidth: "600px",
                     margin: "0 auto",
                     ...baseFont,
                     paddingTop: 'env(safe-area-inset-top)'
@@ -3074,7 +3074,7 @@ export default function App() {
                 <div style={{
                     minHeight: "100vh",
                     background: "white",
-                    maxWidth: "480px",
+                    maxWidth: "600px",
                     margin: "0 auto",
                     ...baseFont,
                     paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
@@ -3170,7 +3170,7 @@ export default function App() {
                 <div style={{
                     minHeight: "100vh",
                     background: "#FDFCFB",
-                    maxWidth: "480px",
+                    maxWidth: "600px",
                     margin: "0 auto",
                     ...baseFont,
                     padding: '0 20px 24px 20px',
@@ -3290,7 +3290,7 @@ export default function App() {
                 <div style={{
                     minHeight: "100vh",
                     background: "white",
-                    maxWidth: "480px",
+                    maxWidth: "600px",
                     margin: "0 auto",
                     ...baseFont,
                     paddingTop: 'env(safe-area-inset-top)'
@@ -3512,7 +3512,7 @@ export default function App() {
             };
 
             return (
-                <div style={{ padding: "20px", maxWidth: "480px", margin: "0 auto", background: "#FDFCFB", minHeight: "100vh", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
+                <div style={{ padding: "20px", maxWidth: "600px", margin: "0 auto", background: "#FDFCFB", minHeight: "100vh", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
                         <button onClick={() => setView('admin')} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
                         <div style={{ fontWeight: 800, fontSize: "16px", color: '#333' }}>🎙️ 주일 설교 자동 요약봇</div>
@@ -3595,7 +3595,7 @@ export default function App() {
         ══════════════════════════════ */
         if (view === "counseling") {
             return (
-                <div style={{ display: "flex", flexDirection: "column", height: "100vh", maxWidth: "480px", margin: "0 auto", background: "#fdfdfd", position: "relative" }}>
+                <div style={{ display: "flex", flexDirection: "column", height: "100vh", maxWidth: "600px", margin: "0 auto", background: "#fdfdfd", position: "relative" }}>
                     <div style={{ padding: "20px", display: "flex", alignItems: "center", borderBottom: '1px solid #EEE' }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "24px", color: "#333", cursor: "pointer" }}>←</button>
                         <h2 style={{ flex: 1, textAlign: "center", fontSize: "18px", margin: 0, color: "#333", fontWeight: 800 }}>🙏 상담 및 기도 요청</h2>
@@ -3681,7 +3681,7 @@ export default function App() {
         ══════════════════════════════ */
         if (view === "chat") {
             return (
-                <div style={{ display: "flex", flexDirection: "column", height: "100vh", maxWidth: "480px", margin: "0 auto", background: "white", ...baseFont, position: 'relative' }}>
+                <div style={{ display: "flex", flexDirection: "column", height: "100vh", maxWidth: "600px", margin: "0 auto", background: "white", ...baseFont, position: 'relative' }}>
                     <div style={{ padding: "15px 20px", borderBottom: "1px solid #EEE", display: "flex", alignItems: "center", gap: "12px" }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer" }}>←</button>
                         <div style={{ width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', border: '1px solid #EEE' }}>
@@ -3830,7 +3830,7 @@ export default function App() {
         ];
 
         return (
-            <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "480px", margin: "0 auto", padding: "30px 24px", ...baseFont }}>
+            <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", padding: "30px 24px", ...baseFont }}>
                 {/* 헤더 */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
                     <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
@@ -4419,7 +4419,7 @@ export default function App() {
     if (!isMounted) return <div style={{ minHeight: "100vh", background: "#FFF8F0" }} />;
 
     return (
-        <div style={{ position: 'relative', maxWidth: '480px', margin: '0 auto' }}>
+        <div style={{ position: 'relative', maxWidth: '600px', margin: '0 auto' }}>
             {/* 유튜브 진짜 Iframe 보관소 (어디에도 안 띄워야 할 경우 숨겨둘 투명 금고 역할) */}
             <div
                 id="youtube-portal-storage"
@@ -5084,7 +5084,7 @@ export default function App() {
             {renderNotificationList()}
             {user && (
                 <>
-                    {view !== 'sermon' && (showIpod ? renderMiniPlayer() : (
+                    {view !== 'sermon' && view !== 'chat' && (showIpod ? renderMiniPlayer() : (
                         <div
                             onClick={() => {
                                 if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(20);
@@ -5209,7 +5209,7 @@ function ProfileView({ user, supabase, setView, baseFont }: any) {
     };
 
     return (
-        <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "480px", margin: "0 auto", padding: "30px 24px", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
+        <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", padding: "30px 24px", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
                 <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
                 <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0 }}>내 프로필 관리</h2>
@@ -5284,7 +5284,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
     };
 
     return (
-        <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "480px", margin: "0 auto", padding: "30px 20px", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
+        <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", padding: "30px 20px", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '24px' }}>
                 <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
                 <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0 }}>교회 성도 검색</h2>
@@ -5347,7 +5347,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
 
             {selectedMember && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', zIndex: 2000, display: 'flex', alignItems: 'end', justifyContent: 'center' }} onClick={() => setSelectedMember(null)}>
-                    <div style={{ background: 'white', width: '100%', maxWidth: '480px', borderRadius: '32px 32px 0 0', padding: '40px 24px', position: 'relative', animation: 'slide-up 0.3s ease-out' }} onClick={e => e.stopPropagation()}>
+                    <div style={{ background: 'white', width: '100%', maxWidth: '600px', borderRadius: '32px 32px 0 0', padding: '40px 24px', position: 'relative', animation: 'slide-up 0.3s ease-out' }} onClick={e => e.stopPropagation()}>
                         <button onClick={() => setSelectedMember(null)} style={{ position: 'absolute', top: '20px', right: '20px', background: '#F5F5F3', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>×</button>
                         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
                             <div style={{ width: 100, height: 100, borderRadius: '50%', background: '#F5F2EA', margin: '0 auto 16px', padding: '4px', border: '1px solid #F0ECE4' }}>
