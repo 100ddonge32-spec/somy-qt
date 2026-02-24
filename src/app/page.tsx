@@ -3680,10 +3680,14 @@ export default function App() {
                                         <div style={{ marginTop: '10px' }}>
                                             <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>🎵 커스텀 CCM 목록 관리</label>
 
-                                            {/* 저작권 안내 문구 추가 */}
-                                            <div style={{ background: '#F0F7FF', padding: '10px', borderRadius: '10px', marginBottom: '10px', border: '1px solid #CFE2FF' }}>
-                                                <p style={{ margin: 0, fontSize: '11px', color: '#084298', lineHeight: 1.5 }}>
-                                                    <strong>💡 저작권 안내:</strong> 유튜브 임베드 방식은 원작자의 광고 수익과 조회수를 보존하므로 일반적인 저작권 침해 우려가 적습니다. 단, '퍼가기 금지'로 설정된 영상은 재생되지 않을 수 있습니다.
+                                            {/* 저작권 및 운영 안내 */}
+                                            <div style={{ background: '#F0F7FF', padding: '12px', borderRadius: '12px', marginBottom: '12px', border: '1px solid #CFE2FF' }}>
+                                                <div style={{ fontSize: '12px', fontWeight: 700, color: '#084298', marginBottom: '5px' }}>🛡️ 저작권 및 운영 안내</div>
+                                                <p style={{ margin: 0, fontSize: '11px', color: '#084298', lineHeight: 1.6 }}>
+                                                    • 본 앱은 유튜브 공식 API를 통한 <strong>단순 임베드(Embed)</strong> 방식만 제공합니다.<br />
+                                                    • 영상의 조회수와 광고 수익은 원작자에게 귀속되므로 저작권 문제에서 안전합니다.<br />
+                                                    • <strong>주의:</strong> 퍼가기가 비활성화된 영상은 재생되지 않습니다.<br />
+                                                    • 등록된 콘텐츠에 대한 최종 관리 책임은 해당 교회 관리자에게 있습니다.
                                                 </p>
                                             </div>
 
@@ -3692,7 +3696,7 @@ export default function App() {
                                                     <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#F9F9F9', padding: '10px', borderRadius: '10px', border: '1px solid #EEE' }}>
                                                         <div style={{ flex: 1, fontSize: '12px' }}>
                                                             <strong>{ccm.title}</strong><br />
-                                                            <span style={{ color: '#999' }}>{ccm.youtubeId}</span>
+                                                            <span style={{ color: '#999' }}>ID: {ccm.youtubeId}</span>
                                                         </div>
                                                         <button onClick={() => {
                                                             const newList = [...settingsForm.custom_ccm_list];
@@ -3702,13 +3706,29 @@ export default function App() {
                                                     </div>
                                                 ))}
                                                 <div style={{ display: 'flex', gap: '8px', marginTop: '5px' }}>
-                                                    <input id="new-ccm-title" type="text" placeholder="찬양 제목" style={{ flex: 2, padding: '8px', fontSize: '12px', borderRadius: '5px', border: '1px solid #EEE' }} />
-                                                    <input id="new-ccm-id" type="text" placeholder="YouTube ID" style={{ flex: 2, padding: '8px', fontSize: '12px', borderRadius: '5px', border: '1px solid #EEE' }} />
+                                                    <input id="new-ccm-title" type="text" placeholder="찬양 제목 (예: 은혜로다)" style={{ flex: 2, padding: '8px', fontSize: '12px', borderRadius: '5px', border: '1px solid #EEE', outline: 'none' }} />
+                                                    <input id="new-ccm-id" type="text" placeholder="유튜브 주소 또는 ID" style={{ flex: 2, padding: '8px', fontSize: '12px', borderRadius: '5px', border: '1px solid #EEE', outline: 'none' }} />
                                                     <button onClick={() => {
                                                         const titleInput = document.getElementById('new-ccm-title') as HTMLInputElement;
                                                         const idInput = document.getElementById('new-ccm-id') as HTMLInputElement;
                                                         if (!titleInput.value || !idInput.value) return;
-                                                        const newList = [...(settingsForm.custom_ccm_list || []), { title: titleInput.value, artist: CHURCH_NAME, youtubeId: idInput.value }];
+
+                                                        // 유튜브 ID 추출 로직 (대표님/부장님의 실수를 방지하는 스마트 파싱!)
+                                                        let finalId = idInput.value.trim();
+                                                        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+                                                        const match = finalId.match(regExp);
+                                                        if (match && match[2].length === 11) {
+                                                            finalId = match[2];
+                                                        } else if (finalId.length > 11) {
+                                                            alert('올바른 유튜브 주소 형식이 아닙니다. 다시 확인해 주세요!');
+                                                            return;
+                                                        }
+
+                                                        const newList = [...(settingsForm.custom_ccm_list || []), {
+                                                            title: titleInput.value,
+                                                            artist: CHURCH_NAME,
+                                                            youtubeId: finalId
+                                                        }];
                                                         setSettingsForm((prev: any) => ({ ...prev, custom_ccm_list: newList }));
                                                         titleInput.value = '';
                                                         idInput.value = '';
