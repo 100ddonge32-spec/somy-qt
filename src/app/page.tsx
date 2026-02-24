@@ -3447,6 +3447,48 @@ export default function App() {
                         <button onClick={() => setSelectedMemberForEdit(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px', position: 'relative' }}>
+                            <div style={{ position: 'relative', width: '80px', height: '80px' }}>
+                                <img
+                                    alt="member photo"
+                                    src={m.avatar_url || 'https://via.placeholder.com/80'}
+                                    style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '2px solid #F0ECE4' }}
+                                />
+                                <label
+                                    htmlFor="modal-avatar-upload"
+                                    style={{ position: 'absolute', bottom: 0, right: 0, background: '#333', color: 'white', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '2px solid white', fontSize: '14px' }}
+                                >
+                                    📸
+                                </label>
+                                <input
+                                    id="modal-avatar-upload"
+                                    type="file"
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        const formData = new FormData();
+                                        formData.append('file', file);
+                                        formData.append('user_id', m.id);
+                                        try {
+                                            const res = await fetch('/api/admin/upload-avatar', { method: 'POST', body: formData });
+                                            const result = await res.json();
+                                            if (res.ok) {
+                                                const newUrl = result.url;
+                                                setMemberList((prev: any[]) => prev.map(item => item.id === m.id ? { ...item, avatar_url: newUrl } : item));
+                                                setSelectedMemberForEdit({ ...m, avatar_url: newUrl });
+                                                alert('사진이 성공적으로 업로드되었습니다!');
+                                            } else {
+                                                alert('업로드 실패: ' + result.error);
+                                            }
+                                        } catch (err) {
+                                            alert('업로드 중 오류가 발생했습니다.');
+                                        }
+                                    }}
+                                />
+                            </div>
+                        </div>
                         <div>
                             <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>성함</label>
                             <input id="edit-name" defaultValue={m.full_name} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
