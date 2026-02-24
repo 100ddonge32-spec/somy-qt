@@ -169,6 +169,7 @@ export default function App() {
     const [ccmVolume, setCcmVolume] = useState(50);
     const [isCcmPlaying, setIsCcmPlaying] = useState(false);
     const [selectedUploadFile, setSelectedUploadFile] = useState<File | null>(null); // ✅ 업로드 대기 파일 스테이트
+    const [isMemberUploading, setIsMemberUploading] = useState(false); // ✅ 업로드 중 애니메이션 스테이트
 
     const [churchSettings, setChurchSettings] = useState<any>({
         church_name: CHURCH_NAME,
@@ -3846,8 +3847,10 @@ export default function App() {
                                                         <span onClick={() => setSelectedUploadFile(null)} style={{ cursor: 'pointer', color: '#999' }}>✕</span>
                                                     </div>
                                                     <button
+                                                        disabled={isMemberUploading}
                                                         onClick={async () => {
                                                             if (!selectedUploadFile) return;
+                                                            setIsMemberUploading(true); // ✅ 애니메이션 시작
                                                             const formData = new FormData();
                                                             formData.append('file', selectedUploadFile);
                                                             formData.append('church_id', churchId);
@@ -3869,12 +3872,41 @@ export default function App() {
                                                                     const errorMsg = result.errors ? `\n\n[심층진단]:\n${result.errors.join('\n')}` : `\n(DB에 해당 데이터 칸이 없을 수 있습니다.)`;
                                                                     alert(`업데이트 실패: ${result.count || 0}명 성공${errorMsg}`);
                                                                 }
-                                                            } catch (e) { alert('파일 처리 중 오류가 발생했습니다.'); }
+                                                            } catch (e) {
+                                                                alert('파일 처리 중 오류가 발생했습니다.');
+                                                            } finally {
+                                                                setIsMemberUploading(false); // ✅ 애니메이션 종료
+                                                            }
                                                         }}
-                                                        style={{ width: '100%', padding: '10px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 800, fontSize: '13px', cursor: 'pointer' }}
+                                                        style={{
+                                                            width: '100%',
+                                                            padding: '12px',
+                                                            background: isMemberUploading ? '#999' : '#333',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            borderRadius: '8px',
+                                                            fontWeight: 800,
+                                                            fontSize: '13px',
+                                                            cursor: isMemberUploading ? 'default' : 'pointer',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            gap: '8px',
+                                                            transition: 'all 0.3s'
+                                                        }}
                                                     >
-                                                        🚀 성도 명단 업로드 시작
+                                                        {isMemberUploading ? (
+                                                            <>
+                                                                <div className="spinner-small" style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+                                                                업로드 중... 잠시만 기다려주세요
+                                                            </>
+                                                        ) : (
+                                                            '🚀 성도 명단 업로드 시작'
+                                                        )}
                                                     </button>
+                                                    <style>{`
+                                                        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                                                    `}</style>
                                                 </div>
                                             )}
                                         </div>
