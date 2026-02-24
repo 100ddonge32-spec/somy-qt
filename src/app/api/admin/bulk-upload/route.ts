@@ -28,22 +28,33 @@ export async function POST(req: NextRequest) {
         const rows = XLSX.utils.sheet_to_json(worksheet) as any[];
 
         let successCount = 0;
-        for (const row of rows) {
-            const full_name = (row['성명'] || row['이름'] || '').toString().trim();
-            const phone = (row['휴대폰'] || row['전화번호'] || '').toString().trim();
-            const birthdateInput = row['생년월일'] || row['생일'];
-            const address = row['주소'];
-            const church_rank = row['교회직분'];
-            const member_no = row['교적번호'];
-            const gender = row['성별'];
-            const avatar_url = row['교인사진'] || row['사진'];
+        const errors: string[] = [];
 
-            // 엑셀 날짜 형식 처리 (숫자 형태 또는 텍스트 형태)
+        for (const row of rows) {
+            // 대소문자나 공백 무관하게 매칭하기 위해 키를 정리
+            const findValue = (keys: string[]) => {
+                const foundKey = Object.keys(row).find(k => keys.includes(k.replace(/\s/g, '')));
+                return foundKey ? row[foundKey] : null;
+            };
+
+            const full_name = (findValue(['성명', '이름', '성함']) || '').toString().trim();
+            const phone = (findValue(['휴대폰', '전화번호', '연락처']) || '').toString().trim();
+            const birthdateInput = findValue(['생년월일', '생일']);
+            const address = findValue(['주소']);
+            const church_rank = findValue(['교회직분', '직분']);
+            const member_no = findValue(['교적번호', '교적']);
+            const gender = findValue(['성별']);
+            const avatar_url = findValue(['교인사진', '사진', '사진URL']);
+
+            if (!full_name) {
+                errors.push("성명 데이터가 없는 행이 있습니다.");
+                continue;
+            }
+
             let formattedBirthdate = null;
             if (birthdateInput) {
                 try {
                     if (typeof birthdateInput === 'number') {
-                        // 엑셀 날짜(정수)를 JS 날짜로 변환
                         const date = new Date((birthdateInput - 25569) * 86400 * 1000);
                         formattedBirthdate = date.toISOString().split('T')[0];
                     } else {
@@ -52,15 +63,10 @@ export async function POST(req: NextRequest) {
                             formattedBirthdate = date.toISOString().split('T')[0];
                         }
                     }
-                } catch (e) {
-                    console.warn(`[Bulk] 날짜 변환 실패 (${full_name}):`, birthdateInput);
-                }
+                } catch (e) { }
             }
 
-            // 이메일이 없는 경우 대비한 스마트 식별자 생성
-            const email = row['이메일'] || (phone ? `${phone.replace(/-/g, '')}@church.local` : (full_name ? `${full_name}@noemail.local` : null));
-
-            if (!email) continue;
+            const email = findValue(['이메일']) || (phone ? `${phone.replace(/-/g, '')}@church.local` : `${full_name}@noemail.local`);
 
             const { error } = await supabaseAdmin
                 .from('profiles')
@@ -78,13 +84,18 @@ export async function POST(req: NextRequest) {
                 }, { onConflict: 'email' });
 
             if (error) {
-                console.error(`[Bulk Error] ${full_name} 저장 실패:`, error.message);
+                errors.push(`${full_name}: ${error.message}`);
+                console.error(`[Bulk Error]`, error);
             } else {
                 successCount++;
             }
         }
 
-        return NextResponse.json({ success: true, count: successCount });
+        return NextResponse.json({
+            success: successCount > 0,
+            count: successCount,
+            errors: errors.length > 0 ? errors.slice(0, 3) : null // 너무 많을까봐 3개만 리턴
+        });
     } catch (err: any) {
         console.error('Bulk Upload Error:', err);
         return NextResponse.json({ error: err.message }, { status: 500 });

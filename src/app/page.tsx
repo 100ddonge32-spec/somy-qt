@@ -168,6 +168,7 @@ export default function App() {
     const [todayCcm, setTodayCcm] = useState<CcmVideo | null>(null);
     const [ccmVolume, setCcmVolume] = useState(50);
     const [isCcmPlaying, setIsCcmPlaying] = useState(false);
+    const [selectedUploadFile, setSelectedUploadFile] = useState<File | null>(null); // ✅ 업로드 대기 파일 스테이트
 
     const [churchSettings, setChurchSettings] = useState<any>({
         church_name: CHURCH_NAME,
@@ -3825,31 +3826,58 @@ export default function App() {
                                         </button>
                                     </div>
                                     <div style={{ background: 'white', padding: '12px', borderRadius: '10px', border: '1px solid #F0ECE4', marginBottom: '12px' }}>
-                                        <input type="file" accept=".xlsx, .xls" onChange={async (e) => {
+                                        <input id="excel-upload-input" type="file" accept=".xlsx, .xls" onChange={(e) => {
                                             const file = e.target.files?.[0];
-                                            if (!file) return;
+                                            if (file) setSelectedUploadFile(file);
+                                        }} style={{ display: 'none' }} />
 
-                                            const formData = new FormData();
-                                            formData.append('file', file);
-                                            formData.append('church_id', churchId);
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                            {!selectedUploadFile ? (
+                                                <button
+                                                    onClick={() => document.getElementById('excel-upload-input')?.click()}
+                                                    style={{ width: '100%', padding: '12px', background: '#FAFAFA', border: '2px dashed #EEE', borderRadius: '10px', color: '#999', fontSize: '13px', cursor: 'pointer' }}
+                                                >
+                                                    📁 엑셀 파일 선택하기
+                                                </button>
+                                            ) : (
+                                                <div style={{ padding: '10px', background: '#FFF9C4', borderRadius: '10px', border: '1px solid #FFF176', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                    <div style={{ fontSize: '12px', color: '#856404', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
+                                                        📄 {selectedUploadFile.name}
+                                                        <span onClick={() => setSelectedUploadFile(null)} style={{ cursor: 'pointer', color: '#999' }}>✕</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (!selectedUploadFile) return;
+                                                            const formData = new FormData();
+                                                            formData.append('file', selectedUploadFile);
+                                                            formData.append('church_id', churchId);
 
-                                            try {
-                                                const res = await fetch('/api/admin/bulk-upload', {
-                                                    method: 'POST',
-                                                    body: formData
-                                                });
-                                                const result = await res.json();
-                                                if (result.success) {
-                                                    alert(`${result.count}명의 성도 정보가 업데이트 되었습니다!`);
-                                                    // 리스트 새로고침
-                                                    const r = await fetch('/api/admin?action=list_members');
-                                                    const data = await r.json();
-                                                    if (Array.isArray(data)) setMemberList(data);
-                                                } else {
-                                                    alert('업로드 실패: ' + result.error);
-                                                }
-                                            } catch (e) { alert('파일 처리 중 오류가 발생했습니다.'); }
-                                        }} style={{ fontSize: '12px', width: '100%' }} />
+                                                            try {
+                                                                const res = await fetch('/api/admin/bulk-upload', {
+                                                                    method: 'POST',
+                                                                    body: formData
+                                                                });
+                                                                const result = await res.json();
+                                                                if (result.success) {
+                                                                    alert(`${result.count}명의 성도 정보가 업데이트 되었습니다! ✅`);
+                                                                    setSelectedUploadFile(null);
+                                                                    // 리스트 새로고침
+                                                                    const r = await fetch('/api/admin?action=list_members');
+                                                                    const data = await r.json();
+                                                                    if (Array.isArray(data)) setMemberList(data);
+                                                                } else {
+                                                                    const errorMsg = result.errors ? `\n\n[심층진단]:\n${result.errors.join('\n')}` : `\n(DB에 해당 데이터 칸이 없을 수 있습니다.)`;
+                                                                    alert(`업데이트 실패: ${result.count || 0}명 성공${errorMsg}`);
+                                                                }
+                                                            } catch (e) { alert('파일 처리 중 오류가 발생했습니다.'); }
+                                                        }}
+                                                        style={{ width: '100%', padding: '10px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 800, fontSize: '13px', cursor: 'pointer' }}
+                                                    >
+                                                        🚀 성도 명단 업로드 시작
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                     <div style={{ fontSize: '11px', color: '#888', lineHeight: 1.5 }}>
                                         <strong style={{ color: '#D4AF37' }}>💡 권장 양식:</strong><br />
