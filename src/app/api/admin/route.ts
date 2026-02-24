@@ -26,10 +26,14 @@ export async function GET(req: NextRequest) {
         }
 
         if (action === 'list_members') {
-            const { data, error } = await supabaseAdmin
-                .from('profiles')
-                .select('*')
-                .order('created_at', { ascending: false });
+            const churchId = searchParams.get('church_id');
+            let query = supabaseAdmin.from('profiles').select('*');
+
+            if (churchId) {
+                query = query.eq('church_id', churchId);
+            }
+
+            const { data, error } = await query.order('created_at', { ascending: false });
             if (error) throw error;
             return NextResponse.json(data);
         }

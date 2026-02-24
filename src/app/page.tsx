@@ -3610,7 +3610,7 @@ export default function App() {
                                     body: JSON.stringify({ action: 'add_member', member_data: memberData })
                                 });
                                 if (res.ok) {
-                                    const r = await fetch('/api/admin?action=list_members');
+                                    const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
                                     const data = await r.json();
                                     if (Array.isArray(data)) setMemberList(data);
                                     setShowAddMemberModal(false);
@@ -3742,7 +3742,7 @@ export default function App() {
                                         });
 
                                         alert('통합 완료되었습니다! ✨');
-                                        const r = await fetch('/api/admin?action=list_members');
+                                        const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
                                         const data = await r.json();
                                         if (Array.isArray(data)) setMemberList(data);
                                         setShowMergeModal(false);
@@ -3967,7 +3967,7 @@ export default function App() {
                                 setAdminTab('members');
                                 setIsManagingMembers(true);
                                 try {
-                                    const r = await fetch('/api/admin?action=list_members');
+                                    const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
                                     const data = await r.json();
                                     if (Array.isArray(data)) setMemberList(data);
                                 } finally { setIsManagingMembers(false); }
@@ -4154,7 +4154,7 @@ export default function App() {
                                                                     alert(`${result.count}명의 성도 정보가 업데이트 되었습니다! ✅`);
                                                                     setSelectedUploadFile(null);
                                                                     // 리스트 새로고침
-                                                                    const r = await fetch('/api/admin?action=list_members');
+                                                                    const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
                                                                     const data = await r.json();
                                                                     if (Array.isArray(data)) setMemberList(data);
                                                                 } else {

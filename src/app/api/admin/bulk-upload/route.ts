@@ -46,7 +46,10 @@ export async function POST(req: NextRequest) {
                 return foundKey ? row[foundKey] : null;
             };
 
-            const full_name = (findValue(['성명', '이름', '성함', 'Name']) || '').toString().trim();
+            // 검색 시 불일치(공백 등으로)를 방지하기 위해 공백을 전부 제거합니다. 
+            let full_name = (findValue(['성명', '이름', '성함', 'Name']) || '').toString().trim();
+            full_name = full_name.replace(/\s+/g, '');
+
             if (!full_name) {
                 console.log(`[Bulk] ${index + 1}행: 성명 없음, 건너뜀`);
                 continue;
