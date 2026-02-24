@@ -1445,24 +1445,23 @@ export default function App() {
                                         담임목사 설교
                                     </button>
                                 )}
+                                <button onClick={() => setView('profile')} style={{
+                                    width: '100%', padding: "16px",
+                                    background: "linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)",
+                                    color: "#1976D2",
+                                    fontWeight: 800, fontSize: "15px", borderRadius: "18px",
+                                    border: "1px solid #90CAF9", cursor: "pointer",
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                                    boxShadow: '0 4px 12px rgba(25,118,210,0.1)',
+                                    transition: 'all 0.2s'
+                                }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                                    👤 내 프로필 & 정보 수정
+                                </button>
                             </>
                         )}
                     </div>
 
                     <div style={{ padding: '0 20px 40px 20px', width: '100%', maxWidth: '360px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
-                        <button onClick={() => setView('profile')} style={{
-                            width: '100%', padding: "16px",
-                            background: "linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)",
-                            color: "#1976D2",
-                            fontWeight: 800, fontSize: "15px", borderRadius: "18px",
-                            border: "1px solid #90CAF9", cursor: "pointer",
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                            boxShadow: '0 4px 12px rgba(25,118,210,0.1)',
-                            transition: 'all 0.2s'
-                        }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                            👤 내 프로필 & 정보 수정
-                        </button>
-
                         <button onClick={() => setView('guide')} style={{
                             width: '100%', padding: "16px",
                             background: "linear-gradient(135deg, #F9F7F2 0%, #F4F0E6 100%)",
@@ -3407,28 +3406,48 @@ export default function App() {
     // 앱 설치 안내 모달
     const renderInstallGuide = () => {
         if (!showInstallGuide) return null;
+
+        const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+
         return (
             <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '30px' }}>
                 <div style={{ background: 'white', borderRadius: '30px', padding: '30px', width: '100%', maxWidth: '380px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', textAlign: 'center', animation: 'fade-in 0.3s ease-out' }}>
                     <div style={{ fontSize: '40px', marginBottom: '15px' }}>📱</div>
                     <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#333', marginBottom: '10px' }}>홈 화면에 어플 추가</h3>
 
-                    {/* 중요 안내: Safari만 가능 */}
-                    <div style={{ background: '#FFF3E0', border: '1px solid #FFB74D', padding: '12px 16px', borderRadius: '14px', marginBottom: '16px', textAlign: 'left' }}>
-                        <p style={{ fontSize: '13px', color: '#E65100', fontWeight: 700, margin: 0 }}>
-                            ⚠️ 반드시 <strong>사파리(Safari)</strong> 앱에서 접속해야 합니다!<br />
-                            <span style={{ fontWeight: 400 }}>크롬, 네이버 앱 등에서는 이 기능이 없어요.</span>
-                        </p>
-                    </div>
-
-                    <div style={{ background: '#F9F7F2', padding: '20px', borderRadius: '20px', textAlign: 'left', marginBottom: '25px' }}>
-                        <p style={{ fontSize: '14px', color: '#555', lineHeight: '2', margin: 0 }}>
-                            1️⃣ <strong>사파리(Safari)</strong>로 이 페이지 다시 열기<br />
-                            2️⃣ 하단 중앙 <strong>공유 버튼</strong> 탭 (네모에 화살표↑)<br />
-                            3️⃣ 아래로 스크롤 후 <strong>[홈 화면에 추가]</strong> 탭<br />
-                            4️⃣ 오른쪽 위 <strong>[추가]</strong> 탭하면 완성! 🎉
-                        </p>
-                    </div>
+                    {isIos ? (
+                        <>
+                            {/* iOS 안내 */}
+                            <div style={{ background: '#FFF3E0', border: '1px solid #FFB74D', padding: '12px 16px', borderRadius: '14px', marginBottom: '16px', textAlign: 'left' }}>
+                                <p style={{ fontSize: '13px', color: '#E65100', fontWeight: 700, margin: 0 }}>
+                                    ⚠️ 아이폰은 <strong>사파리(Safari)</strong>에서 가능합니다!
+                                </p>
+                            </div>
+                            <div style={{ background: '#F9F7F2', padding: '20px', borderRadius: '20px', textAlign: 'left', marginBottom: '25px' }}>
+                                <p style={{ fontSize: '14px', color: '#555', lineHeight: '2', margin: 0 }}>
+                                    1️⃣ 하단 중앙 <strong>공유 버튼</strong> 탭 (네모↑)<br />
+                                    2️⃣ 아래로 스크롤 후 <strong>[홈 화면에 추가]</strong> 탭<br />
+                                    3️⃣ 오른쪽 위 <strong>[추가]</strong> 탭하면 완성! 🎉
+                                </p>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            {/* Android 안내 */}
+                            <div style={{ background: '#E3F2FD', border: '1px solid #90CAF9', padding: '12px 16px', borderRadius: '14px', marginBottom: '16px', textAlign: 'left' }}>
+                                <p style={{ fontSize: '13px', color: '#1565C0', fontWeight: 700, margin: 0 }}>
+                                    ✨ 안드로이드는 <strong>크롬(Chrome)</strong>에서 가능합니다!
+                                </p>
+                            </div>
+                            <div style={{ background: '#F9F7F2', padding: '20px', borderRadius: '20px', textAlign: 'left', marginBottom: '25px' }}>
+                                <p style={{ fontSize: '14px', color: '#555', lineHeight: '2', margin: 0 }}>
+                                    1️⃣ 오른쪽 위 <strong>점 3개(⋮)</strong> 메뉴 탭<br />
+                                    2️⃣ <strong>[홈 화면에 추가]</strong> 또는 <strong>[앱 설치]</strong> 탭<br />
+                                    3️⃣ 팝업에서 <strong>[추가/설치]</strong> 버튼 클릭하면 완성! 🎉
+                                </p>
+                            </div>
+                        </>
+                    )}
 
                     <button
                         onClick={() => setShowInstallGuide(false)}
@@ -3870,36 +3889,40 @@ export default function App() {
                 </div>
             )}
             {renderNotificationList()}
-            {view !== 'sermon' && (showIpod ? renderMiniPlayer() : (
-                <div
-                    onClick={() => {
-                        if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(20);
-                        setShowIpod(true);
-                    }}
-                    style={{
-                        position: 'fixed',
-                        bottom: '20px',
-                        right: '20px',
-                        width: '40px',
-                        height: '40px',
-                        background: 'rgba(51, 51, 51, 0.8)',
-                        color: 'white',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '20px',
-                        zIndex: 2500,
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
-                        backdropFilter: 'blur(5px)',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        animation: 'fade-in 0.3s'
-                    }}
-                >
-                    🎧
-                </div>
-            ))}
+            {user && (
+                <>
+                    {view !== 'sermon' && (showIpod ? renderMiniPlayer() : (
+                        <div
+                            onClick={() => {
+                                if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(20);
+                                setShowIpod(true);
+                            }}
+                            style={{
+                                position: 'fixed',
+                                bottom: '20px',
+                                right: '20px',
+                                width: '40px',
+                                height: '40px',
+                                background: 'rgba(51, 51, 51, 0.8)',
+                                color: 'white',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '20px',
+                                zIndex: 2500,
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+                                backdropFilter: 'blur(5px)',
+                                border: '1px solid rgba(255,255,255,0.2)',
+                                animation: 'fade-in 0.3s'
+                            }}
+                        >
+                            🎧
+                        </div>
+                    ))}
+                </>
+            )}
             {renderInstallGuide()}
         </div>
     );
