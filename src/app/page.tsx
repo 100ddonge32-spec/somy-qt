@@ -166,6 +166,41 @@ export default function App() {
     const [todayCcm, setTodayCcm] = useState<CcmVideo | null>(null);
     const [ccmVolume, setCcmVolume] = useState(50);
     const [isCcmPlaying, setIsCcmPlaying] = useState(false);
+
+    const [churchSettings, setChurchSettings] = useState<any>({
+        church_name: CHURCH_NAME,
+        church_logo_url: CHURCH_LOGO,
+        church_url: CHURCH_URL,
+        sermon_url: "",
+        app_subtitle: APP_SUBTITLE,
+        plan: 'free',
+        community_visible: true,
+        sermon_summary: '',
+        sermon_q1: '',
+        sermon_q2: '',
+        sermon_q3: '',
+        custom_ccm_list: [],
+    });
+    const [settingsForm, setSettingsForm] = useState<any>({
+        church_name: CHURCH_NAME,
+        church_logo_url: CHURCH_LOGO,
+        church_url: CHURCH_URL,
+        sermon_url: "",
+        app_subtitle: APP_SUBTITLE,
+        plan: 'free',
+        community_visible: true,
+        sermon_summary: '',
+        sermon_q1: '',
+        sermon_q2: '',
+        sermon_q3: '',
+        custom_ccm_list: [],
+    });
+
+    // [최적화] 커스텀 CCM 목록 우선순위 결정 로직
+    const activeCcmList = (churchSettings?.custom_ccm_list && Array.isArray(churchSettings.custom_ccm_list) && churchSettings.custom_ccm_list.length > 0)
+        ? churchSettings.custom_ccm_list
+        : CCM_LIST;
+
     const [isApiReady, setIsApiReady] = useState(false);
     const [playRequested, _setPlayRequested] = useState(true); // 처음부터 재생 의도 On
     const playRequestedRef = useRef(true);
@@ -192,31 +227,38 @@ export default function App() {
     const initAttempts = useRef(0);
     const pauseCooldown = useRef(false); // 일시정지 후 쿨다운 (유령 재생 방지용)
 
+    // [최적화] 커스텀 CCM 목록 우선순위 결정 로직 (호이스팅 문제 방지를 위해 상단으로 이동)
+    // const activeCcmList = (churchSettings?.custom_ccm_list && Array.isArray(churchSettings.custom_ccm_list) && churchSettings.custom_ccm_list.length > 0)
+    //    ? churchSettings.custom_ccm_list
+    //    : CCM_LIST;
+
     const handleNextCcm = useCallback(() => {
         setPlayRequested(true);
         setCcmIndex(prev => {
-            if (CCM_LIST.length <= 1) return 0;
+            if (activeCcmList.length <= 1) return 0;
             let nextIdx;
+            const currentIdx = prev === null ? -1 : prev;
             do {
-                nextIdx = Math.floor(Math.random() * CCM_LIST.length);
-            } while (nextIdx === prev);
+                nextIdx = Math.floor(Math.random() * activeCcmList.length);
+            } while (nextIdx === currentIdx && activeCcmList.length > 1);
             return nextIdx;
         });
         setPlayerStatus("Next Song..");
-    }, []);
+    }, [activeCcmList]);
 
     const handlePrevCcm = useCallback(() => {
         setPlayRequested(true);
         setCcmIndex(prev => {
-            if (CCM_LIST.length <= 1) return 0;
+            if (activeCcmList.length <= 1) return 0;
             let nextIdx;
+            const currentIdx = prev === null ? -1 : prev;
             do {
-                nextIdx = Math.floor(Math.random() * CCM_LIST.length);
-            } while (nextIdx === prev);
+                nextIdx = Math.floor(Math.random() * activeCcmList.length);
+            } while (nextIdx === currentIdx && activeCcmList.length > 1);
             return nextIdx;
         });
         setPlayerStatus("Prev Song..");
-    }, []);
+    }, [activeCcmList]);
 
     useEffect(() => {
         // [초강력 랜덤 시스템] 클라이언트 마운트 시점에 단 한 번 무작위 곡 선정 (Refresh 시 무조건 변경)
@@ -234,17 +276,24 @@ export default function App() {
 
     useEffect(() => {
         if (ccmIndex === null) return;
-        setTodayCcm(CCM_LIST[ccmIndex]);
+
+        // 인덱스 범위 초과 방지 (목록이 바뀌었을 때 대비)
+        const safeIdx = ccmIndex >= activeCcmList.length ? 0 : ccmIndex;
+        const song = activeCcmList[safeIdx];
+
+        if (!song) return;
+
+        setTodayCcm(song);
         // 곡이 바뀌면 재생 시도
         if (playerRef.current && playerRef.current.loadVideoById) {
             if (playRequestedRef.current) {
-                playerRef.current.loadVideoById(CCM_LIST[ccmIndex].youtubeId);
+                playerRef.current.loadVideoById(song.youtubeId);
             } else {
-                playerRef.current.cueVideoById(CCM_LIST[ccmIndex].youtubeId);
+                playerRef.current.cueVideoById(song.youtubeId);
             }
             setPlayerStatus("Switching..");
         }
-    }, [ccmIndex]);
+    }, [ccmIndex, activeCcmList]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -612,33 +661,8 @@ export default function App() {
     const [aiLoading, setAiLoading] = useState(false);
     const [stats, setStats] = useState<{ today: { count: number; members: { user_name: string; avatar_url: string | null }[] }; ranking: { name: string; avatar: string | null; count: number }[]; totalCompletions: number } | null>(null);
     const [statsError, setStatsError] = useState<string | null>(null);
-    const [churchSettings, setChurchSettings] = useState({
-        church_name: CHURCH_NAME,
-        church_logo_url: CHURCH_LOGO,
-        church_url: CHURCH_URL,
-        sermon_url: "", // 설교 영상 URL 추가
-        app_subtitle: APP_SUBTITLE,
-        plan: 'free',
-        community_visible: true, // 은혜 게시판 공개 여부
-        sermon_summary: '',
-        sermon_q1: '',
-        sermon_q2: '',
-        sermon_q3: '',
-    });
+
     const [showSettings, setShowSettings] = useState(false);
-    const [settingsForm, setSettingsForm] = useState({
-        church_name: CHURCH_NAME,
-        church_logo_url: CHURCH_LOGO,
-        church_url: CHURCH_URL,
-        sermon_url: "",
-        app_subtitle: APP_SUBTITLE,
-        plan: 'free',
-        community_visible: true,
-        sermon_summary: '',
-        sermon_q1: '',
-        sermon_q2: '',
-        sermon_q3: '',
-    });
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [showInstallGuide, setShowInstallGuide] = useState(false);
 
@@ -2833,7 +2857,7 @@ export default function App() {
                             {churchSettings.sermon_summary ? (
                                 <>
                                     <div style={{ fontSize: '14px', color: '#555', lineHeight: 1.6, marginBottom: '20px', padding: '15px', background: 'white', borderRadius: '12px', border: '1px solid #EEE' }}>
-                                        {churchSettings.sermon_summary.split('\n').map((line, i) => (
+                                        {churchSettings.sermon_summary.split('\n').map((line: string, i: number) => (
                                             <span key={i}>{line}<br /></span>
                                         ))}
                                     </div>
@@ -3625,7 +3649,7 @@ export default function App() {
                                             <input
                                                 type="text"
                                                 value={String(settingsForm[key as keyof typeof settingsForm])}
-                                                onChange={e => setSettingsForm(prev => ({ ...prev, [key]: e.target.value }))}
+                                                onChange={e => setSettingsForm((prev: any) => ({ ...prev, [key]: e.target.value }))}
                                                 placeholder={placeholder}
                                                 style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }}
                                             />
@@ -3635,7 +3659,7 @@ export default function App() {
                                         <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>💎 요금제 설정</label>
                                         <select
                                             value={settingsForm.plan}
-                                            onChange={e => setSettingsForm(prev => ({ ...prev, plan: e.target.value }))}
+                                            onChange={e => setSettingsForm((prev: any) => ({ ...prev, plan: e.target.value }))}
                                             style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', outline: 'none', background: 'white' }}
                                         >
                                             <option value="free">무료 버전 (수동 관리)</option>
@@ -3648,9 +3672,48 @@ export default function App() {
                                             <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>📋 은혜 게시판 공개 설정</label>
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: '10px', border: '1px solid #EEE', background: '#FAFAFA' }}>
                                                 <span style={{ fontSize: '13px', color: '#555' }}>{settingsForm.community_visible ? '🟢 공개 (성도 누구나 볼 수 있음)' : '🔴 비공개 (관리자만 볼 수 있음)'}</span>
-                                                <button onClick={() => setSettingsForm(prev => ({ ...prev, community_visible: !prev.community_visible }))} style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: settingsForm.community_visible ? '#E8F5E9' : '#FFEBEE', color: settingsForm.community_visible ? '#2E7D32' : '#C62828' }}>
+                                                <button onClick={() => setSettingsForm((prev: any) => ({ ...prev, community_visible: !prev.community_visible }))} style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: settingsForm.community_visible ? '#E8F5E9' : '#FFEBEE', color: settingsForm.community_visible ? '#2E7D32' : '#C62828' }}>
                                                     {settingsForm.community_visible ? '비공개로 전환' : '공개로 전환'}
                                                 </button>
+                                            </div>
+                                        </div>
+                                        <div style={{ marginTop: '10px' }}>
+                                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>🎵 커스텀 CCM 목록 관리</label>
+
+                                            {/* 저작권 안내 문구 추가 */}
+                                            <div style={{ background: '#F0F7FF', padding: '10px', borderRadius: '10px', marginBottom: '10px', border: '1px solid #CFE2FF' }}>
+                                                <p style={{ margin: 0, fontSize: '11px', color: '#084298', lineHeight: 1.5 }}>
+                                                    <strong>💡 저작권 안내:</strong> 유튜브 임베드 방식은 원작자의 광고 수익과 조회수를 보존하므로 일반적인 저작권 침해 우려가 적습니다. 단, '퍼가기 금지'로 설정된 영상은 재생되지 않을 수 있습니다.
+                                                </p>
+                                            </div>
+
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                {settingsForm.custom_ccm_list?.map((ccm: any, idx: number) => (
+                                                    <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#F9F9F9', padding: '10px', borderRadius: '10px', border: '1px solid #EEE' }}>
+                                                        <div style={{ flex: 1, fontSize: '12px' }}>
+                                                            <strong>{ccm.title}</strong><br />
+                                                            <span style={{ color: '#999' }}>{ccm.youtubeId}</span>
+                                                        </div>
+                                                        <button onClick={() => {
+                                                            const newList = [...settingsForm.custom_ccm_list];
+                                                            newList.splice(idx, 1);
+                                                            setSettingsForm((prev: any) => ({ ...prev, custom_ccm_list: newList }));
+                                                        }} style={{ background: '#FFEBEE', color: '#C62828', border: 'none', borderRadius: '5px', padding: '5px 8px', fontSize: '11px', cursor: 'pointer' }}>삭제</button>
+                                                    </div>
+                                                ))}
+                                                <div style={{ display: 'flex', gap: '8px', marginTop: '5px' }}>
+                                                    <input id="new-ccm-title" type="text" placeholder="찬양 제목" style={{ flex: 2, padding: '8px', fontSize: '12px', borderRadius: '5px', border: '1px solid #EEE' }} />
+                                                    <input id="new-ccm-id" type="text" placeholder="YouTube ID" style={{ flex: 2, padding: '8px', fontSize: '12px', borderRadius: '5px', border: '1px solid #EEE' }} />
+                                                    <button onClick={() => {
+                                                        const titleInput = document.getElementById('new-ccm-title') as HTMLInputElement;
+                                                        const idInput = document.getElementById('new-ccm-id') as HTMLInputElement;
+                                                        if (!titleInput.value || !idInput.value) return;
+                                                        const newList = [...(settingsForm.custom_ccm_list || []), { title: titleInput.value, artist: CHURCH_NAME, youtubeId: idInput.value }];
+                                                        setSettingsForm((prev: any) => ({ ...prev, custom_ccm_list: newList }));
+                                                        titleInput.value = '';
+                                                        idInput.value = '';
+                                                    }} style={{ flex: 1, background: '#D4AF37', color: 'white', border: 'none', borderRadius: '5px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>추가</button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
