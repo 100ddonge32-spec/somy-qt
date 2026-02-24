@@ -29,14 +29,20 @@ export async function POST(req: NextRequest) {
 
         let successCount = 0;
         for (const row of rows) {
-            const full_name = row['이름'] || row['성함'];
-            const email = row['이메일'];
-            const phone = row['전화번호'] || row['연락처'];
-            const birthdate = row['생일'] || row['생년월일'];
+            const full_name = row['성명'] || row['이름'];
+            const phone = row['휴대폰'] || row['전화번호'];
+            const birthdate = row['생년월일'] || row['생일'];
             const address = row['주소'];
-            const avatar_url = row['사진'] || row['사진URL'] || row['프로필'];
+            const church_rank = row['교회직분'];
+            const member_no = row['교적번호'];
+            const gender = row['성별'];
+            const avatar_url = row['교인사진'] || row['사진'];
 
-            if (!email) continue;
+            // 이메일이 없는 경우 이름을 기반으로 더미 이메일 생성 또는 기존 유저 검색 (여기서는 성명 활용)
+            // 대표님 양식에는 이메일이 없으므로, 휴대폰 번호를 이메일 키로 활용하는 방식 제안
+            const email = row['이메일'] || (phone ? `${phone.replace(/-/g, '')}@church.local` : null);
+
+            if (!email && !full_name) continue;
 
             const { error } = await supabaseAdmin
                 .from('profiles')
