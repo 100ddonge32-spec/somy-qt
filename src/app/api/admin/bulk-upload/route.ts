@@ -29,20 +29,38 @@ export async function POST(req: NextRequest) {
 
         let successCount = 0;
         for (const row of rows) {
-            const full_name = row['성명'] || row['이름'];
-            const phone = row['휴대폰'] || row['전화번호'];
-            const birthdate = row['생년월일'] || row['생일'];
+            const full_name = (row['성명'] || row['이름'] || '').toString().trim();
+            const phone = (row['휴대폰'] || row['전화번호'] || '').toString().trim();
+            const birthdateInput = row['생년월일'] || row['생일'];
             const address = row['주소'];
             const church_rank = row['교회직분'];
             const member_no = row['교적번호'];
             const gender = row['성별'];
             const avatar_url = row['교인사진'] || row['사진'];
 
-            // 이메일이 없는 경우 이름을 기반으로 더미 이메일 생성 또는 기존 유저 검색 (여기서는 성명 활용)
-            // 대표님 양식에는 이메일이 없으므로, 휴대폰 번호를 이메일 키로 활용하는 방식 제안
-            const email = row['이메일'] || (phone ? `${phone.replace(/-/g, '')}@church.local` : null);
+            // 엑셀 날짜 형식 처리 (숫자 형태 또는 텍스트 형태)
+            let formattedBirthdate = null;
+            if (birthdateInput) {
+                try {
+                    if (typeof birthdateInput === 'number') {
+                        // 엑셀 날짜(정수)를 JS 날짜로 변환
+                        const date = new Date((birthdateInput - 25569) * 86400 * 1000);
+                        formattedBirthdate = date.toISOString().split('T')[0];
+                    } else {
+                        const date = new Date(birthdateInput);
+                        if (!isNaN(date.getTime())) {
+                            formattedBirthdate = date.toISOString().split('T')[0];
+                        }
+                    }
+                } catch (e) {
+                    console.warn(`[Bulk] 날짜 변환 실패 (${full_name}):`, birthdateInput);
+                }
+            }
 
-            if (!email && !full_name) continue;
+            // 이메일이 없는 경우 대비한 스마트 식별자 생성
+            const email = row['이메일'] || (phone ? `${phone.replace(/-/g, '')}@church.local` : (full_name ? `${full_name}@noemail.local` : null));
+
+            if (!email) continue;
 
             const { error } = await supabaseAdmin
                 .from('profiles')
@@ -50,13 +68,20 @@ export async function POST(req: NextRequest) {
                     full_name,
                     email,
                     phone,
-                    birthdate: birthdate ? new Date(birthdate).toISOString().split('T')[0] : null,
+                    birthdate: formattedBirthdate,
                     address,
                     avatar_url,
+                    member_no,
+                    gender,
+                    church_rank,
                     church_id: church_id || 'jesus-in'
                 }, { onConflict: 'email' });
 
-            if (!error) successCount++;
+            if (error) {
+                console.error(`[Bulk Error] ${full_name} 저장 실패:`, error.message);
+            } else {
+                successCount++;
+            }
         }
 
         return NextResponse.json({ success: true, count: successCount });
