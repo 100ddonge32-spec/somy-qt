@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+import webpush from 'web-push';
+
 export const dynamic = 'force-dynamic';
 
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
+);
+
+webpush.setVapidDetails(
+    'mailto:pastorbaek@kakao.com',
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BCpTn0SHIYSZzjST5xxL1Cv9svmlp3f9Xmvt9FSALBvo4QwLQCBlo_mu4ThoMHgINRmAk4c9sxwVwI2QtDyHr1I',
+    process.env.VAPID_PRIVATE_KEY || 'LAAS6aJenIKYBShIGZsWVKhXNOMKwkuXvpf2NLCGZAI'
 );
 
 // 게시글 목록 및 댓글 불러오기 (교회별 격리)
@@ -36,6 +44,7 @@ export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
         const { user_id, user_name, avatar_url, content, church_id, is_private } = body;
+        const cid = church_id || 'jesus-in';
 
         const { data, error } = await supabaseAdmin
             .from('community_posts')
@@ -44,13 +53,32 @@ export async function POST(req: NextRequest) {
                 user_name,
                 avatar_url,
                 content,
-                church_id: church_id || 'jesus-in',
+                church_id: cid,
                 is_private: is_private ?? false  // ✅ 비공개 여부 저장
             }])
             .select()
             .single();
 
         if (error) throw error;
+
+        // 새 글이 등록되면 모든 성도에게 알림 발송 (단, 본인 제외, 비밀글 아닐 때)
+        if (!is_private) {
+            const { data: usersToNotify } = await supabaseAdmin.from('profiles').select('id').eq('church_id', cid).neq('id', user_id);
+            if (usersToNotify && usersToNotify.length > 0) {
+                const userIds = usersToNotify.map(u => u.id);
+                const { data: subs } = await supabaseAdmin.from('push_subscriptions').select('subscription').in('user_id', userIds);
+                if (subs && subs.length > 0) {
+                    const payload = JSON.stringify({
+                        title: `✨ 새로운 은혜나눔`,
+                        body: `${user_name}님이 새로운 글을 올리셨습니다.`,
+                        url: '/'
+                    });
+                    const pushPromises = subs.map(sub => webpush.sendNotification(sub.subscription, payload).catch(e => { }));
+                    await Promise.allSettled(pushPromises);
+                }
+            }
+        }
+
         return NextResponse.json(data);
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
