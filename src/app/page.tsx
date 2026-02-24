@@ -1054,9 +1054,9 @@ export default function App() {
     ══════════════════════════════ */
     const styles = (
         <style>{`
-      @keyframes float-gentle { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(0); } } /* 흔들림 완전 차단 */
-      @keyframes halo-pulse { 0%,100%{ opacity:.7; transform:translateX(-50%) scaleX(1); } 50%{ opacity:1; transform:translateX(-50%) scaleX(1.1); } }
-      @keyframes shadow-pulse { 0%,100%{ transform:translateX(-50%) scaleX(1); opacity:.2; } 50%{ transform:translateX(-50%) scaleX(.7); opacity:.1; } }
+      @keyframes float-gentle { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-12px); } }
+      @keyframes halo-pulse { 0%, 100% { opacity: 0.6; transform: translateX(-50%) scaleX(1) translateY(0px); } 50% { opacity: 1; transform: translateX(-50%) scaleX(1.15) translateY(-5px); } }
+      @keyframes shadow-pulse { 0%, 100% { transform: translateX(-50%) scaleX(1); opacity: 0.3; } 50% { transform: translateX(-50%) scaleX(0.7); opacity: 0.1; } }
       @keyframes fade-in { from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
       @keyframes slide-right { from{ opacity:0; transform:translateX(10px); } to{ opacity:1; transform:translateX(0); } }
       @keyframes bounce-dot { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-7px); } }
@@ -1184,12 +1184,12 @@ export default function App() {
                     {showWelcome && (
                         <div style={{ position: 'fixed', inset: 0, background: "linear-gradient(180deg, #FFF8F0 0%, #FEF0D8 100%)", zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px' }}>
                             <div style={{ display: "flex", justifyContent: "center", marginBottom: "30px" }}>
-                                <div style={{ position: "relative" }}>
-                                    <div style={{ position: "absolute", top: "-10px", left: "50%", width: "120px", height: "15px", border: "3px solid #D4AF37", borderRadius: "999px", zIndex: 2 }} />
+                                <div style={{ position: "relative", animation: "float-gentle 3.5s ease-in-out infinite" }}>
+                                    <div style={{ position: "absolute", top: "-10px", left: "50%", width: "120px", height: "15px", border: "3px solid #D4AF37", borderRadius: "999px", zIndex: 2, transform: "translateX(-50%)", animation: "halo-pulse 3.5s ease-in-out infinite" }} />
                                     <div style={{ width: "170px", height: "170px", borderRadius: "50%", background: "white", boxShadow: "0 15px 45px rgba(212,175,55,.3), 0 5px 15px rgba(0,0,0,.08)", border: "4px solid white", overflow: "hidden" }}>
                                         <img src={SOMY_IMG} alt="소미" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                     </div>
-                                    <div style={{ position: "absolute", bottom: "-20px", left: "50%", width: "100px", height: "14px", background: "radial-gradient(ellipse,rgba(180,140,60,.3) 0%,transparent 70%)", borderRadius: "50%" }} />
+                                    <div style={{ position: "absolute", bottom: "-20px", left: "50%", width: "100px", height: "14px", background: "radial-gradient(ellipse,rgba(180,140,60,.3) 0%,transparent 70%)", borderRadius: "50%", transform: "translateX(-50%)", animation: "shadow-pulse 3.5s ease-in-out infinite" }} />
                                 </div>
                             </div>
                             <div style={{ animation: "fade-in 1s ease-out", textAlign: "center", marginBottom: "30px" }}>
