@@ -1,0 +1,93 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import webpush from 'web-push';
+
+export const dynamic = 'force-dynamic';
+
+const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+);
+
+webpush.setVapidDetails(
+    'mailto:pastorbaek@kakao.com',
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BCpTn0SHIYSZzjST5xxL1Cv9svmlp3f9Xmvt9FSALBvo4QwLQCBlo_mu4ThoMHgINRmAk4c9sxwVwI2QtDyHr1I',
+    process.env.VAPID_PRIVATE_KEY || 'LAAS6aJenIKYBShIGZsWVKhXNOMKwkuXvpf2NLCGZAI'
+);
+
+export async function GET(req: NextRequest) {
+    const { searchParams } = new URL(req.url);
+    const churchId = searchParams.get('church_id') || 'jesus-in';
+
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('announcements')
+            .select('*')
+            .eq('church_id', churchId)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return NextResponse.json(data);
+    } catch (err: any) {
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}
+
+export async function POST(req: NextRequest) {
+    try {
+        const body = await req.json();
+        const { church_id, title, content, author_name } = body;
+
+        const { data: announcement, error: insertError } = await supabaseAdmin
+            .from('announcements')
+            .insert([{ church_id: church_id || 'jesus-in', title, content, author_name }])
+            .select()
+            .single();
+
+        if (insertError) throw insertError;
+
+        // 모든 사용자에게 푸시 알림 전송 로직
+        const { data: subscriptions } = await supabaseAdmin
+            .from('push_subscriptions')
+            .select('user_id, subscription');
+
+        if (subscriptions && subscriptions.length > 0) {
+            const pushPromises = subscriptions.map(sub => {
+                if (sub.subscription) {
+                    const payload = JSON.stringify({
+                        title: `📢 [공지] ${title}`,
+                        body: content.length > 30 ? content.substring(0, 30) + '...' : content,
+                        url: '/'
+                    });
+                    return webpush.sendNotification(sub.subscription, payload).catch(e => console.error('Push fail', e));
+                }
+                return Promise.resolve();
+            });
+            await Promise.all(pushPromises);
+        }
+
+        return NextResponse.json(announcement);
+    } catch (err: any) {
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}
+
+export async function DELETE(req: NextRequest) {
+    try {
+        const body = await req.json();
+        const { id } = body;
+
+        if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+
+        const { error } = await supabaseAdmin
+            .from('announcements')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+        return NextResponse.json({ success: true });
+    } catch (err: any) {
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}

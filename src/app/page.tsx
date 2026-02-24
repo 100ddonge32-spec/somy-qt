@@ -146,6 +146,12 @@ export default function App() {
     const [isPrivateThanksgiving, setIsPrivateThanksgiving] = useState(false);
     const [thanksgivingInput, setThanksgivingInput] = useState("");
 
+    // 공지사항 상태
+    const [announcements, setAnnouncements] = useState<any[]>([]);
+    const [isAnnouncementsExpanded, setIsAnnouncementsExpanded] = useState(false);
+    const [newAnnouncementTitle, setNewAnnouncementTitle] = useState("");
+    const [newAnnouncementContent, setNewAnnouncementContent] = useState("");
+
     const [lastToggleTime, setLastToggleTime] = useState(0); // 이중 트리거 방지용
     const [commentInputs, setCommentInputs] = useState<{ [key: number]: string }>({});
     const [passageInput, setPassageInput] = useState("");
@@ -670,6 +676,17 @@ export default function App() {
             }
         };
         loadSettings();
+
+        const loadAnnouncements = async () => {
+            const cId = churchId || 'jesus-in';
+            try {
+                const r = await fetch(`/api/announcements?church_id=${cId}`, { cache: 'no-store' });
+                const data = await r.json();
+                if (Array.isArray(data)) setAnnouncements(data);
+            } catch (err) { }
+        };
+        if (churchId) loadAnnouncements();
+
     }, [churchId]);
     const [qtData, setQtData] = useState({
         date: "",
@@ -1368,6 +1385,69 @@ export default function App() {
                             </div>
                         ) : (
                             <>
+                                {/* 공지사항 영역 */}
+                                <div style={{ width: '100%', marginBottom: '6px' }}>
+                                    <div
+                                        onClick={() => setIsAnnouncementsExpanded(!isAnnouncementsExpanded)}
+                                        style={{ background: 'linear-gradient(135deg, #2C3E50 0%, #3498DB 100%)', padding: '16px 20px', borderRadius: isAnnouncementsExpanded ? '20px 20px 0 0' : '20px', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', boxShadow: '0 8px 15px rgba(52, 152, 219, 0.2)', transition: 'all 0.3s ease' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <span style={{ fontSize: '20px' }}>📢</span>
+                                            <span style={{ fontWeight: 800, fontSize: '15px', letterSpacing: '0.5px' }}>공지사항</span>
+                                            {announcements.length > 0 && <span style={{ background: '#E74C3C', color: 'white', fontSize: '11px', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>N</span>}
+                                        </div>
+                                        <span style={{ fontSize: '18px', transform: isAnnouncementsExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s' }}>▼</span>
+                                    </div>
+
+                                    {isAnnouncementsExpanded && (
+                                        <div style={{ background: 'white', padding: '20px', borderRadius: '0 0 20px 20px', border: '1px solid #EEE', borderTop: 'none', boxShadow: '0 10px 20px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                            {isAdmin && (
+                                                <div style={{ background: '#F8F9FA', padding: '15px', borderRadius: '12px', border: '1px dashed #CCC', marginBottom: '10px' }}>
+                                                    <input value={newAnnouncementTitle} onChange={e => setNewAnnouncementTitle(e.target.value)} placeholder="공지 제목" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', marginBottom: '8px', fontSize: '14px', outline: 'none' }} />
+                                                    <textarea value={newAnnouncementContent} onChange={e => setNewAnnouncementContent(e.target.value)} placeholder="공지 내용" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', minHeight: '60px', fontSize: '13px', marginBottom: '8px', outline: 'none', resize: 'vertical' }} />
+                                                    <button onClick={async () => {
+                                                        if (!newAnnouncementTitle.trim() || !newAnnouncementContent.trim()) return;
+                                                        try {
+                                                            const r = await fetch('/api/announcements', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ church_id: churchId, title: newAnnouncementTitle, content: newAnnouncementContent, author_name: adminInfo?.name || '담임목사' }) });
+                                                            if (r.ok) {
+                                                                const newAnn = await r.json();
+                                                                setAnnouncements([newAnn, ...announcements]);
+                                                                setNewAnnouncementTitle('');
+                                                                setNewAnnouncementContent('');
+                                                                alert("공지가 등록되었고 전체 성도에게 푸시 알림이 발송되었습니다.");
+                                                            }
+                                                        } catch (e) { }
+                                                    }} style={{ width: '100%', padding: '10px', background: '#2C3E50', color: 'white', borderRadius: '8px', border: 'none', fontWeight: 700, cursor: 'pointer' }}>새 공지 등록 (푸시알림 발송)</button>
+                                                </div>
+                                            )}
+
+                                            {announcements.length === 0 ? (
+                                                <div style={{ textAlign: 'center', color: '#999', fontSize: '13px', padding: '10px 0' }}>등록된 공지사항이 없습니다.</div>
+                                            ) : (
+                                                announcements.map(ann => (
+                                                    <div key={ann.id} style={{ paddingBottom: '15px', borderBottom: '1px solid #F0F0F0' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                                                            <div style={{ fontWeight: 800, fontSize: '15px', color: '#333' }}>{ann.title}</div>
+                                                            {isAdmin && (
+                                                                <button onClick={async () => {
+                                                                    if (confirm('삭제하시겠습니까?')) {
+                                                                        await fetch('/api/announcements', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: ann.id }) });
+                                                                        setAnnouncements(announcements.filter(a => a.id !== ann.id));
+                                                                    }
+                                                                }} style={{ background: 'none', border: 'none', color: '#999', fontSize: '12px', cursor: 'pointer', padding: 0 }}>삭제</button>
+                                                            )}
+                                                        </div>
+                                                        <div style={{ fontSize: '14px', color: '#555', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: '8px' }}>{ann.content}</div>
+                                                        <div style={{ fontSize: '11px', color: '#AAA', display: 'flex', gap: '8px' }}>
+                                                            <span>{ann.author_name}</span>
+                                                            <span>{new Date(ann.created_at).toLocaleDateString()}</span>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
                                 <div style={{ display: 'flex', gap: '14px', width: '100%' }}>
                                     <button onClick={() => setView("chat")} style={{
                                         flex: 1, padding: "14px 10px",
