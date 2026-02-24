@@ -31,25 +31,22 @@ export async function POST(req: NextRequest) {
         const errors: string[] = [];
 
         for (const row of rows) {
-            // 대소문자나 공백 무관하게 매칭하기 위해 키를 정리
+            // 대소문자나 공백 무관하게 매칭
             const findValue = (keys: string[]) => {
-                const foundKey = Object.keys(row).find(k => keys.includes(k.replace(/\s/g, '')));
+                const foundKey = Object.keys(row).find(k => keys.map(ki => ki.replace(/\s/g, '').toLowerCase()).includes(k.replace(/\s/g, '').toLowerCase()));
                 return foundKey ? row[foundKey] : null;
             };
 
-            const full_name = (findValue(['성명', '이름', '성함']) || '').toString().trim();
-            const phone = (findValue(['휴대폰', '전화번호', '연락처']) || '').toString().trim();
-            const birthdateInput = findValue(['생년월일', '생일']);
-            const address = findValue(['주소']);
-            const church_rank = findValue(['교회직분', '직분']);
-            const member_no = findValue(['교적번호', '교적']);
-            const gender = findValue(['성별']);
-            const avatar_url = findValue(['교인사진', '사진', '사진URL']);
+            const full_name = (findValue(['성명', '이름', '성함', 'Name']) || '').toString().trim();
+            if (!full_name) continue; // 이름 없으면 그냥 넘어감 (빈 줄 방지)
 
-            if (!full_name) {
-                errors.push("성명 데이터가 없는 행이 있습니다.");
-                continue;
-            }
+            const phone = (findValue(['휴대폰', '전화번호', '연락처', 'Phone']) || '').toString().trim();
+            const birthdateInput = findValue(['생년월일', '생일', 'Birth']);
+            const address = findValue(['주소', 'Address']);
+            const church_rank = findValue(['교회직분', '직분', 'Rank']);
+            const member_no = findValue(['교적번호', '교적', 'No']);
+            const gender = findValue(['성별', 'Gender']);
+            const avatar_url = findValue(['교인사진', '사진', '사진URL', 'Photo']);
 
             let formattedBirthdate = null;
             if (birthdateInput) {
@@ -59,33 +56,32 @@ export async function POST(req: NextRequest) {
                         formattedBirthdate = date.toISOString().split('T')[0];
                     } else {
                         const date = new Date(birthdateInput);
-                        if (!isNaN(date.getTime())) {
-                            formattedBirthdate = date.toISOString().split('T')[0];
-                        }
+                        if (!isNaN(date.getTime())) formattedBirthdate = date.toISOString().split('T')[0];
                     }
                 } catch (e) { }
             }
 
-            const email = findValue(['이메일']) || (phone ? `${phone.replace(/-/g, '')}@church.local` : `${full_name}@noemail.local`);
+            // 고유 식별 이메일 (휴대폰 -> 이름 순으로 자동 생성)
+            const cleanPhone = phone.replace(/[^0-9]/g, '');
+            const email = findValue(['이메일', 'Email']) || (cleanPhone ? `${cleanPhone}@church.local` : `${full_name}@noemail.local`);
 
             const { error } = await supabaseAdmin
                 .from('profiles')
                 .upsert({
                     full_name,
                     email,
-                    phone,
+                    phone: phone || null,
                     birthdate: formattedBirthdate,
-                    address,
-                    avatar_url,
-                    member_no,
-                    gender,
-                    church_rank,
+                    address: address || null,
+                    avatar_url: avatar_url || null,
+                    member_no: member_no || null,
+                    gender: gender || null,
+                    church_rank: church_rank || null,
                     church_id: church_id || 'jesus-in'
                 }, { onConflict: 'email' });
 
             if (error) {
                 errors.push(`${full_name}: ${error.message}`);
-                console.error(`[Bulk Error]`, error);
             } else {
                 successCount++;
             }
