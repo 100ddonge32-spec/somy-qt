@@ -3940,7 +3940,7 @@ export default function App() {
                                             <div key={member.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#F9F9F9', borderRadius: '14px', border: '1px solid #F0F0F0' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                     <div style={{ position: 'relative', width: 32, height: 32 }}>
-                                                        <img src={member.avatar_url || 'https://via.placeholder.com/32'} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', background: '#EEE' }} />
+                                                        <img alt="" src={member.avatar_url || 'https://via.placeholder.com/32'} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', background: '#EEE' }} />
                                                         <label htmlFor={`avatar-upload-${member.id}`} style={{ position: 'absolute', bottom: -4, right: -4, background: 'white', borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', cursor: 'pointer', border: '1px solid #DDD', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>📸</label>
                                                         <input
                                                             id={`avatar-upload-${member.id}`}
@@ -3982,9 +3982,7 @@ export default function App() {
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end', flexShrink: 0 }}>
                                                     <div style={{ display: 'flex', gap: '6px' }}>
                                                         <button
-                                                            onClick={async () => {
-                                                                setSelectedMemberForEdit(member);
-                                                            }}
+                                                            onClick={() => setSelectedMemberForEdit(member)}
                                                             style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: 'white', color: '#666' }}>
                                                             📝 정보 수정
                                                         </button>
@@ -4379,7 +4377,7 @@ const MemberSearchView = ({ churchId, setView, baseFont }: any) => {
                             style={{ background: 'white', padding: '16px', borderRadius: '20px', border: '1px solid #F0ECE4', display: 'flex', gap: '14px', alignItems: 'flex-start', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', cursor: 'pointer' }}
                         >
                             <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#F5F2EA', overflow: 'hidden', flexShrink: 0 }}>
-                                <img src={member.avatar_url || 'https://via.placeholder.com/44'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <img alt="" src={member.avatar_url || 'https://via.placeholder.com/44'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             </div>
                             <div style={{ flex: 1 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
@@ -4402,7 +4400,7 @@ const MemberSearchView = ({ churchId, setView, baseFont }: any) => {
 
             {/* 성도 상세 정보 모달 */}
             {selectedMember && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', z_index: 2000, display: 'flex', alignItems: 'end', justifyContent: 'center' }} onClick={() => setSelectedMember(null)}>
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', zIndex: 2000, display: 'flex', alignItems: 'end', justifyContent: 'center' }} onClick={() => setSelectedMember(null)}>
                     <div
                         style={{ background: 'white', width: '100%', maxWidth: '480px', borderRadius: '32px 32px 0 0', padding: '40px 24px', position: 'relative', animation: 'slide-up 0.3s ease-out' }}
                         onClick={e => e.stopPropagation()}
@@ -4411,7 +4409,7 @@ const MemberSearchView = ({ churchId, setView, baseFont }: any) => {
 
                         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
                             <div style={{ width: 100, height: 100, borderRadius: '50%', background: '#F5F2EA', margin: '0 auto 16px', padding: '4px', border: '1px solid #F0ECE4' }}>
-                                <img src={selectedMember.avatar_url || 'https://via.placeholder.com/100'} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                                <img alt="" src={selectedMember.avatar_url || 'https://via.placeholder.com/100'} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
                             </div>
                             <h3 style={{ fontSize: '24px', fontWeight: 800, color: '#333', margin: '0 0 6px' }}>{selectedMember.full_name}</h3>
                             {selectedMember.church_rank && <span style={{ fontSize: '14px', background: '#F5F2EA', color: '#B8924A', padding: '4px 12px', borderRadius: '10px', fontWeight: 700 }}>{selectedMember.church_rank}</span>}
