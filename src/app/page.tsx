@@ -5134,6 +5134,7 @@ function ProfileView({ user, supabase, setView, baseFont }: any) {
         phone: '',
         birthdate: '',
         address: '',
+        avatar_url: '',
         is_phone_public: false,
         is_birthdate_public: false,
         is_address_public: false
@@ -5153,6 +5154,7 @@ function ProfileView({ user, supabase, setView, baseFont }: any) {
                             data = { ...emailMatch, id: user.id };
                         }
                     }
+                    // 전화번호 매칭 (카카오 등)
                     if (!data) {
                         const rawPhone = user?.user_metadata?.phone_number || user?.user_metadata?.mobile || '';
                         let cleanPhone = rawPhone.replace(/[^0-9]/g, '');
@@ -5167,6 +5169,15 @@ function ProfileView({ user, supabase, setView, baseFont }: any) {
                             }
                         }
                     }
+
+                    // 이름으로 매칭 (최후의 수단, 관리자가 등록한 이름과 로그인한 이름이 같을 경우)
+                    if (!data && user?.user_metadata?.full_name) {
+                        const { data: nameMatch } = await supabase.from('profiles').select('*').eq('full_name', user.user_metadata.full_name).is('id', null).limit(1).maybeSingle();
+                        if (nameMatch) {
+                            await supabase.from('profiles').update({ id: user.id, email: user.email || nameMatch.email }).eq('email', nameMatch.email);
+                            data = { ...nameMatch, id: user.id };
+                        }
+                    }
                 }
                 if (data) {
                     setProfileForm({
@@ -5174,6 +5185,7 @@ function ProfileView({ user, supabase, setView, baseFont }: any) {
                         phone: data.phone || '',
                         birthdate: data.birthdate || '',
                         address: data.address || '',
+                        avatar_url: data.avatar_url || '',
                         is_phone_public: data.is_phone_public || false,
                         is_birthdate_public: data.is_birthdate_public || false,
                         is_address_public: data.is_address_public || false
@@ -5216,6 +5228,41 @@ function ProfileView({ user, supabase, setView, baseFont }: any) {
             </div>
             <div style={{ background: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', marginBottom: '24px', border: '1px solid #F0ECE4' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '10px' }}>
+                        <div style={{ width: 100, height: 100, borderRadius: '50%', background: '#F5F5F3', border: '1px solid #EEE', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                            {profileForm.avatar_url ? (
+                                <img src={profileForm.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Profile" />
+                            ) : (
+                                <span style={{ fontSize: '30px', color: '#999' }}>👤</span>
+                            )}
+                            <input type="file" accept="image/jpeg, image/png, image/jpg" style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                    const img = new Image();
+                                    img.onload = () => {
+                                        const canvas = document.createElement('canvas');
+                                        const MAX_SIZE = 400;
+                                        let width = img.width;
+                                        let height = img.height;
+                                        if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } }
+                                        else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
+                                        canvas.width = width;
+                                        canvas.height = height;
+                                        const ctx = canvas.getContext('2d');
+                                        ctx?.drawImage(img, 0, 0, width, height);
+                                        const base64Str = canvas.toDataURL('image/jpeg', 0.8);
+                                        setProfileForm(prev => ({ ...prev, avatar_url: base64Str }));
+                                    };
+                                    img.src = ev.target?.result as string;
+                                };
+                                reader.readAsDataURL(file);
+                            }} />
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#888', marginTop: '8px' }}>사진 클릭 시 변경 (JPG/PNG)</div>
+                    </div>
+
                     <div>
                         <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>👤 성함</label>
                         <input type="text" value={profileForm.full_name} onChange={e => setProfileForm({ ...profileForm, full_name: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none' }} />
