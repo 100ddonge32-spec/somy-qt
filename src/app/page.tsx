@@ -4309,9 +4309,9 @@ export default function App() {
                                                             }}
                                                         />
                                                     </div>
-                                                    <div style={{ minWidth: 0 }}>
-                                                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.full_name || '이름 없음'}</div>
-                                                        <div style={{ fontSize: '11px', color: '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.email}</div>
+                                                    <div style={{ minWidth: 0, flex: 1 }}>
+                                                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', lineHeight: '1.2', marginBottom: '2px' }}>{member.full_name || '이름 없음'}</div>
+                                                        <div style={{ fontSize: '11px', color: '#888', wordBreak: 'break-all' }}>{member.email}</div>
                                                     </div>
                                                 </div>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-end', flexShrink: 0 }}>
