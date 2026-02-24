@@ -3824,26 +3824,44 @@ export default function App() {
                                     </div>
                                 </div>
 
-                                <div style={{ marginTop: '10px' }}>
-                                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>새 관리자 이메일 등록</label>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <input id="admin-email-input" type="email" placeholder="example@kakao.com" style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }} />
-                                        <button onClick={async () => {
-                                            const emailInput = document.getElementById('admin-email-input') as HTMLInputElement;
-                                            const email = emailInput?.value;
-                                            if (!email) { alert('이메일을 입력해주세요.'); return; }
-                                            const res = await fetch('/api/admin', {
-                                                method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ action: 'add_admin', email, role: 'church_admin', church_id: 'jesus-in' })
-                                            });
-                                            if (res.ok) {
-                                                alert('성공적으로 등록되었습니다!');
-                                                emailInput.value = '';
-                                            } else {
-                                                alert('등록에 실패했습니다.');
-                                            }
-                                        }} style={{ padding: '0 18px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>등록</button>
+                                <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <div>
+                                        <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>새 관리자 정보 등록</label>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            <input id="admin-email-input" type="email" placeholder="관리자 이메일 (예: pastor@kakao.com)" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }} />
+                                            <input id="admin-church-id-input" type="text" placeholder="교회 아이디 (영문 추천, 예: sarang)" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }} />
+                                            <button onClick={async () => {
+                                                const emailInput = document.getElementById('admin-email-input') as HTMLInputElement;
+                                                const churchIdInput = document.getElementById('admin-church-id-input') as HTMLInputElement;
+                                                const email = emailInput?.value;
+                                                const cId = churchIdInput?.value;
+                                                if (!email || !cId) { alert('이메일과 교회 아이디를 모두 입력해주세요.'); return; }
+                                                const res = await fetch('/api/admin', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ action: 'add_admin', email: email.trim(), role: 'church_admin', church_id: cId.trim() })
+                                                });
+                                                if (res.ok) {
+                                                    alert(`[${cId}] 관리자가 성공적으로 등록되었습니다!\n이제 해당 관리자에게 접속 링크를 전달하세요.`);
+                                                    emailInput.value = '';
+                                                    churchIdInput.value = '';
+                                                } else {
+                                                    alert('등록에 실패했습니다.');
+                                                }
+                                            }} style={{ padding: '14px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                                                🚀 새로운 교회 등록 및 관리자 임명
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ background: '#F0F4F8', padding: '15px', borderRadius: '15px', border: '1px solid #D1D9E6' }}>
+                                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#4A5568', marginBottom: '8px' }}>💡 새로운 교회 시작 가이드</div>
+                                        <ol style={{ fontSize: '11px', color: '#718096', paddingLeft: '18px', lineHeight: 1.6, margin: 0 }}>
+                                            <li>위에서 관리자 이메일과 <strong>교회 아이디</strong>를 등록합니다.</li>
+                                            <li>등록한 아이디가 포함된 링크를 전달합니다.<br />
+                                                <code style={{ background: '#E2E8F0', padding: '2px 4px', borderRadius: '4px', fontSize: '10px' }}>?church=[아이디]</code></li>
+                                            <li>관리자가 접속 후 [관리자 센터]에서 교회 이름, 로고를 직접 세팅하면 끝!</li>
+                                        </ol>
                                     </div>
                                 </div>
                             </div>
