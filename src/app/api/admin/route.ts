@@ -84,6 +84,18 @@ export async function POST(req: NextRequest) {
             return NextResponse.json(data);
         }
 
+        // 성도 상세 정보 수정 (관리자용)
+        if (action === 'update_member') {
+            const { user_id, update_data } = body;
+            const { data, error } = await supabaseAdmin
+                .from('profiles')
+                .update(update_data)
+                .eq('id', user_id)
+                .select();
+            if (error) throw error;
+            return NextResponse.json(data);
+        }
+
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
