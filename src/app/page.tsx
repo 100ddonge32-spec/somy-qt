@@ -1375,7 +1375,7 @@ export default function App() {
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>💬</div>
+                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>✨</div>
                                         <span>AI 소미와 대화</span>
                                     </button>
 
@@ -1392,7 +1392,7 @@ export default function App() {
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>☀️</div>
+                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>🌿</div>
                                         <span>오늘의 큐티 시작</span>
                                     </button>
                                 </div>
@@ -1415,7 +1415,7 @@ export default function App() {
                                             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
                                             transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
                                         }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                            <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>📝</div>
+                                            <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>💌</div>
                                             <span>은혜나눔 게시판</span>
                                         </button>
                                         <div onClick={(e) => { e.stopPropagation(); setShowNotiList(!showNotiList); }} style={{
@@ -1466,7 +1466,9 @@ export default function App() {
                                             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
                                             transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
                                         }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                            <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>📢</div>
+                                            <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>
+                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="#FF0000"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" /></svg>
+                                            </div>
                                             <span>담임목사 설교</span>
                                         </button>
                                     ) : (
@@ -1501,7 +1503,7 @@ export default function App() {
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>👑</div>
+                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>📊</div>
                                         <span>이달의 큐티왕</span>
                                     </button>
 
@@ -1517,7 +1519,7 @@ export default function App() {
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>📜</div>
+                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>🕰️</div>
                                         <span>나의 묵상 기록</span>
                                     </button>
                                 </div>
@@ -1532,7 +1534,7 @@ export default function App() {
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>🎵</div>
+                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>🎧</div>
                                         <span>CCM 듣기</span>
                                     </button>
 
@@ -1545,7 +1547,7 @@ export default function App() {
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>🔍</div>
+                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>🔎</div>
                                         <span>성도 주소록</span>
                                     </button>
                                 </div>
@@ -3507,7 +3509,12 @@ export default function App() {
 
                     <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "20px", background: "#FAFAFA", display: "flex", flexDirection: "column", gap: "15px" }}>
                         {messages.map((m, i) => (
-                            <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+                            <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start", alignItems: 'flex-start', gap: '8px' }}>
+                                {m.role === "assistant" && (
+                                    <div style={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', border: '2px solid #D4AF37', flexShrink: 0, marginTop: '4px', background: 'white', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
+                                        <img src={SOMY_IMG} alt="소미" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    </div>
+                                )}
                                 <div style={{
                                     maxWidth: "80%", padding: "12px 16px", borderRadius: "15px",
                                     background: m.role === "user" ? "#333" : "white",
