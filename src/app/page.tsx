@@ -2604,75 +2604,51 @@ export default function App() {
                         <div style={{ fontWeight: 800, color: "#333", fontSize: "15px" }}>소미와 함께하는 오늘의 CCM 🎵</div>
                     </div>
 
-                    <div style={{ padding: '30px 20px', display: 'flex', flexDirection: 'column', gap: '30px', alignItems: 'center' }}>
+                    <div style={{ padding: '30px 20px', display: 'flex', flexDirection: 'column', gap: '30px', alignItems: 'center', flex: 1, justifyContent: 'center' }}>
                         <div style={{
                             width: '100%',
-                            background: '#F5F5F7',
+                            maxWidth: '320px',
+                            background: 'linear-gradient(135deg, #FDFBF0 0%, #F5F0E1 100%)',
                             borderRadius: '32px',
-                            padding: '24px',
-                            boxShadow: '0 10px 30px rgba(0,0,0,0.1), inset 0 1px 2px white',
-                            border: '1px solid #DDD',
+                            padding: '30px 20px',
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.15), inset 0 1px 2px white',
+                            border: '2px solid #D4AF37',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center'
                         }}>
                             <div id="ccm-large-screen" style={{
                                 width: '100%',
-                                height: '180px',
-                                background: '#000',
+                                height: '200px',
+                                background: '#1A1A1A',
                                 borderRadius: '16px',
-                                marginBottom: '25px',
-                                boxShadow: 'inset 0 2px 20px rgba(0,0,0,1)',
-                                border: '1px solid #333',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
+                                marginBottom: '30px',
+                                boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.8)',
+                                border: '1px solid #C0C0C0',
                                 position: 'relative',
                                 overflow: 'hidden'
                             }}>
                             </div>
 
+                            {/* 소미 전용 컨트롤 패드 */}
                             <div style={{
-                                width: '160px',
-                                height: '160px',
-                                background: '#FFF',
-                                borderRadius: '50%',
-                                position: 'relative',
-                                boxShadow: '0 10px 25px rgba(0,0,0,0.1), inset 0 2px 5px rgba(0,0,0,0.05)',
+                                width: '100%',
+                                background: '#FEFEFE',
+                                borderRadius: '24px',
+                                padding: '25px 15px',
+                                boxShadow: '0 4px 15px rgba(0,0,0,0.08)',
                                 border: '1px solid #EEE',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
+                                textAlign: 'center'
                             }}>
-                                <div
-                                    onClick={(e) => hapticClick(e, () => togglePlay(e))}
-                                    style={{ position: 'absolute', top: '15px', fontSize: '10px', fontWeight: 900, color: '#B8924A', cursor: 'pointer', zIndex: 15 }}
-                                >RESET</div>
-
-                                <div onClick={(e) => hapticClick(e, handlePrevCcm)} style={{ position: 'absolute', left: '15px', fontSize: '12px', color: '#BBB', cursor: 'pointer', zIndex: 11 }}>⏮</div>
-                                <div onClick={(e) => hapticClick(e, handleNextCcm)} style={{ position: 'absolute', right: '15px', fontSize: '12px', color: '#BBB', cursor: 'pointer', zIndex: 11 }}>⏭</div>
-
-                                <div
-                                    onClick={(e) => hapticClick(e, () => togglePlay(e))}
-                                    style={{
-                                        width: '60px',
-                                        height: '60px',
-                                        borderRadius: '50%',
-                                        background: 'linear-gradient(135deg, #F9F9F9 0%, #DCDCDC 100%)',
-                                        border: '1px solid #CCC',
-                                        boxShadow: '0 6px 15px rgba(0,0,0,0.15)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: '24px',
-                                        color: '#333',
-                                        cursor: 'pointer',
-                                        zIndex: 10,
-                                        transition: 'transform 0.1s'
-                                    }}
-                                >
-                                    {isCcmPlaying ? '⏸' : '▶️'}
+                                <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginBottom: '20px' }}>
+                                    <button onClick={(e) => hapticClick(e, handlePrevCcm)} style={{ border: 'none', background: '#F5F5F5', borderRadius: '12px', width: '50px', height: '50px', fontSize: '20px', cursor: 'pointer', transition: 'all 0.1s' }} onMouseDown={e => e.currentTarget.style.transform = 'scale(0.9)'} onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}>⏮</button>
+                                    <button onClick={(e) => hapticClick(e, () => togglePlay(e))} style={{ border: 'none', background: '#D4AF37', color: 'white', borderRadius: '15px', width: '80px', height: '50px', fontSize: '24px', cursor: 'pointer', boxShadow: '0 4px 10px rgba(212,175,55,0.3)', transition: 'all 0.1s' }} onMouseDown={e => e.currentTarget.style.transform = 'scale(0.9)'} onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}>
+                                        {isCcmPlaying ? '⏸' : '▶️'}
+                                    </button>
+                                    <button onClick={(e) => hapticClick(e, handleNextCcm)} style={{ border: 'none', background: '#F5F5F5', borderRadius: '12px', width: '50px', height: '50px', fontSize: '20px', cursor: 'pointer', transition: 'all 0.1s' }} onMouseDown={e => e.currentTarget.style.transform = 'scale(0.9)'} onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}>⏭</button>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                    <button onClick={(e) => hapticClick(e, () => togglePlay(e))} style={{ background: 'none', border: 'none', color: '#B8924A', fontSize: '12px', fontWeight: 900, cursor: 'pointer', letterSpacing: '2px' }}>RESET CONSOLE</button>
                                 </div>
                             </div>
                         </div>
@@ -3855,24 +3831,27 @@ export default function App() {
                             }}
                             style={{
                                 position: 'fixed',
-                                bottom: '20px',
-                                right: '20px',
-                                width: '40px',
-                                height: '40px',
-                                background: 'rgba(51, 51, 51, 0.8)',
+                                bottom: '25px',
+                                left: '25px', // 버튼 방해를 방지하기 위해 왼쪽으로 이동
+                                width: '44px',
+                                height: '44px',
+                                background: 'rgba(51, 51, 51, 0.85)',
                                 color: 'white',
                                 borderRadius: '50%',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                fontSize: '20px',
+                                fontSize: '22px',
                                 zIndex: 2500,
                                 cursor: 'pointer',
-                                boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
-                                backdropFilter: 'blur(5px)',
-                                border: '1px solid rgba(255,255,255,0.2)',
-                                animation: 'fade-in 0.3s'
+                                boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
+                                backdropFilter: 'blur(8px)',
+                                border: '1.5px solid rgba(255,255,255,0.3)',
+                                animation: 'fade-in 0.3s',
+                                transition: 'all 0.2s'
                             }}
+                            onMouseOver={e => e.currentTarget.style.transform = "scale(1.1)"}
+                            onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}
                         >
                             🎧
                         </div>
