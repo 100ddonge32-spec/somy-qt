@@ -131,6 +131,7 @@ export default function App() {
     const [isLoading, setIsLoading] = useState(false);
     const [answers, setAnswers] = useState<string[]>(new Array(QT_DATA.questions.length).fill(""));
     const [graceInput, setGraceInput] = useState("");
+    const [communityInput, setCommunityInput] = useState(""); // ✅ 게시판 전용 입력창 분리
     const [sermonReflection, setSermonReflection] = useState({ q1: '', q2: '', q3: '', mainGrace: '', isPrivate: false });
     const [qtStep, setQtStep] = useState<"read" | "interpret" | "reflect" | "grace" | "pray" | "done">("read");
     const [isMounted, setIsMounted] = useState(false); // 마운트 상태 추적
@@ -1579,6 +1580,7 @@ export default function App() {
                             const newPost = await res.json();
                             setCommunityPosts([newPost, ...communityPosts]);
                             setIsPrivatePost(false); // 저장 후 초기화
+                            // ✅ 여기서 큐티 관련 입력값들을 비우지 않도록 코드 확인 (유지)
                         }
                     } catch (e) { console.error("은혜나눔 저장 실패:", e); }
                 }
@@ -2305,7 +2307,7 @@ export default function App() {
             };
 
             const handlePost = async () => {
-                if (!graceInput.trim() || !user) return;
+                if (!communityInput.trim() || !user) return; // ✅ communityInput 사용
                 try {
                     const res = await fetch('/api/community', {
                         method: 'POST',
@@ -2314,7 +2316,7 @@ export default function App() {
                             user_id: user.id,
                             user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
                             avatar_url: user.user_metadata?.avatar_url || null,
-                            content: graceInput,
+                            content: communityInput, // ✅ communityInput 사용
                             church_id: churchId,
                             is_private: isPrivatePost
                         })
@@ -2322,7 +2324,7 @@ export default function App() {
                     if (res.ok) {
                         const newPost = await res.json();
                         setCommunityPosts([newPost, ...communityPosts]);
-                        setGraceInput("");
+                        setCommunityInput(""); // ✅ 게시판 입력창만 깔끔하게 비움
                         setIsPrivatePost(false);
                     }
                 } catch (e) { console.error("게시글 등록 실패:", e); }
@@ -2400,8 +2402,8 @@ export default function App() {
                                     </span>
                                 </div>
                                 <textarea
-                                    value={graceInput}
-                                    onChange={(e) => setGraceInput(e.target.value)}
+                                    value={communityInput}
+                                    onChange={(e) => setCommunityInput(e.target.value)}
                                     placeholder="성도들과 나누고 싶은 은혜를 적어보세요..."
                                     style={{ width: '100%', minHeight: '80px', border: '1px solid #F5F5F5', borderRadius: '12px', padding: '12px', boxSizing: 'border-box', outline: 'none', fontSize: '14px', background: '#FAFAFA', resize: 'none', fontFamily: 'inherit' }}
                                 />
@@ -2414,16 +2416,16 @@ export default function App() {
                                     </div>
                                     <button
                                         onClick={handlePost}
-                                        disabled={!graceInput.trim()}
+                                        disabled={!communityInput.trim()}
                                         style={{
                                             padding: '8px 20px',
-                                            background: graceInput.trim() ? '#333' : '#EEE',
-                                            color: graceInput.trim() ? 'white' : '#AAA',
+                                            background: communityInput.trim() ? '#333' : '#EEE',
+                                            color: communityInput.trim() ? 'white' : '#AAA',
                                             border: 'none',
                                             borderRadius: '12px',
                                             fontSize: '13px',
                                             fontWeight: 800,
-                                            cursor: graceInput.trim() ? 'pointer' : 'default',
+                                            cursor: communityInput.trim() ? 'pointer' : 'default',
                                             transition: 'all 0.3s'
                                         }}
                                     >
