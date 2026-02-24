@@ -3937,11 +3937,11 @@ export default function App() {
                                 {isManagingMembers ? <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>로딩 중...</div> :
                                     memberList.length === 0 ? <div style={{ textAlign: 'center', padding: '20px', color: '#999', fontSize: '13px' }}>등록된 성도가 없습니다.</div> :
                                         memberList.map(member => (
-                                            <div key={member.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#F9F9F9', borderRadius: '14px', border: '1px solid #F0F0F0' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                    <div style={{ position: 'relative', width: 32, height: 32 }}>
+                                            <div key={member.id} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '14px', background: '#F9F9F9', borderRadius: '16px', border: '1px solid #F0F0F0', gap: '10px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                                                    <div style={{ position: 'relative', width: 36, height: 36, flexShrink: 0 }}>
                                                         <img alt="" src={member.avatar_url || 'https://via.placeholder.com/32'} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', background: '#EEE' }} />
-                                                        <label htmlFor={`avatar-upload-${member.id}`} style={{ position: 'absolute', bottom: -4, right: -4, background: 'white', borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', cursor: 'pointer', border: '1px solid #DDD', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>📸</label>
+                                                        <label htmlFor={`avatar-upload-${member.id}`} style={{ position: 'absolute', bottom: -4, right: -4, background: 'white', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', cursor: 'pointer', border: '1px solid #DDD', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>📸</label>
                                                         <input
                                                             id={`avatar-upload-${member.id}`}
                                                             type="file"
@@ -3974,13 +3974,13 @@ export default function App() {
                                                             }}
                                                         />
                                                     </div>
-                                                    <div>
-                                                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#333' }}>{member.full_name || '이름 없음'}</div>
-                                                        <div style={{ fontSize: '10px', color: '#999' }}>{member.email}</div>
+                                                    <div style={{ minWidth: 0 }}>
+                                                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.full_name || '이름 없음'}</div>
+                                                        <div style={{ fontSize: '11px', color: '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.email}</div>
                                                     </div>
                                                 </div>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end', flexShrink: 0 }}>
-                                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-end', flexShrink: 0 }}>
+                                                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                                                         <button
                                                             onClick={() => setSelectedMemberForEdit(member)}
                                                             style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: 'white', color: '#666' }}>
@@ -3998,13 +3998,13 @@ export default function App() {
                                                                     setMemberList(memberList.map(m => m.id === member.id ? { ...m, is_approved: newStatus } : m));
                                                                 }
                                                             }}
-                                                            style={{ padding: '6px 12px', width: '80px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: member.is_approved ? '#E8F5E9' : '#333', color: member.is_approved ? '#2E7D32' : 'white' }}>
+                                                            style={{ padding: '6px 10px', minWidth: '70px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: member.is_approved ? '#E8F5E9' : '#333', color: member.is_approved ? '#2E7D32' : 'white', whiteSpace: 'nowrap' }}>
                                                             {member.is_approved ? '승인됨' : '승인하기'}
                                                         </button>
                                                     </div>
 
                                                     {/* 관리자 전용 프라이버시 토글 */}
-                                                    <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                                                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                                                         {(['phone', 'birthdate', 'address'] as const).map(type => {
                                                             const isPublic = member[`is_${type}_public`];
                                                             return (
