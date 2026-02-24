@@ -3839,7 +3839,7 @@ export default function App() {
                     style={{
                         position: 'absolute',
                         top: '-10px',
-                        right: '-10px',
+                        left: '-10px',
                         width: '26px',
                         height: '26px',
                         background: '#333',
@@ -4351,63 +4351,13 @@ export default function App() {
                                             return 0;
                                         }).map(member => (
                                             <div key={member.id} style={{ display: 'flex', flexDirection: 'column', padding: '20px', background: 'white', borderRadius: '24px', border: '1px solid #F0F0F0', gap: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                                                    {/* 왼쪽: 액션 버튼들 */}
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0 }}>
-                                                        <button
-                                                            onClick={() => setSelectedMemberForEdit(member)}
-                                                            style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: '#F9F9F9', color: '#666', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                            📝 수정
-                                                        </button>
-                                                        <button
-                                                            onClick={async () => {
-                                                                if (window.confirm(`${member.full_name} 성도님을 삭제하시겠습니까?`)) {
-                                                                    const res = await fetch('/api/admin', {
-                                                                        method: 'POST',
-                                                                        headers: { 'Content-Type': 'application/json' },
-                                                                        body: JSON.stringify({ action: 'delete_member', user_id: member.id })
-                                                                    });
-                                                                    if (res.ok) {
-                                                                        setMemberList(prev => prev.filter(m => m.id !== member.id));
-                                                                        alert('삭제되었습니다.');
-                                                                    }
-                                                                }
-                                                            }}
-                                                            style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid #FFEBEB', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: '#FFF5F5', color: '#E53E3E', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                            🗑️ 삭제
-                                                        </button>
-                                                        <button
-                                                            onClick={async () => {
-                                                                const newStatus = !member.is_approved;
-                                                                const res = await fetch('/api/admin', {
-                                                                    method: 'POST',
-                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({ action: 'approve_user', user_id: member.id, is_approved: newStatus })
-                                                                });
-                                                                if (res.ok) {
-                                                                    setMemberList(memberList.map(m => m.id === member.id ? { ...m, is_approved: newStatus } : m));
-                                                                }
-                                                            }}
-                                                            style={{ padding: '8px 12px', borderRadius: '10px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: member.is_approved ? '#E6FFFA' : '#333', color: member.is_approved ? '#38B2AC' : 'white' }}>
-                                                            {member.is_approved ? '✅ 승인됨' : '🔔 승인하기'}
-                                                        </button>
-                                                        {(!member.id || member.email.includes('.local')) && (
-                                                            <button
-                                                                onClick={() => {
-                                                                    setMergeTarget(member);
-                                                                    setShowMergeModal(true);
-                                                                }}
-                                                                style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid #FDF2F2', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: '#FFFBEB', color: '#D69E2E' }}>
-                                                                🔗 데이터 통합
-                                                            </button>
-                                                        )}
-                                                    </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
 
-                                                    {/* 중앙: 큰 사진과 정보 */}
-                                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '10px' }}>
-                                                        <div style={{ position: 'relative', width: 80, height: 80 }}>
-                                                            <img alt="" src={member.avatar_url || 'https://via.placeholder.com/80'} style={{ width: '100%', height: '100%', borderRadius: '30px', objectFit: 'cover', background: '#F5F5F3', border: '3px solid white', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} />
-                                                            <label htmlFor={`avatar-upload-${member.id}`} style={{ position: 'absolute', bottom: -5, right: -5, background: 'white', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', cursor: 'pointer', border: '1px solid #EEE', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>📸</label>
+                                                    {/* 왼쪽: 사진 및 기본 정보 */}
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                                        <div style={{ position: 'relative', width: 60, height: 60 }}>
+                                                            <img alt="" src={member.avatar_url || 'https://via.placeholder.com/60'} style={{ width: '100%', height: '100%', borderRadius: '20px', objectFit: 'cover', background: '#F5F5F3', border: '2px solid white', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }} />
+                                                            <label htmlFor={`avatar-upload-${member.id}`} style={{ position: 'absolute', bottom: -5, right: -5, background: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', cursor: 'pointer', border: '1px solid #EEE', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>📸</label>
                                                             <input
                                                                 id={`avatar-upload-${member.id}`}
                                                                 type="file"
@@ -4430,60 +4380,112 @@ export default function App() {
                                                                 }}
                                                             />
                                                         </div>
-                                                        <div style={{ width: '100%' }}>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                                             <div style={{ fontSize: '18px', fontWeight: 900, color: '#1A202C' }}>{member.full_name || '이름 없음'}</div>
-                                                            <div style={{ fontSize: '12px', color: '#A0AEC0', wordBreak: 'break-all', marginTop: '2px' }}>{member.email}</div>
-                                                            {member.church_rank && <div style={{ display: 'inline-block', marginTop: '6px', padding: '2px 8px', background: '#F7FAFC', borderRadius: '6px', fontSize: '11px', fontWeight: 700, color: '#4A5568' }}>{member.church_rank}</div>}
+                                                            <div style={{ fontSize: '13px', color: '#A0AEC0', wordBreak: 'break-all' }}>{member.email}</div>
+                                                            {member.church_rank && <div style={{ display: 'inline-block', alignSelf: 'flex-start', marginTop: '4px', padding: '2px 8px', background: '#F7FAFC', borderRadius: '6px', fontSize: '11px', fontWeight: 700, color: '#4A5568' }}>{member.church_rank}</div>}
                                                         </div>
                                                     </div>
-                                                </div>
 
-                                                {/* 하단: 프라이버시 설정들 */}
-                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', borderTop: '1px solid #F7FAFC', paddingTop: '12px', flexWrap: 'wrap' }}>
-                                                    {(['phone', 'birthdate', 'address'] as const).map(type => {
-                                                        const isPublic = member[`is_${type}_public`];
-                                                        return (
+                                                    {/* 오른쪽: 액션 버튼 그룹 (위: 기능, 아래: 프라이버시) */}
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end', flex: 1, minWidth: '220px' }}>
+
+                                                        {/* 수정/삭제/승인/통합 */}
+                                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                                                             <button
-                                                                key={type}
-                                                                onClick={async (e) => {
-                                                                    e.stopPropagation();
-                                                                    const field = `is_${type}_public`;
-                                                                    const newValue = !isPublic;
+                                                                onClick={() => setSelectedMemberForEdit(member)}
+                                                                style={{ padding: '6px 12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: '#F9F9F9', color: '#666', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                📝 수정
+                                                            </button>
+                                                            <button
+                                                                onClick={async () => {
+                                                                    if (window.confirm(`${member.full_name} 성도님을 삭제하시겠습니까?`)) {
+                                                                        const res = await fetch('/api/admin', {
+                                                                            method: 'POST',
+                                                                            headers: { 'Content-Type': 'application/json' },
+                                                                            body: JSON.stringify({ action: 'delete_member', user_id: member.id })
+                                                                        });
+                                                                        if (res.ok) {
+                                                                            setMemberList(prev => prev.filter(m => m.id !== member.id));
+                                                                            alert('삭제되었습니다.');
+                                                                        }
+                                                                    }
+                                                                }}
+                                                                style={{ padding: '6px 12px', borderRadius: '10px', border: '1px solid #FFEBEB', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: '#FFF5F5', color: '#E53E3E', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                🗑️ 삭제
+                                                            </button>
+                                                            <button
+                                                                onClick={async () => {
+                                                                    const newStatus = !member.is_approved;
                                                                     const res = await fetch('/api/admin', {
                                                                         method: 'POST',
                                                                         headers: { 'Content-Type': 'application/json' },
-                                                                        body: JSON.stringify({ action: 'update_member', user_id: member.id, update_data: { [field]: newValue } })
+                                                                        body: JSON.stringify({ action: 'approve_user', user_id: member.id, is_approved: newStatus })
                                                                     });
-                                                                    if (res.ok) setMemberList(memberList.map(m => m.id === member.id ? { ...m, [field]: newValue } : m));
+                                                                    if (res.ok) {
+                                                                        setMemberList(memberList.map(m => m.id === member.id ? { ...m, is_approved: newStatus } : m));
+                                                                    }
                                                                 }}
-                                                                style={{
-                                                                    fontSize: '12px',
-                                                                    padding: '8px 14px',
-                                                                    borderRadius: '14px',
-                                                                    border: '1px solid',
-                                                                    borderColor: isPublic ? '#ECC94B' : '#EDF2F7',
-                                                                    cursor: 'pointer',
-                                                                    background: isPublic ? '#FFFFF0' : '#F7FAFC',
-                                                                    color: isPublic ? '#B7791F' : '#4A5568',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    gap: '6px',
-                                                                    fontWeight: 700,
-                                                                    transition: 'all 0.2s',
-                                                                    whiteSpace: 'nowrap',
-                                                                    flexShrink: 0
-                                                                }}
-                                                            >
-                                                                <span style={{ filter: isPublic ? 'none' : 'grayscale(1)' }}>
-                                                                    {type === 'phone' ? '📞' : type === 'birthdate' ? '🎂' : '🏠'}
-                                                                </span>
-                                                                <span>{type === 'phone' ? '전화' : type === 'birthdate' ? '생일' : '주소'}</span>
-                                                                <span style={{ fontSize: '11px', opacity: 0.8, color: isPublic ? '#D69E2E' : '#A0AEC0' }}>
-                                                                    {isPublic ? '공개' : '비공개'}
-                                                                </span>
+                                                                style={{ padding: '6px 12px', borderRadius: '10px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: member.is_approved ? '#E6FFFA' : '#333', color: member.is_approved ? '#38B2AC' : 'white' }}>
+                                                                {member.is_approved ? '✅ 승인됨' : '🔔 승인하기'}
                                                             </button>
-                                                        );
-                                                    })}
+                                                            {(!member.id || member.email.includes('.local')) && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setMergeTarget(member);
+                                                                        setShowMergeModal(true);
+                                                                    }}
+                                                                    style={{ padding: '6px 12px', borderRadius: '10px', border: '1px solid #FDF2F2', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: '#FFFBEB', color: '#D69E2E' }}>
+                                                                    🔗 통합
+                                                                </button>
+                                                            )}
+                                                        </div>
+
+                                                        {/* 프라이버시 (전번/생일/주소) */}
+                                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                                                            {(['phone', 'birthdate', 'address'] as const).map(type => {
+                                                                const isPublic = member[`is_${type}_public`];
+                                                                return (
+                                                                    <button
+                                                                        key={type}
+                                                                        onClick={async (e) => {
+                                                                            e.stopPropagation();
+                                                                            const field = `is_${type}_public`;
+                                                                            const newValue = !isPublic;
+                                                                            const res = await fetch('/api/admin', {
+                                                                                method: 'POST',
+                                                                                headers: { 'Content-Type': 'application/json' },
+                                                                                body: JSON.stringify({ action: 'update_member', user_id: member.id, update_data: { [field]: newValue } })
+                                                                            });
+                                                                            if (res.ok) setMemberList(memberList.map(m => m.id === member.id ? { ...m, [field]: newValue } : m));
+                                                                        }}
+                                                                        style={{
+                                                                            fontSize: '11px',
+                                                                            padding: '6px 10px',
+                                                                            borderRadius: '12px',
+                                                                            border: '1px solid',
+                                                                            borderColor: isPublic ? '#ECC94B' : '#EDF2F7',
+                                                                            cursor: 'pointer',
+                                                                            background: isPublic ? '#FFFFF0' : '#F7FAFC',
+                                                                            color: isPublic ? '#B7791F' : '#4A5568',
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            gap: '4px',
+                                                                            fontWeight: 700,
+                                                                            transition: 'all 0.2s',
+                                                                            whiteSpace: 'nowrap'
+                                                                        }}
+                                                                    >
+                                                                        <span style={{ filter: isPublic ? 'none' : 'grayscale(1)' }}>
+                                                                            {type === 'phone' ? '📞' : type === 'birthdate' ? '🎂' : '🏠'}
+                                                                        </span>
+                                                                        <span>{type === 'phone' ? '전번 공개' : type === 'birthdate' ? '생일 공개' : '주소 공개'}</span>
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))
