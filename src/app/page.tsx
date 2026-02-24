@@ -6,7 +6,7 @@ import { getGraceVerse } from '@/lib/navigator-verses';
 import { getTodayCcm, CcmVideo, CCM_LIST } from "@/lib/ccm";
 import * as XLSX from 'xlsx';
 
-type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "profile" | "memberSearch";
+type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "profile" | "memberSearch";
 
 const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://cdn.imweb.me/thumbnail/20210813/569458bf12dd0.png";
@@ -140,6 +140,9 @@ export default function App() {
 
     // 감사일기 상태
     const [thanksgivingDiaries, setThanksgivingDiaries] = useState<Post[]>([]);
+    const [counselingRequests, setCounselingRequests] = useState<any[]>([]);
+    const [counselingInput, setCounselingInput] = useState('');
+    const [counselingReplyInput, setCounselingReplyInput] = useState<{ [id: string]: string }>({});
     const [isPrivateThanksgiving, setIsPrivateThanksgiving] = useState(false);
     const [thanksgivingInput, setThanksgivingInput] = useState("");
 
@@ -1471,9 +1474,26 @@ export default function App() {
                                             </div>
                                             <span>담임목사 설교</span>
                                         </button>
-                                    ) : (
-                                        <button style={{ flex: 1, background: 'transparent', border: 'none', cursor: 'default' }} disabled></button>
-                                    )}
+                                    ) : null}
+                                    <button onClick={async () => {
+                                        setView('counseling');
+                                        try {
+                                            const res = await fetch(`/api/counseling?church_id=${churchId}&user_id=${user?.id}&admin=${isAdmin}`);
+                                            const data = await res.json();
+                                            if (Array.isArray(data)) setCounselingRequests(data);
+                                        } catch (e) { console.error("상담 로드 실패", e); }
+                                    }} style={{
+                                        flex: 1, padding: "14px 10px",
+                                        background: "linear-gradient(145deg, #ffffff 0%, #f6f0ff 100%)", color: "#4A148C",
+                                        fontWeight: 800, fontSize: "14px", borderRadius: "20px",
+                                        border: "1px solid #e1bee7", cursor: "pointer",
+                                        boxShadow: "0 10px 20px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(74, 20, 140, 0.08), inset 0 3px 5px rgba(255,255,255,1), inset 0 -3px 0 rgba(255,255,255,0.8)",
+                                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
+                                        transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+                                    }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>🙏</div>
+                                        <span>상담/기도 요청</span>
+                                    </button>
                                 </div>
 
                                 <div style={{ display: 'flex', gap: '14px', width: '100%' }}>
@@ -3488,6 +3508,92 @@ export default function App() {
                     </button>
                 </div>
             )
+        }
+
+        /* ══════════════════════════════
+           COUNSELING VIEW
+        ══════════════════════════════ */
+        if (view === "counseling") {
+            return (
+                <div style={{ display: "flex", flexDirection: "column", height: "100vh", maxWidth: "480px", margin: "0 auto", background: "#fdfdfd", position: "relative" }}>
+                    <div style={{ padding: "20px", display: "flex", alignItems: "center", borderBottom: '1px solid #EEE' }}>
+                        <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "24px", color: "#333", cursor: "pointer" }}>←</button>
+                        <h2 style={{ flex: 1, textAlign: "center", fontSize: "18px", margin: 0, color: "#333", fontWeight: 800 }}>🙏 상담 및 기도 요청</h2>
+                        <div style={{ width: "24px" }} />
+                    </div>
+
+                    <div style={{ padding: '20px', flex: 1, overflowY: 'auto' }}>
+                        {/* 작성 폼 (관리자 아닐 때만) */}
+                        {!isAdmin && (
+                            <div style={{ marginBottom: '30px', background: 'white', padding: '20px', borderRadius: '15px', border: '1px solid #EEE', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                                <h3 style={{ fontSize: '15px', marginTop: 0, color: '#333' }}>새 요청 작성하기 <span style={{ fontSize: '12px', color: '#999', fontWeight: 400 }}>(목사님만 볼 수 있습니다)</span></h3>
+                                <textarea value={counselingInput} onChange={e => setCounselingInput(e.target.value)} placeholder="담임목사님께 나누고 싶은 고민이나 기도 제목을 적어주세요. 목사님께서 확인 후 직접 답변해주시며 실시간 알림이 발송됩니다." style={{ width: '100%', padding: '15px', borderRadius: '10px', border: '1px solid #DDD', minHeight: '120px', resize: 'vertical', fontSize: '14px', marginBottom: '10px', outline: 'none' }} />
+                                <button onClick={async () => {
+                                    if (!counselingInput.trim()) return;
+                                    try {
+                                        const r = await fetch('/api/counseling', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: user?.id, user_name: user?.user_metadata?.full_name || '성도', church_id: churchId, content: counselingInput }) });
+                                        if (r.ok) {
+                                            const newReq = await r.json();
+                                            setCounselingRequests([newReq, ...counselingRequests]);
+                                            setCounselingInput('');
+                                            alert("요청이 담임목사님께 성공적으로 전송되었습니다.");
+                                        }
+                                    } catch (e) { }
+                                }} style={{ width: '100%', padding: '14px', background: '#333', color: 'white', borderRadius: '10px', border: 'none', fontWeight: 700, cursor: 'pointer' }}>요청 보내기 🚀</button>
+                            </div>
+                        )}
+
+                        {/* 요청 목록 */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            {counselingRequests.map(req => (
+                                <div key={req.id} style={{ background: 'white', padding: '15px', borderRadius: '15px', border: '1px solid #EEE', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px', color: '#666' }}>
+                                        <strong>{req.user_name} 성도</strong>
+                                        <span>{new Date(req.created_at).toLocaleDateString()}</span>
+                                    </div>
+                                    <div style={{ fontSize: '15px', color: '#333', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: '15px' }}>
+                                        {req.content}
+                                    </div>
+
+                                    {/* 답변 영역 */}
+                                    {req.reply ? (
+                                        <div style={{ background: '#F5F5F5', padding: '15px', borderRadius: '10px', marginTop: '10px' }}>
+                                            <div style={{ fontWeight: 800, fontSize: '13px', color: '#1A5D55', marginBottom: '5px' }}>↳ 담임목사님 답변</div>
+                                            <div style={{ fontSize: '14px', color: '#444', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{req.reply}</div>
+                                        </div>
+                                    ) : isAdmin ? (
+                                        <div style={{ marginTop: '10px', background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '10px', padding: '10px' }}>
+                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#999', marginBottom: '8px' }}>답변을 등록하면 성도에게 푸시 알림이 즉시 전송됩니다.</div>
+                                            <textarea value={counselingReplyInput[req.id] || ''} onChange={e => setCounselingReplyInput({ ...counselingReplyInput, [req.id]: e.target.value })} placeholder="답변을 작성해주세요." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', minHeight: '80px', fontSize: '13px', marginBottom: '8px', outline: 'none' }} />
+                                            <button onClick={async () => {
+                                                const replyContent = counselingReplyInput[req.id];
+                                                if (!replyContent?.trim()) return;
+                                                try {
+                                                    const r = await fetch('/api/counseling', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: req.id, reply: replyContent, admin_name: adminInfo?.name }) });
+                                                    if (r.ok) {
+                                                        const updated = await r.json();
+                                                        setCounselingRequests(counselingRequests.map(c => c.id === req.id ? updated : c));
+                                                        alert("답변이 전송되었습니다.");
+                                                    }
+                                                } catch (e) { }
+                                            }} style={{ width: '100%', padding: '10px', background: '#1A5D55', color: 'white', borderRadius: '8px', border: 'none', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>답변 등록 완료 작성하기 (성도에게 알림 전송)</button>
+                                        </div>
+                                    ) : (
+                                        <div style={{ fontSize: '13px', color: '#999', marginTop: '10px', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <span>⏳</span> 목사님께서 확인 후 답변을 주실 예정입니다...
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                            {counselingRequests.length === 0 && (
+                                <div style={{ textAlign: 'center', color: '#999', padding: '30px 0', fontSize: '14px' }}>
+                                    아직 접수된 요청이 없습니다.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
         }
 
         /* ══════════════════════════════
