@@ -713,6 +713,8 @@ export default function App() {
     const [isManagingMembers, setIsManagingMembers] = useState(false);
     const [isHistoryMode, setIsHistoryMode] = useState(false);
     const [churchStats, setChurchStats] = useState<{ [key: string]: number }>({});
+    const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+    const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
     useEffect(() => {
         setIsMounted(true);
@@ -3543,6 +3545,84 @@ export default function App() {
         );
     };
 
+    const renderAddMemberModal = () => {
+        if (!showAddMemberModal) return null;
+        return (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(5px)' }}>
+                <div style={{ background: 'white', borderRadius: '24px', padding: '30px', width: '100%', maxWidth: '400px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', animation: 'modal-up 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>👤 성도 개별 추가</h3>
+                        <button onClick={() => setShowAddMemberModal(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <div>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>성함 *</label>
+                            <input id="add-name" placeholder="이름을 입력하세요" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>직분</label>
+                            <input id="add-rank" placeholder="예: 성도, 집사, 권사" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>전화번호 (이메일 자동생성용)</label>
+                            <input id="add-phone" placeholder="010-0000-0000" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>생년월일</label>
+                            <input id="add-birth" type="date" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>주소</label>
+                            <input id="add-addr" placeholder="주소를 입력하세요" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '25px' }}>
+                        <button onClick={() => setShowAddMemberModal(false)} style={{ flex: 1, padding: '14px', background: '#F5F5F5', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', color: '#666' }}>취소</button>
+                        <button
+                            onClick={async () => {
+                                const name = (document.getElementById('add-name') as any)?.value || '';
+                                const phone = (document.getElementById('add-phone') as any)?.value || '';
+                                if (!name) return alert('이름은 필수 항목입니다.');
+
+                                const cleanPhone = phone.replace(/[^0-9]/g, '');
+                                const email = cleanPhone ? `${cleanPhone}@church.local` : `${name}_${Math.random().toString(36).substring(2, 7)}@noemail.local`;
+
+                                const memberData = {
+                                    full_name: name,
+                                    email: email,
+                                    church_rank: (document.getElementById('add-rank') as any)?.value || '',
+                                    phone: phone,
+                                    birthdate: (document.getElementById('add-birth') as any)?.value || null,
+                                    address: (document.getElementById('add-addr') as any)?.value || '',
+                                    church_id: churchId || 'jesus-in',
+                                    is_approved: true
+                                };
+
+                                const res = await fetch('/api/admin', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ action: 'add_member', member_data: memberData })
+                                });
+                                if (res.ok) {
+                                    const r = await fetch('/api/admin?action=list_members');
+                                    const data = await r.json();
+                                    if (Array.isArray(data)) setMemberList(data);
+                                    setShowAddMemberModal(false);
+                                    alert('새 성도가 성공적으로 등록되었습니다!');
+                                } else {
+                                    const err = await res.json();
+                                    alert('등록 실패: ' + (err.error || '알 수 없는 오류'));
+                                }
+                            }}
+                            style={{ flex: 2, padding: '14px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}>
+                            등록하기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
 
     // 소미 시그니처 레트로 플레이어 (저작권 걱정 없는 독자적 디자인)
     const renderMiniPlayer = () => {
@@ -3958,6 +4038,91 @@ export default function App() {
                                     </div>
                                 </div>
 
+                                {/* 성도 관리 컨트롤러 */}
+                                <div style={{ background: 'white', padding: '16px', borderRadius: '15px', border: '1px solid #EEE', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#333' }}>⚙️ 관리 도구</div>
+                                        <div style={{ display: 'flex', gap: '6px' }}>
+                                            <button
+                                                onClick={() => setShowAddMemberModal(true)}
+                                                style={{ padding: '6px 12px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                                            >
+                                                👤 성도 개별 추가
+                                            </button>
+                                            <button
+                                                onClick={async () => {
+                                                    if (window.confirm('정말 모든 성도 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                                                        const res = await fetch('/api/admin', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({ action: 'clear_all_members', church_id: churchId })
+                                                        });
+                                                        if (res.ok) {
+                                                            setMemberList([]);
+                                                            alert('모든 성도 데이터가 성공적으로 삭제되었습니다.');
+                                                        }
+                                                    }
+                                                }}
+                                                style={{ padding: '6px 12px', background: '#FFEBEE', color: '#C62828', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                                            >
+                                                🗑️ 전체 삭제
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: '#FAFAFA', borderRadius: '10px' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#666' }}>🛡️ 일괄 프라이버시 설정</div>
+                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                            {['phone', 'birthdate', 'address'].map(type => (
+                                                <div key={type} style={{ display: 'flex', gap: '4px' }}>
+                                                    <button
+                                                        disabled={isBulkProcessing}
+                                                        onClick={async () => {
+                                                            if (window.confirm(`모든 성도의 ${type === 'phone' ? '전화번호' : type === 'birthdate' ? '생일' : '주소'}를 '공개'로 전환하시겠습니까?`)) {
+                                                                setIsBulkProcessing(true);
+                                                                const res = await fetch('/api/admin', {
+                                                                    method: 'POST',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({ action: 'bulk_update_privacy', field: `is_${type}_public`, value: true, church_id: churchId })
+                                                                });
+                                                                if (res.ok) {
+                                                                    setMemberList(prev => prev.map(m => ({ ...m, [`is_${type}_public`]: true })));
+                                                                    alert('변경되었습니다.');
+                                                                }
+                                                                setIsBulkProcessing(false);
+                                                            }
+                                                        }}
+                                                        style={{ padding: '4px 8px', background: 'white', border: '1px solid #EEE', borderRadius: '6px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}
+                                                    >
+                                                        {type === 'phone' ? '📞 전번 공개' : type === 'birthdate' ? '🎂 생일 공개' : '🏠 주소 공개'}
+                                                    </button>
+                                                    <button
+                                                        disabled={isBulkProcessing}
+                                                        onClick={async () => {
+                                                            if (window.confirm(`모든 성도의 ${type === 'phone' ? '전화번호' : type === 'birthdate' ? '생일' : '주소'}를 '비공개'로 전환하시겠습니까?`)) {
+                                                                setIsBulkProcessing(true);
+                                                                const res = await fetch('/api/admin', {
+                                                                    method: 'POST',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({ action: 'bulk_update_privacy', field: `is_${type}_public`, value: false, church_id: churchId })
+                                                                });
+                                                                if (res.ok) {
+                                                                    setMemberList(prev => prev.map(m => ({ ...m, [`is_${type}_public`]: false })));
+                                                                    alert('변경되었습니다.');
+                                                                }
+                                                                setIsBulkProcessing(false);
+                                                            }
+                                                        }}
+                                                        style={{ padding: '4px 8px', background: 'white', border: '1px solid #EEE', borderRadius: '6px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}
+                                                    >
+                                                        🔒 비공개
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
                                 {/* 오늘의 생일 알림 */}
                                 {(() => {
                                     const kstTime = new Date().getTime() + (9 * 60 * 60 * 1000);
@@ -4026,8 +4191,25 @@ export default function App() {
                                                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                                                         <button
                                                             onClick={() => setSelectedMemberForEdit(member)}
-                                                            style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: 'white', color: '#666' }}>
-                                                            📝 정보 수정
+                                                            style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: 'white', color: '#666' }}>
+                                                            📝 수정
+                                                        </button>
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (window.confirm(`${member.full_name} 성도님을 삭제하시겠습니까?`)) {
+                                                                    const res = await fetch('/api/admin', {
+                                                                        method: 'POST',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({ action: 'delete_member', user_id: member.id })
+                                                                    });
+                                                                    if (res.ok) {
+                                                                        setMemberList(prev => prev.filter(m => m.id !== member.id));
+                                                                        alert('삭제되었습니다.');
+                                                                    }
+                                                                }
+                                                            }}
+                                                            style={{ padding: '6px 8px', borderRadius: '8px', border: '1px solid #FFCDD2', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: 'white', color: '#C62828' }}>
+                                                            🗑️ 삭제
                                                         </button>
                                                         <button
                                                             onClick={async () => {
@@ -4174,6 +4356,7 @@ export default function App() {
                 </div>
             )}
             {renderMemberEditModal()}
+            {renderAddMemberModal()}
             {renderNotificationList()}
             {user && (
                 <>

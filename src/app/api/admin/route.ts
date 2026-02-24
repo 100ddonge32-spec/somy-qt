@@ -96,6 +96,50 @@ export async function POST(req: NextRequest) {
             return NextResponse.json(data);
         }
 
+        // 개별 성도 추가
+        if (action === 'add_member') {
+            const { member_data } = body;
+            const { data, error } = await supabaseAdmin
+                .from('profiles')
+                .insert([member_data])
+                .select();
+            if (error) throw error;
+            return NextResponse.json(data);
+        }
+
+        // 개별 성도 삭제
+        if (action === 'delete_member') {
+            const { user_id } = body;
+            const { error } = await supabaseAdmin
+                .from('profiles')
+                .delete()
+                .eq('id', user_id);
+            if (error) throw error;
+            return NextResponse.json({ success: true });
+        }
+
+        // 전체 성도 삭제
+        if (action === 'clear_all_members') {
+            const { church_id } = body;
+            const { error } = await supabaseAdmin
+                .from('profiles')
+                .delete()
+                .eq('church_id', church_id || 'jesus-in');
+            if (error) throw error;
+            return NextResponse.json({ success: true });
+        }
+
+        // 일괄 프라이버시 설정
+        if (action === 'bulk_update_privacy') {
+            const { church_id, field, value } = body;
+            const { error } = await supabaseAdmin
+                .from('profiles')
+                .update({ [field]: value })
+                .eq('church_id', church_id || 'jesus-in');
+            if (error) throw error;
+            return NextResponse.json({ success: true });
+        }
+
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
