@@ -3910,21 +3910,54 @@ export default function App() {
                                                     </div>
                                                 </div>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end', flexShrink: 0 }}>
-                                                    <button
-                                                        onClick={async () => {
-                                                            const newStatus = !member.is_approved;
-                                                            const res = await fetch('/api/admin', {
-                                                                method: 'POST',
-                                                                headers: { 'Content-Type': 'application/json' },
-                                                                body: JSON.stringify({ action: 'approve_user', user_id: member.id, is_approved: newStatus })
-                                                            });
-                                                            if (res.ok) {
-                                                                setMemberList(memberList.map(m => m.id === member.id ? { ...m, is_approved: newStatus } : m));
-                                                            }
-                                                        }}
-                                                        style={{ padding: '6px 12px', width: '80px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: member.is_approved ? '#E8F5E9' : '#333', color: member.is_approved ? '#2E7D32' : 'white' }}>
-                                                        {member.is_approved ? '승인됨' : '승인하기'}
-                                                    </button>
+                                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                                        <button
+                                                            onClick={async () => {
+                                                                const newName = prompt('성함:', member.full_name || '');
+                                                                if (newName === null) return;
+                                                                const newRank = prompt('직분:', member.church_rank || '');
+                                                                const newPhone = prompt('전화번호:', member.phone || '');
+                                                                const newBirth = prompt('생년월일 (YYYY-MM-DD):', member.birthdate || '');
+                                                                const newAddr = prompt('주소:', member.address || '');
+
+                                                                const updateData = {
+                                                                    full_name: newName,
+                                                                    church_rank: newRank,
+                                                                    phone: newPhone,
+                                                                    birthdate: newBirth,
+                                                                    address: newAddr
+                                                                };
+
+                                                                const res = await fetch('/api/admin', {
+                                                                    method: 'POST',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({ action: 'update_member', user_id: member.id, update_data: updateData })
+                                                                });
+
+                                                                if (res.ok) {
+                                                                    setMemberList(memberList.map(m => m.id === member.id ? { ...m, ...updateData } : m));
+                                                                    alert('정보가 수정되었습니다! ✨');
+                                                                }
+                                                            }}
+                                                            style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: 'white', color: '#666' }}>
+                                                            📝 정보 수정
+                                                        </button>
+                                                        <button
+                                                            onClick={async () => {
+                                                                const newStatus = !member.is_approved;
+                                                                const res = await fetch('/api/admin', {
+                                                                    method: 'POST',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({ action: 'approve_user', user_id: member.id, is_approved: newStatus })
+                                                                });
+                                                                if (res.ok) {
+                                                                    setMemberList(memberList.map(m => m.id === member.id ? { ...m, is_approved: newStatus } : m));
+                                                                }
+                                                            }}
+                                                            style={{ padding: '6px 12px', width: '80px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: member.is_approved ? '#E8F5E9' : '#333', color: member.is_approved ? '#2E7D32' : 'white' }}>
+                                                            {member.is_approved ? '승인됨' : '승인하기'}
+                                                        </button>
+                                                    </div>
 
                                                     {/* 관리자 전용 프라이버시 토글 */}
                                                     <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
@@ -4263,6 +4296,29 @@ const MemberSearchView = ({ churchId, setView, baseFont }: any) => {
                     <button onClick={handleSearch} style={{ padding: '0 20px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>검색</button>
                 </div>
             </div>
+
+            {/* 오늘의 생일 알림 (전체 성도 목록에서 확인) */}
+            {(() => {
+                const today = new Date().toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' }).replace(/\. /g, '-').replace(/\./g, '');
+                const todayMMDD = new Date().toISOString().slice(5, 10); // MM-DD
+                const birthdayMembers = results.filter(m => m.birthdate && m.birthdate.slice(5, 10) === todayMMDD);
+
+                if (birthdayMembers.length > 0) {
+                    return (
+                        <div style={{ background: 'linear-gradient(135deg, #FFF9C4 0%, #FFF59D 100%)', padding: '16px', borderRadius: '20px', marginBottom: '16px', border: '1px solid #FFF176', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 4px 15px rgba(255,235,59,0.2)', animation: 'pulse 2s infinite' }}>
+                            <div style={{ fontSize: '24px' }}>🎉</div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#856404' }}>오늘 생일인 성도님이 계세요!</div>
+                                <div style={{ fontSize: '13px', color: '#666', marginTop: '2px' }}>
+                                    {birthdayMembers.map(m => m.full_name).join(', ')}님, 축하드립니다! 🎂
+                                </div>
+                            </div>
+                        </div>
+                    );
+                }
+                return null;
+            })()}
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
                 {isSearching ? (
                     <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>성도 정보를 불러오는 중...</div>
