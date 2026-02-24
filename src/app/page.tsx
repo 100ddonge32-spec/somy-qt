@@ -216,6 +216,7 @@ export default function App() {
     const [playerPos, setPlayerPos] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [showIpod, setShowIpod] = useState(true); // 아이팟 표시 여부
+    const [selectedMemberForEdit, setSelectedMemberForEdit] = useState<any>(null); // ✅ 성도 정보 수정을 위한 선택된 멤버
     const [showWelcome, setShowWelcome] = useState(false); // 소미 소개 카드 표시 여부 (기본 닫힘)
     const dragOffset = useRef({ x: 0, y: 0 });
     const playerRef = useRef<any>(null);
@@ -3434,6 +3435,73 @@ export default function App() {
         );
     };
 
+    // 성도 상세 정보 수정 모달 (관리자용)
+    const renderMemberEditModal = () => {
+        if (!selectedMemberForEdit) return null;
+        const m = selectedMemberForEdit;
+        return (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(5px)' }}>
+                <div style={{ background: 'white', borderRadius: '24px', padding: '30px', width: '100%', maxWidth: '400px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', animation: 'modal-up 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>📝 성도 정보 상세 수정</h3>
+                        <button onClick={() => setSelectedMemberForEdit(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <div>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>성함</label>
+                            <input id="edit-name" defaultValue={m.full_name} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>직분</label>
+                            <input id="edit-rank" defaultValue={m.church_rank} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>전화번호</label>
+                            <input id="edit-phone" defaultValue={m.phone} placeholder="010-0000-0000" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>생년월일</label>
+                            <input id="edit-birth" type="date" defaultValue={m.birthdate} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>주소</label>
+                            <input id="edit-addr" defaultValue={m.address} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '25px' }}>
+                        <button onClick={() => setSelectedMemberForEdit(null)} style={{ flex: 1, padding: '14px', background: '#F5F5F5', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', color: '#666' }}>취소</button>
+                        <button
+                            onClick={async () => {
+                                const updateData = {
+                                    full_name: (document.getElementById('edit-name') as HTMLInputElement).value,
+                                    church_rank: (document.getElementById('edit-rank') as HTMLInputElement).value,
+                                    phone: (document.getElementById('edit-phone') as HTMLInputElement).value,
+                                    birthdate: (document.getElementById('edit-birth') as HTMLInputElement).value,
+                                    address: (document.getElementById('edit-addr') as HTMLInputElement).value,
+                                };
+                                const res = await fetch('/api/admin', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ action: 'update_member', user_id: m.id, update_data: updateData })
+                                });
+                                if (res.ok) {
+                                    setMemberList(memberList.map((item: any) => item.id === m.id ? { ...item, ...updateData } : item));
+                                    setSelectedMemberForEdit(null);
+                                    alert('정보가 성공적으로 수정되었습니다! ✨');
+                                } else {
+                                    alert('수정 중 오류가 발생했습니다.');
+                                }
+                            }}
+                            style={{ flex: 2, padding: '14px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}>
+                            수정 완료
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+
     // 소미 시그니처 레트로 플레이어 (저작권 걱정 없는 독자적 디자인)
     const renderMiniPlayer = () => {
         if (!todayCcm || view === 'ccm') return null;
@@ -3849,7 +3917,9 @@ export default function App() {
 
                                 {/* 오늘의 생일 알림 */}
                                 {(() => {
-                                    const today = new Date().toISOString().slice(5, 10); // MM-DD
+                                    const kstTime = new Date().getTime() + (9 * 60 * 60 * 1000);
+                                    const kstDate = new Date(kstTime);
+                                    const today = kstDate.toISOString().slice(5, 10); // MM-DD
                                     const birthdayBoys = memberList.filter(m => m.birthdate && m.birthdate.slice(5, 10) === today);
                                     if (birthdayBoys.length > 0) {
                                         return (
@@ -3913,31 +3983,7 @@ export default function App() {
                                                     <div style={{ display: 'flex', gap: '6px' }}>
                                                         <button
                                                             onClick={async () => {
-                                                                const newName = prompt('성함:', member.full_name || '');
-                                                                if (newName === null) return;
-                                                                const newRank = prompt('직분:', member.church_rank || '');
-                                                                const newPhone = prompt('전화번호:', member.phone || '');
-                                                                const newBirth = prompt('생년월일 (YYYY-MM-DD):', member.birthdate || '');
-                                                                const newAddr = prompt('주소:', member.address || '');
-
-                                                                const updateData = {
-                                                                    full_name: newName,
-                                                                    church_rank: newRank,
-                                                                    phone: newPhone,
-                                                                    birthdate: newBirth,
-                                                                    address: newAddr
-                                                                };
-
-                                                                const res = await fetch('/api/admin', {
-                                                                    method: 'POST',
-                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({ action: 'update_member', user_id: member.id, update_data: updateData })
-                                                                });
-
-                                                                if (res.ok) {
-                                                                    setMemberList(memberList.map(m => m.id === member.id ? { ...m, ...updateData } : m));
-                                                                    alert('정보가 수정되었습니다! ✨');
-                                                                }
+                                                                { setSelectedMemberForEdit(member); return; }
                                                             }}
                                                             style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: 'white', color: '#666' }}>
                                                             📝 정보 수정
@@ -4086,6 +4132,7 @@ export default function App() {
                     </div>
                 </div>
             )}
+            {renderMemberEditModal()}
             {renderNotificationList()}
             {user && (
                 <>
@@ -4299,8 +4346,8 @@ const MemberSearchView = ({ churchId, setView, baseFont }: any) => {
 
             {/* 오늘의 생일 알림 (전체 성도 목록에서 확인) */}
             {(() => {
-                const today = new Date().toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' }).replace(/\. /g, '-').replace(/\./g, '');
-                const todayMMDD = new Date().toISOString().slice(5, 10); // MM-DD
+                const kstBase = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+                const todayMMDD = kstBase.toISOString().slice(5, 10); // MM-DD
                 const birthdayMembers = results.filter(m => m.birthdate && m.birthdate.slice(5, 10) === todayMMDD);
 
                 if (birthdayMembers.length > 0) {
