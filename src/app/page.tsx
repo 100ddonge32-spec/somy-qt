@@ -4705,20 +4705,20 @@ export default function App() {
 
                                 {/* 성도 관리 컨트롤러 */}
                                 <div style={{ background: 'white', padding: '16px', borderRadius: '15px', border: '1px solid #EEE', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#333' }}>⚙️ 관리 도구</div>
-                                        <div style={{ display: 'flex', gap: '6px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
+                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#333', whiteSpace: 'nowrap', alignSelf: 'center' }}>⚙️ 관리 도구</div>
+                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
                                             <button
                                                 onClick={handleExcelExport}
-                                                style={{ padding: '6px 12px', background: '#E8F5E9', color: '#2E7D32', border: '1px solid #C8E6C9', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                                                style={{ padding: '8px 12px', background: '#E8F5E9', color: '#2E7D32', border: '1px solid #C8E6C9', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
                                             >
                                                 📥 엑셀 다운로드
                                             </button>
                                             <button
                                                 onClick={() => setShowAddMemberModal(true)}
-                                                style={{ padding: '6px 12px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                                                style={{ padding: '8px 12px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
                                             >
-                                                👤 성도 개별 추가
+                                                👤 개별 추가
                                             </button>
                                             <button
                                                 onClick={async () => {
@@ -4734,7 +4734,7 @@ export default function App() {
                                                         }
                                                     }
                                                 }}
-                                                style={{ padding: '6px 12px', background: '#FFEBEE', color: '#C62828', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                                                style={{ padding: '8px 12px', background: '#FFEBEE', color: '#C62828', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
                                             >
                                                 🗑️ 전체 삭제
                                             </button>
