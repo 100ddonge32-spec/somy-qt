@@ -4433,33 +4433,41 @@ const ProfileView = ({ user, supabase, setView, baseFont }: any) => {
                 // 1. ID로 먼저 시도 (기존 연결된 프로필)
                 let { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
 
-                // 2. ID로 없으면 이메일로 매칭 시도 (엑셀 업로드 유저 구출 로직)
-                if (!data && user.email) {
-                    console.log("ID로 프로필을 찾을 수 없어 이메일 매칭을 시도합니다:", user.email);
-                    const { data: emailMatch } = await supabase
-                        .from('profiles')
-                        .select('*')
-                        .eq('email', user.email)
-                        .is('id', null) // 아직 어떤 계정과도 연결되지 않은 행만
-                        .maybeSingle();
+                // 2. 매칭 시도 (기존 데이터 구출 로직)
+                if (!data) {
+                    console.log("새 사용자입니다. 기존 등록 데이터(엑셀 등)를 찾습니다.");
 
-                    if (emailMatch) {
-                        console.log("이메일 매칭 성공! 프로필을 현재 계정과 연결합니다.");
-                        const { error: linkError } = await supabase
-                            .from('profiles')
-                            .update({ id: user.id })
-                            .eq('email', user.email);
-
-                        if (!linkError) {
-                            const { data: linkedData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-                            data = linkedData;
-                        }
-                    } else {
-                        const { data: anyMatch } = await supabase.from('profiles').select('*').eq('email', user.email).maybeSingle();
-                        if (anyMatch) {
-                            console.log("이메일은 같으나 ID가 다른 데이터 발견. 현재 ID로 업데이트합니다.");
+                    // A. 이메일 매칭 (카카오 계정 이메일과 엑셀 등록 이메일이 같은 경우)
+                    if (user.email) {
+                        const { data: emailMatch } = await supabase.from('profiles').select('*').eq('email', user.email).is('id', null).maybeSingle();
+                        if (emailMatch) {
+                            console.log("이메일로 기존 데이터를 찾았습니다. 현재 ID와 연결합니다.");
                             await supabase.from('profiles').update({ id: user.id }).eq('email', user.email);
-                            data = { ...anyMatch, id: user.id };
+                            data = { ...emailMatch, id: user.id };
+                        }
+                    }
+
+                    // B. 전화번호 매칭 (메타데이터에 전번이 있는 경우)
+                    if (!data) {
+                        const rawPhone = user?.user_metadata?.phone_number || user?.user_metadata?.mobile || '';
+                        const cleanPhone = rawPhone.replace(/[^0-9]/g, '');
+                        if (cleanPhone) {
+                            // 전화번호 형식이 01012345678 또는 010-1234-5678 다양할 수 있으므로 보수적으로 체크
+                            const { data: phoneMatch } = await supabase.from('profiles')
+                                .select('*')
+                                .or(`phone.eq.${cleanPhone},phone.eq.${cleanPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3')}`)
+                                .is('id', null)
+                                .maybeSingle();
+
+                            if (phoneMatch) {
+                                console.log("전화번호로 기존 데이터를 찾았습니다. 현재 계정과 병합합니다.");
+                                await supabase.from('profiles').update({ id: user.id, email: user.email || phoneMatch.email }).eq('id_pk', phoneMatch.id_pk || phoneMatch.id); // UUID 혹은 PK 기준
+                                // profiles 테이블의 id가 PK라면 (primary key가 id이고 UUID인 경우)
+                                // 만약 pre-registered 데이터가 id가 null인 상태로 들어있다면 PK가 따로 있어야 함.
+                                // 대부분의 경우 id를 update하는 것만으로 충분.
+                                await supabase.from('profiles').update({ id: user.id }).eq('email', phoneMatch.email);
+                                data = { ...phoneMatch, id: user.id };
+                            }
                         }
                     }
                 }
@@ -4484,6 +4492,39 @@ const ProfileView = ({ user, supabase, setView, baseFont }: any) => {
         if (!user?.id) return;
         setIsSavingProfile(true);
         try {
+            // 저장 시점에 전화번호가 입력되었는데, 만약 그 전화번호로 미리 등록된(id가 없는) 데이터가 있다면 '병합' 처리
+            if (profileForm.phone) {
+                const cleanInputPhone = profileForm.phone.replace(/[^0-9]/g, '');
+                const formattedInputPhone = cleanInputPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+
+                const { data: duplicate } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .or(`phone.eq.${cleanInputPhone},phone.eq.${formattedInputPhone}`)
+                    .is('id', null)
+                    .maybeSingle();
+
+                if (duplicate) {
+                    console.log("입력하신 전화번호로 등록된 기존 정보를 발견했습니다. 병합을 진행합니다.");
+                    // 기존 행(duplicate)은 삭제하고 현재 행을 업데이트하거나, 반대로 진행.
+                    // 안전한 방법: 기존 행의 정보를 현재 행으로 가져오고 기존 행 삭제.
+                    // 하지만 관리자가 이미 사진 등을 넣었을 수 있으므로 기존 행에 내 ID를 이식하는게 가장 깔끔함.
+
+                    // 1. 현재 (id가 내 id인) 빈 행이 있다면 삭제
+                    await supabase.from('profiles').delete().eq('id', user.id).neq('email', duplicate.email);
+                    // 2. 기존 행에 내 정보 업데이트
+                    const { error: mergeError } = await supabase.from('profiles')
+                        .update({ ...profileForm, id: user.id, email: user.email })
+                        .eq('email', duplicate.email);
+
+                    if (!mergeError) {
+                        alert('기존에 등록된 성도 정보와 성공적으로 연결되었습니다! ✨');
+                        return;
+                    }
+                }
+            }
+
+            // 일반적인 업데이트
             const { error } = await supabase.from('profiles').update(profileForm).eq('id', user.id);
             if (error) throw error;
             alert('프로필 정보가 저장되었습니다! ✨');
