@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { getGraceVerse } from '@/lib/navigator-verses';
 import { getTodayCcm, CcmVideo, CCM_LIST } from "@/lib/ccm";
+import * as XLSX from 'xlsx';
 
 type View = "home" | "chat" | "qt" | "community" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "profile";
 
@@ -914,6 +915,22 @@ export default function App() {
         } else {
             setView("home");
         }
+    };
+
+    const downloadTemplate = () => {
+        const ws = XLSX.utils.json_to_sheet([
+            {
+                "이름": "홍길동",
+                "이메일": "test@example.com",
+                "전화번호": "010-1234-5678",
+                "생일": "1990-01-01",
+                "주소": "서울특별시 강남구 ...",
+                "사진URL": "https://example.com/photo.jpg"
+            }
+        ]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "성도양식");
+        XLSX.writeFile(wb, "성도명단_표준양식.xlsx");
     };
 
     const handleSaveSettings = async () => {
@@ -3781,34 +3798,59 @@ export default function App() {
                         ) : adminTab === 'members' ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '500px', overflowY: 'auto' }}>
                                 {/* 엑셀 업로드 영역 */}
-                                <div style={{ background: '#F9F7F2', padding: '15px', borderRadius: '15px', border: '1px dashed #D4AF37' }}>
-                                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#333', marginBottom: '10px' }}>📊 성도 명단 엑셀 업로드</div>
-                                    <input type="file" accept=".xlsx, .xls" onChange={async (e) => {
-                                        const file = e.target.files?.[0];
-                                        if (!file) return;
+                                <div style={{ background: '#F9F7F2', padding: '18px', borderRadius: '15px', border: '1px dashed #D4AF37', position: 'relative' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#333' }}>📊 성도 명단 엑셀 업로드</div>
+                                        <button
+                                            onClick={downloadTemplate}
+                                            style={{
+                                                padding: '4px 10px',
+                                                fontSize: '11px',
+                                                background: '#FFF',
+                                                color: '#B8924A',
+                                                border: '1px solid #D4AF37',
+                                                borderRadius: '6px',
+                                                fontWeight: 700,
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px'
+                                            }}
+                                        >
+                                            📥 양식 다운로드
+                                        </button>
+                                    </div>
+                                    <div style={{ background: 'white', padding: '12px', borderRadius: '10px', border: '1px solid #F0ECE4', marginBottom: '12px' }}>
+                                        <input type="file" accept=".xlsx, .xls" onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
 
-                                        const formData = new FormData();
-                                        formData.append('file', file);
-                                        formData.append('church_id', churchId);
+                                            const formData = new FormData();
+                                            formData.append('file', file);
+                                            formData.append('church_id', churchId);
 
-                                        try {
-                                            const res = await fetch('/api/admin/bulk-upload', {
-                                                method: 'POST',
-                                                body: formData
-                                            });
-                                            const result = await res.json();
-                                            if (result.success) {
-                                                alert(`${result.count}명의 성도 정보가 업데이트 되었습니다!`);
-                                                // 리스트 새로고침
-                                                const r = await fetch('/api/admin?action=list_members');
-                                                const data = await r.json();
-                                                if (Array.isArray(data)) setMemberList(data);
-                                            } else {
-                                                alert('업로드 실패: ' + result.error);
-                                            }
-                                        } catch (e) { alert('파일 처리 중 오류가 발생했습니다.'); }
-                                    }} style={{ fontSize: '12px' }} />
-                                    <p style={{ fontSize: '11px', color: '#999', marginTop: '8px' }}>* 양식: 이름 | 이메일 | 전화번호 | 생일(YYYY-MM-DD) | 주소</p>
+                                            try {
+                                                const res = await fetch('/api/admin/bulk-upload', {
+                                                    method: 'POST',
+                                                    body: formData
+                                                });
+                                                const result = await res.json();
+                                                if (result.success) {
+                                                    alert(`${result.count}명의 성도 정보가 업데이트 되었습니다!`);
+                                                    // 리스트 새로고침
+                                                    const r = await fetch('/api/admin?action=list_members');
+                                                    const data = await r.json();
+                                                    if (Array.isArray(data)) setMemberList(data);
+                                                } else {
+                                                    alert('업로드 실패: ' + result.error);
+                                                }
+                                            } catch (e) { alert('파일 처리 중 오류가 발생했습니다.'); }
+                                        }} style={{ fontSize: '12px', width: '100%' }} />
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#888', lineHeight: 1.5 }}>
+                                        <strong style={{ color: '#D4AF37' }}>💡 권장 양식:</strong><br />
+                                        이름 | 이메일 | 전화번호 | 생일(YYYY-MM-DD) | 주소 | <span style={{ color: '#9E2A5B' }}>사진URL</span>
+                                    </div>
                                 </div>
 
                                 {/* 오늘의 생일 알림 */}

@@ -34,12 +34,10 @@ export async function POST(req: NextRequest) {
             const phone = row['전화번호'] || row['연락처'];
             const birthdate = row['생일'] || row['생년월일'];
             const address = row['주소'];
+            const avatar_url = row['사진'] || row['사진URL'] || row['프로필'];
 
             if (!email) continue;
 
-            // profiles 테이블에 업데이트 (이메일로 매칭하거나 새로 생성)
-            // 주의: 실제 환경에서는 auth.users와 연동되어야 하므로, 
-            // 여기서는 이미 가입된 유저의 프로필 정보를 업데이트하는 방식으로 작동합니다.
             const { error } = await supabaseAdmin
                 .from('profiles')
                 .upsert({
@@ -48,6 +46,7 @@ export async function POST(req: NextRequest) {
                     phone,
                     birthdate: birthdate ? new Date(birthdate).toISOString().split('T')[0] : null,
                     address,
+                    avatar_url,
                     church_id: church_id || 'jesus-in'
                 }, { onConflict: 'email' });
 
