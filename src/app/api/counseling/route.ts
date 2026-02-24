@@ -68,12 +68,15 @@ export async function POST(req: NextRequest) {
                         post_id: data.id,
                         is_read: false
                     }]);
-                    const { data: subData } = await supabaseAdmin.from('push_subscriptions').select('subscription').eq('user_id', p.id).single();
-                    if (subData && subData.subscription) {
-                        try {
-                            const payload = JSON.stringify({ title: '🙏 새 상담/기도 요청', body: `${user_name} 성도님의 요청이 도착했습니다.`, url: '/?view=counseling' });
-                            await webpush.sendNotification(subData.subscription, payload);
-                        } catch (e) { }
+                    const { data: subsData } = await supabaseAdmin.from('push_subscriptions').select('subscription').eq('user_id', p.id);
+                    if (subsData && subsData.length > 0) {
+                        for (const sub of subsData) {
+                            if (!sub.subscription) continue;
+                            try {
+                                const payload = JSON.stringify({ title: '🙏 새 상담/기도 요청', body: `${user_name} 성도님의 요청이 도착했습니다.`, url: '/?view=counseling' });
+                                await webpush.sendNotification(sub.subscription, payload);
+                            } catch (e) { }
+                        }
                     }
                 }
             }
@@ -107,16 +110,38 @@ export async function PATCH(req: NextRequest) {
                 post_id: data.id,
                 is_read: false
             }]);
-            const { data: subData } = await supabaseAdmin.from('push_subscriptions').select('subscription').eq('user_id', data.user_id).single();
-            if (subData && subData.subscription) {
-                try {
-                    const payload = JSON.stringify({ title: '🙏 상담/기도 답변 도착', body: `담임목사님의 답변이 작성되었습니다.`, url: '/?view=counseling' });
-                    await webpush.sendNotification(subData.subscription, payload);
-                } catch (e) { }
+            const { data: subsData } = await supabaseAdmin.from('push_subscriptions').select('subscription').eq('user_id', data.user_id);
+            if (subsData && subsData.length > 0) {
+                for (const sub of subsData) {
+                    if (!sub.subscription) continue;
+                    try {
+                        const payload = JSON.stringify({ title: '🙏 상담/기도 답변 도착', body: `담임목사님의 답변이 작성되었습니다.`, url: '/?view=counseling' });
+                        await webpush.sendNotification(sub.subscription, payload);
+                    } catch (e) { }
+                }
             }
         }
 
         return NextResponse.json(data);
+    } catch (err: any) {
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}
+
+export async function DELETE(req: NextRequest) {
+    try {
+        const body = await req.json();
+        const { id } = body;
+
+        if (!id) return NextResponse.json({ error: 'Counseling request ID is required' }, { status: 400 });
+
+        const { error } = await supabaseAdmin
+            .from('counseling_requests')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+        return NextResponse.json({ success: true });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }

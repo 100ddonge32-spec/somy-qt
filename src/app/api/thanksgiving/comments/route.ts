@@ -50,22 +50,24 @@ export async function POST(req: NextRequest) {
                     is_read: false
                 }]);
 
-            const { data: subData } = await supabaseAdmin
+            const { data: subsData } = await supabaseAdmin
                 .from('push_subscriptions')
                 .select('subscription')
-                .eq('user_id', diary.user_id)
-                .single();
+                .eq('user_id', diary.user_id);
 
-            if (subData && subData.subscription) {
-                try {
-                    const pushPayload = JSON.stringify({
-                        title: '🔔 감사일기에 댓글이 달렸어요!',
-                        body: `${user_name}님이 성도님의 감사일기에 댓글을 남기셨습니다.`,
-                        url: '/?view=thanksgiving'
-                    });
-                    await webpush.sendNotification(subData.subscription, pushPayload);
-                } catch (pushErr) {
-                    console.error('Push Error:', pushErr);
+            if (subsData && subsData.length > 0) {
+                for (const sub of subsData) {
+                    if (!sub.subscription) continue;
+                    try {
+                        const pushPayload = JSON.stringify({
+                            title: '🔔 감사일기에 댓글이 달렸어요!',
+                            body: `${user_name}님이 성도님의 감사일기에 댓글을 남기셨습니다.`,
+                            url: '/?view=thanksgiving'
+                        });
+                        await webpush.sendNotification(sub.subscription, pushPayload);
+                    } catch (pushErr) {
+                        console.error('Push Error:', pushErr);
+                    }
                 }
             }
         }

@@ -145,6 +145,7 @@ export default function App() {
     const [counselingReplyInput, setCounselingReplyInput] = useState<{ [id: string]: string }>({});
     const [isPrivateThanksgiving, setIsPrivateThanksgiving] = useState(false);
     const [thanksgivingInput, setThanksgivingInput] = useState("");
+    const [expandedPosts, setExpandedPosts] = useState<{ [id: string]: boolean }>({});
 
     // 공지사항 상태
     const [announcements, setAnnouncements] = useState<any[]>([]);
@@ -600,14 +601,28 @@ export default function App() {
                 checkApprovalStatus();
                 fetch(`/api/notifications?user_id=${user.id}`)
                     .then(r => r.ok ? r.json() : [])
-                    .then(data => setNotifications(data))
+                    .then(data => {
+                        setNotifications(data);
+                        if (typeof navigator !== 'undefined' && 'setAppBadge' in navigator && typeof navigator.setAppBadge === 'function') {
+                            const unreadCount = data?.filter((n: any) => !n.is_read)?.length || 0;
+                            if (unreadCount > 0) navigator.setAppBadge(unreadCount);
+                            else navigator.clearAppBadge();
+                        }
+                    })
                     .catch(e => { });
             }, 15000);
 
             // 알림 최초 1회 로드
             fetch(`/api/notifications?user_id=${user.id}`)
                 .then(r => r.ok ? r.json() : [])
-                .then(data => setNotifications(data))
+                .then(data => {
+                    setNotifications(data);
+                    if (typeof navigator !== 'undefined' && 'setAppBadge' in navigator && typeof navigator.setAppBadge === 'function') {
+                        const unreadCount = data?.filter((n: any) => !n.is_read)?.length || 0;
+                        if (unreadCount > 0) navigator.setAppBadge(unreadCount);
+                        else navigator.clearAppBadge();
+                    }
+                })
                 .catch(err => console.error("알림 로드 실패:", err));
 
             // [푸시 알림] 서비스 워커 등록 및 구독 처리
@@ -1258,87 +1273,8 @@ export default function App() {
                         <img src={churchSettings.church_logo_url} alt={`${churchSettings.church_name} 로고`} style={{ height: "45px", objectFit: "contain" }} />
                         <div style={{ fontSize: "12px", color: "#666", letterSpacing: "1px", fontWeight: 700 }}>홈페이지</div>
                     </a>
-                    {/* Character Section */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", flex: 1, justifyContent: 'center', width: "100%", minHeight: '400px' }}>
-                        <div
-                            style={{
-                                background: "rgba(255, 255, 255, 0.9)",
-                                borderRadius: "24px",
-                                padding: "24px",
-                                width: "100%",
-                                maxWidth: "320px",
-                                boxShadow: "0 10px 40px rgba(0,0,0,0.06)",
-                                border: "1px solid #F0ECE4",
-                                animation: "fade-in 0.8s ease-out",
-                                minHeight: "330px",
-                                display: 'flex',
-                                flexDirection: 'column',
-                                justifyContent: 'flex-start',
-                                textAlign: 'left',
-                                backdropFilter: 'blur(10px)',
-                                transition: 'none', // 급격한 변화 방지
-                                transform: 'none', // 물리적인 움직임 원천 차단
-                                userSelect: 'none' // 드래그로 인한 흔들림 방지
-                            }}>
-                            {(() => {
-                                const graceVerse = getGraceVerse();
-                                return (
-                                    <>
-                                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
-                                            <div style={{ width: '32px', height: '32px', background: '#F5F2EA', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>📖</div>
-                                            <span style={{ fontSize: "15px", fontWeight: 800, color: "#9E7B31", letterSpacing: '-0.2px' }}>오늘의 말씀</span>
-                                        </div>
-                                        <div style={{ position: 'relative', padding: '0 4px' }}>
-                                            <p style={{ position: 'relative', zIndex: 1, fontSize: "15px", color: "#444", lineHeight: 1.8, margin: "0 0 16px 0", fontWeight: 500, wordBreak: 'keep-all', textAlign: 'center' }}>
-                                                "{graceVerse.verse}"
-                                            </p>
-                                        </div>
-                                        <p style={{ fontSize: "13px", color: "#B8924A", fontWeight: 700, margin: 0, textAlign: 'right' }}>
-                                            — {graceVerse.book} {graceVerse.ref} <span style={{ fontSize: '10px', color: '#CCC', fontWeight: 400 }}>(개역한글)</span>
-                                        </p>
-
-                                        <div style={{ width: '100%', height: '1px', background: 'repeating-linear-gradient(to right, #EEEEEE 0, #EEEEEE 4px, transparent 4px, transparent 8px)', margin: '20px 0' }} />
-
-                                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                                            <div style={{ fontSize: '13px', color: '#999', fontWeight: 700, letterSpacing: '0.5px' }}>💡 오늘의 한줄!</div>
-                                            {(() => {
-                                                const quotes = [
-                                                    "하나님은 우리가 감당할 수 없는 시련을 주시지는 않는다. - 고린도전서 10:13 강해 중",
-                                                    "기도는 하나님의 팔을 움직이는 가장 조용한 힘이다. - 찰스 스펄전",
-                                                    "하나님께서 나의 계획을 무너뜨리시는 것은, 나의 계획이 나를 무너뜨릴 수 있기 때문이다. - 코리 텐 붐",
-                                                    "우리가 하나님을 온전히 신뢰할 때, 하나님은 우리의 모든 상황을 그분의 목적을 위해 사용하신다. - A.W. 토저",
-                                                    "고난은 하나님의 변장된 축복이다. 그것은 우리를 하나님께로 더 가까이 이끈다. - C.S. 루이스",
-                                                    "우리가 하나님 외에 다른 곳에서 만족을 찾으려 할 때, 우리는 결코 만족을 얻을 수 없다. - 어거스틴",
-                                                    "성경은 단순히 읽기 위한 책이 아니라, 우리 삶이 읽혀지기 위한 거울이다. - D.L. 무디"
-                                                ];
-                                                const todayIndex = new Date().getDate() % quotes.length;
-                                                return (
-                                                    <div style={{
-                                                        fontSize: '14.5px',
-                                                        color: '#2D2D2D',
-                                                        lineHeight: 1.7,
-                                                        wordBreak: 'keep-all',
-                                                        fontStyle: 'normal',
-                                                        fontWeight: 500,
-                                                        background: 'rgba(212, 175, 55, 0.04)',
-                                                        padding: '12px 16px',
-                                                        borderRadius: '12px',
-                                                        borderLeft: '4px solid #D4AF37',
-                                                        letterSpacing: '-0.3px'
-                                                    }}>
-                                                        "{quotes[todayIndex]}"
-                                                    </div>
-                                                );
-                                            })()}
-                                        </div>
-                                    </>
-                                );
-                            })()}
-                        </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%", maxWidth: "320px", animation: "fade-in 1.4s ease-out", paddingBottom: "40px", marginTop: "30px" }}>
+                    {/* Action Buttons을 최상단으로 옮김 */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%", maxWidth: "320px", animation: "fade-in 1.4s ease-out", paddingBottom: "20px" }}>
                         {!user ? (
                             <div style={{ background: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', border: '1px solid #EEE', textAlign: 'center' }}>
                                 <div style={{ fontSize: '16px', fontWeight: 700, color: '#333', marginBottom: '20px' }}>성도님, 먼저 로그인해주세요</div>
@@ -1666,6 +1602,85 @@ export default function App() {
                                 </button>
                             </>
                         )}
+                    </div>
+
+                    {/* Character Section (오늘의 말씀)을 아래로 이동 */}
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", flex: 1, justifyContent: 'center', width: "100%", minHeight: '400px' }}>
+                        <div
+                            style={{
+                                background: "rgba(255, 255, 255, 0.9)",
+                                borderRadius: "24px",
+                                padding: "24px",
+                                width: "100%",
+                                maxWidth: "320px",
+                                boxShadow: "0 10px 40px rgba(0,0,0,0.06)",
+                                border: "1px solid #F0ECE4",
+                                animation: "fade-in 0.8s ease-out",
+                                minHeight: "330px",
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'flex-start',
+                                textAlign: 'left',
+                                backdropFilter: 'blur(10px)',
+                                transition: 'none',
+                                transform: 'none',
+                                userSelect: 'none'
+                            }}>
+                            {(() => {
+                                const graceVerse = getGraceVerse();
+                                return (
+                                    <>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
+                                            <div style={{ width: '32px', height: '32px', background: '#F5F2EA', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>📖</div>
+                                            <span style={{ fontSize: "15px", fontWeight: 800, color: "#9E7B31", letterSpacing: '-0.2px' }}>오늘의 말씀</span>
+                                        </div>
+                                        <div style={{ position: 'relative', padding: '0 4px' }}>
+                                            <p style={{ position: 'relative', zIndex: 1, fontSize: "15px", color: "#444", lineHeight: 1.8, margin: "0 0 16px 0", fontWeight: 500, wordBreak: 'keep-all', textAlign: 'center' }}>
+                                                "{graceVerse.verse}"
+                                            </p>
+                                        </div>
+                                        <p style={{ fontSize: "13px", color: "#B8924A", fontWeight: 700, margin: 0, textAlign: 'right' }}>
+                                            — {graceVerse.book} {graceVerse.ref} <span style={{ fontSize: '10px', color: '#CCC', fontWeight: 400 }}>(개역한글)</span>
+                                        </p>
+
+                                        <div style={{ width: '100%', height: '1px', background: 'repeating-linear-gradient(to right, #EEEEEE 0, #EEEEEE 4px, transparent 4px, transparent 8px)', margin: '20px 0' }} />
+
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                            <div style={{ fontSize: '13px', color: '#999', fontWeight: 700, letterSpacing: '0.5px' }}>💡 오늘의 한줄!</div>
+                                            {(() => {
+                                                const quotes = [
+                                                    "하나님은 우리가 감당할 수 없는 시련을 주시지는 않는다. - 고린도전서 10:13 강해 중",
+                                                    "기도는 하나님의 팔을 움직이는 가장 조용한 힘이다. - 찰스 스펄전",
+                                                    "하나님께서 나의 계획을 무너뜨리시는 것은, 나의 계획이 나를 무너뜨릴 수 있기 때문이다. - 코리 텐 붐",
+                                                    "우리가 하나님을 온전히 신뢰할 때, 하나님은 우리의 모든 상황을 그분의 목적을 위해 사용하신다. - A.W. 토저",
+                                                    "고난은 하나님의 변장된 축복이다. 그것은 우리를 하나님께로 더 가까이 이끈다. - C.S. 루이스",
+                                                    "우리가 하나님 외에 다른 곳에서 만족을 찾으려 할 때, 우리는 결코 만족을 얻을 수 없다. - 어거스틴",
+                                                    "성경은 단순히 읽기 위한 책이 아니라, 우리 삶이 읽혀지기 위한 거울이다. - D.L. 무디"
+                                                ];
+                                                const todayIndex = new Date().getDate() % quotes.length;
+                                                return (
+                                                    <div style={{
+                                                        fontSize: '14.5px',
+                                                        color: '#2D2D2D',
+                                                        lineHeight: 1.7,
+                                                        wordBreak: 'keep-all',
+                                                        fontStyle: 'normal',
+                                                        fontWeight: 500,
+                                                        background: 'rgba(212, 175, 55, 0.04)',
+                                                        padding: '12px 16px',
+                                                        borderRadius: '12px',
+                                                        borderLeft: '4px solid #D4AF37',
+                                                        letterSpacing: '-0.3px'
+                                                    }}>
+                                                        "{quotes[todayIndex]}"
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+                                    </>
+                                );
+                            })()}
+                        </div>
                     </div>
 
                     <div style={{ padding: '0 20px 40px 20px', width: '100%', maxWidth: '360px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
@@ -2647,27 +2662,34 @@ export default function App() {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', margin: '0 0 15px 0', wordBreak: 'break-word' }}>
-                                                {post.content.split('\n').map((line: string, i: number) => {
-                                                    const trimmed = line.trim();
-                                                    if (trimmed === '[말씀묵상]') {
-                                                        return (
-                                                            <div key={i} style={{ fontSize: "15px", fontWeight: 800, color: "#9E7B31", letterSpacing: '-0.2px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                <span>✨</span> 오늘의 묵상
-                                                            </div>
-                                                        );
-                                                    }
-                                                    if (trimmed.startsWith('[나의 결단과 은혜]')) {
-                                                        return <div key={i} style={{ fontSize: "14px", fontWeight: 800, color: "#9E2A5B", marginTop: '16px', marginBottom: '6px' }}>💡 나의 결단과 은혜</div>;
-                                                    }
-                                                    if (trimmed.startsWith('[질문')) {
-                                                        return <div key={i} style={{ fontSize: "13px", fontWeight: 800, color: "#333", marginTop: '14px', paddingLeft: '4px', borderLeft: '3px solid #D4AF37' }}>{line}</div>;
-                                                    }
-                                                    if (trimmed.startsWith('나의 묵상:')) {
-                                                        return <div key={i} style={{ color: '#555', marginTop: '4px', marginBottom: '8px', paddingLeft: '7px' }}>{line}</div>;
-                                                    }
-                                                    return <span key={i}>{line}<br /></span>;
-                                                })}
+                                            <div style={{ margin: '0 0 15px 0' }}>
+                                                <div style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', wordBreak: 'break-word', display: '-webkit-box', WebkitLineClamp: expandedPosts[post.id] ? 'unset' : 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                    {post.content.split('\n').map((line: string, i: number) => {
+                                                        const trimmed = line.trim();
+                                                        if (trimmed === '[말씀묵상]') {
+                                                            return (
+                                                                <div key={i} style={{ fontSize: "15px", fontWeight: 800, color: "#9E7B31", letterSpacing: '-0.2px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                    <span>✨</span> 오늘의 묵상
+                                                                </div>
+                                                            );
+                                                        }
+                                                        if (trimmed.startsWith('[나의 결단과 은혜]')) {
+                                                            return <div key={i} style={{ fontSize: "14px", fontWeight: 800, color: "#9E2A5B", marginTop: '16px', marginBottom: '6px' }}>💡 나의 결단과 은혜</div>;
+                                                        }
+                                                        if (trimmed.startsWith('[질문')) {
+                                                            return <div key={i} style={{ fontSize: "13px", fontWeight: 800, color: "#333", marginTop: '14px', paddingLeft: '4px', borderLeft: '3px solid #D4AF37' }}>{line}</div>;
+                                                        }
+                                                        if (trimmed.startsWith('나의 묵상:')) {
+                                                            return <div key={i} style={{ color: '#555', marginTop: '4px', marginBottom: '8px', paddingLeft: '7px' }}>{line}</div>;
+                                                        }
+                                                        return <span key={i}>{line}<br /></span>;
+                                                    })}
+                                                </div>
+                                                {post.content.split('\n').length > 4 && (
+                                                    <button onClick={() => setExpandedPosts({ ...expandedPosts, [post.id]: !expandedPosts[post.id] })} style={{ background: 'none', border: 'none', color: '#999', fontSize: '13px', padding: '8px 0 0 0', cursor: 'pointer', fontWeight: 600 }}>
+                                                        {expandedPosts[post.id] ? '접기 ▲' : '더보기 ▼'}
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
 
@@ -2706,8 +2728,9 @@ export default function App() {
                                     </div>
                                 ))}
                         </div>
-                    )}
-                </div>
+                    )
+                    }
+                </div >
             );
         }
 
@@ -2933,8 +2956,15 @@ export default function App() {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', margin: '0 0 15px 0', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
-                                                {diary.content}
+                                            <div style={{ margin: '0 0 15px 0' }}>
+                                                <div style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', wordBreak: 'break-word', whiteSpace: 'pre-wrap', display: '-webkit-box', WebkitLineClamp: expandedPosts[diary.id] ? 'unset' : 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                    {diary.content}
+                                                </div>
+                                                {diary.content.split('\n').length > 4 && (
+                                                    <button onClick={() => setExpandedPosts({ ...expandedPosts, [diary.id]: !expandedPosts[diary.id] })} style={{ background: 'none', border: 'none', color: '#E07A5F', fontSize: '13px', padding: '8px 0 0 0', cursor: 'pointer', fontWeight: 600 }}>
+                                                        {expandedPosts[diary.id] ? '접기 ▲' : '더보기 ▼'}
+                                                    </button>
+                                                )}
                                             </div>
                                         )}
 
@@ -2972,8 +3002,9 @@ export default function App() {
                                     </div>
                                 ))}
                         </div>
-                    )}
-                </div>
+                    )
+                    }
+                </div >
             );
         }
 
@@ -3629,7 +3660,19 @@ export default function App() {
                                 <div key={req.id} style={{ background: 'white', padding: '15px', borderRadius: '15px', border: '1px solid #EEE', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px', color: '#666' }}>
                                         <strong>{req.user_name} 성도</strong>
-                                        <span>{new Date(req.created_at).toLocaleDateString()}</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span>{new Date(req.created_at).toLocaleDateString()}</span>
+                                            {(isAdmin || user?.id === req.user_id) && (
+                                                <button onClick={async () => {
+                                                    if (confirm('이 요청을 삭제하시겠습니까?')) {
+                                                        try {
+                                                            const r = await fetch('/api/counseling', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: req.id }) });
+                                                            if (r.ok) setCounselingRequests(counselingRequests.filter(c => c.id !== req.id));
+                                                        } catch (e) { }
+                                                    }
+                                                }} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', padding: 0, fontSize: '14px' }}>🗑️</button>
+                                            )}
+                                        </div>
                                     </div>
                                     <div style={{ fontSize: '15px', color: '#333', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: '15px' }}>
                                         {req.content}

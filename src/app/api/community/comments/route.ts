@@ -53,23 +53,25 @@ export async function POST(req: NextRequest) {
                 }]);
 
             // [푸시 알림] 받는 사람의 구독 정보 가져오기
-            const { data: subData } = await supabaseAdmin
+            const { data: subsData } = await supabaseAdmin
                 .from('push_subscriptions')
                 .select('subscription')
-                .eq('user_id', post.user_id)
-                .single();
+                .eq('user_id', post.user_id);
 
-            if (subData && subData.subscription) {
-                try {
-                    const pushPayload = JSON.stringify({
-                        title: '🔔 새로운 댓글이 달렸어요!',
-                        body: `${user_name}님이 성도님의 은혜나눔에 댓글을 남기셨습니다.`,
-                        url: '/?view=community'
-                    });
-                    await webpush.sendNotification(subData.subscription, pushPayload);
-                    console.log('Push Notification Sent Success');
-                } catch (pushErr) {
-                    console.error('Push Notification Send Failed:', pushErr);
+            if (subsData && subsData.length > 0) {
+                for (const sub of subsData) {
+                    if (!sub.subscription) continue;
+                    try {
+                        const pushPayload = JSON.stringify({
+                            title: '🔔 새로운 댓글이 달렸어요!',
+                            body: `${user_name}님이 성도님의 은혜나눔에 댓글을 남기셨습니다.`,
+                            url: '/?view=community'
+                        });
+                        await webpush.sendNotification(sub.subscription, pushPayload);
+                        console.log('Push Notification Sent Success');
+                    } catch (pushErr) {
+                        console.error('Push Notification Send Failed:', pushErr);
+                    }
                 }
             }
         }
