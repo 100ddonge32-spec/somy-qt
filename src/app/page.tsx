@@ -140,6 +140,12 @@ export default function App() {
     const [lastToggleTime, setLastToggleTime] = useState(0); // 이중 트리거 방지용
     const [commentInputs, setCommentInputs] = useState<{ [key: number]: string }>({});
     const [passageInput, setPassageInput] = useState("");
+    const [fontScale, setFontScale] = useState(1);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('somyFontScale');
+        if (saved) setFontScale(Number(saved));
+    }, []);
 
     // VAPID 키를 위한 Base64 변환 유틸
     const urlBase64ToUint8Array = (base64String: string) => {
@@ -1035,7 +1041,7 @@ export default function App() {
         }
     };
 
-    const baseFont = { fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif" };
+    const baseFont = { fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif", zoom: fontScale } as any;
 
     /* ══════════════════════════════
        STYLES
@@ -1145,6 +1151,22 @@ export default function App() {
                                 <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontWeight: 600, fontSize: '11px', padding: 0 }}>로그아웃</button>
                             </div>
                         )}
+                        {/* 글씨 확대 버튼 (Aa) */}
+                        <div
+                            onClick={() => {
+                                const next = fontScale >= 1.4 ? 1 : fontScale + 0.15;
+                                setFontScale(next);
+                                localStorage.setItem('somyFontScale', next.toString());
+                            }}
+                            style={{
+                                width: "38px", height: "38px", borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "1px solid rgba(0,0,0,0.1)",
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 800, color: '#666',
+                                boxShadow: "0 4px 10px rgba(0,0,0,0.05)", cursor: "pointer", backdropFilter: 'blur(5px)', userSelect: 'none'
+                            }}
+                            title="글씨 크기 조절"
+                        >
+                            <span style={{ transform: 'scale(1.1)' }}>Aa</span>
+                        </div>
                         {/* 소미 미니 아바타 (누르면 인트로 다시 보기) */}
                         <div onClick={() => setShowWelcome(true)} style={{ width: "38px", height: "38px", borderRadius: "50%", background: "white", border: "2px solid #D4AF37", overflow: "hidden", boxShadow: "0 4px 10px rgba(0,0,0,0.1)", cursor: "pointer" }}>
                             <img src={SOMY_IMG} alt="소미" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
