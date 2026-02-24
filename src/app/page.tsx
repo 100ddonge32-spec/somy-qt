@@ -718,6 +718,7 @@ export default function App() {
     const [showMergeModal, setShowMergeModal] = useState(false);
     const [mergeTarget, setMergeTarget] = useState<any>(null); // 통합될 데이터 (관리자 등록본)
     const [mergeDestinationId, setMergeDestinationId] = useState<string>(''); // 통합할 대상 (카카오 가입 유저 ID)
+    const [mergeSearchKeyword, setMergeSearchKeyword] = useState('');
 
     useEffect(() => {
         setIsMounted(true);
@@ -3629,8 +3630,11 @@ export default function App() {
     const renderMergeModal = () => {
         if (!showMergeModal || !mergeTarget) return null;
 
-        // 통합 대상이 될 수 있는 목록 (나 자신을 제외한 모든 성도)
-        const joinedMembers = memberList.filter(m => m.id !== mergeTarget.id);
+        // 통합 대상이 될 수 있는 목록 (나 자신을 제외한 모든 성도 + 검색어 필터)
+        const filteredMembers = memberList.filter(m =>
+            m.id !== mergeTarget.id &&
+            (m.full_name?.includes(mergeSearchKeyword) || m.email?.includes(mergeSearchKeyword))
+        );
 
         return (
             <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 4500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(5px)' }}>
@@ -3640,48 +3644,69 @@ export default function App() {
                             <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>🔗 성도 데이터 통합</h3>
                             <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#888' }}>관리자 등록 정보를 실제 가입 계정으로 옮깁니다.</p>
                         </div>
-                        <button onClick={() => { setShowMergeModal(false); setMergeTarget(null); }} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
+                        <button onClick={() => { setShowMergeModal(false); setMergeTarget(null); setMergeSearchKeyword(''); }} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
                     </div>
 
                     <div style={{ background: '#F9F7F2', padding: '15px', borderRadius: '15px', marginBottom: '20px', border: '1px solid #E4DCCF' }}>
-                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', marginBottom: '20px' }}>원본 데이터 (등록된 정보)</div>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', marginBottom: '10px' }}>원본 데이터 (등록된 정보)</div>
                         <div style={{ fontSize: '14px', fontWeight: 700 }}>{mergeTarget.full_name} ({mergeTarget.phone || '번호없음'})</div>
                         <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>이 성도님의 직분, 사진, 주소 정보를 선택한 계정으로 합칩니다.</div>
                     </div>
 
-                    <div style={{ maxHeight: '250px', overflowY: 'auto', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <div style={{ fontSize: '13px', fontWeight: 800, marginBottom: '4px' }}>합칠 대상(실제 가입 유저) 선택:</div>
-                        {joinedMembers.length === 0 ? <div style={{ textAlign: 'center', padding: '20px', color: '#999', fontSize: '12px' }}>통합 가능한 실제 가입자가 없습니다.</div> :
-                            joinedMembers.map(m => (
+                    <div style={{ marginBottom: '15px' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 800, marginBottom: '8px' }}>합칠 대상(실제 가입 유저) 검색:</div>
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                type="text"
+                                placeholder="이름 또는 이메일 검색..."
+                                value={mergeSearchKeyword}
+                                onChange={(e) => setMergeSearchKeyword(e.target.value)}
+                                style={{ width: '100%', padding: '12px 15px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', outline: 'none', background: '#F9F9F9' }}
+                            />
+                            {mergeSearchKeyword && (
+                                <button
+                                    onClick={() => setMergeSearchKeyword('')}
+                                    style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', color: '#999', cursor: 'pointer', fontSize: '12px' }}
+                                >
+                                    ✕
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '8px', padding: '2px' }}>
+                        {filteredMembers.length === 0 ? <div style={{ textAlign: 'center', padding: '20px', color: '#999', fontSize: '12px' }}>{mergeSearchKeyword ? '검색 결과가 없습니다.' : '통합 가능한 실제 가입자가 없습니다.'}</div> :
+                            filteredMembers.map(m => (
                                 <div
                                     key={m.id}
                                     onClick={() => setMergeDestinationId(m.id)}
                                     style={{
                                         padding: '12px',
-                                        borderRadius: '12px',
+                                        borderRadius: '14px',
                                         border: `2px solid ${mergeDestinationId === m.id ? '#D4AF37' : '#F0F0F0'}`,
                                         background: mergeDestinationId === m.id ? '#FFFDE7' : 'white',
                                         cursor: 'pointer',
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: '10px'
+                                        gap: '12px',
+                                        transition: 'all 0.2s'
                                     }}
                                 >
-                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#EEE', overflow: 'hidden' }}>
-                                        <img src={m.avatar_url || 'https://via.placeholder.com/32'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <div style={{ width: '36px', height: '36px', borderRadius: '12px', background: '#F5F5F3', overflow: 'hidden', border: '2px solid white', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+                                        <img src={m.avatar_url || 'https://via.placeholder.com/36'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <div style={{ fontSize: '13px', fontWeight: 700 }}>{m.full_name}</div>
+                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#333' }}>{m.full_name}</div>
                                         <div style={{ fontSize: '11px', color: '#999' }}>{m.email}</div>
                                     </div>
-                                    {mergeDestinationId === m.id && <span style={{ color: '#D4AF37' }}>✅</span>}
+                                    {mergeDestinationId === m.id && <span style={{ color: '#D4AF37', fontSize: '16px' }}>✅</span>}
                                 </div>
                             ))
                         }
                     </div>
 
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        <button onClick={() => { setShowMergeModal(false); setMergeTarget(null); }} style={{ flex: 1, padding: '14px', background: '#F5F5F5', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', color: '#666' }}>취소</button>
+                        <button onClick={() => { setShowMergeModal(false); setMergeTarget(null); setMergeSearchKeyword(''); }} style={{ flex: 1, padding: '14px', background: '#F5F5F5', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', color: '#666' }}>취소</button>
                         <button
                             disabled={!mergeDestinationId}
                             onClick={async () => {
@@ -3721,6 +3746,7 @@ export default function App() {
                                         setShowMergeModal(false);
                                         setMergeTarget(null);
                                         setMergeDestinationId('');
+                                        setMergeSearchKeyword('');
                                     }
                                 } catch (e) {
                                     alert('오류가 발생했습니다.');
