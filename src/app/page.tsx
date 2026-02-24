@@ -1665,7 +1665,10 @@ export default function App() {
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                         {(qtData.fullPassage || '').split('\n').filter(l => l.trim()).map((line, idx) => {
-                                            const match = line.match(/^(\d+)[\.\s]+(.*)/);
+                                            const trimmedLine = line.trim();
+                                            // 1절, 2절 등을 추출하는 정규식. 앞에 공백이나 구두점이 포함될 수 있음.
+                                            const match = trimmedLine.match(/^(\d+)[.\s\u00A0]*(.*)/);
+
                                             if (match) {
                                                 return (
                                                     <div key={idx} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
