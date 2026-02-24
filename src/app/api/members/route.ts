@@ -18,8 +18,7 @@ export async function GET(req: NextRequest) {
         let supabaseQuery = supabaseAdmin
             .from('profiles')
             .select('id, full_name, avatar_url, church_rank, member_no, is_phone_public, is_birthdate_public, is_address_public, phone, birthdate, address')
-            .eq('church_id', churchId)
-            .eq('is_approved', true);
+            .eq('church_id', churchId);
 
         if (query) {
             supabaseQuery = supabaseQuery.ilike('full_name', `%${query}%`);
