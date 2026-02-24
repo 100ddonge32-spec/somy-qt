@@ -3911,7 +3911,8 @@ export default function App() {
                                     </div>
                                     <div style={{ fontSize: '11px', color: '#888', lineHeight: 1.5 }}>
                                         <strong style={{ color: '#D4AF37' }}>💡 권장 양식:</strong><br />
-                                        성명 | 휴대폰 | 생년월일 | 성별 | 교회직분 | 교적번호 | 주소
+                                        성명 | 휴대폰 | 생년월일 | 성별 | 교회직분 | 교적번호 | 주소<br />
+                                        <span style={{ color: '#999' }}>(※ 엑셀 내부 사진 삽입은 지원되지 않습니다. 사진은 개별 수정으로 등록해 주세요.)</span>
                                     </div>
                                 </div>
 

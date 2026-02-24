@@ -58,7 +58,17 @@ export async function POST(req: NextRequest) {
             const church_rank = findValue(['교회직분', '직분', 'Rank', 'Title']);
             const member_no = findValue(['교적번호', '교적', 'No', 'MemberNo']);
             const gender = findValue(['성별', 'Gender', 'Sex']);
-            const avatar_url = findValue(['교인사진', '사진', '사진URL', 'Photo', 'Image']);
+            let avatar_url = findValue(['교인사진', '사진', '사진URL', 'Photo', 'Image']);
+
+            // 이미지 주소 정제 (텍스트가 아닌 객체가 들어오거나 URL이 아닌 경우 처리)
+            if (avatar_url && typeof avatar_url === 'object') {
+                console.log(`[Bulk] ${full_name}: 사진 칸에 지원되지 않는 데이터(객체/이미지)가 있습니다.`);
+                avatar_url = null;
+            } else if (avatar_url && avatar_url.toString().startsWith('http')) {
+                avatar_url = avatar_url.toString().trim();
+            } else {
+                avatar_url = null;
+            }
 
             let formattedBirthdate = null;
             if (birthdateInput) {
@@ -93,7 +103,7 @@ export async function POST(req: NextRequest) {
                     phone: phone || null,
                     birthdate: formattedBirthdate,
                     address: address || null,
-                    avatar_url: avatar_url || null,
+                    avatar_url: avatar_url,
                     member_no: member_no || null,
                     gender: gender || null,
                     church_rank: church_rank || null,
