@@ -3927,36 +3927,50 @@ export default function App() {
                                                     </button>
 
                                                     {/* 관리자 전용 프라이버시 토글 */}
-                                                    <div style={{ display: 'flex', gap: '4px' }}>
-                                                        {(['phone', 'birthdate', 'address'] as const).map(type => (
-                                                            <button
-                                                                key={type}
-                                                                onClick={async () => {
-                                                                    const field = `is_${type}_public`;
-                                                                    const newValue = !member[field];
-                                                                    const res = await fetch('/api/admin', {
-                                                                        method: 'POST',
-                                                                        headers: { 'Content-Type': 'application/json' },
-                                                                        body: JSON.stringify({
-                                                                            action: 'update_member',
-                                                                            user_id: member.id,
-                                                                            update_data: { [field]: newValue }
-                                                                        })
-                                                                    });
-                                                                    if (res.ok) {
-                                                                        setMemberList(memberList.map(m => m.id === member.id ? { ...m, [field]: newValue } : m));
-                                                                    }
-                                                                }}
-                                                                title={`${type === 'phone' ? '전화번호' : type === 'birthdate' ? '생일' : '주소'} 공개여부`}
-                                                                style={{
-                                                                    fontSize: '10px', padding: '4px', borderRadius: '4px', border: '1px solid #EEE', cursor: 'pointer',
-                                                                    background: member[`is_${type}_public`] ? '#FFF9C4' : 'transparent',
-                                                                    opacity: member[`is_${type}_public`] ? 1 : 0.5
-                                                                }}
-                                                            >
-                                                                {type === 'phone' ? '📞' : type === 'birthdate' ? '🎂' : '🏠'}
-                                                            </button>
-                                                        ))}
+                                                    <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                                                        {(['phone', 'birthdate', 'address'] as const).map(type => {
+                                                            const isPublic = member[`is_${type}_public`];
+                                                            return (
+                                                                <button
+                                                                    key={type}
+                                                                    onClick={async (e) => {
+                                                                        e.stopPropagation();
+                                                                        const field = `is_${type}_public`;
+                                                                        const newValue = !isPublic;
+                                                                        const res = await fetch('/api/admin', {
+                                                                            method: 'POST',
+                                                                            headers: { 'Content-Type': 'application/json' },
+                                                                            body: JSON.stringify({
+                                                                                action: 'update_member',
+                                                                                user_id: member.id,
+                                                                                update_data: { [field]: newValue }
+                                                                            })
+                                                                        });
+                                                                        if (res.ok) {
+                                                                            setMemberList(memberList.map(m => m.id === member.id ? { ...m, [field]: newValue } : m));
+                                                                        }
+                                                                    }}
+                                                                    style={{
+                                                                        fontSize: '10px',
+                                                                        padding: '4px 8px',
+                                                                        borderRadius: '20px',
+                                                                        border: '1px solid',
+                                                                        borderColor: isPublic ? '#D4AF37' : '#EEE',
+                                                                        cursor: 'pointer',
+                                                                        background: isPublic ? '#FFFDE7' : 'white',
+                                                                        color: isPublic ? '#856404' : '#999',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: '3px',
+                                                                        fontWeight: 700,
+                                                                        transition: 'all 0.2s'
+                                                                    }}
+                                                                >
+                                                                    <span>{type === 'phone' ? '📞 전번' : type === 'birthdate' ? '🎂 생일' : '🏠 주소'}</span>
+                                                                    <span style={{ fontSize: '8px' }}>{isPublic ? '공개' : '비공'}</span>
+                                                                </button>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
                                             </div>
@@ -4212,6 +4226,7 @@ const MemberSearchView = ({ churchId, setView, baseFont }: any) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [results, setResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [selectedMember, setSelectedMember] = useState<any>(null);
 
     useEffect(() => {
         const fetchInitial = async () => {
@@ -4255,7 +4270,11 @@ const MemberSearchView = ({ churchId, setView, baseFont }: any) => {
                     <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>검색 결과가 없습니다.</div>
                 ) : (
                     results.map(member => (
-                        <div key={member.id} style={{ background: 'white', padding: '16px', borderRadius: '20px', border: '1px solid #F0ECE4', display: 'flex', gap: '14px', alignItems: 'flex-start', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                        <div
+                            key={member.id}
+                            onClick={() => setSelectedMember(member)}
+                            style={{ background: 'white', padding: '16px', borderRadius: '20px', border: '1px solid #F0ECE4', display: 'flex', gap: '14px', alignItems: 'flex-start', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', cursor: 'pointer' }}
+                        >
                             <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#F5F2EA', overflow: 'hidden', flexShrink: 0 }}>
                                 <img src={member.avatar_url || 'https://via.placeholder.com/44'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             </div>
@@ -4266,19 +4285,63 @@ const MemberSearchView = ({ churchId, setView, baseFont }: any) => {
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                     <div style={{ fontSize: '12px', color: member.phone ? '#555' : '#BBB' }}>📞 {member.phone || (member.is_phone_public ? '미등록' : '비공개')}</div>
-                                    <div style={{ fontSize: '12px', color: member.birthdate ? '#555' : '#BBB' }}>🎂 {member.birthdate || (member.is_birthdate_public ? '미등록' : '비공개')}</div>
-                                    <div style={{ fontSize: '12px', color: member.address ? '#555' : '#BBB' }}>🏠 {member.address || (member.is_address_public ? '미등록' : '비공개')}</div>
                                 </div>
                             </div>
                             {member.phone && (
-                                <a href={`tel:${member.phone}`} style={{ textDecoration: 'none', background: '#E8F5E9', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <button onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${member.phone}`; }} style={{ background: '#E8F5E9', border: 'none', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                                     <span style={{ fontSize: '18px' }}>📞</span>
-                                </a>
+                                </button>
                             )}
                         </div>
                     ))
                 )}
             </div>
+
+            {/* 성도 상세 정보 모달 */}
+            {selectedMember && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', z_index: 2000, display: 'flex', alignItems: 'end', justifyContent: 'center' }} onClick={() => setSelectedMember(null)}>
+                    <div
+                        style={{ background: 'white', width: '100%', maxWidth: '480px', borderRadius: '32px 32px 0 0', padding: '40px 24px', position: 'relative', animation: 'slide-up 0.3s ease-out' }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <button onClick={() => setSelectedMember(null)} style={{ position: 'absolute', top: '20px', right: '20px', background: '#F5F5F3', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>×</button>
+
+                        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                            <div style={{ width: 100, height: 100, borderRadius: '50%', background: '#F5F2EA', margin: '0 auto 16px', padding: '4px', border: '1px solid #F0ECE4' }}>
+                                <img src={selectedMember.avatar_url || 'https://via.placeholder.com/100'} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                            </div>
+                            <h3 style={{ fontSize: '24px', fontWeight: 800, color: '#333', margin: '0 0 6px' }}>{selectedMember.full_name}</h3>
+                            {selectedMember.church_rank && <span style={{ fontSize: '14px', background: '#F5F2EA', color: '#B8924A', padding: '4px 12px', borderRadius: '10px', fontWeight: 700 }}>{selectedMember.church_rank}</span>}
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div style={{ background: '#FDFCFB', padding: '20px', borderRadius: '24px', border: '1px solid #F0ECE4' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div>
+                                            <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700, marginBottom: '2px' }}>휴대폰 번호</div>
+                                            <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.phone ? '#333' : '#BBB' }}>{selectedMember.phone || (selectedMember.is_phone_public ? '미등록' : '비공개')}</div>
+                                        </div>
+                                        {selectedMember.phone && (
+                                            <a href={`tel:${selectedMember.phone}`} style={{ textDecoration: 'none', background: '#333', color: 'white', padding: '10px 18px', borderRadius: '14px', fontSize: '14px', fontWeight: 700 }}>전화걸기</a>
+                                        )}
+                                    </div>
+                                    <div style={{ borderTop: '1px solid #F0ECE4', paddingTop: '15px' }}>
+                                        <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700, marginBottom: '2px' }}>생년월일</div>
+                                        <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.birthdate ? '#333' : '#BBB' }}>{selectedMember.birthdate || (selectedMember.is_birthdate_public ? '미등록' : '비공개')}</div>
+                                    </div>
+                                    <div style={{ borderTop: '1px solid #F0ECE4', paddingTop: '15px' }}>
+                                        <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700, marginBottom: '2px' }}>주소</div>
+                                        <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.address ? '#333' : '#BBB' }}>{selectedMember.address || (selectedMember.is_address_public ? '미등록' : '비공개')}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onClick={() => setSelectedMember(null)} style={{ width: '100%', padding: '16px', background: '#F5F5F3', color: '#666', border: 'none', borderRadius: '16px', fontWeight: 700, cursor: 'pointer', marginTop: '24px' }}>닫기</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
