@@ -3460,7 +3460,7 @@ export default function App() {
         );
     };
 
-    // 클래식 화이트 아이팟 스타일 플로팅 플레이어 (Somy-iPod Classic)
+    // 소미 시그니처 레트로 플레이어 (저작권 걱정 없는 독자적 디자인)
     const renderMiniPlayer = () => {
         if (!todayCcm || view === 'ccm') return null;
 
@@ -3487,18 +3487,18 @@ export default function App() {
                     position: 'fixed',
                     left: `${playerPos.x}px`,
                     top: `${playerPos.y}px`,
-                    width: '120px',
-                    height: '210px', // 여백 확보를 위해 높이 약간 조절
+                    width: '125px',
+                    height: '220px',
                     zIndex: 2000,
                     cursor: isDragging ? 'grabbing' : 'grab',
-                    background: '#F5F5F7',
-                    borderRadius: '24px',
-                    padding: '35px 12px 12px 12px', // 상단 패딩을 기존 12px에서 35px로 대폭 늘려 버튼 공간 확보
+                    background: 'linear-gradient(135deg, #FDFBF0 0%, #F5F0E1 100%)', // 부드러운 상아색
+                    borderRadius: '20px',
+                    padding: '30px 10px 15px 10px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    boxShadow: '0 30px 60px rgba(0,0,0,0.3)',
-                    border: '1px solid #CCC',
+                    boxShadow: '0 25px 50px rgba(0,0,0,0.25), inset 0 2px 2px white',
+                    border: '1.5px solid #D4AF37', // 금색 테두리로 교회 느낌 강조
                     transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                     userSelect: 'none',
                     touchAction: 'none'
@@ -3511,7 +3511,7 @@ export default function App() {
                 onTouchMove={(e) => handleMove(e.touches[0].clientX, e.touches[0].clientY)}
                 onTouchEnd={handleEnd}
             >
-                {/* 닫기 버튼 (iPod 몸체 밖 우측 상단으로 이동) */}
+                {/* 닫기 버튼 */}
                 <div
                     onClick={(e) => {
                         e.stopPropagation();
@@ -3520,110 +3520,66 @@ export default function App() {
                     onMouseDown={(e) => e.stopPropagation()}
                     style={{
                         position: 'absolute',
-                        top: '-12px', // 몸체 위쪽으로 돌출
-                        right: '-12px', // 몸체 오른쪽으로 돌출
-                        width: '28px',
-                        height: '28px',
-                        background: '#FF5252', // 강렬한 빨간색으로 변경
+                        top: '-10px',
+                        right: '-10px',
+                        width: '26px',
+                        height: '26px',
+                        background: '#333',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: '14px',
+                        fontSize: '12px',
                         color: '#FFF',
                         cursor: 'pointer',
-                        zIndex: 9999, // 어떤 레이어보다도 위에 표시
-                        boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+                        zIndex: 9999,
+                        boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
                         border: '2px solid white',
-                        fontWeight: 'bold',
-                        pointerEvents: 'auto' // 클릭 보장
                     }}
                 >✕</div>
-                {/* 1. 아이팟 LCD 스크린 영역 */}
+
+                {/* 1. 스크린 영역 */}
                 <div
                     id="ccm-mini-screen"
                     onClick={() => setView('ccm')}
                     style={{
                         width: '100%',
-                        height: '75px',
-                        background: '#000',
+                        height: '80px',
+                        background: '#1A1A1A',
                         borderRadius: '12px',
-                        marginBottom: '20px',
+                        marginBottom: '15px',
                         display: 'flex',
                         justifyContent: 'center',
                         alignItems: 'center',
                         overflow: 'hidden',
                         cursor: 'pointer',
-                        boxShadow: 'inset 0 2px 20px rgba(0,0,0,1)',
-                        border: '1px solid #222'
+                        boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.5)',
+                        border: '1px solid #C0C0C0'
                     }}
                 >
-                    {/* 유튜브 영상이 이 안으로 쏙 들어옵니다 */}
+                    {/* 유튜브 영상 탑재 */}
                 </div>
 
-                {/* 2. 클릭 휠 (Classic Click Wheel) */}
-                <div
-                    onClick={togglePlay}
-                    style={{
-                        width: '100px',
-                        height: '100px',
-                        background: '#FFF',
-                        borderRadius: '50%',
-                        position: 'relative',
-                        boxShadow: '0 6px 15px rgba(0,0,0,0.12), inset 0 2px 5px rgba(0,0,0,0.05)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        border: '1px solid #EEE',
-                        cursor: 'pointer',
-                        transition: 'transform 0.1s'
-                    }}
-                    onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.96)'}
-                    onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                >
-                    {/* RESET (MENU - Top) */}
+                {/* 2. 소미 컨트롤 패드 (Modern Retro Console) */}
+                <div style={{
+                    width: '100%',
+                    background: '#FEFEFE',
+                    borderRadius: '15px',
+                    padding: '10px 5px',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+                    border: '1px solid #EEE'
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
+                        <button onClick={(e) => hapticClick(e, handlePrevCcm)} style={{ border: 'none', background: '#F5F5F5', borderRadius: '8px', padding: '8px', fontSize: '14px', cursor: 'pointer' }}>⏮</button>
+                        <button onClick={(e) => hapticClick(e, () => togglePlay(e))} style={{ border: 'none', background: '#D4AF37', color: 'white', borderRadius: '8px', padding: '8px 15px', fontSize: '16px', cursor: 'pointer' }}>
+                            {isCcmPlaying ? '⏸' : '▶️'}
+                        </button>
+                        <button onClick={(e) => hapticClick(e, handleNextCcm)} style={{ border: 'none', background: '#F5F5F5', borderRadius: '8px', padding: '8px', fontSize: '14px', cursor: 'pointer' }}>⏭</button>
+                    </div>
                     <div
-                        onClick={(e) => hapticClick(e, () => togglePlay(e))}
-                        style={{ position: 'absolute', top: '8px', fontSize: '10px', fontWeight: 900, color: '#B8924A', cursor: 'pointer', zIndex: 15, transition: 'transform 0.1s' }}
-                        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.85)'}
-                        onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    >RESET</div>
-
-                    {/* PREV ⏮ (West - Very Small, between circles) */}
-                    <div
-                        onClick={(e) => hapticClick(e, handlePrevCcm)}
-                        style={{ position: 'absolute', left: '12px', fontSize: '11px', color: '#BBB', cursor: 'pointer', zIndex: 11 }}
-                    >⏮</div>
-
-                    {/* NEXT ⏭ (East - Very Small, between circles) */}
-                    <div
-                        onClick={(e) => hapticClick(e, handleNextCcm)}
-                        style={{ position: 'absolute', right: '12px', fontSize: '11px', color: '#BBB', cursor: 'pointer', zIndex: 11 }}
-                    >⏭</div>
-
-                    {/* Center Center Play Button - Enlarged and Iconized */}
-                    <div
-                        onClick={(e) => hapticClick(e, () => togglePlay(e))}
-                        style={{
-                            width: '48px',
-                            height: '48px',
-                            borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #F9F9F9 0%, #DCDCDC 100%)',
-                            border: '1px solid #CCC',
-                            boxShadow: '0 4px 10px rgba(0,0,0,0.15), inset 0 1px 2px white',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '20px',
-                            color: '#333',
-                            cursor: 'pointer',
-                            zIndex: 10,
-                            transition: 'all 0.1s'
-                        }}
-                        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.9)'}
-                        onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    >
-                        {isCcmPlaying ? '⏸' : '▶️'}
+                        onClick={(e) => hapticClick(e, () => setView('ccm'))}
+                        style={{ fontSize: '10px', color: '#999', textAlign: 'center', fontWeight: 700, cursor: 'pointer' }}>
+                        SOMY PLAYER
                     </div>
                 </div>
             </div>
