@@ -3240,7 +3240,7 @@ export default function App() {
         }
 
         if (view === "memberSearch") {
-            return <MemberSearchView churchId={churchId} setView={setView} baseFont={baseFont} />;
+            return <MemberSearchView churchId={churchId} setView={setView} baseFont={baseFont} isAdmin={isAdmin} />;
         }
 
         return null; // 모든 뷰에 해당하지 않을 때
@@ -3521,6 +3521,7 @@ export default function App() {
                         <button
                             onClick={async () => {
                                 const updateData = {
+                                    church_id: churchId || 'jesus-in', // church_id가 유실되지 않도록 명시적으로 포함
                                     full_name: (document.getElementById('edit-name') as any)?.value || '',
                                     church_rank: (document.getElementById('edit-rank') as any)?.value || '',
                                     phone: (document.getElementById('edit-phone') as any)?.value || '',
@@ -3545,7 +3546,7 @@ export default function App() {
                         </button>
                     </div>
                 </div>
-            </div>
+            </div >
         );
     };
 
@@ -4618,320 +4619,261 @@ export default function App() {
                             );
 }
 
-                            // === 독립 컴포넌트 구역 (App 외부에 정의하여 불필요한 리마운트 방지) ===
 
-                            // 내 프로필 화면 컴포넌트
-                            const ProfileView = ({user, supabase, setView, baseFont}: any) => {
+// === 독립 컴포넌트 구역 (App 외부에 정의하여 불필요한 리마운트 방지) ===
+
+// 내 프로필 화면 컴포넌트
+const ProfileView = ({ user, supabase, setView, baseFont }: any) => {
     const [profileForm, setProfileForm] = useState({
-                                full_name: user?.user_metadata?.full_name || '',
-                            phone: '',
-                            birthdate: '',
-                            address: '',
-                            is_phone_public: false,
-                            is_birthdate_public: false,
-                            is_address_public: false
+        full_name: user?.user_metadata?.full_name || '',
+        phone: '',
+        birthdate: '',
+        address: '',
+        is_phone_public: false,
+        is_birthdate_public: false,
+        is_address_public: false
     });
-                            const [isSavingProfile, setIsSavingProfile] = useState(false);
+    const [isSavingProfile, setIsSavingProfile] = useState(false);
 
     useEffect(() => {
         const loadProfile = async () => {
             if (!user?.id) return;
-                            try {
-                                // 1. ID로 먼저 시도 (기존 연결된 프로필)
-                                let {data, error} = await supabase.from('profiles').select('*').eq('id', user.id).single();
-
-                            // 2. 매칭 시도 (기존 데이터 구출 로직)
-                            if (!data) {
-                                console.log("새 사용자입니다. 기존 등록 데이터(엑셀 등)를 찾습니다.");
-
-                            // A. 이메일 매칭 (카카오 계정 이메일과 엑셀 등록 이메일이 같은 경우)
-                            if (user.email) {
-                        const {data: emailMatch } = await supabase.from('profiles').select('*').eq('email', user.email).is('id', null).maybeSingle();
-                            if (emailMatch) {
-                                console.log("이메일로 기존 데이터를 찾았습니다. 현재 ID와 연결합니다.");
-                            await supabase.from('profiles').update({id: user.id }).eq('email', user.email);
-                            data = {...emailMatch, id: user.id };
+            try {
+                let { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+                if (!data) {
+                    if (user.email) {
+                        const { data: emailMatch } = await supabase.from('profiles').select('*').eq('email', user.email).is('id', null).maybeSingle();
+                        if (emailMatch) {
+                            await supabase.from('profiles').update({ id: user.id }).eq('email', user.email);
+                            data = { ...emailMatch, id: user.id };
                         }
                     }
-
-                            // B. 전화번호 매칭 (메타데이터에 전번이 있는 경우)
-                            if (!data) {
+                    if (!data) {
                         const rawPhone = user?.user_metadata?.phone_number || user?.user_metadata?.mobile || '';
-                            let cleanPhone = rawPhone.replace(/[^0-9]/g, '');
-
-                            // 🇰🇷 대한민국 국가번호(82) 처리: 8210... -> 010...
-                            if (cleanPhone.startsWith('8210')) {
-                                cleanPhone = '0' + cleanPhone.substring(2);
-                        } else if (cleanPhone.startsWith('82')) {
-                                cleanPhone = '0' + cleanPhone.substring(2);
-                        }
-
-                            if (cleanPhone) {
+                        let cleanPhone = rawPhone.replace(/[^0-9]/g, '');
+                        if (cleanPhone.startsWith('8210')) cleanPhone = '0' + cleanPhone.substring(2);
+                        else if (cleanPhone.startsWith('82')) cleanPhone = '0' + cleanPhone.substring(2);
+                        if (cleanPhone) {
                             const formattedPhone = cleanPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
-                            const {data: phoneMatch } = await supabase.from('profiles')
-                            .select('*')
-                            .or(`phone.eq.${cleanPhone},phone.eq.${formattedPhone}`)
-                            .filter('id', 'is', null) // 아직 연결 안 된 데이터만
-                            .maybeSingle();
-
+                            const { data: phoneMatch } = await supabase.from('profiles').select('*').or(`phone.eq.${cleanPhone},phone.eq.${formattedPhone}`).filter('id', 'is', null).maybeSingle();
                             if (phoneMatch) {
-                                console.log("전화번호로 기존 데이터를 찾았습니다. 현재 계정과 병합합니다.");
-                            await supabase.from('profiles').update({id: user.id, email: user.email || phoneMatch.email }).eq('email', phoneMatch.email);
-                            data = {...phoneMatch, id: user.id };
+                                await supabase.from('profiles').update({ id: user.id, email: user.email || phoneMatch.email }).eq('email', phoneMatch.email);
+                                data = { ...phoneMatch, id: user.id };
                             }
                         }
                     }
                 }
-
-                            if (data) {
-                                setProfileForm({
-                                    full_name: data.full_name || user?.user_metadata?.full_name || '',
-                                    phone: data.phone || '',
-                                    birthdate: data.birthdate || '',
-                                    address: data.address || '',
-                                    is_phone_public: data.is_phone_public || false,
-                                    is_birthdate_public: data.is_birthdate_public || false,
-                                    is_address_public: data.is_address_public || false
-                                });
+                if (data) {
+                    setProfileForm({
+                        full_name: data.full_name || user?.user_metadata?.full_name || '',
+                        phone: data.phone || '',
+                        birthdate: data.birthdate || '',
+                        address: data.address || '',
+                        is_phone_public: data.is_phone_public || false,
+                        is_birthdate_public: data.is_birthdate_public || false,
+                        is_address_public: data.is_address_public || false
+                    });
                 }
-            } catch (e) {console.error("프로필 로딩 에러:", e); }
+            } catch (e) { console.error("프로필 로딩 에러:", e); }
         };
-                            loadProfile();
+        loadProfile();
     }, [user, supabase]);
 
     const handleSubmit = async () => {
         if (!user?.id) return;
-                            setIsSavingProfile(true);
-                            try {
-            // 저장 시점에 전화번호가 입력되었는데, 만약 그 전화번호로 미리 등록된(id가 없는) 데이터가 있다면 '병합' 처리
+        setIsSavingProfile(true);
+        try {
             if (profileForm.phone) {
                 const cleanInputPhone = profileForm.phone.replace(/[^0-9]/g, '');
-                            const formattedInputPhone = cleanInputPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
-
-                            const {data: duplicate } = await supabase
-                            .from('profiles')
-                            .select('*')
-                            .or(`phone.eq.${cleanInputPhone},phone.eq.${formattedInputPhone}`)
-                            .is('id', null)
-                            .maybeSingle();
-
-                            if (duplicate) {
-                                console.log("입력하신 전화번호로 등록된 기존 정보를 발견했습니다. 병합을 진행합니다.");
-                            // 기존 행(duplicate)은 삭제하고 현재 행을 업데이트하거나, 반대로 진행.
-                            // 안전한 방법: 기존 행의 정보를 현재 행으로 가져오고 기존 행 삭제.
-                            // 하지만 관리자가 이미 사진 등을 넣었을 수 있으므로 기존 행에 내 ID를 이식하는게 가장 깔끔함.
-
-                            // 1. 현재 (id가 내 id인) 빈 행이 있다면 삭제
-                            await supabase.from('profiles').delete().eq('id', user.id).neq('email', duplicate.email);
-                            // 2. 기존 행에 내 정보 업데이트
-                            const {error: mergeError } = await supabase.from('profiles')
-                            .update({...profileForm, id: user.id, email: user.email })
-                            .eq('email', duplicate.email);
-
-                            if (!mergeError) {
-                                alert('기존에 등록된 성도 정보와 성공적으로 연결되었습니다! ✨');
-                            return;
+                const formattedInputPhone = cleanInputPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+                const { data: duplicate } = await supabase.from('profiles').select('*').or(`phone.eq.${cleanInputPhone},phone.eq.${formattedInputPhone}`).is('id', null).maybeSingle();
+                if (duplicate) {
+                    await supabase.from('profiles').delete().eq('id', user.id).neq('email', duplicate.email);
+                    const { error: mergeError } = await supabase.from('profiles').update({ ...profileForm, id: user.id, email: user.email }).eq('email', duplicate.email);
+                    if (!mergeError) {
+                        alert('기존에 등록된 성도 정보와 성공적으로 연결되었습니다! ✨');
+                        return;
                     }
                 }
             }
-
-                            // 일반적인 업데이트
-                            const {error} = await supabase.from('profiles').update(profileForm).eq('id', user.id);
-                            if (error) throw error;
-                            alert('프로필 정보가 저장되었습니다! ✨');
-        } catch (e) {alert('저장 실패: ' + (e as Error).message); }
-                            finally {setIsSavingProfile(false); }
+            const { error } = await supabase.from('profiles').update(profileForm).eq('id', user.id);
+            if (error) throw error;
+            alert('프로필 정보가 저장되었습니다! ✨');
+        } catch (e) { alert('저장 실패: ' + (e as Error).message); }
+        finally { setIsSavingProfile(false); }
     };
 
-                            return (
-                            <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "480px", margin: "0 auto", padding: "30px 24px", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
-                                    <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
-                                    <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0 }}>내 프로필 관리</h2>
-                                </div>
-                                <div style={{ background: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', marginBottom: '24px', border: '1px solid #F0ECE4' }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                        <div>
-                                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>👤 성함</label>
-                                            <input type="text" value={profileForm.full_name} onChange={e => setProfileForm({ ...profileForm, full_name: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none' }} />
-                                        </div>
-                                        <div>
-                                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>📞 전화번호</label>
-                                            <input type="tel" value={profileForm.phone} onChange={e => setProfileForm({ ...profileForm, phone: e.target.value })} placeholder="010-0000-0000" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none' }} />
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-                                                <input type="checkbox" id="phone_pub" checked={profileForm.is_phone_public} onChange={e => setProfileForm({ ...profileForm, is_phone_public: e.target.checked })} />
-                                                <label htmlFor="phone_pub" style={{ fontSize: '12px', color: '#888' }}>다른 성도님들께 전화번호를 공개합니다.</label>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>🎂 생년월일</label>
-                                            <input type="date" value={profileForm.birthdate} onChange={e => setProfileForm({ ...profileForm, birthdate: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none' }} />
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-                                                <input type="checkbox" id="birth_pub" checked={profileForm.is_birthdate_public} onChange={e => setProfileForm({ ...profileForm, is_birthdate_public: e.target.checked })} />
-                                                <label htmlFor="birth_pub" style={{ fontSize: '12px', color: '#888' }}>다른 성도님들께 생일을 공개합니다.</label>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>🏠 주소</label>
-                                            <input type="text" value={profileForm.address} onChange={e => setProfileForm({ ...profileForm, address: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none' }} />
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-                                                <input type="checkbox" id="address_pub" checked={profileForm.is_address_public} onChange={e => setProfileForm({ ...profileForm, is_address_public: e.target.checked })} />
-                                                <label htmlFor="address_pub" style={{ fontSize: '12px', color: '#888' }}>다른 성도님들께 주소를 공개합니다.</label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <button onClick={handleSubmit} disabled={isSavingProfile} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', marginTop: '30px' }}>
-                                        {isSavingProfile ? '저장 중...' : '💾 정보 수정하기'}
-                                    </button>
-                                </div>
-                            </div>
-                            );
+    return (
+        <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "480px", margin: "0 auto", padding: "30px 24px", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
+                <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
+                <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0 }}>내 프로필 관리</h2>
+            </div>
+            <div style={{ background: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', marginBottom: '24px', border: '1px solid #F0ECE4' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div>
+                        <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>👤 성함</label>
+                        <input type="text" value={profileForm.full_name} onChange={e => setProfileForm({ ...profileForm, full_name: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none' }} />
+                    </div>
+                    <div>
+                        <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>📞 전화번호</label>
+                        <input type="tel" value={profileForm.phone} onChange={e => setProfileForm({ ...profileForm, phone: e.target.value })} placeholder="010-0000-0000" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                            <input type="checkbox" id="phone_pub" checked={profileForm.is_phone_public} onChange={e => setProfileForm({ ...profileForm, is_phone_public: e.target.checked })} />
+                            <label htmlFor="phone_pub" style={{ fontSize: '12px', color: '#888' }}>다른 성도님들께 전화번호를 공개합니다.</label>
+                        </div>
+                    </div>
+                    <div>
+                        <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>🎂 생년월일</label>
+                        <input type="date" value={profileForm.birthdate} onChange={e => setProfileForm({ ...profileForm, birthdate: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                            <input type="checkbox" id="birth_pub" checked={profileForm.is_birthdate_public} onChange={e => setProfileForm({ ...profileForm, is_birthdate_public: e.target.checked })} />
+                            <label htmlFor="birth_pub" style={{ fontSize: '12px', color: '#888' }}>다른 성도님들께 생일을 공개합니다.</label>
+                        </div>
+                    </div>
+                    <div>
+                        <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>🏠 주소</label>
+                        <input type="text" value={profileForm.address} onChange={e => setProfileForm({ ...profileForm, address: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                            <input type="checkbox" id="address_pub" checked={profileForm.is_address_public} onChange={e => setProfileForm({ ...profileForm, is_address_public: e.target.checked })} />
+                            <label htmlFor="address_pub" style={{ fontSize: '12px', color: '#888' }}>다른 성도님들께 주소를 공개합니다.</label>
+                        </div>
+                    </div>
+                </div>
+                <button onClick={handleSubmit} disabled={isSavingProfile} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', marginTop: '30px' }}>
+                    {isSavingProfile ? '저장 중...' : '💾 정보 수정하기'}
+                </button>
+            </div>
+        </div>
+    );
 };
 
-                            // 성도 검색/주소록 컴포넌트
-                            const MemberSearchView = ({churchId, setView, baseFont}: any) => {
+// 성도 검색/주소록 컴포넌트
+const MemberSearchView = ({ churchId, setView, baseFont, isAdmin }: any) => {
     const [searchTerm, setSearchTerm] = useState("");
-                            const [results, setResults] = useState<any[]>([]);
-                            const [isSearching, setIsSearching] = useState(false);
-                            const [selectedMember, setSelectedMember] = useState<any>(null);
+    const [results, setResults] = useState<any[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [selectedMember, setSelectedMember] = useState<any>(null);
 
     useEffect(() => {
         const fetchInitial = async () => {
-                                    setIsSearching(true);
-                                try {
-                const res = await fetch(`/api/members?church_id=${churchId}`);
-                                const data = await res.json();
-                                if (Array.isArray(data)) setResults(data);
-            } catch (e) {console.error("멤버 로딩 실패:", e); }
-                                finally {setIsSearching(false); }
+            setIsSearching(true);
+            try {
+                const res = await fetch(`/api/members?church_id=${churchId}${isAdmin ? '&admin=true' : ''}`, { cache: 'no-store' });
+                const data = await res.json();
+                if (Array.isArray(data)) setResults(data);
+            } catch (e) { console.error("멤버 로딩 실패:", e); }
+            finally { setIsSearching(false); }
         };
-                                fetchInitial();
-    }, [churchId]);
+        fetchInitial();
+    }, [churchId, isAdmin]);
 
     const handleSearch = async () => {
-                                    setIsSearching(true);
-                                try {
-            const res = await fetch(`/api/members?church_id=${churchId}&query=${encodeURIComponent(searchTerm)}`);
-                                const data = await res.json();
-                                if (Array.isArray(data)) setResults(data);
-        } catch (e) {console.error("검색 실패:", e); }
-                                finally {setIsSearching(false); }
+        setIsSearching(true);
+        try {
+            const res = await fetch(`/api/members?church_id=${churchId}&query=${encodeURIComponent(searchTerm)}${isAdmin ? '&admin=true' : ''}`, { cache: 'no-store' });
+            const data = await res.json();
+            if (Array.isArray(data)) setResults(data);
+        } catch (e) { console.error("검색 실패:", e); }
+        finally { setIsSearching(false); }
     };
 
-                                return (
-                                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "480px", margin: "0 auto", padding: "30px 20px", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '24px' }}>
-                                        <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
-                                        <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0 }}>교회 성도 검색</h2>
-                                    </div>
-                                    <div style={{ position: 'sticky', top: 'env(safe-area-inset-top)', background: '#FDFCFB', zIndex: 10, paddingBottom: '10px' }}>
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch()} placeholder="성함을 입력하세요 (예: 홍길동)" style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '14px', outline: 'none', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }} />
-                                            <button onClick={handleSearch} style={{ padding: '0 20px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>검색</button>
-                                        </div>
-                                    </div>
+    return (
+        <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "480px", margin: "0 auto", padding: "30px 20px", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '24px' }}>
+                <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
+                <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0 }}>교회 성도 검색</h2>
+            </div>
+            <div style={{ position: 'sticky', top: 'env(safe-area-inset-top)', background: '#FDFCFB', zIndex: 10, paddingBottom: '10px' }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch()} placeholder="성함을 입력하세요 (예: 홍길동)" style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '14px', outline: 'none', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }} />
+                    <button onClick={handleSearch} style={{ padding: '0 20px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>검색</button>
+                </div>
+            </div>
 
-                                    {/* 오늘의 생일 알림 (전체 성도 목록에서 확인) */}
-                                    {(() => {
-                                        const kstBase = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
-                                        const todayMMDD = kstBase.toISOString().slice(5, 10); // MM-DD
-                                        const birthdayMembers = (results || []).filter(m => m?.birthdate && String(m.birthdate).slice(5, 10) === todayMMDD);
-
-                                        if (birthdayMembers.length > 0) {
-                                            return (
-                                                <div style={{ background: 'linear-gradient(135deg, #FFF9C4 0%, #FFF59D 100%)', padding: '16px', borderRadius: '20px', marginBottom: '16px', border: '1px solid #FFF176', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 4px 15px rgba(255,235,59,0.2)', animation: 'pulse 2s infinite' }}>
-                                                    <div style={{ fontSize: '24px' }}>🎉</div>
-                                                    <div style={{ flex: 1 }}>
-                                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#856404' }}>오늘 생일인 성도님이 계세요!</div>
-                                                        <div style={{ fontSize: '13px', color: '#666', marginTop: '2px' }}>
-                                                            {birthdayMembers.map(m => m.full_name).join(', ')}님, 축하드립니다! 🎂
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
-                                        return null;
-                                    })()}
-
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
-                                        {isSearching ? (
-                                            <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>성도 정보를 불러오는 중...</div>
-                                        ) : results.length === 0 ? (
-                                            <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>검색 결과가 없습니다.</div>
-                                        ) : (
-                                            results.map(member => (
-                                                <div
-                                                    key={member.id}
-                                                    onClick={() => setSelectedMember(member)}
-                                                    style={{ background: 'white', padding: '16px', borderRadius: '20px', border: '1px solid #F0ECE4', display: 'flex', gap: '14px', alignItems: 'flex-start', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', cursor: 'pointer' }}
-                                                >
-                                                    <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#F5F2EA', overflow: 'hidden', flexShrink: 0 }}>
-                                                        <img alt="" src={member.avatar_url || 'https://via.placeholder.com/44'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                    </div>
-                                                    <div style={{ flex: 1 }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                                                            <span style={{ fontSize: '15px', fontWeight: 800, color: '#333' }}>{member.full_name}</span>
-                                                            {member.church_rank && <span style={{ fontSize: '11px', background: '#F5F2EA', color: '#B8924A', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>{member.church_rank}</span>}
-                                                        </div>
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                            <div style={{ fontSize: '12px', color: member.phone ? '#555' : '#BBB' }}>📞 {member.phone || (member.is_phone_public ? '미등록' : '비공개')}</div>
-                                                        </div>
-                                                    </div>
-                                                    {member.phone && (
-                                                        <button onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${member.phone}`; }} style={{ background: '#E8F5E9', border: 'none', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                                                            <span style={{ fontSize: '18px' }}>📞</span>
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-
-                                    {/* 성도 상세 정보 모달 */}
-                                    {selectedMember && (
-                                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', zIndex: 2000, display: 'flex', alignItems: 'end', justifyContent: 'center' }} onClick={() => setSelectedMember(null)}>
-                                            <div
-                                                style={{ background: 'white', width: '100%', maxWidth: '480px', borderRadius: '32px 32px 0 0', padding: '40px 24px', position: 'relative', animation: 'slide-up 0.3s ease-out' }}
-                                                onClick={e => e.stopPropagation()}
-                                            >
-                                                <button onClick={() => setSelectedMember(null)} style={{ position: 'absolute', top: '20px', right: '20px', background: '#F5F5F3', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>×</button>
-
-                                                <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                                                    <div style={{ width: 100, height: 100, borderRadius: '50%', background: '#F5F2EA', margin: '0 auto 16px', padding: '4px', border: '1px solid #F0ECE4' }}>
-                                                        <img alt="" src={selectedMember.avatar_url || 'https://via.placeholder.com/100'} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-                                                    </div>
-                                                    <h3 style={{ fontSize: '24px', fontWeight: 800, color: '#333', margin: '0 0 6px' }}>{selectedMember.full_name}</h3>
-                                                    {selectedMember.church_rank && <span style={{ fontSize: '14px', background: '#F5F2EA', color: '#B8924A', padding: '4px 12px', borderRadius: '10px', fontWeight: 700 }}>{selectedMember.church_rank}</span>}
-                                                </div>
-
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                                    <div style={{ background: '#FDFCFB', padding: '20px', borderRadius: '24px', border: '1px solid #F0ECE4' }}>
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <div>
-                                                                    <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700, marginBottom: '2px' }}>휴대폰 번호</div>
-                                                                    <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.phone ? '#333' : '#BBB' }}>{selectedMember.phone || (selectedMember.is_phone_public ? '미등록' : '비공개')}</div>
-                                                                </div>
-                                                                {selectedMember.phone && (
-                                                                    <a href={`tel:${selectedMember.phone}`} style={{ textDecoration: 'none', background: '#333', color: 'white', padding: '10px 18px', borderRadius: '14px', fontSize: '14px', fontWeight: 700 }}>전화걸기</a>
-                                                                )}
-                                                            </div>
-                                                            <div style={{ borderTop: '1px solid #F0ECE4', paddingTop: '15px' }}>
-                                                                <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700, marginBottom: '2px' }}>생년월일</div>
-                                                                <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.birthdate ? '#333' : '#BBB' }}>{selectedMember.birthdate || (selectedMember.is_birthdate_public ? '미등록' : '비공개')}</div>
-                                                            </div>
-                                                            <div style={{ borderTop: '1px solid #F0ECE4', paddingTop: '15px' }}>
-                                                                <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700, marginBottom: '2px' }}>주소</div>
-                                                                <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.address ? '#333' : '#BBB' }}>{selectedMember.address || (selectedMember.is_address_public ? '미등록' : '비공개')}</div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <button onClick={() => setSelectedMember(null)} style={{ width: '100%', padding: '16px', background: '#F5F5F3', color: '#666', border: 'none', borderRadius: '16px', fontWeight: 700, cursor: 'pointer', marginTop: '24px' }}>닫기</button>
-                                            </div>
-                                        </div>
-                                    )}
+            {/* 오늘의 생일 알림 */}
+            {(() => {
+                const kstBase = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+                const todayMMDD = kstBase.toISOString().slice(5, 10);
+                const birthdayMembers = (results || []).filter(m => m?.birthdate && String(m.birthdate).slice(5, 10) === todayMMDD);
+                if (birthdayMembers.length > 0) {
+                    return (
+                        <div style={{ background: 'linear-gradient(135deg, #FFF9C4 0%, #FFF59D 100%)', padding: '16px', borderRadius: '20px', marginBottom: '16px', border: '1px solid #FFF176', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 4px 15px rgba(255,235,59,0.2)' }}>
+                            <div style={{ fontSize: '24px' }}>🎉</div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#856404' }}>오늘 생일인 성도님이 계세요!</div>
+                                <div style={{ fontSize: '13px', color: '#666', marginTop: '2px' }}>
+                                    {birthdayMembers.map(m => m.full_name).join(', ')}님, 축하드립니다! 🎂
                                 </div>
-                                );
+                            </div>
+                        </div>
+                    );
+                }
+                return null;
+            })()}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
+                {isSearching ? (
+                    <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>성도 정보를 불러오는 중...</div>
+                ) : results.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>검색 결과가 없습니다.</div>
+                ) : (
+                    results.map(member => (
+                        <div key={member.id} onClick={() => setSelectedMember(member)} style={{ background: 'white', padding: '16px', borderRadius: '20px', border: '1px solid #F0ECE4', display: 'flex', gap: '14px', alignItems: 'flex-start', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', cursor: 'pointer' }}>
+                            <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#F5F2EA', overflow: 'hidden', flexShrink: 0 }}>
+                                <img alt="" src={member.avatar_url || 'https://via.placeholder.com/44'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                    <span style={{ fontSize: '15px', fontWeight: 800, color: '#333' }}>{member.full_name}</span>
+                                    {member.church_rank && <span style={{ fontSize: '11px', background: '#F5F2EA', color: '#B8924A', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>{member.church_rank}</span>}
+                                </div>
+                                <div style={{ fontSize: '12px', color: member.phone ? '#555' : '#BBB' }}>📞 {member.phone || (member.is_phone_public ? '미등록' : '비공개')}</div>
+                            </div>
+                            {member.phone && (
+                                <button onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${member.phone}`; }} style={{ background: '#E8F5E9', border: 'none', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                    <span style={{ fontSize: '18px' }}>📞</span>
+                                </button>
+                            )}
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {selectedMember && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', zIndex: 2000, display: 'flex', alignItems: 'end', justifyContent: 'center' }} onClick={() => setSelectedMember(null)}>
+                    <div style={{ background: 'white', width: '100%', maxWidth: '480px', borderRadius: '32px 32px 0 0', padding: '40px 24px', position: 'relative', animation: 'slide-up 0.3s ease-out' }} onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setSelectedMember(null)} style={{ position: 'absolute', top: '20px', right: '20px', background: '#F5F5F3', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>×</button>
+                        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                            <div style={{ width: 100, height: 100, borderRadius: '50%', background: '#F5F2EA', margin: '0 auto 16px', padding: '4px', border: '1px solid #F0ECE4' }}>
+                                <img alt="" src={selectedMember.avatar_url || 'https://via.placeholder.com/100'} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                            </div>
+                            <h3 style={{ fontSize: '24px', fontWeight: 800, color: '#333', margin: '0 0 6px' }}>{selectedMember.full_name}</h3>
+                            {selectedMember.church_rank && <span style={{ fontSize: '14px', background: '#F5F2EA', color: '#B8924A', padding: '4px 12px', borderRadius: '10px', fontWeight: 700 }}>{selectedMember.church_rank}</span>}
+                        </div>
+                        <div style={{ background: '#FDFCFB', padding: '20px', borderRadius: '24px', border: '1px solid #F0ECE4' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700, marginBottom: '2px' }}>휴대폰 번호</div>
+                                        <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.phone ? '#333' : '#BBB' }}>{selectedMember.phone || (selectedMember.is_phone_public ? '미등록' : '비공개')}</div>
+                                    </div>
+                                    {selectedMember.phone && <a href={`tel:${selectedMember.phone}`} style={{ textDecoration: 'none', background: '#333', color: 'white', padding: '10px 18px', borderRadius: '14px', fontSize: '14px', fontWeight: 700 }}>전화걸기</a>}
+                                </div>
+                                <div style={{ borderTop: '1px solid #F0ECE4', paddingTop: '15px' }}>
+                                    <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700, marginBottom: '2px' }}>생년월일</div>
+                                    <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.birthdate ? '#333' : '#BBB' }}>{selectedMember.birthdate || (selectedMember.is_birthdate_public ? '미등록' : '비공개')}</div>
+                                </div>
+                                <div style={{ borderTop: '1px solid #F0ECE4', paddingTop: '15px' }}>
+                                    <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700, marginBottom: '2px' }}>주소</div>
+                                    <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.address ? '#333' : '#BBB' }}>{selectedMember.address || (selectedMember.is_address_public ? '미등록' : '비공개')}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <button onClick={() => setSelectedMember(null)} style={{ width: '100%', padding: '16px', background: '#F5F5F3', color: '#666', border: 'none', borderRadius: '16px', fontWeight: 700, cursor: 'pointer', marginTop: '24px' }}>닫기</button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 };
