@@ -4070,55 +4070,66 @@ export default function App() {
                                         </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', background: '#FAFAFA', borderRadius: '10px' }}>
-                                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#666' }}>🛡️ 일괄 프라이버시 설정</div>
-                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', background: '#FAFAFA', borderRadius: '15px', border: '1px solid #F0F0F0' }}>
+                                        <div style={{ fontSize: '12px', fontWeight: 800, color: '#444', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                            <span style={{ fontSize: '16px' }}>🛡️</span> 일괄 프라이버시 설정
+                                        </div>
+
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                             {['phone', 'birthdate', 'address'].map(type => (
-                                                <div key={type} style={{ display: 'flex', gap: '4px' }}>
-                                                    <button
-                                                        disabled={isBulkProcessing}
-                                                        onClick={async () => {
-                                                            if (window.confirm(`모든 성도의 ${type === 'phone' ? '전화번호' : type === 'birthdate' ? '생일' : '주소'}를 '공개'로 전환하시겠습니까?`)) {
-                                                                setIsBulkProcessing(true);
-                                                                const res = await fetch('/api/admin', {
-                                                                    method: 'POST',
-                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({ action: 'bulk_update_privacy', field: `is_${type}_public`, value: true, church_id: churchId })
-                                                                });
-                                                                if (res.ok) {
-                                                                    setMemberList(prev => prev.map(m => ({ ...m, [`is_${type}_public`]: true })));
-                                                                    alert('변경되었습니다.');
+                                                <div key={type} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'white', padding: '10px 14px', borderRadius: '12px', border: '1px solid #EEE' }}>
+                                                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#666', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        {type === 'phone' ? '📞 휴대폰' : type === 'birthdate' ? '🎂 생년월일' : '🏠 주소'}
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                                        <button
+                                                            disabled={isBulkProcessing}
+                                                            onClick={async () => {
+                                                                if (window.confirm(`모든 성도의 ${type === 'phone' ? '전화번호' : type === 'birthdate' ? '생일' : '주소'}를 '공개'로 전환하시겠습니까?`)) {
+                                                                    setIsBulkProcessing(true);
+                                                                    const res = await fetch('/api/admin', {
+                                                                        method: 'POST',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({ action: 'bulk_update_privacy', field: `is_${type}_public`, value: true, church_id: churchId })
+                                                                    });
+                                                                    if (res.ok) {
+                                                                        setMemberList(prev => prev.map(m => ({ ...m, [`is_${type}_public`]: true })));
+                                                                        alert('변경되었습니다.');
+                                                                    }
+                                                                    setIsBulkProcessing(false);
                                                                 }
-                                                                setIsBulkProcessing(false);
-                                                            }
-                                                        }}
-                                                        style={{ padding: '4px 8px', background: 'white', border: '1px solid #EEE', borderRadius: '6px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}
-                                                    >
-                                                        {type === 'phone' ? '📞 전번 공개' : type === 'birthdate' ? '🎂 생일 공개' : '🏠 주소 공개'}
-                                                    </button>
-                                                    <button
-                                                        disabled={isBulkProcessing}
-                                                        onClick={async () => {
-                                                            if (window.confirm(`모든 성도의 ${type === 'phone' ? '전화번호' : type === 'birthdate' ? '생일' : '주소'}를 '비공개'로 전환하시겠습니까?`)) {
-                                                                setIsBulkProcessing(true);
-                                                                const res = await fetch('/api/admin', {
-                                                                    method: 'POST',
-                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({ action: 'bulk_update_privacy', field: `is_${type}_public`, value: false, church_id: churchId })
-                                                                });
-                                                                if (res.ok) {
-                                                                    setMemberList(prev => prev.map(m => ({ ...m, [`is_${type}_public`]: false })));
-                                                                    alert('변경되었습니다.');
+                                                            }}
+                                                            style={{ padding: '6px 12px', background: '#FFFDE7', border: '1px solid #D4AF37', color: '#856404', borderRadius: '8px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
+                                                        >
+                                                            전체 공개
+                                                        </button>
+                                                        <button
+                                                            disabled={isBulkProcessing}
+                                                            onClick={async () => {
+                                                                if (window.confirm(`모든 성도의 ${type === 'phone' ? '전화번호' : type === 'birthdate' ? '생일' : '주소'}를 '비공개'로 전환하시겠습니까?`)) {
+                                                                    setIsBulkProcessing(true);
+                                                                    const res = await fetch('/api/admin', {
+                                                                        method: 'POST',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({ action: 'bulk_update_privacy', field: `is_${type}_public`, value: false, church_id: churchId })
+                                                                    });
+                                                                    if (res.ok) {
+                                                                        setMemberList(prev => prev.map(m => ({ ...m, [`is_${type}_public`]: false })));
+                                                                        alert('변경되었습니다.');
+                                                                    }
+                                                                    setIsBulkProcessing(false);
                                                                 }
-                                                                setIsBulkProcessing(false);
-                                                            }
-                                                        }}
-                                                        style={{ padding: '4px 8px', background: 'white', border: '1px solid #EEE', borderRadius: '6px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}
-                                                    >
-                                                        🔒 비공개
-                                                    </button>
+                                                            }}
+                                                            style={{ padding: '6px 12px', background: '#F5F5F5', border: '1px solid #DDD', color: '#999', borderRadius: '8px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
+                                                        >
+                                                            🔒 비공개
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             ))}
+                                        </div>
+                                        <div style={{ fontSize: '10px', color: '#AAA', textAlign: 'center', marginTop: '4px' }}>
+                                            ※ 설정 시 모든 성도의 해당 정보 공개 여부가 즉시 변경됩니다.
                                         </div>
                                     </div>
                                 </div>
