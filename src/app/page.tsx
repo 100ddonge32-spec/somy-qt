@@ -4272,53 +4272,13 @@ export default function App() {
                                 {isManagingMembers ? <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>로딩 중...</div> :
                                     memberList.length === 0 ? <div style={{ textAlign: 'center', padding: '20px', color: '#999', fontSize: '13px' }}>등록된 성도가 없습니다.</div> :
                                         memberList.map(member => (
-                                            <div key={member.id} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '14px', background: '#F9F9F9', borderRadius: '16px', border: '1px solid #F0F0F0', gap: '10px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                                                    <div style={{ position: 'relative', width: 36, height: 36, flexShrink: 0 }}>
-                                                        <img alt="" src={member.avatar_url || 'https://via.placeholder.com/32'} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', background: '#EEE' }} />
-                                                        <label htmlFor={`avatar-upload-${member.id}`} style={{ position: 'absolute', bottom: -4, right: -4, background: 'white', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', cursor: 'pointer', border: '1px solid #DDD', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>📸</label>
-                                                        <input
-                                                            id={`avatar-upload-${member.id}`}
-                                                            type="file"
-                                                            accept="image/*"
-                                                            style={{ display: 'none' }}
-                                                            onChange={async (e) => {
-                                                                const file = e.target.files?.[0];
-                                                                if (!file) return;
-
-                                                                // 피드백을 위해 임시로 텍스트나 로딩 표시를 줄 수 있지만, 간단히 진행
-                                                                const formData = new FormData();
-                                                                formData.append('file', file);
-                                                                formData.append('user_id', member.id);
-
-                                                                try {
-                                                                    const res = await fetch('/api/admin/upload-avatar', {
-                                                                        method: 'POST',
-                                                                        body: formData
-                                                                    });
-                                                                    const result = await res.json();
-                                                                    if (res.ok) {
-                                                                        setMemberList(memberList.map(m => m.id === member.id ? { ...m, avatar_url: result.url } : m));
-                                                                        alert('사진이 성공적으로 교체되었습니다!');
-                                                                    } else {
-                                                                        alert('사진 업로드 실패: ' + result.error);
-                                                                    }
-                                                                } catch (err) {
-                                                                    alert('사진 업로드 중 오류가 발생했습니다.');
-                                                                }
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <div style={{ minWidth: 0, flex: 1 }}>
-                                                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', lineHeight: '1.2', marginBottom: '2px' }}>{member.full_name || '이름 없음'}</div>
-                                                        <div style={{ fontSize: '11px', color: '#888', wordBreak: 'break-all' }}>{member.email}</div>
-                                                    </div>
-                                                </div>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-end', flexShrink: 0 }}>
-                                                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                                            <div key={member.id} style={{ display: 'flex', flexDirection: 'column', padding: '20px', background: 'white', borderRadius: '24px', border: '1px solid #F0F0F0', gap: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                                                    {/* 왼쪽: 액션 버튼들 */}
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0 }}>
                                                         <button
                                                             onClick={() => setSelectedMemberForEdit(member)}
-                                                            style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: 'white', color: '#666' }}>
+                                                            style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: '#F9F9F9', color: '#666', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                             📝 수정
                                                         </button>
                                                         <button
@@ -4335,7 +4295,7 @@ export default function App() {
                                                                     }
                                                                 }
                                                             }}
-                                                            style={{ padding: '6px 8px', borderRadius: '8px', border: '1px solid #FFCDD2', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: 'white', color: '#C62828' }}>
+                                                            style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid #FFEBEB', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: '#FFF5F5', color: '#E53E3E', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                             🗑️ 삭제
                                                         </button>
                                                         <button
@@ -4350,8 +4310,8 @@ export default function App() {
                                                                     setMemberList(memberList.map(m => m.id === member.id ? { ...m, is_approved: newStatus } : m));
                                                                 }
                                                             }}
-                                                            style={{ padding: '6px 10px', minWidth: '70px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: member.is_approved ? '#E8F5E9' : '#333', color: member.is_approved ? '#2E7D32' : 'white', whiteSpace: 'nowrap' }}>
-                                                            {member.is_approved ? '승인됨' : '승인하기'}
+                                                            style={{ padding: '8px 12px', borderRadius: '10px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: member.is_approved ? '#E6FFFA' : '#333', color: member.is_approved ? '#38B2AC' : 'white' }}>
+                                                            {member.is_approved ? '✅ 승인됨' : '🔔 승인하기'}
                                                         </button>
                                                         {(!member.id || member.email.includes('.local')) && (
                                                             <button
@@ -4359,58 +4319,86 @@ export default function App() {
                                                                     setMergeTarget(member);
                                                                     setShowMergeModal(true);
                                                                 }}
-                                                                style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid #D4AF37', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: 'white', color: '#D4AF37' }}>
-                                                                🔗 통합
+                                                                style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid #FDF2F2', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: '#FFFBEB', color: '#D69E2E' }}>
+                                                                🔗 데이터 통합
                                                             </button>
                                                         )}
                                                     </div>
 
-                                                    {/* 관리자 전용 프라이버시 토글 */}
-                                                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                                                        {(['phone', 'birthdate', 'address'] as const).map(type => {
-                                                            const isPublic = member[`is_${type}_public`];
-                                                            return (
-                                                                <button
-                                                                    key={type}
-                                                                    onClick={async (e) => {
-                                                                        e.stopPropagation();
-                                                                        const field = `is_${type}_public`;
-                                                                        const newValue = !isPublic;
-                                                                        const res = await fetch('/api/admin', {
-                                                                            method: 'POST',
-                                                                            headers: { 'Content-Type': 'application/json' },
-                                                                            body: JSON.stringify({
-                                                                                action: 'update_member',
-                                                                                user_id: member.id,
-                                                                                update_data: { [field]: newValue }
-                                                                            })
-                                                                        });
+                                                    {/* 중앙: 큰 사진과 정보 */}
+                                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '10px' }}>
+                                                        <div style={{ position: 'relative', width: 80, height: 80 }}>
+                                                            <img alt="" src={member.avatar_url || 'https://via.placeholder.com/80'} style={{ width: '100%', height: '100%', borderRadius: '30px', objectFit: 'cover', background: '#F5F5F3', border: '3px solid white', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} />
+                                                            <label htmlFor={`avatar-upload-${member.id}`} style={{ position: 'absolute', bottom: -5, right: -5, background: 'white', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', cursor: 'pointer', border: '1px solid #EEE', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>📸</label>
+                                                            <input
+                                                                id={`avatar-upload-${member.id}`}
+                                                                type="file"
+                                                                accept="image/*"
+                                                                style={{ display: 'none' }}
+                                                                onChange={async (e) => {
+                                                                    const file = e.target.files?.[0];
+                                                                    if (!file) return;
+                                                                    const formData = new FormData();
+                                                                    formData.append('file', file);
+                                                                    formData.append('user_id', member.id);
+                                                                    try {
+                                                                        const res = await fetch('/api/admin/upload-avatar', { method: 'POST', body: formData });
+                                                                        const result = await res.json();
                                                                         if (res.ok) {
-                                                                            setMemberList(memberList.map(m => m.id === member.id ? { ...m, [field]: newValue } : m));
+                                                                            setMemberList(memberList.map(m => m.id === member.id ? { ...m, avatar_url: result.url } : m));
+                                                                            alert('사진이 변경되었습니다!');
                                                                         }
-                                                                    }}
-                                                                    style={{
-                                                                        fontSize: '10px',
-                                                                        padding: '4px 8px',
-                                                                        borderRadius: '20px',
-                                                                        border: '1px solid',
-                                                                        borderColor: isPublic ? '#D4AF37' : '#EEE',
-                                                                        cursor: 'pointer',
-                                                                        background: isPublic ? '#FFFDE7' : 'white',
-                                                                        color: isPublic ? '#856404' : '#999',
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        gap: '3px',
-                                                                        fontWeight: 700,
-                                                                        transition: 'all 0.2s'
-                                                                    }}
-                                                                >
-                                                                    <span>{type === 'phone' ? '📞 전번' : type === 'birthdate' ? '🎂 생일' : '🏠 주소'}</span>
-                                                                    <span style={{ fontSize: '8px' }}>{isPublic ? '공개' : '비공'}</span>
-                                                                </button>
-                                                            );
-                                                        })}
+                                                                    } catch (err) { alert('업로드 실패'); }
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <div style={{ width: '100%' }}>
+                                                            <div style={{ fontSize: '18px', fontWeight: 900, color: '#1A202C' }}>{member.full_name || '이름 없음'}</div>
+                                                            <div style={{ fontSize: '12px', color: '#A0AEC0', wordBreak: 'break-all', marginTop: '2px' }}>{member.email}</div>
+                                                            {member.church_rank && <div style={{ display: 'inline-block', marginTop: '6px', padding: '2px 8px', background: '#F7FAFC', borderRadius: '6px', fontSize: '11px', fontWeight: 700, color: '#4A5568' }}>{member.church_rank}</div>}
+                                                        </div>
                                                     </div>
+                                                </div>
+
+                                                {/* 하단: 프라이버시 설정들 */}
+                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', borderTop: '1px solid #F7FAFC', paddingTop: '12px' }}>
+                                                    {(['phone', 'birthdate', 'address'] as const).map(type => {
+                                                        const isPublic = member[`is_${type}_public`];
+                                                        return (
+                                                            <button
+                                                                key={type}
+                                                                onClick={async (e) => {
+                                                                    e.stopPropagation();
+                                                                    const field = `is_${type}_public`;
+                                                                    const newValue = !isPublic;
+                                                                    const res = await fetch('/api/admin', {
+                                                                        method: 'POST',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({ action: 'update_member', user_id: member.id, update_data: { [field]: newValue } })
+                                                                    });
+                                                                    if (res.ok) setMemberList(memberList.map(m => m.id === member.id ? { ...m, [field]: newValue } : m));
+                                                                }}
+                                                                style={{
+                                                                    fontSize: '11px',
+                                                                    padding: '8px 12px',
+                                                                    borderRadius: '12px',
+                                                                    border: '1px solid',
+                                                                    borderColor: isPublic ? '#ECC94B' : '#EDF2F7',
+                                                                    cursor: 'pointer',
+                                                                    background: isPublic ? '#FFFFF0' : '#F7FAFC',
+                                                                    color: isPublic ? '#B7791F' : '#A0AEC0',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '4px',
+                                                                    fontWeight: 800,
+                                                                    transition: 'all 0.2s'
+                                                                }}
+                                                            >
+                                                                <span>{type === 'phone' ? '📞 전번' : type === 'birthdate' ? '🎂 생일' : '🏠 주소'}</span>
+                                                                <span style={{ fontSize: '10px' }}>{isPublic ? '공개' : '비공'}</span>
+                                                            </button>
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
                                         ))
