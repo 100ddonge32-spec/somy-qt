@@ -3629,12 +3629,8 @@ export default function App() {
     const renderMergeModal = () => {
         if (!showMergeModal || !mergeTarget) return null;
 
-        // 통합 대상이 될 수 있는 실제 가입자 목록 (카카오 계정 등)
-        const joinedMembers = memberList.filter(m =>
-            m.id !== mergeTarget.id &&
-            !m.email.includes('.local') &&
-            m.id.length > 20 // UUID 형식 체크
-        );
+        // 통합 대상이 될 수 있는 목록 (나 자신을 제외한 모든 성도)
+        const joinedMembers = memberList.filter(m => m.id !== mergeTarget.id);
 
         return (
             <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 4500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(5px)' }}>
