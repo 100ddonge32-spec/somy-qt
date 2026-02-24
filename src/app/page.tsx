@@ -6,7 +6,7 @@ import { getGraceVerse } from '@/lib/navigator-verses';
 import { getTodayCcm, CcmVideo, CCM_LIST } from "@/lib/ccm";
 import * as XLSX from 'xlsx';
 
-type View = "home" | "chat" | "qt" | "community" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "profile" | "memberSearch";
+type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "profile" | "memberSearch";
 
 const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://cdn.imweb.me/thumbnail/20210813/569458bf12dd0.png";
@@ -137,6 +137,12 @@ export default function App() {
     const [isMounted, setIsMounted] = useState(false); // 마운트 상태 추적
     const [communityPosts, setCommunityPosts] = useState<Post[]>([]);
     const [isPrivatePost, setIsPrivatePost] = useState(false); // 은혜나눔 비공개 여부
+
+    // 감사일기 상태
+    const [thanksgivingDiaries, setThanksgivingDiaries] = useState<Post[]>([]);
+    const [isPrivateThanksgiving, setIsPrivateThanksgiving] = useState(false);
+    const [thanksgivingInput, setThanksgivingInput] = useState("");
+
     const [lastToggleTime, setLastToggleTime] = useState(0); // 이중 트리거 방지용
     const [commentInputs, setCommentInputs] = useState<{ [key: number]: string }>({});
     const [passageInput, setPassageInput] = useState("");
@@ -1419,7 +1425,31 @@ export default function App() {
                                             {notifications.filter(n => !n.is_read).length > 0 && <div style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, minWidth: '14px', height: '14px', padding: '0 2px', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white' }}>{notifications.filter(n => !n.is_read).length}</div>}
                                         </div>
                                     </div>
+                                    {/* 감사일기 버튼 */}
+                                    <div style={{ position: 'relative', flex: 1 }}>
+                                        <button onClick={async () => {
+                                            setView("thanksgiving");
+                                            try {
+                                                const res = await fetch(`/api/thanksgiving?church_id=${churchId}`);
+                                                const data = await res.json();
+                                                if (Array.isArray(data)) setThanksgivingDiaries(data);
+                                            } catch (e) { console.error("감사일기 로드 실패:", e); }
+                                        }} style={{
+                                            width: "100%", padding: "14px 10px",
+                                            background: "linear-gradient(145deg, #ffffff 0%, #fff6e5 100%)", color: "#E07A5F",
+                                            fontWeight: 800, fontSize: "14px", borderRadius: "20px",
+                                            border: "1px solid #fae1cd", cursor: "pointer",
+                                            boxShadow: "0 10px 20px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(224, 122, 95, 0.08), inset 0 3px 5px rgba(255,255,255,1), inset 0 -3px 0 rgba(255,255,255,0.8)",
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
+                                            transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+                                        }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                                            <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>🌻</div>
+                                            <span>감사일기 쓰기</span>
+                                        </button>
+                                    </div>
+                                </div>
 
+                                <div style={{ display: 'flex', gap: '14px', width: '100%' }}>
                                     {churchSettings.sermon_url ? (
                                         <button onClick={() => {
                                             if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
@@ -2569,6 +2599,272 @@ export default function App() {
                                                     style={{ flex: 1, padding: '10px 12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }}
                                                 />
                                                 <button onClick={() => handleAddComment(post.id)} style={{ background: '#333', color: 'white', border: 'none', borderRadius: '10px', padding: '0 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>등록</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        /* ══════════════════════════════
+           THANKSGIVING DIARY PAGE
+        ══════════════════════════════ */
+        if (view === "thanksgiving") {
+            const handleAddThanksgivingComment = async (diaryId: any) => {
+                const commentText = commentInputs[diaryId];
+                if (!commentText?.trim() || !user) return;
+
+                try {
+                    const res = await fetch('/api/thanksgiving/comments', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            diary_id: diaryId,
+                            user_id: user.id,
+                            user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
+                            content: commentText
+                        })
+                    });
+                    if (res.ok) {
+                        const newComment = await res.json();
+                        setThanksgivingDiaries(thanksgivingDiaries.map(diary => {
+                            if (diary.id === diaryId) {
+                                return { ...diary, comments: [...(diary.comments || []), newComment] };
+                            }
+                            return diary;
+                        }));
+                        setCommentInputs({ ...commentInputs, [diaryId]: "" }); // 입력창 초기화
+                    }
+                } catch (e) { console.error("댓글 달기 오류:", e); }
+            };
+
+            const handleDeleteThanksgivingComment = async (diaryId: any, commentId: any) => {
+                if (!confirm("이 댓글을 삭제하시겠습니까?")) return;
+                try {
+                    const res = await fetch('/api/thanksgiving/comments', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: commentId })
+                    });
+                    if (res.ok) {
+                        setThanksgivingDiaries(thanksgivingDiaries.map(diary => {
+                            if (diary.id === diaryId) {
+                                return { ...diary, comments: diary.comments.filter((c: any) => c.id !== commentId) };
+                            }
+                            return diary;
+                        }));
+                    } else {
+                        alert("댓글 삭제에 실패했습니다.");
+                    }
+                } catch (e) {
+                    console.error("댓글 삭제 실패:", e);
+                    alert("오류가 발생했습니다.");
+                }
+            };
+
+            const handleDeleteThanksgiving = async (diaryId: any) => {
+                if (!confirm("이 감사일기를 정말 삭제하시겠습니까?")) return;
+                try {
+                    const res = await fetch('/api/thanksgiving', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: diaryId })
+                    });
+                    if (res.ok) {
+                        setThanksgivingDiaries(thanksgivingDiaries.filter(diary => diary.id !== diaryId));
+                    } else {
+                        const errData = await res.json().catch(() => ({}));
+                        alert(`삭제 실패: ${errData.error || '알 수 없는 오류'}`);
+                    }
+                } catch (e) {
+                    console.error("삭제 중 오류:", e);
+                    alert("삭제 중 네트워크 오류가 발생했습니다.");
+                }
+            };
+
+            const handleUpdateThanksgiving = async () => {
+                if (!editingPostId || !editContent.trim()) return;
+                try {
+                    const res = await fetch('/api/thanksgiving', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: editingPostId, content: editContent })
+                    });
+                    if (res.ok) {
+                        const updatedDiary = await res.json();
+                        setThanksgivingDiaries(thanksgivingDiaries.map(diary =>
+                            diary.id === editingPostId ? { ...diary, content: updatedDiary.content } : diary
+                        ));
+                        setEditingPostId(null);
+                        setEditContent("");
+                    }
+                } catch (e) { console.error("수정 중 오류:", e); }
+            };
+
+            const handleThanksgivingPost = async () => {
+                if (!thanksgivingInput.trim() || !user) return;
+                try {
+                    const res = await fetch('/api/thanksgiving', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: user.id,
+                            user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
+                            avatar_url: user.user_metadata?.avatar_url || null,
+                            content: thanksgivingInput,
+                            church_id: churchId,
+                            is_private: isPrivateThanksgiving
+                        })
+                    });
+                    if (res.ok) {
+                        const newDiary = await res.json();
+                        setThanksgivingDiaries([newDiary, ...thanksgivingDiaries]);
+                        setThanksgivingInput(""); // 입력창 초기화
+                        setIsPrivateThanksgiving(false);
+                    }
+                } catch (e) { console.error("감사일기 등록 실패:", e); }
+            };
+
+            return (
+                <div style={{
+                    minHeight: "100vh",
+                    background: "#FFFBF5",
+                    maxWidth: "480px",
+                    margin: "0 auto",
+                    ...baseFont,
+                    paddingTop: 'env(safe-area-inset-top)'
+                }}>
+                    {styles}
+                    <div style={{
+                        padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #FDF0E3",
+                        position: 'sticky', top: 'env(safe-area-inset-top)', background: 'white', zIndex: 10
+                    }}>
+                        <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333', padding: '8px' }}>←</button>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "15px", flex: 1 }}>감사일기 나눔</div>
+                    </div>
+
+                    {!churchSettings.community_visible && !isAdmin ? (
+                        <div style={{ padding: '60px 40px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '50px', marginBottom: '20px' }}>🔒</div>
+                            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#333', marginBottom: '10px' }}>비공개 공간입니다</h3>
+                            <button onClick={handleBack} style={{ marginTop: '24px', padding: '12px 24px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>뒤로 가기</button>
+                        </div>
+                    ) : (
+                        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            {/* 글쓰기 영역 */}
+                            <div style={{ background: 'white', borderRadius: '20px', padding: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '10px', border: '1px solid #fae1cd' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#FDF0E3', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
+                                        {user?.user_metadata?.avatar_url ? <img src={user.user_metadata.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🌻'}
+                                    </div>
+                                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#555' }}>
+                                        {user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "성도님"}
+                                    </span>
+                                </div>
+                                <textarea
+                                    value={thanksgivingInput}
+                                    onChange={(e) => setThanksgivingInput(e.target.value)}
+                                    placeholder="오늘 하루, 어떤 감사의 제목이 있으셨나요?"
+                                    style={{ width: '100%', minHeight: '80px', border: '1px solid #fae1cd', borderRadius: '12px', padding: '12px', boxSizing: 'border-box', outline: 'none', fontSize: '14px', background: '#FFFDFB', resize: 'none', fontFamily: 'inherit' }}
+                                />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div
+                                        onClick={() => setIsPrivateThanksgiving(!isPrivateThanksgiving)}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: isPrivateThanksgiving ? '#E07A5F' : '#666', background: isPrivateThanksgiving ? '#FDF0E3' : '#F5F5F5', padding: '4px 10px', borderRadius: '20px', fontWeight: 600, transition: 'all 0.2s' }}
+                                    >
+                                        <span>{isPrivateThanksgiving ? '🔒 나만 보기' : '🌐 함께 나누기'}</span>
+                                    </div>
+                                    <button
+                                        onClick={handleThanksgivingPost}
+                                        disabled={!thanksgivingInput.trim()}
+                                        style={{
+                                            padding: '8px 20px', background: thanksgivingInput.trim() ? '#E07A5F' : '#EEE', color: thanksgivingInput.trim() ? 'white' : '#AAA', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 800, cursor: thanksgivingInput.trim() ? 'pointer' : 'default', transition: 'all 0.3s'
+                                        }}
+                                    >
+                                        감사 올리기
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* 감사일기 목록 */}
+                            {thanksgivingDiaries
+                                .filter(diary => {
+                                    if (!diary.is_private) return true;
+                                    if (isAdmin) return true;
+                                    if (user?.id === diary.user_id) return true;
+                                    return false;
+                                })
+                                .map(diary => (
+                                    <div key={diary.id} style={{ background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', animation: 'fade-in 0.5s', border: '1px solid #FFF1E6' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                                            <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#FDF0E3', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                                                {diary.avatar_url ? <img src={diary.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🌻'}
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    {diary.user_name}
+                                                    {diary.is_private && (
+                                                        <span style={{ fontSize: '10px', background: '#FDF0E3', color: '#E07A5F', padding: '2px 7px', borderRadius: '8px', fontWeight: 700 }}>🔒 비공개</span>
+                                                    )}
+                                                </div>
+                                                <div style={{ fontSize: '11px', color: '#999' }}>{new Date(diary.created_at || Date.now()).toLocaleString()}</div>
+                                            </div>
+                                            <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+                                                {(user?.id === diary.user_id) && (
+                                                    <button onClick={() => { setEditingPostId(diary.id); setEditContent(diary.content); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#E07A5F', fontWeight: 600 }}>수정</button>
+                                                )}
+                                                {(isAdmin || user?.id === diary.user_id) && (
+                                                    <button onClick={() => handleDeleteThanksgiving(diary.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#999' }}>🗑️</button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {editingPostId === diary.id ? (
+                                            <div style={{ marginBottom: '15px' }}>
+                                                <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} style={{ width: '100%', minHeight: '100px', border: '1px solid #fae1cd', borderRadius: '12px', padding: '12px', boxSizing: 'border-box', marginBottom: '8px', fontSize: '14px', fontFamily: 'inherit' }} />
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <button onClick={handleUpdateThanksgiving} style={{ padding: '8px 16px', background: '#E07A5F', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>저장</button>
+                                                    <button onClick={() => setEditingPostId(null)} style={{ padding: '8px 16px', background: '#FFF1E6', color: '#E07A5F', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>취소</button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', margin: '0 0 15px 0', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+                                                {diary.content}
+                                            </div>
+                                        )}
+
+                                        {/* Comments */}
+                                        <div style={{ borderTop: '1px solid #FFF1E6', paddingTop: '15px' }}>
+                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#E07A5F', marginBottom: '10px' }}>댓글 {diary.comments?.length || 0}개</div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
+                                                {diary.comments && Array.isArray(diary.comments) && diary.comments.map((comment: any) => (
+                                                    <div key={comment.id} style={{ background: '#FFFDFB', padding: '10px 15px', borderRadius: '12px', fontSize: '13px', border: '1px solid #fae1cd' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                            <span style={{ fontWeight: 700, color: '#555' }}>{comment.user_name || '성도'}</span>
+                                                            <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                {comment.created_at ? new Date(comment.created_at).toLocaleTimeString() : '방금 전'}
+                                                                {(isAdmin || user?.id === comment.user_id) && (
+                                                                    <button onClick={() => handleDeleteThanksgivingComment(diary.id, comment.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>✕</button>
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                        <div style={{ color: '#666' }}>{comment.content}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <input
+                                                    type="text"
+                                                    value={commentInputs[diary.id] || ""}
+                                                    onChange={(e) => setCommentInputs({ ...commentInputs, [diary.id]: e.target.value })}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleAddThanksgivingComment(diary.id)}
+                                                    placeholder="공감의 댓글을 달아주세요..."
+                                                    style={{ flex: 1, padding: '10px 12px', borderRadius: '10px', border: '1px solid #fae1cd', fontSize: '13px', outline: 'none' }}
+                                                />
+                                                <button onClick={() => handleAddThanksgivingComment(diary.id)} style={{ background: '#E07A5F', color: 'white', border: 'none', borderRadius: '10px', padding: '0 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>등록</button>
                                             </div>
                                         </div>
                                     </div>
