@@ -3473,11 +3473,11 @@ export default function App() {
                         <button
                             onClick={async () => {
                                 const updateData = {
-                                    full_name: (document.getElementById('edit-name') as HTMLInputElement).value,
-                                    church_rank: (document.getElementById('edit-rank') as HTMLInputElement).value,
-                                    phone: (document.getElementById('edit-phone') as HTMLInputElement).value,
-                                    birthdate: (document.getElementById('edit-birth') as HTMLInputElement).value,
-                                    address: (document.getElementById('edit-addr') as HTMLInputElement).value,
+                                    full_name: (document.getElementById('edit-name') as any)?.value || '',
+                                    church_rank: (document.getElementById('edit-rank') as any)?.value || '',
+                                    phone: (document.getElementById('edit-phone') as any)?.value || '',
+                                    birthdate: (document.getElementById('edit-birth') as any)?.value || '',
+                                    address: (document.getElementById('edit-addr') as any)?.value || '',
                                 };
                                 const res = await fetch('/api/admin', {
                                     method: 'POST',
@@ -3485,7 +3485,7 @@ export default function App() {
                                     body: JSON.stringify({ action: 'update_member', user_id: m.id, update_data: updateData })
                                 });
                                 if (res.ok) {
-                                    setMemberList(memberList.map((item: any) => item.id === m.id ? { ...item, ...updateData } : item));
+                                    setMemberList((prev: any[]) => prev.map((item: any) => item.id === m.id ? { ...item, ...updateData } : item));
                                     setSelectedMemberForEdit(null);
                                     alert('정보가 성공적으로 수정되었습니다! ✨');
                                 } else {
@@ -3920,7 +3920,7 @@ export default function App() {
                                     const kstTime = new Date().getTime() + (9 * 60 * 60 * 1000);
                                     const kstDate = new Date(kstTime);
                                     const today = kstDate.toISOString().slice(5, 10); // MM-DD
-                                    const birthdayBoys = memberList.filter(m => m.birthdate && m.birthdate.slice(5, 10) === today);
+                                    const birthdayBoys = (memberList || []).filter(m => m?.birthdate && String(m.birthdate).slice(5, 10) === today);
                                     if (birthdayBoys.length > 0) {
                                         return (
                                             <div style={{ background: '#FFF9C4', padding: '12px 16px', borderRadius: '12px', border: '1px solid #FFF176', display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -3983,7 +3983,7 @@ export default function App() {
                                                     <div style={{ display: 'flex', gap: '6px' }}>
                                                         <button
                                                             onClick={async () => {
-                                                                { setSelectedMemberForEdit(member); return; }
+                                                                setSelectedMemberForEdit(member);
                                                             }}
                                                             style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: 'white', color: '#666' }}>
                                                             📝 정보 수정
@@ -4348,7 +4348,7 @@ const MemberSearchView = ({ churchId, setView, baseFont }: any) => {
             {(() => {
                 const kstBase = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
                 const todayMMDD = kstBase.toISOString().slice(5, 10); // MM-DD
-                const birthdayMembers = results.filter(m => m.birthdate && m.birthdate.slice(5, 10) === todayMMDD);
+                const birthdayMembers = (results || []).filter(m => m?.birthdate && String(m.birthdate).slice(5, 10) === todayMMDD);
 
                 if (birthdayMembers.length > 0) {
                     return (
