@@ -715,6 +715,9 @@ export default function App() {
     const [churchStats, setChurchStats] = useState<{ [key: string]: number }>({});
     const [showAddMemberModal, setShowAddMemberModal] = useState(false);
     const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+    const [showMergeModal, setShowMergeModal] = useState(false);
+    const [mergeTarget, setMergeTarget] = useState<any>(null); // 통합될 데이터 (관리자 등록본)
+    const [mergeDestinationId, setMergeDestinationId] = useState<string>(''); // 통합할 대상 (카카오 가입 유저 ID)
 
     useEffect(() => {
         setIsMounted(true);
@@ -3623,6 +3626,119 @@ export default function App() {
         );
     };
 
+    const renderMergeModal = () => {
+        if (!showMergeModal || !mergeTarget) return null;
+
+        // 통합 대상이 될 수 있는 실제 가입자 목록 (카카오 계정 등)
+        const joinedMembers = memberList.filter(m =>
+            m.id !== mergeTarget.id &&
+            !m.email.includes('.local') &&
+            m.id.length > 20 // UUID 형식 체크
+        );
+
+        return (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 4500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(5px)' }}>
+                <div style={{ background: 'white', borderRadius: '24px', padding: '30px', width: '100%', maxWidth: '420px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <div>
+                            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>🔗 성도 데이터 통합</h3>
+                            <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#888' }}>관리자 등록 정보를 실제 가입 계정으로 옮깁니다.</p>
+                        </div>
+                        <button onClick={() => { setShowMergeModal(false); setMergeTarget(null); }} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
+                    </div>
+
+                    <div style={{ background: '#F9F7F2', padding: '15px', borderRadius: '15px', marginBottom: '20px', border: '1px solid #E4DCCF' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', marginBottom: '20px' }}>원본 데이터 (등록된 정보)</div>
+                        <div style={{ fontSize: '14px', fontWeight: 700 }}>{mergeTarget.full_name} ({mergeTarget.phone || '번호없음'})</div>
+                        <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>이 성도님의 직분, 사진, 주소 정보를 선택한 계정으로 합칩니다.</div>
+                    </div>
+
+                    <div style={{ maxHeight: '250px', overflowY: 'auto', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 800, marginBottom: '4px' }}>합칠 대상(실제 가입 유저) 선택:</div>
+                        {joinedMembers.length === 0 ? <div style={{ textAlign: 'center', padding: '20px', color: '#999', fontSize: '12px' }}>통합 가능한 실제 가입자가 없습니다.</div> :
+                            joinedMembers.map(m => (
+                                <div
+                                    key={m.id}
+                                    onClick={() => setMergeDestinationId(m.id)}
+                                    style={{
+                                        padding: '12px',
+                                        borderRadius: '12px',
+                                        border: `2px solid ${mergeDestinationId === m.id ? '#D4AF37' : '#F0F0F0'}`,
+                                        background: mergeDestinationId === m.id ? '#FFFDE7' : 'white',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '10px'
+                                    }}
+                                >
+                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#EEE', overflow: 'hidden' }}>
+                                        <img src={m.avatar_url || 'https://via.placeholder.com/32'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontSize: '13px', fontWeight: 700 }}>{m.full_name}</div>
+                                        <div style={{ fontSize: '11px', color: '#999' }}>{m.email}</div>
+                                    </div>
+                                    {mergeDestinationId === m.id && <span style={{ color: '#D4AF37' }}>✅</span>}
+                                </div>
+                            ))
+                        }
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <button onClick={() => { setShowMergeModal(false); setMergeTarget(null); }} style={{ flex: 1, padding: '14px', background: '#F5F5F5', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', color: '#666' }}>취소</button>
+                        <button
+                            disabled={!mergeDestinationId}
+                            onClick={async () => {
+                                if (!window.confirm(`${mergeTarget.full_name} 성도님의 정보를 선택한 계정으로 통합하시겠습니까?\n통합 후 삭제 데이터는 복구할 수 없습니다.`)) return;
+
+                                try {
+                                    const updateData = {
+                                        church_rank: mergeTarget.church_rank || '',
+                                        phone: mergeTarget.phone || '',
+                                        birthdate: mergeTarget.birthdate || '',
+                                        address: mergeTarget.address || '',
+                                        avatar_url: mergeTarget.avatar_url || '',
+                                        is_approved: true
+                                    };
+
+                                    const res = await fetch('/api/admin', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            action: 'update_member',
+                                            user_id: mergeDestinationId,
+                                            update_data: updateData
+                                        })
+                                    });
+
+                                    if (res.ok) {
+                                        await fetch('/api/admin', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ action: 'delete_member', user_id: mergeTarget.id })
+                                        });
+
+                                        alert('통합 완료되었습니다! ✨');
+                                        const r = await fetch('/api/admin?action=list_members');
+                                        const data = await r.json();
+                                        if (Array.isArray(data)) setMemberList(data);
+                                        setShowMergeModal(false);
+                                        setMergeTarget(null);
+                                        setMergeDestinationId('');
+                                    }
+                                } catch (e) {
+                                    alert('오류가 발생했습니다.');
+                                }
+                            }}
+                            style={{ flex: 2, padding: '14px', background: !mergeDestinationId ? '#CCC' : '#333', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: !mergeDestinationId ? 'default' : 'pointer' }}>
+                            데이터 통합하기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
 
     // 소미 시그니처 레트로 플레이어 (저작권 걱정 없는 독자적 디자인)
     const renderMiniPlayer = () => {
@@ -4237,6 +4353,16 @@ export default function App() {
                                                             style={{ padding: '6px 10px', minWidth: '70px', borderRadius: '8px', border: 'none', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: member.is_approved ? '#E8F5E9' : '#333', color: member.is_approved ? '#2E7D32' : 'white', whiteSpace: 'nowrap' }}>
                                                             {member.is_approved ? '승인됨' : '승인하기'}
                                                         </button>
+                                                        {(!member.id || member.email.includes('.local')) && (
+                                                            <button
+                                                                onClick={() => {
+                                                                    setMergeTarget(member);
+                                                                    setShowMergeModal(true);
+                                                                }}
+                                                                style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid #D4AF37', fontSize: '11px', fontWeight: 700, cursor: 'pointer', background: 'white', color: '#D4AF37' }}>
+                                                                🔗 통합
+                                                            </button>
+                                                        )}
                                                     </div>
 
                                                     {/* 관리자 전용 프라이버시 토글 */}
@@ -4368,6 +4494,7 @@ export default function App() {
             )}
             {renderMemberEditModal()}
             {renderAddMemberModal()}
+            {renderMergeModal()}
             {renderNotificationList()}
             {user && (
                 <>
@@ -4450,22 +4577,26 @@ const ProfileView = ({ user, supabase, setView, baseFont }: any) => {
                     // B. 전화번호 매칭 (메타데이터에 전번이 있는 경우)
                     if (!data) {
                         const rawPhone = user?.user_metadata?.phone_number || user?.user_metadata?.mobile || '';
-                        const cleanPhone = rawPhone.replace(/[^0-9]/g, '');
+                        let cleanPhone = rawPhone.replace(/[^0-9]/g, '');
+
+                        // 🇰🇷 대한민국 국가번호(82) 처리: 8210... -> 010...
+                        if (cleanPhone.startsWith('8210')) {
+                            cleanPhone = '0' + cleanPhone.substring(2);
+                        } else if (cleanPhone.startsWith('82')) {
+                            cleanPhone = '0' + cleanPhone.substring(2);
+                        }
+
                         if (cleanPhone) {
-                            // 전화번호 형식이 01012345678 또는 010-1234-5678 다양할 수 있으므로 보수적으로 체크
+                            const formattedPhone = cleanPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
                             const { data: phoneMatch } = await supabase.from('profiles')
                                 .select('*')
-                                .or(`phone.eq.${cleanPhone},phone.eq.${cleanPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3')}`)
-                                .is('id', null)
+                                .or(`phone.eq.${cleanPhone},phone.eq.${formattedPhone}`)
+                                .filter('id', 'is', null) // 아직 연결 안 된 데이터만
                                 .maybeSingle();
 
                             if (phoneMatch) {
                                 console.log("전화번호로 기존 데이터를 찾았습니다. 현재 계정과 병합합니다.");
-                                await supabase.from('profiles').update({ id: user.id, email: user.email || phoneMatch.email }).eq('id_pk', phoneMatch.id_pk || phoneMatch.id); // UUID 혹은 PK 기준
-                                // profiles 테이블의 id가 PK라면 (primary key가 id이고 UUID인 경우)
-                                // 만약 pre-registered 데이터가 id가 null인 상태로 들어있다면 PK가 따로 있어야 함.
-                                // 대부분의 경우 id를 update하는 것만으로 충분.
-                                await supabase.from('profiles').update({ id: user.id }).eq('email', phoneMatch.email);
+                                await supabase.from('profiles').update({ id: user.id, email: user.email || phoneMatch.email }).eq('email', phoneMatch.email);
                                 data = { ...phoneMatch, id: user.id };
                             }
                         }
