@@ -4357,7 +4357,7 @@ export default function App() {
                                                 </div>
 
                                                 {/* 하단: 프라이버시 설정들 */}
-                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', borderTop: '1px solid #F7FAFC', paddingTop: '12px' }}>
+                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', borderTop: '1px solid #F7FAFC', paddingTop: '12px', flexWrap: 'wrap' }}>
                                                     {(['phone', 'birthdate', 'address'] as const).map(type => {
                                                         const isPublic = member[`is_${type}_public`];
                                                         return (
@@ -4375,23 +4375,30 @@ export default function App() {
                                                                     if (res.ok) setMemberList(memberList.map(m => m.id === member.id ? { ...m, [field]: newValue } : m));
                                                                 }}
                                                                 style={{
-                                                                    fontSize: '11px',
-                                                                    padding: '8px 12px',
-                                                                    borderRadius: '12px',
+                                                                    fontSize: '12px',
+                                                                    padding: '8px 14px',
+                                                                    borderRadius: '14px',
                                                                     border: '1px solid',
                                                                     borderColor: isPublic ? '#ECC94B' : '#EDF2F7',
                                                                     cursor: 'pointer',
                                                                     background: isPublic ? '#FFFFF0' : '#F7FAFC',
-                                                                    color: isPublic ? '#B7791F' : '#A0AEC0',
+                                                                    color: isPublic ? '#B7791F' : '#4A5568',
                                                                     display: 'flex',
                                                                     alignItems: 'center',
-                                                                    gap: '4px',
-                                                                    fontWeight: 800,
-                                                                    transition: 'all 0.2s'
+                                                                    gap: '6px',
+                                                                    fontWeight: 700,
+                                                                    transition: 'all 0.2s',
+                                                                    whiteSpace: 'nowrap',
+                                                                    flexShrink: 0
                                                                 }}
                                                             >
-                                                                <span>{type === 'phone' ? '📞 전번' : type === 'birthdate' ? '🎂 생일' : '🏠 주소'}</span>
-                                                                <span style={{ fontSize: '10px' }}>{isPublic ? '공개' : '비공'}</span>
+                                                                <span style={{ filter: isPublic ? 'none' : 'grayscale(1)' }}>
+                                                                    {type === 'phone' ? '📞' : type === 'birthdate' ? '🎂' : '🏠'}
+                                                                </span>
+                                                                <span>{type === 'phone' ? '전화' : type === 'birthdate' ? '생일' : '주소'}</span>
+                                                                <span style={{ fontSize: '11px', opacity: 0.8, color: isPublic ? '#D69E2E' : '#A0AEC0' }}>
+                                                                    {isPublic ? '공개' : '비공개'}
+                                                                </span>
                                                             </button>
                                                         );
                                                     })}
