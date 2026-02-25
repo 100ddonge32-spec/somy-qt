@@ -5101,17 +5101,32 @@ export default function App() {
                                                         <input type="file" id="book-img-upload" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
                                                             const file = e.target.files?.[0];
                                                             if (!file) return;
+                                                            console.log("[Book Upload] File selected:", file.name);
                                                             setIsBookUploading(true);
                                                             try {
                                                                 const formData = new FormData();
                                                                 formData.append('file', file);
+                                                                // churchId가 '예수인교회'와 같은 한글일 경우를 대비해 인코딩하거나 기본값 처리
+                                                                const safeChurchId = churchId ? encodeURIComponent(churchId) : 'jesus-in';
+                                                                formData.append('church_id', churchId || 'jesus-in');
+
                                                                 const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
                                                                 const data = await res.json();
+                                                                console.log("[Book Upload] Response data:", data);
+
                                                                 if (data.url) {
-                                                                    setSettingsForm({ ...settingsForm, today_book_image_url: data.url });
+                                                                    setSettingsForm((prev: any) => ({ ...prev, today_book_image_url: data.url }));
+                                                                    console.log("[Book Upload] Success! URL set:", data.url);
+                                                                } else if (data.error) {
+                                                                    console.error("[Book Upload] API Error:", data.error);
+                                                                    alert('업로드 실패: ' + data.error);
                                                                 }
-                                                            } catch (e) { alert('이미지 업로드 실패'); }
-                                                            finally { setIsBookUploading(false); }
+                                                            } catch (e) {
+                                                                console.error("[Book Upload] Fetch Error:", e);
+                                                                alert('이미지 업로드 중 네트워크 오류가 발생했습니다.');
+                                                            } finally {
+                                                                setIsBookUploading(false);
+                                                            }
                                                         }} />
                                                         <button
                                                             onClick={() => document.getElementById('book-img-upload')?.click()}

@@ -20,8 +20,12 @@ export async function POST(req: NextRequest) {
         }
 
         const fileExt = file.name.split('.').pop();
-        const fileName = `${churchId}-logo-${Date.now()}.${fileExt}`;
-        const filePath = `logos/${fileName}`;
+        // 한글이나 특수문자가 섞인 churchId를 안전한 파일명으로 변환
+        const safeId = churchId.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const fileName = `${safeId}-book-${Date.now()}.${fileExt}`;
+        const filePath = `books/${fileName}`; // 책 이미지는 books 폴더에 관리
+
+        console.log(`[Upload API] Attempting upload: bucket=church-assets, path=${filePath}`);
 
         // 버킷이 없으면 생성 시도
         await supabaseAdmin.storage.createBucket('church-assets', { public: true }).catch(() => { });
@@ -34,12 +38,17 @@ export async function POST(req: NextRequest) {
                 upsert: true
             });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+            console.error('[Upload API] Supabase Upload Error:', uploadError);
+            throw uploadError;
+        }
 
         // 공개 URL 가져오기
         const { data: { publicUrl } } = supabaseAdmin.storage
             .from('church-assets')
             .getPublicUrl(filePath);
+
+        console.log(`[Upload API] Success! Public URL: ${publicUrl}`);
 
         return NextResponse.json({ url: publicUrl });
     } catch (err: any) {
