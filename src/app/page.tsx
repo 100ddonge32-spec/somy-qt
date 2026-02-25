@@ -5463,9 +5463,14 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                 <div style={{ fontSize: '12px', color: member.phone ? '#555' : '#BBB' }}>📞 {member.phone || (member.is_phone_public ? '미등록' : '비공개')}</div>
                             </div>
                             {member.phone && (
-                                <button onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${member.phone}`; }} style={{ background: '#E8F5E9', border: 'none', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                                    <span style={{ fontSize: '18px' }}>📞</span>
-                                </button>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button onClick={(e) => { e.stopPropagation(); window.location.href = `sms:${member.phone.replace(/[^0-9]/g, '')}`; }} style={{ background: '#E3F2FD', border: 'none', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                        <span style={{ fontSize: '18px' }}>💬</span>
+                                    </button>
+                                    <button onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${member.phone}`; }} style={{ background: '#E8F5E9', border: 'none', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                        <span style={{ fontSize: '18px' }}>📞</span>
+                                    </button>
+                                </div>
                             )}
                         </div>
                     ))
