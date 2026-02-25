@@ -6,7 +6,7 @@ import { getGraceVerse } from '@/lib/navigator-verses';
 import { getTodayCcm, CcmVideo, CCM_LIST } from "@/lib/ccm";
 import * as XLSX from 'xlsx';
 
-type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "profile" | "memberSearch";
+type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "adminGuide" | "profile" | "memberSearch";
 
 const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://cdn.imweb.me/thumbnail/20210813/569458bf12dd0.png";
@@ -1459,12 +1459,14 @@ export default function App() {
                                             <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>💌</div>
                                             <span>은혜나눔 게시판</span>
                                         </button>
-                                        <div onClick={(e) => { e.stopPropagation(); setShowNotiList(!showNotiList); }} style={{
-                                            position: 'absolute', top: '-6px', right: '-6px', width: '28px', height: '28px', background: 'linear-gradient(145deg, #ffffff, #f0f0f0)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 8px rgba(0,0,0,0.15)', cursor: 'pointer', zIndex: 1200, border: '1.5px solid #E6A4B4', animation: notifications.filter(n => !n.is_read).length > 0 ? 'bell-swing 2s infinite ease-in-out' : 'none', transition: 'all 0.2s'
-                                        }} onMouseOver={e => e.currentTarget.style.transform = "scale(1.1) rotate(10deg)"} onMouseOut={e => e.currentTarget.style.transform = "scale(1) rotate(0)"}>
-                                            <span style={{ fontSize: '14px' }}>🔔</span>
-                                            {notifications.filter(n => !n.is_read).length > 0 && <div style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, minWidth: '14px', height: '14px', padding: '0 2px', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white' }}>{notifications.filter(n => !n.is_read).length}</div>}
-                                        </div>
+                                        {!showWelcome && (
+                                            <div onClick={(e) => { e.stopPropagation(); setShowNotiList(!showNotiList); }} style={{
+                                                position: 'absolute', top: '-6px', right: '-6px', width: '28px', height: '28px', background: 'linear-gradient(145deg, #ffffff, #f0f0f0)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 8px rgba(0,0,0,0.15)', cursor: 'pointer', zIndex: 1200, border: '1.5px solid #E6A4B4', animation: notifications.filter(n => !n.is_read).length > 0 ? 'bell-swing 2s infinite ease-in-out' : 'none', transition: 'all 0.2s'
+                                            }} onMouseOver={e => e.currentTarget.style.transform = "scale(1.1) rotate(10deg)"} onMouseOut={e => e.currentTarget.style.transform = "scale(1) rotate(0)"}>
+                                                <span style={{ fontSize: '14px' }}>🔔</span>
+                                                {notifications.filter(n => !n.is_read).length > 0 && <div style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, minWidth: '14px', height: '14px', padding: '0 2px', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white' }}>{notifications.filter(n => !n.is_read).length}</div>}
+                                            </div>
+                                        )}
                                     </div>
                                     {/* 감사일기 버튼 */}
                                     <div style={{ position: 'relative', flex: 1 }}>
@@ -3283,6 +3285,14 @@ export default function App() {
                                     <div style={{ fontSize: '12px', color: '#999' }}>모든 성도님께 오늘의 말씀 페이지로 연결되는 푸시 알림을 보냅니다.</div>
                                 </div>
                             </button>
+
+                            <button onClick={() => setView('adminGuide')} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
+                                <div style={{ width: '48px', height: '48px', background: '#F5F5F5', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📄</div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '2px' }}>관리자 활용 가이드 (PDF 가능)</div>
+                                    <div style={{ fontSize: '12px', color: '#999' }}>초기 설정부터 200% 활용 방안을 담은 완벽 가이드입니다.</div>
+                                </div>
+                            </button>
                         </div>
 
                         <button onClick={() => setView('home')} style={{ marginTop: '32px', width: '100%', padding: '16px', background: '#F5F5F5', color: '#333', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 돌아가기</button>
@@ -3789,6 +3799,10 @@ export default function App() {
             return renderGuidePage();
         }
 
+        if (view === "adminGuide") {
+            return renderAdminGuide();
+        }
+
         if (view === "profile") {
             return <ProfileView user={user} supabase={supabase} setView={setView} baseFont={baseFont} allowMemberEdit={churchSettings?.allow_member_edit} />;
         }
@@ -3898,12 +3912,12 @@ export default function App() {
     // 사용 가이드 페이지
     const renderGuidePage = () => {
         const guideItems = [
-            { title: "📖 오늘의 큐티", desc: "매일 아침 배달되는 성경 본문을 읽고, 5단계(읽기-해설-질문-나눔-기도) 과정을 통해 깊이 있는 묵상을 할 수 있습니다.", icon: "✨" },
-            { title: "💬 소미와 대화하기", desc: "말씀을 보다가 궁금한 점이 생기면 AI 친구 '소미'에게 물어보세요. 따뜻하고 지혜로운 답변을 해줍니다.", icon: "🐑" },
-            { title: "✍️ 은혜나눔 게시판", desc: "묵상한 내용을 성도들과 나누어 보세요. 서로의 글에 따뜻한 댓글과 격려로 풍성한 공동체를 만듭니다.", icon: "💌" },
-            { title: "🎵 찬양 플레이어", desc: "화면 어딘가에 떠 있는 아이패드 스타일 플레이어를 통해 추천 CCM을 들으며 묵상에 집중해 보세요.", icon: "🎧" },
-            { title: "📽️ 주일 설교 리뷰", desc: "주일 설교를 다시 보고, AI가 요약해준 핵심 내용과 묵상 질문으로 은혜를 되새길 수 있습니다.", icon: "🎙️" },
-            { title: "🔔 푸시 알림 설정", desc: "매일 아침 8시, 큐티 시간을 알려드려요! 앱 접속 시 나타나는 알림 권한을 반드시 '허용'해 주세요.", icon: "📱" },
+            { title: "📖 깊이 있는 5단계 큐티", desc: "매일 아침 성경 본문을 5단계(읽기-해설-질문-나눔-기도)로 묵상하며 말씀의 맛을 느껴보세요. [나눔] 단계에서의 글은 자동으로 게시판에 공유됩니다!", icon: "✨" },
+            { title: "🧠 소미의 지혜 (본문 터치)", desc: "큐티 도중 어려운 절이나 단어가 있다면 그 부분을 살짝 터치해 보세요. AI 소미가 즉석에서 성경적인 해설을 들려줍니다.", icon: "💡" },
+            { title: "💌 한 줄의 은혜 나누기", desc: "다른 성도님들이 쓴 묵상 글에 '아멘'이나 따뜻한 댓글을 남겨보세요. 서로의 응원이 모여 풍성한 공동체가 됩니다.", icon: "💌" },
+            { title: "🌻 감사로 채우는 하루", desc: "매일 세 가지 감사를 기록하는 감사일기를 써보세요. 한 달만 지속해도 삶의 공기가 달라지는 것을 경험하실 거예요.", icon: "🌻" },
+            { title: "🎧 말씀과 찬양의 조화", desc: "CCM 플레이어를 실행하고 묵상을 시작해 보세요. 창을 닫아도 배경 음악이 유지되어 더욱 깊은 몰입을 도와줍니다.", icon: "🎧" },
+            { title: "📱 홈 화면 추가 (꿀팁!)", desc: "브라우저 '공유' 버튼을 눌러 '홈 화면에 추가'를 해보세요. 카카오톡처럼 아이콘이 생기고 숫자 배지 알림도 받을 수 있습니다.", icon: "📱" },
         ];
 
         return (
@@ -3919,10 +3933,10 @@ export default function App() {
                     <div style={{ width: '50px', height: '50px', background: 'white', borderRadius: '50%', padding: '4px', marginBottom: '12px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
                         <img src={SOMY_IMG} alt="소미" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: '50%' }} />
                     </div>
-                    <div style={{ fontSize: '18px', fontWeight: 800, marginBottom: '8px' }}>소미와 함께 말씀과 더 가까워지는 법</div>
+                    <div style={{ fontSize: '18px', fontWeight: 800, marginBottom: '8px' }}>소미 200% 활용 꿀팁! ✨</div>
                     <div style={{ fontSize: '13px', lineHeight: 1.6, opacity: 0.9 }}>
-                        예수인교회 성도님들의 풍성한 신앙 생활을 위해<br />
-                        소미가 준비한 기능들을 소개합니다.
+                        소미와 함께라면 큐티가 더 즐거워집니다.<br />
+                        새로 업데이트된 기능들을 확인하고 활기찬 신앙 생활을 시작하세요.
                     </div>
                 </div>
 
@@ -3939,17 +3953,78 @@ export default function App() {
                     ))}
                 </div>
 
-                {/* 마무리 인사 */}
                 <div style={{ marginTop: '40px', textAlign: 'center', padding: '30px 0', borderTop: '1px solid #EEE' }}>
-                    <div style={{ width: '70px', height: '70px', background: 'white', borderRadius: '50%', border: '2px solid #D4AF37', padding: '5px', margin: '0 auto 15px', boxShadow: '0 8px 16px rgba(0,0,0,0.06)' }}>
-                        <img src={SOMY_IMG} alt="소미" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: '50%' }} />
-                    </div>
-                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '8px' }}>매일 아침 소미와 함께해요!</div>
-                    <div style={{ fontSize: '13px', color: '#999', lineHeight: 1.5, marginBottom: '25px' }}>
-                        궁금한 점이 있거나 이용에 어려운 점이 있다면<br />
-                        언제든지 소미에게 물어보세요.
-                    </div>
                     <button onClick={() => setView('home')} style={{ padding: '14px 40px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 5px 15px rgba(0,0,0,0.1)' }}>홈으로 돌아가기</button>
+                </div>
+            </div>
+        );
+    };
+
+    // 관리자 활용 가이드 (PDF화 가능)
+    const renderAdminGuide = () => {
+        return (
+            <div id="printable-area" style={{ minHeight: "100vh", background: "white", maxWidth: "800px", margin: "0 auto", padding: "40px 30px", ...baseFont, color: '#333' }}>
+                <style>{`
+                    @media print {
+                        #no-print { display: none !important; }
+                        #printable-area { padding: 0 !important; width: 100% !important; max-width: 100% !important; }
+                        .guide-box { border: 1px solid #EEE !important; break-inside: avoid; }
+                    }
+                `}</style>
+
+                <div id="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+                    <button onClick={() => setView('admin')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '12px', padding: '8px 16px', fontSize: "14px", cursor: "pointer", fontWeight: 700 }}>← 뒤로</button>
+                    <button onClick={() => window.print()} style={{ background: "#D4AF37", color: 'white', border: "none", borderRadius: '12px', padding: '10px 20px', fontSize: "14px", cursor: "pointer", fontWeight: 700, boxShadow: '0 4px 12px rgba(212,175,55,0.3)' }}>PDF로 저장 / 인쇄하기 📄</button>
+                </div>
+
+                <div style={{ textAlign: 'center', marginBottom: '50px' }}>
+                    <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 800, letterSpacing: '2px', marginBottom: '10px' }}>ADMINISTRATION STRATEGY</div>
+                    <h1 style={{ fontSize: '28px', fontWeight: 900, color: '#222', margin: 0 }}>소미(SOMY) 사역 활용 가이드</h1>
+                    <div style={{ width: '40px', height: '4px', background: '#D4AF37', margin: '20px auto' }}></div>
+                    <p style={{ fontSize: '15px', color: '#666', lineHeight: 1.6 }}>이 문서는 관리자가 성도들의 풍성한 공동체 생활을 위해<br />시스템을 초기화하고 효율적으로 운영하는 방안을 담고 있습니다.</p>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                    {/* 섹션 1: 기초 설정 */}
+                    <div className="guide-box" style={{ background: '#F9F9F9', padding: '25px', borderRadius: '20px', border: '1px solid #F0F0F0' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#B8924A', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '22px' }}>🏗️</span> 1단계: 사역의 기초 세우기 (초기 설정)
+                        </h3>
+                        <ul style={{ fontSize: '14px', color: '#555', lineHeight: 1.8, paddingLeft: '20px' }}>
+                            <li><strong>교회 정체성 등록:</strong> [환경 설정]에서 교회 로고와 홈페이지 주소를 정확히 입력하세요. 이것이 앱 전체의 배너와 알람 로고가 됩니다.</li>
+                            <li><strong>요금제 확인:</strong> 무료 버전은 주 1회 AI 큐티 기능이 제한될 수 있습니다. 필요에 따라 상위 플랜을 검토하세요.</li>
+                            <li><strong>성도 초대:</strong> 초대 URL을 교회 단톡방에 공유하세요. 성도가 가입하면 '승인 대기' 상태가 되며, 관리자가 확인 후 승인해야 합니다.</li>
+                        </ul>
+                    </div>
+
+                    {/* 섹션 2: 데일리 사역 */}
+                    <div className="guide-box" style={{ background: '#F9F9F9', padding: '25px', borderRadius: '20px', border: '1px solid #F0F0F0' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#3498DB', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '22px' }}>📖</span> 2단계: 매일의 양식 공급 (운영 루틴)
+                        </h3>
+                        <ul style={{ fontSize: '14px', color: '#555', lineHeight: 1.8, paddingLeft: '20px' }}>
+                            <li><strong>큐티 등록 최적화:</strong> 전날 저녁 또는 당일 아침 8시 이전에 큐티를 등록하세요. 'AI 자동 생성' 기능을 활용하면 핵심 메시지를 요약하는 시간을 크게 단축할 수 있습니다.</li>
+                            <li><strong>주일 설교 요약:</strong> 매주 월요일, 주일 설교 원고를 [설교 및 나눔질문 생성] 메뉴에 붙여넣으세요. 생성된 질문은 성도들의 소그룹(구역) 나눔 자료로 훌륭하게 활용됩니다.</li>
+                            <li><strong>공지사항 활용:</strong> 교회 광고는 단순한 전달보다 '따뜻한 사랑의 메시지'와 함께 공지하세요. 등록 즉시 전체 성도에게 푸시가 전송됩니다.</li>
+                        </ul>
+                    </div>
+
+                    {/* 섹션 3: 커뮤니티 활성화 */}
+                    <div className="guide-box" style={{ background: '#F9F9F9', padding: '25px', borderRadius: '20px', border: '1px solid #F0F0F0' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#E67E22', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '22px' }}>🔥</span> 3단계: 공동체 활성화 (사역 꿀팁)
+                        </h3>
+                        <ul style={{ fontSize: '14px', color: '#555', lineHeight: 1.8, paddingLeft: '20px' }}>
+                            <li><strong>마중물 전략:</strong> 담임목사님이나 교역자들이 먼저 은혜나눔 게시판에 한 줄 평을 남겨주세요. 지도자의 참여는 성도들이 글을 쓰기 시작하는 최고의 마중물이 됩니다.</li>
+                            <li><strong>상담/기도 요청 대응:</strong> 성도들의 요청이 도착하면 최대한 빠르게(24시간 내) 따뜻한 답변을 남겨주세요. 앱의 신뢰도와 사역적 친밀감이 비약적으로 상승합니다.</li>
+                            <li><strong>큐티왕 시상:</strong> [이달의 큐티왕] 통계를 바탕으로 매달 성적표를 매기는 대신, 꾸준히 참여하는 성도님들을 주일 예배 때 가볍게 독려하고 시상해 보세요.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div style={{ marginTop: '50px', paddingTop: '30px', borderTop: '2px dashed #EEE', textAlign: 'center' }}>
+                    <p style={{ fontSize: '14px', color: '#AAA', fontStyle: 'italic' }}>"소미는 기술이 아니라, 성도들의 영성을 돕는 사랑의 통로입니다."</p>
+                    <div style={{ fontSize: '12px', color: '#CCC', marginTop: '10px' }}>문의: pastorbaek@kakao.com | SOMY 사역지원팀</div>
                 </div>
             </div>
         );
