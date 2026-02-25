@@ -16,25 +16,19 @@ export async function GET(req: NextRequest) {
     let { data, error } = await supabaseAdmin
         .from('church_settings')
         .select('*')
-        .eq('church_id', churchId)
-        .maybeSingle(); // 에러 대신 null 반환
+        .eq('church_id', churchId || 'jesus-in')
+        .maybeSingle();
 
-    // 만약 해당 교회 아이디로 데이터가 없으면 기본값(ID 1) 조회
     if (!data) {
-        console.log(`[API Settings] No data for ${churchId}, falling back to ID 1`);
-        const { data: defaultData, error: defaultError } = await supabaseAdmin
+        // 기본값(ID 1) 조회
+        const { data: defaultData } = await supabaseAdmin
             .from('church_settings')
             .select('*')
             .eq('id', 1)
             .single();
-
         data = defaultData;
-        error = defaultError;
     }
 
-    if (error && !data) {
-        return NextResponse.json({ settings: null, error: error.message });
-    }
     return NextResponse.json({ settings: data });
 }
 
@@ -58,13 +52,14 @@ export async function POST(req: NextRequest) {
     const { error } = await supabaseAdmin
         .from('church_settings')
         .upsert({
-            id: 1,
+            id: 1, // 현재는 단일 교회이므로 고정 ID 1 사용
             church_name,
             church_logo_url,
             church_url,
             app_subtitle,
-            plan: plan || 'free', // 'free' 또는 'premium'
-            community_visible,
+            plan: plan || 'free',
+            community_visible: community_visible ?? true,
+            allow_member_edit: body.allow_member_edit ?? false, // ✅ 누락된 필드 추가
             sermon_url,
             sermon_summary,
             sermon_q1,

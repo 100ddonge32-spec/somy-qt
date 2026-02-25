@@ -5195,8 +5195,20 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
                     // 3. 이름으로 매칭 (공백 제거 후 비교)
                     if (!match && user?.user_metadata?.full_name) {
                         const cleanName = user.user_metadata.full_name.replace(/\s+/g, '');
+                        // DB의 full_name도 공백이 제거된 채로 저장되어 있으므로 정확히 일치함
                         const { data: nameMatch } = await supabase.from('profiles').select('*').eq('full_name', cleanName).is('id', null).limit(1).maybeSingle();
-                        if (nameMatch) match = nameMatch;
+                        if (nameMatch) {
+                            console.log(`[Sync] 이름 기반 매칭 성공: ${cleanName}`);
+                            match = nameMatch;
+                        } else {
+                            // 혹시 DB에 공백이 있을 경우를 위해 Like 검색 시도 (백동희 -> %백%동%희%)
+                            const fuzzyName = `%${cleanName.split('').join('%')}%`;
+                            const { data: fuzzyMatch } = await supabase.from('profiles').select('*').ilike('full_name', fuzzyName).is('id', null).limit(1).maybeSingle();
+                            if (fuzzyMatch) {
+                                console.log(`[Sync] 퍼지 이름 기반 매칭 성공: ${fuzzyName}`);
+                                match = fuzzyMatch;
+                            }
+                        }
                     }
 
                     if (match) {
