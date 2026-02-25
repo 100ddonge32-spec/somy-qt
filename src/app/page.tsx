@@ -1414,7 +1414,9 @@ export default function App() {
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>✨</div>
+                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+                                            <img src={SOMY_IMG} alt="소미" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        </div>
                                         <span>AI 소미와 대화</span>
                                     </button>
 
@@ -1431,7 +1433,7 @@ export default function App() {
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>🌿</div>
+                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>📖</div>
                                         <span>오늘의 큐티 시작</span>
                                     </button>
                                 </div>
@@ -3258,7 +3260,7 @@ export default function App() {
                             }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
                                 <div style={{ width: '48px', height: '48px', background: '#FCE4EC', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🎙️</div>
                                 <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '2px' }}>주일 설교 요약 및 질문 관리</div>
+                                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '2px' }}>설교 및 나눔질문 생성</div>
                                     <div style={{ fontSize: '12px', color: '#999' }}>설교 원고를 입력하여 AI로 자동 요약하고 묵상 질문을 만듭니다.</div>
                                 </div>
                             </button>
