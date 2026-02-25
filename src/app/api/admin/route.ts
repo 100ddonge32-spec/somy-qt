@@ -157,12 +157,16 @@ export async function POST(req: NextRequest) {
         // 일괄 프라이버시 설정
         if (action === 'bulk_update_privacy') {
             const { church_id, field, value } = body;
+            const targetChurchId = church_id || 'jesus-in';
+
+            // church_id가 일치하거나, NULL인 경우(초기 데이터) 모두 업데이트
             const { error } = await supabaseAdmin
                 .from('profiles')
                 .update({ [field]: value })
-                .eq('church_id', church_id || 'jesus-in');
+                .or(`church_id.eq.${targetChurchId},church_id.is.null`);
+
             if (error) throw error;
-            return NextResponse.json({ success: true });
+            return NextResponse.json({ success: true, targetChurchId });
         }
 
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
