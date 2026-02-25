@@ -201,6 +201,7 @@ export default function App() {
         app_subtitle: APP_SUBTITLE,
         plan: 'free',
         community_visible: true,
+        allow_member_edit: false,
         sermon_summary: '',
         sermon_q1: '',
         sermon_q2: '',
@@ -215,6 +216,7 @@ export default function App() {
         app_subtitle: APP_SUBTITLE,
         plan: 'free',
         community_visible: true,
+        allow_member_edit: false,
         sermon_summary: '',
         sermon_q1: '',
         sermon_q2: '',
@@ -681,7 +683,8 @@ export default function App() {
                 if (settings) {
                     const saneSettings = {
                         ...settings,
-                        community_visible: settings.community_visible ?? true
+                        community_visible: settings.community_visible ?? true,
+                        allow_member_edit: settings.allow_member_edit ?? false
                     };
                     setChurchSettings(saneSettings);
                     setSettingsForm(saneSettings);
@@ -3735,7 +3738,7 @@ export default function App() {
         }
 
         if (view === "profile") {
-            return <ProfileView user={user} supabase={supabase} setView={setView} baseFont={baseFont} />;
+            return <ProfileView user={user} supabase={supabase} setView={setView} baseFont={baseFont} allowMemberEdit={churchSettings?.allow_member_edit} />;
         }
 
         if (view === "memberSearch") {
@@ -4214,6 +4217,8 @@ export default function App() {
 
                                 try {
                                     const updateData = {
+                                        full_name: mergeTarget.full_name,
+                                        church_id: churchId || 'jesus-in',
                                         church_rank: mergeTarget.church_rank || '',
                                         phone: mergeTarget.phone || '',
                                         birthdate: mergeTarget.birthdate || '',
@@ -4519,6 +4524,15 @@ export default function App() {
                                                 <span style={{ fontSize: '13px', color: '#555' }}>{settingsForm.community_visible ? '🟢 공개 (성도 누구나 볼 수 있음)' : '🔴 비공개 (관리자만 볼 수 있음)'}</span>
                                                 <button onClick={() => setSettingsForm((prev: any) => ({ ...prev, community_visible: !prev.community_visible }))} style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: settingsForm.community_visible ? '#E8F5E9' : '#FFEBEE', color: settingsForm.community_visible ? '#2E7D32' : '#C62828' }}>
                                                     {settingsForm.community_visible ? '비공개로 전환' : '공개로 전환'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div style={{ marginTop: '10px' }}>
+                                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>✏️ 성도 개인정보 직접 수정 허용</label>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: '10px', border: '1px solid #EEE', background: '#FAFAFA' }}>
+                                                <span style={{ fontSize: '13px', color: '#555' }}>{settingsForm.allow_member_edit ? '🟢 허용 (성도가 직접 수정 가능)' : '🔴 제한 (수정 불가)'}</span>
+                                                <button onClick={() => setSettingsForm((prev: any) => ({ ...prev, allow_member_edit: !prev.allow_member_edit }))} style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', fontSize: '12px', fontWeight: 700, cursor: 'pointer', background: settingsForm.allow_member_edit ? '#E8F5E9' : '#FFEBEE', color: settingsForm.allow_member_edit ? '#2E7D32' : '#C62828' }}>
+                                                    {settingsForm.allow_member_edit ? '제한으로 전환' : '허용으로 전환'}
                                                 </button>
                                             </div>
                                         </div>
@@ -5150,7 +5164,7 @@ export default function App() {
 // === 독립 컴포넌트 구역 (App 외부에 정의하여 불필요한 리마운트 방지) ===
 
 // 내 프로필 화면 컴포넌트
-function ProfileView({ user, supabase, setView, baseFont }: any) {
+function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any) {
     const [profileForm, setProfileForm] = useState({
         full_name: user?.user_metadata?.full_name || '',
         phone: '',
@@ -5288,16 +5302,16 @@ function ProfileView({ user, supabase, setView, baseFont }: any) {
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                             <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '0' }}>👤 성함</label>
-                            <span style={{ fontSize: '11px', color: '#AAA', fontWeight: 500 }}>수정 불가 (교회 등록 정보)</span>
+                            {!allowMemberEdit && <span style={{ fontSize: '11px', color: '#AAA', fontWeight: 500 }}>수정 불가</span>}
                         </div>
-                        <input type="text" value={profileForm.full_name} readOnly style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none', background: '#F9F9F9', color: '#999', cursor: 'not-allowed' }} />
+                        <input type="text" value={profileForm.full_name} onChange={e => allowMemberEdit && setProfileForm({ ...profileForm, full_name: e.target.value })} readOnly={!allowMemberEdit} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: allowMemberEdit ? '1px solid #D4AF37' : '1px solid #EEE', outline: 'none', background: allowMemberEdit ? 'white' : '#F9F9F9', color: allowMemberEdit ? '#333' : '#999', cursor: allowMemberEdit ? 'text' : 'not-allowed' }} />
                     </div>
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                             <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '0' }}>📞 전화번호</label>
-                            <span style={{ fontSize: '11px', color: '#AAA', fontWeight: 500 }}>수정 불가</span>
+                            {!allowMemberEdit && <span style={{ fontSize: '11px', color: '#AAA', fontWeight: 500 }}>수정 불가</span>}
                         </div>
-                        <input type="tel" value={profileForm.phone} readOnly placeholder="010-0000-0000" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none', background: '#F9F9F9', color: '#999', cursor: 'not-allowed' }} />
+                        <input type="tel" value={profileForm.phone} onChange={e => allowMemberEdit && setProfileForm({ ...profileForm, phone: e.target.value })} readOnly={!allowMemberEdit} placeholder="010-0000-0000" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: allowMemberEdit ? '1px solid #D4AF37' : '1px solid #EEE', outline: 'none', background: allowMemberEdit ? 'white' : '#F9F9F9', color: allowMemberEdit ? '#333' : '#999', cursor: allowMemberEdit ? 'text' : 'not-allowed' }} />
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
                             <input type="checkbox" id="phone_pub" checked={profileForm.is_phone_public} onChange={e => setProfileForm({ ...profileForm, is_phone_public: e.target.checked })} />
                             <label htmlFor="phone_pub" style={{ fontSize: '12px', color: '#888' }}>다른 성도님들께 전화번호를 공개합니다.</label>
@@ -5306,9 +5320,9 @@ function ProfileView({ user, supabase, setView, baseFont }: any) {
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                             <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '0' }}>🎂 생년월일</label>
-                            <span style={{ fontSize: '11px', color: '#E07A5F', fontWeight: 600 }}>양/음력 불일치 등은 교역자께 문의주세요</span>
+                            <span style={{ fontSize: '11px', color: '#E07A5F', fontWeight: 600 }}>{allowMemberEdit ? '정확한 생일을 선택해주세요' : '양/음력 불일치 등은 교역자께 문의주세요'}</span>
                         </div>
-                        <input type="date" value={profileForm.birthdate} readOnly style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none', background: '#F9F9F9', color: '#999', cursor: 'not-allowed' }} />
+                        <input type="date" value={profileForm.birthdate} onChange={e => allowMemberEdit && setProfileForm({ ...profileForm, birthdate: e.target.value })} readOnly={!allowMemberEdit} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: allowMemberEdit ? '1px solid #D4AF37' : '1px solid #EEE', outline: 'none', background: allowMemberEdit ? 'white' : '#F9F9F9', color: allowMemberEdit ? '#333' : '#999', cursor: allowMemberEdit ? 'text' : 'not-allowed' }} />
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
                             <input type="checkbox" id="birth_pub" checked={profileForm.is_birthdate_public} onChange={e => setProfileForm({ ...profileForm, is_birthdate_public: e.target.checked })} />
                             <label htmlFor="birth_pub" style={{ fontSize: '12px', color: '#888' }}>다른 성도님들께 생일을 공개합니다.</label>
@@ -5317,9 +5331,9 @@ function ProfileView({ user, supabase, setView, baseFont }: any) {
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                             <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '0' }}>🏠 주소</label>
-                            <span style={{ fontSize: '11px', color: '#AAA', fontWeight: 500 }}>수정 불가</span>
+                            {!allowMemberEdit && <span style={{ fontSize: '11px', color: '#AAA', fontWeight: 500 }}>수정 불가</span>}
                         </div>
-                        <input type="text" value={profileForm.address} readOnly style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none', background: '#F9F9F9', color: '#999', cursor: 'not-allowed' }} />
+                        <input type="text" value={profileForm.address} onChange={e => allowMemberEdit && setProfileForm({ ...profileForm, address: e.target.value })} readOnly={!allowMemberEdit} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: allowMemberEdit ? '1px solid #D4AF37' : '1px solid #EEE', outline: 'none', background: allowMemberEdit ? 'white' : '#F9F9F9', color: allowMemberEdit ? '#333' : '#999', cursor: allowMemberEdit ? 'text' : 'not-allowed' }} />
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
                             <input type="checkbox" id="address_pub" checked={profileForm.is_address_public} onChange={e => setProfileForm({ ...profileForm, is_address_public: e.target.checked })} />
                             <label htmlFor="address_pub" style={{ fontSize: '12px', color: '#888' }}>다른 성도님들께 주소를 공개합니다.</label>
