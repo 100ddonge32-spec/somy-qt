@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     try {
         let supabaseQuery = supabaseAdmin
             .from('profiles')
-            .select('id, full_name, avatar_url, church_rank, member_no, is_phone_public, is_birthdate_public, is_address_public, phone, birthdate, address')
+            .select('id, full_name, avatar_url, church_rank, member_no, gender, is_phone_public, is_birthdate_public, is_address_public, phone, birthdate, address')
             .eq('church_id', churchId);
 
         if (query) {
@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
             phone: (isAdminQuery || member.is_phone_public) ? member.phone : null,
             birthdate: (isAdminQuery || member.is_birthdate_public) ? member.birthdate : null,
             address: (isAdminQuery || member.is_address_public) ? member.address : null,
+            gender: member.gender,
             is_phone_public: member.is_phone_public,
             is_birthdate_public: member.is_birthdate_public,
             is_address_public: member.is_address_public

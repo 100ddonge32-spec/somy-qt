@@ -1000,14 +1000,15 @@ export default function App() {
     const downloadTemplate = () => {
         const ws = XLSX.utils.json_to_sheet([
             {
-                "교인사진": "(이 칸은 비워두거나 사진 파일명을 입력하세요)",
+                "교인사진": "(사진 파일명 또는 URL)",
                 "성명": "홍길동",
                 "교적번호": "2024-001",
                 "생년월일": "1990-01-01",
                 "성별": "남",
                 "교회직분": "성도",
                 "휴대폰": "010-1234-5678",
-                "주소": "서울특별시 ..."
+                "주소": "서울특별시 ...",
+                "이메일": "hong@example.com (필수 아님)"
             }
         ]);
         const wb = XLSX.utils.book_new();
@@ -4175,13 +4176,29 @@ export default function App() {
                                 />
                             </div>
                         </div>
-                        <div>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>성함</label>
-                            <input value={memberEditForm.full_name} onChange={e => setMemberEditForm({ ...memberEditForm, full_name: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <div style={{ flex: 2 }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>성함</label>
+                                <input value={memberEditForm.full_name} onChange={e => setMemberEditForm({ ...memberEditForm, full_name: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>성별</label>
+                                <select value={memberEditForm.gender || ''} onChange={e => setMemberEditForm({ ...memberEditForm, gender: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none', background: 'white' }}>
+                                    <option value="">선택</option>
+                                    <option value="남">남</option>
+                                    <option value="여">여</option>
+                                </select>
+                            </div>
                         </div>
-                        <div>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>직분</label>
-                            <input value={memberEditForm.church_rank} onChange={e => setMemberEditForm({ ...memberEditForm, church_rank: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <div style={{ flex: 1 }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>교적번호</label>
+                                <input value={memberEditForm.member_no || ''} onChange={e => setMemberEditForm({ ...memberEditForm, member_no: e.target.value })} placeholder="예: 2024-001" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>직분</label>
+                                <input value={memberEditForm.church_rank} onChange={e => setMemberEditForm({ ...memberEditForm, church_rank: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                            </div>
                         </div>
                         <div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -4258,16 +4275,32 @@ export default function App() {
                         <button onClick={() => setShowAddMemberModal(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                        <div>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>성함 *</label>
-                            <input id="add-name" placeholder="이름을 입력하세요" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <div style={{ flex: 2 }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>성함 *</label>
+                                <input id="add-name" placeholder="이름을 입력하세요" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>성별</label>
+                                <select id="add-gender" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none', background: 'white' }}>
+                                    <option value="">선택</option>
+                                    <option value="남">남</option>
+                                    <option value="여">여</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <div style={{ flex: 1 }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>교적번호</label>
+                                <input id="add-member-no" placeholder="예: 2024-001" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>직분</label>
+                                <input id="add-rank" placeholder="예: 성도, 집사" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                            </div>
                         </div>
                         <div>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>직분</label>
-                            <input id="add-rank" placeholder="예: 성도, 집사, 권사" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
-                        </div>
-                        <div>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>전화번호 (이메일 자동생성용)</label>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>전화번호</label>
                             <input id="add-phone" placeholder="010-0000-0000" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                         </div>
                         <div>
@@ -4294,6 +4327,8 @@ export default function App() {
                                     full_name: name,
                                     email: email,
                                     church_rank: (document.getElementById('add-rank') as any)?.value || '',
+                                    gender: (document.getElementById('add-gender') as any)?.value || '',
+                                    member_no: (document.getElementById('add-member-no') as any)?.value || '',
                                     phone: phone,
                                     birthdate: (document.getElementById('add-birth') as any)?.value || null,
                                     address: (document.getElementById('add-addr') as any)?.value || '',
@@ -4470,12 +4505,15 @@ export default function App() {
         }
 
         const dataToExport = memberList.map(m => ({
+            '교인사진': m.avatar_url || '',
             '성명': m.full_name || '',
-            '이메일': m.email || '',
-            '휴대폰': m.phone || '',
+            '교적번호': m.member_no || '',
             '생년월일': m.birthdate || '',
+            '성별': m.gender || '',
             '교회직분': m.church_rank || '',
+            '휴대폰': m.phone || '',
             '주소': m.address || '',
+            '이메일': m.email || '',
             '승인상태': m.is_approved ? '승인됨' : '미승인',
             '전화공개': m.is_phone_public ? '공개' : '비공개',
             '생일공개': m.is_birthdate_public ? '공개' : '비공개',
@@ -5149,6 +5187,8 @@ export default function App() {
                                                                                         church_rank: member.church_rank || '',
                                                                                         phone: member.phone || '',
                                                                                         birthdate: member.birthdate || '',
+                                                                                        gender: member.gender || '',
+                                                                                        member_no: member.member_no || '',
                                                                                         address: member.address || '',
                                                                                         is_phone_public: member.is_phone_public || false,
                                                                                         is_birthdate_public: member.is_birthdate_public || false,
@@ -5756,9 +5796,11 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                 <img alt="" src={member.avatar_url || 'https://via.placeholder.com/44'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             </div>
                             <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
                                     <span style={{ fontSize: '15px', fontWeight: 800, color: '#333' }}>{member.full_name}</span>
                                     {member.church_rank && <span style={{ fontSize: '11px', background: '#F5F2EA', color: '#B8924A', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>{member.church_rank}</span>}
+                                    {member.gender && <span style={{ fontSize: '11px', background: '#F5F5F5', color: '#666', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>{member.gender}</span>}
+                                    {member.member_no && <span style={{ fontSize: '11px', background: '#E3F2FD', color: '#1565C0', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>{member.member_no}</span>}
                                 </div>
                                 <div style={{ fontSize: '12px', color: member.phone ? '#555' : '#BBB', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                     📞 {member.phone || (member.is_phone_public ? '미등록' : '비공개')}
@@ -5789,7 +5831,11 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                 <img alt="" src={selectedMember.avatar_url || 'https://via.placeholder.com/100'} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
                             </div>
                             <h3 style={{ fontSize: '24px', fontWeight: 800, color: '#333', margin: '0 0 6px' }}>{selectedMember.full_name}</h3>
-                            {selectedMember.church_rank && <span style={{ fontSize: '14px', background: '#F5F2EA', color: '#B8924A', padding: '4px 12px', borderRadius: '10px', fontWeight: 700 }}>{selectedMember.church_rank}</span>}
+                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                {selectedMember.church_rank && <span style={{ fontSize: '14px', background: '#F5F2EA', color: '#B8924A', padding: '4px 12px', borderRadius: '10px', fontWeight: 700 }}>{selectedMember.church_rank}</span>}
+                                {selectedMember.gender && <span style={{ fontSize: '14px', background: '#F5F5F5', color: '#666', padding: '4px 12px', borderRadius: '10px', fontWeight: 700 }}>{selectedMember.gender}</span>}
+                                {selectedMember.member_no && <span style={{ fontSize: '14px', background: '#E3F2FD', color: '#1565C0', padding: '4px 12px', borderRadius: '10px', fontWeight: 700 }}>NO. {selectedMember.member_no}</span>}
+                            </div>
                         </div>
                         <div style={{ background: '#FDFCFB', padding: '20px', borderRadius: '24px', border: '1px solid #F0ECE4' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
