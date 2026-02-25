@@ -5091,7 +5091,7 @@ export default function App() {
                                                             return 0;
                                                         })
                                                         .map(member => (
-                                                            <div key={member.id} style={{ background: 'white', padding: '16px', borderRadius: '15px', border: selectedMemberIds.includes(member.id) ? '2px solid #D4AF37' : '1px solid #EEE', position: 'relative' }}>
+                                                            <div key={member.id} style={{ background: 'white', padding: '16px', borderRadius: '15px', border: selectedMemberIds.includes(member.id) ? '2px solid #D4AF37' : '1px solid #EEE', position: 'relative', marginBottom: '12px' }}>
                                                                 <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                                                                     {/* 개별 선택 체크박스 */}
                                                                     <div
@@ -5116,14 +5116,14 @@ export default function App() {
                                                                     </div>
                                                                     <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                                         {/* 상단: 이름/직분 및 관리 버튼 */}
-                                                                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', width: '100%', marginBottom: '4px' }}>
-                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', minWidth: 0 }}>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%', marginBottom: '6px', flexWrap: 'wrap' }}>
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', flex: 1, minWidth: '100px' }}>
                                                                                 <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', whiteSpace: 'nowrap' }}>{member.full_name}</div>
-                                                                                {!member.is_approved && <span style={{ fontSize: '10px', color: '#E57373', border: '1px solid #E57373', padding: '1px 4px', borderRadius: '4px', background: '#FFEBEE', fontWeight: 700, whiteSpace: 'nowrap' }}>승인대기</span>}
+                                                                                {!member.is_approved && <span style={{ fontSize: '10px', color: '#E57373', border: '1px solid #E57373', padding: '2px 4px', borderRadius: '4px', background: '#FFEBEE', fontWeight: 700, whiteSpace: 'nowrap' }}>승인대기</span>}
                                                                                 {member.church_rank && <div style={{ fontSize: '11px', background: '#F9F7F2', color: '#B8924A', padding: '2px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>{member.church_rank}</div>}
                                                                             </div>
 
-                                                                            <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                                                                            <div style={{ display: 'flex', gap: '4px', flexShrink: 0, marginLeft: 'auto', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                                                                                 {!member.is_approved ? (
                                                                                     <button
                                                                                         onClick={async () => {
@@ -5157,12 +5157,8 @@ export default function App() {
                                                                                         setInitialMemberEditForm(form);
                                                                                     }} style={{ background: '#F5F5F5', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', color: '#666' }}>수정</button>
                                                                                 )}
-                                                                                {/* 통합 버튼: 중복 발견 시 강조, 아닐 때도 상시 노출로 변경 */}
                                                                                 {(() => {
-                                                                                    const isDuplicate = memberList.some(m =>
-                                                                                        m.id !== member.id &&
-                                                                                        (m.full_name || '').trim().replace(/\s/g, '').toLowerCase() === (member.full_name || '').trim().replace(/\s/g, '').toLowerCase()
-                                                                                    );
+                                                                                    const isDuplicate = memberList.some(m => m.id !== member.id && (m.full_name || '').trim().replace(/\s/g, '').toLowerCase() === (member.full_name || '').trim().replace(/\s/g, '').toLowerCase());
                                                                                     return (
                                                                                         <button
                                                                                             onClick={() => { setMergeTarget(member); setMergeSearchKeyword(member.full_name || ''); setShowMergeModal(true); }}
@@ -5192,17 +5188,17 @@ export default function App() {
                                                                                 </button>
                                                                             </div>
                                                                         </div>
-                                                                        <div style={{ fontSize: '12px', color: '#666', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                            <span>📞 {member.phone || '번호 없음'}</span>
-                                                                            {member.is_phone_public ? <span style={{ fontSize: '10px', background: '#E8F5E9', color: '#2E7D32', padding: '2px 4px', borderRadius: '4px' }}>공개</span> : <span style={{ fontSize: '10px', background: '#F5F5F5', color: '#999', padding: '2px 4px', borderRadius: '4px' }}>🔒 비공개</span>}
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#666', gap: '8px' }}>
+                                                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📞 {member.phone || '번호 없음'}</span>
+                                                                            {member.is_phone_public ? <span style={{ fontSize: '10px', background: '#E8F5E9', color: '#2E7D32', padding: '2px 4px', borderRadius: '4px', flexShrink: 0, fontWeight: 700 }}>공개</span> : <span style={{ fontSize: '10px', background: '#F5F5F5', color: '#999', padding: '2px 4px', borderRadius: '4px', flexShrink: 0 }}>🔒 비공개</span>}
                                                                         </div>
-                                                                        <div style={{ fontSize: '12px', color: '#666', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                            <span>🎂 {member.birthdate ? `${member.birthdate} ${member.is_birthdate_lunar ? '(음)' : ''}` : '생일 없음'}</span>
-                                                                            {member.is_birthdate_public ? <span style={{ fontSize: '10px', background: '#E8F5E9', color: '#2E7D32', padding: '2px 4px', borderRadius: '4px' }}>공개</span> : <span style={{ fontSize: '10px', background: '#F5F5F5', color: '#999', padding: '2px 4px', borderRadius: '4px' }}>🔒 비공개</span>}
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#666', gap: '8px' }}>
+                                                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>🎂 {member.birthdate ? `${member.birthdate} ${member.is_birthdate_lunar ? '(음)' : ''}` : '생일 없음'}</span>
+                                                                            {member.is_birthdate_public ? <span style={{ fontSize: '10px', background: '#E8F5E9', color: '#2E7D32', padding: '2px 4px', borderRadius: '4px', flexShrink: 0, fontWeight: 700 }}>공개</span> : <span style={{ fontSize: '10px', background: '#F5F5F5', color: '#999', padding: '2px 4px', borderRadius: '4px', flexShrink: 0 }}>🔒 비공개</span>}
                                                                         </div>
-                                                                        <div style={{ fontSize: '12px', color: '#666', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                            <span>🏠 {member.address || '주소 없음'}</span>
-                                                                            {member.is_address_public ? <span style={{ fontSize: '10px', background: '#E8F5E9', color: '#2E7D32', padding: '2px 4px', borderRadius: '4px' }}>공개</span> : <span style={{ fontSize: '10px', background: '#F5F5F5', color: '#999', padding: '2px 4px', borderRadius: '4px' }}>🔒 비공개</span>}
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#666', gap: '8px' }}>
+                                                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>🏠 {member.address || '주소 없음'}</span>
+                                                                            {member.is_address_public ? <span style={{ fontSize: '10px', background: '#E8F5E9', color: '#2E7D32', padding: '2px 4px', borderRadius: '4px', flexShrink: 0, fontWeight: 700 }}>공개</span> : <span style={{ fontSize: '10px', background: '#F5F5F5', color: '#999', padding: '2px 4px', borderRadius: '4px', flexShrink: 0 }}>🔒 비공개</span>}
                                                                         </div>
                                                                         {member.family_members && member.family_members.length > 0 && (
                                                                             <div style={{ fontSize: '11px', color: '#888', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
