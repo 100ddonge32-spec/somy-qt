@@ -4884,71 +4884,71 @@ export default function App() {
                                                         })
                                                         .map(member => (
                                                             <div key={member.id} style={{ background: 'white', padding: '16px', borderRadius: '15px', border: selectedMemberIds.includes(member.id) ? '2px solid #D4AF37' : '1px solid #EEE', position: 'relative' }}>
-                                                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                                                <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                                                                     {/* 개별 선택 체크박스 */}
-                                                                    <div onClick={() => {
-                                                                        if (selectedMemberIds.includes(member.id)) {
-                                                                            setSelectedMemberIds(prev => prev.filter(id => id !== member.id));
-                                                                        } else {
-                                                                            setSelectedMemberIds(prev => [...prev, member.id]);
-                                                                        }
-                                                                    }} style={{ width: '22px', height: '22px', borderRadius: '7px', border: '2px solid #D4AF37', background: selectedMemberIds.includes(member.id) ? '#D4AF37' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                                                                    <div
+                                                                        onClick={() => {
+                                                                            if (selectedMemberIds.includes(member.id)) {
+                                                                                setSelectedMemberIds(prev => prev.filter(id => id !== member.id));
+                                                                            } else {
+                                                                                setSelectedMemberIds(prev => [...prev, member.id]);
+                                                                            }
+                                                                        }}
+                                                                        style={{
+                                                                            width: '22px', height: '22px', borderRadius: '7px', border: '2px solid #D4AF37',
+                                                                            background: selectedMemberIds.includes(member.id) ? '#D4AF37' : 'white',
+                                                                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, marginTop: '11px'
+                                                                        }}
+                                                                    >
                                                                         {selectedMemberIds.includes(member.id) && <span style={{ color: 'white', fontSize: '14px' }}>✓</span>}
                                                                     </div>
 
                                                                     <div style={{ width: 44, height: 44, borderRadius: '22px', overflow: 'hidden', flexShrink: 0, background: '#F5F5F5', border: '1px solid #EEE' }}>
                                                                         <img alt="" src={member.avatar_url || 'https://via.placeholder.com/44'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                                     </div>
-                                                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                            <div style={{ fontSize: '15px', fontWeight: 800, color: '#333' }}>
-                                                                                {member.full_name}
-                                                                                {!member.is_approved && <span style={{ marginLeft: '6px', fontSize: '10px', color: '#E57373', border: '1px solid #E57373', padding: '1px 4px', borderRadius: '4px', background: '#FFEBEE' }}>승인대기</span>}
+                                                                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                                        {/* 상단: 이름/직분 및 관리 버튼 */}
+                                                                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', width: '100%', marginBottom: '4px' }}>
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', minWidth: 0 }}>
+                                                                                <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', whiteSpace: 'nowrap' }}>{member.full_name}</div>
+                                                                                {!member.is_approved && <span style={{ fontSize: '10px', color: '#E57373', border: '1px solid #E57373', padding: '1px 4px', borderRadius: '4px', background: '#FFEBEE', fontWeight: 700, whiteSpace: 'nowrap' }}>승인대기</span>}
+                                                                                {member.church_rank && <div style={{ fontSize: '11px', background: '#F9F7F2', color: '#B8924A', padding: '2px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>{member.church_rank}</div>}
                                                                             </div>
-                                                                            {member.church_rank && <div style={{ fontSize: '11px', background: '#F9F7F2', color: '#B8924A', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>{member.church_rank}</div>}
 
-                                                                            {/* 승인 대기 상태일 때 승인 버튼 노출 */}
-                                                                            {!member.is_approved ? (
+                                                                            <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                                                                                {!member.is_approved ? (
+                                                                                    <button
+                                                                                        onClick={async () => {
+                                                                                            if (window.confirm(`${member.full_name} 성도를 승인하시겠습니까?`)) {
+                                                                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve_user', user_id: member.id, is_approved: true }) });
+                                                                                                if (res.ok) {
+                                                                                                    setMemberList(prev => prev.map(m => m.id === member.id ? { ...m, is_approved: true } : m));
+                                                                                                    alert(`${member.full_name} 성도가 승인되었습니다. 🎉`);
+                                                                                                }
+                                                                                            }
+                                                                                        }}
+                                                                                        style={{ background: '#D4AF37', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}
+                                                                                    >
+                                                                                        ✅ 승인
+                                                                                    </button>
+                                                                                ) : (
+                                                                                    <button onClick={() => setSelectedMemberForEdit(member)} style={{ background: '#F5F5F5', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', color: '#666' }}>수정</button>
+                                                                                )}
+                                                                                {memberList.filter(m => (m.full_name || '').replace(/\s/g, '') === (member.full_name || '').replace(/\s/g, '') && m.id !== member.id).length > 0 && (
+                                                                                    <button onClick={() => { setMergeTarget(member); setMergeSearchKeyword(member.full_name || ''); setShowMergeModal(true); }} style={{ background: '#FFF9C4', border: '1px solid #FBC02D', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', color: '#856404' }}>🔗 통합</button>
+                                                                                )}
                                                                                 <button
                                                                                     onClick={async () => {
-                                                                                        if (window.confirm(`${member.full_name} 성도를 승인하시겠습니까?`)) {
-                                                                                            const res = await fetch('/api/admin', {
-                                                                                                method: 'POST',
-                                                                                                headers: { 'Content-Type': 'application/json' },
-                                                                                                body: JSON.stringify({ action: 'approve_user', user_id: member.id, is_approved: true })
-                                                                                            });
-                                                                                            if (res.ok) {
-                                                                                                setMemberList(prev => prev.map(m => m.id === member.id ? { ...m, is_approved: true } : m));
-                                                                                                alert(`${member.full_name} 성도가 승인되었습니다. 🎉`);
-                                                                                            }
+                                                                                        if (window.confirm(`${member.full_name} 성도를 삭제하시겠습니까?`)) {
+                                                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_member', id: member.id, church_id: churchId }) });
+                                                                                            if (res.ok) setMemberList(prev => prev.filter(m => m.id !== member.id));
                                                                                         }
                                                                                     }}
-                                                                                    style={{ marginLeft: 'auto', background: '#D4AF37', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 6px rgba(212,175,55,0.3)' }}
+                                                                                    style={{ background: '#FFEBEE', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', color: '#C62828' }}
                                                                                 >
-                                                                                    ✅ 승인하기
+                                                                                    삭제
                                                                                 </button>
-                                                                            ) : (
-                                                                                <button onClick={() => setSelectedMemberForEdit(member)} style={{ marginLeft: 'auto', background: '#F5F5F5', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', color: '#666' }}>수정</button>
-                                                                            )}
-
-                                                                            {memberList.filter(m => m.full_name === member.full_name && m.id !== member.id).length > 0 && (
-                                                                                <button
-                                                                                    onClick={() => {
-                                                                                        setMergeTarget(member);
-                                                                                        setMergeSearchKeyword(member.full_name || '');
-                                                                                        setShowMergeModal(true);
-                                                                                    }}
-                                                                                    style={{ background: '#FFF9C4', border: '1px solid #FBC02D', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', color: '#856404', marginLeft: member.is_approved ? '0' : '4px' }}
-                                                                                >
-                                                                                    🔗 통합
-                                                                                </button>
-                                                                            )}
-                                                                            <button onClick={async () => {
-                                                                                if (window.confirm(`${member.full_name} 성도를 삭제하시겠습니까?`)) {
-                                                                                    const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_member', id: member.id, church_id: churchId }) });
-                                                                                    if (res.ok) setMemberList(prev => prev.filter(m => m.id !== member.id));
-                                                                                }
-                                                                            }} style={{ background: '#FFEBEE', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', color: '#C62828' }}>삭제</button>
+                                                                            </div>
                                                                         </div>
                                                                         <div style={{ fontSize: '12px', color: '#666', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                                             <span>📞 {member.phone || '번호 없음'}</span>
