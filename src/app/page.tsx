@@ -5419,7 +5419,7 @@ export default function App() {
 
 // 내 프로필 화면 컴포넌트
 function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any) {
-    const [profileForm, setProfileForm] = useState({
+    const initialDefault = {
         full_name: user?.user_metadata?.full_name || '',
         phone: '',
         birthdate: '',
@@ -5429,8 +5429,10 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
         is_birthdate_public: false,
         is_birthdate_lunar: false,
         is_address_public: false
-    });
-    const [initialProfile, setInitialProfile] = useState<any>(null);
+    };
+
+    const [profileForm, setProfileForm] = useState(initialDefault);
+    const [initialProfile, setInitialProfile] = useState<any>(initialDefault);
     const [isSavingProfile, setIsSavingProfile] = useState(false);
 
     // 변경사항 체크: 초기값과 현재 폼이 하나라도 다르면 true
@@ -5475,8 +5477,15 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
                     };
                     setProfileForm(loadedProfile);
                     setInitialProfile(loadedProfile);
+                } else {
+                    // 데이터가 없는 경우(신규) 초기 기본값을 비교 기준으로 설정
+                    setInitialProfile(initialDefault);
                 }
-            } catch (e) { console.error("프로필 로딩 에러:", e); }
+            } catch (e) {
+                console.error("프로필 로딩 에러:", e);
+                // 에러 시에도 최소한의 초기값 설정
+                setInitialProfile({ ...profileForm });
+            }
         };
         loadProfile();
     }, [user, supabase]);
