@@ -5225,57 +5225,87 @@ export default function App() {
                                                 </div>
 
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                                    {['phone', 'birthdate', 'address'].map(type => (
-                                                        <div key={type} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'white', padding: '10px 14px', borderRadius: '12px', border: '1px solid #EEE' }}>
-                                                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#666', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                {type === 'phone' ? '📞 휴대폰' : type === 'birthdate' ? '🎂 생년월일' : '🏠 주소'}
-                                                            </div>
-                                                            <div style={{ display: 'flex', gap: '6px' }}>
-                                                                <button
-                                                                    disabled={isBulkProcessing}
-                                                                    onClick={async () => {
-                                                                        if (window.confirm(`모든 성도의 ${type === 'phone' ? '전화번호' : type === 'birthdate' ? '생일' : '주소'}를 '공개'로 전환하시겠습니까?`)) {
-                                                                            setIsBulkProcessing(true);
-                                                                            const res = await fetch('/api/admin', {
-                                                                                method: 'POST',
-                                                                                headers: { 'Content-Type': 'application/json' },
-                                                                                body: JSON.stringify({ action: 'bulk_update_privacy', field: `is_${type}_public`, value: true, church_id: churchId })
-                                                                            });
-                                                                            if (res.ok) {
-                                                                                setMemberList(prev => prev.map(m => ({ ...m, [`is_${type}_public`]: true })));
-                                                                                alert('변경되었습니다.');
+                                                    {['phone', 'birthdate', 'address'].map(type => {
+                                                        const fieldKey = `is_${type}_public`;
+                                                        // 모두 공개인 상태인지 확인 (최소 한명 이상 있고 모두 true)
+                                                        const isAllPublic = memberList.length > 0 && memberList.every(m => m[fieldKey] === true);
+                                                        // 모두 비공개인 상태인지 확인 (최소 한명 이상 있고 모두 false)
+                                                        const isAllPrivate = memberList.length > 0 && memberList.every(m => m[fieldKey] === false);
+
+                                                        return (
+                                                            <div key={type} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'white', padding: '10px 14px', borderRadius: '12px', border: '1px solid #EEE' }}>
+                                                                <div style={{ fontSize: '13px', fontWeight: 700, color: '#666', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                    {type === 'phone' ? '📞 휴대폰' : type === 'birthdate' ? '🎂 생년월일' : '🏠 주소'}
+                                                                </div>
+                                                                <div style={{ display: 'flex', gap: '6px' }}>
+                                                                    <button
+                                                                        disabled={isBulkProcessing}
+                                                                        onClick={async () => {
+                                                                            if (window.confirm(`모든 성도의 ${type === 'phone' ? '전화번호' : type === 'birthdate' ? '생일' : '주소'}를 '공개'로 전환하시겠습니까?`)) {
+                                                                                setIsBulkProcessing(true);
+                                                                                const res = await fetch('/api/admin', {
+                                                                                    method: 'POST',
+                                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                                    body: JSON.stringify({ action: 'bulk_update_privacy', field: `is_${type}_public`, value: true, church_id: churchId })
+                                                                                });
+                                                                                if (res.ok) {
+                                                                                    setMemberList(prev => prev.map(m => ({ ...m, [`is_${type}_public`]: true })));
+                                                                                    alert('모두 공개로 변경되었습니다.');
+                                                                                }
+                                                                                setIsBulkProcessing(false);
                                                                             }
-                                                                            setIsBulkProcessing(false);
-                                                                        }
-                                                                    }}
-                                                                    style={{ padding: '6px 12px', background: '#FFFDE7', border: '1px solid #D4AF37', color: '#856404', borderRadius: '8px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
-                                                                >
-                                                                    전체 공개
-                                                                </button>
-                                                                <button
-                                                                    disabled={isBulkProcessing}
-                                                                    onClick={async () => {
-                                                                        if (window.confirm(`모든 성도의 ${type === 'phone' ? '전화번호' : type === 'birthdate' ? '생일' : '주소'}를 '비공개'로 전환하시겠습니까?`)) {
-                                                                            setIsBulkProcessing(true);
-                                                                            const res = await fetch('/api/admin', {
-                                                                                method: 'POST',
-                                                                                headers: { 'Content-Type': 'application/json' },
-                                                                                body: JSON.stringify({ action: 'bulk_update_privacy', field: `is_${type}_public`, value: false, church_id: churchId })
-                                                                            });
-                                                                            if (res.ok) {
-                                                                                setMemberList(prev => prev.map(m => ({ ...m, [`is_${type}_public`]: false })));
-                                                                                alert('변경되었습니다.');
+                                                                        }}
+                                                                        style={{
+                                                                            padding: '6px 12px',
+                                                                            background: isAllPublic ? '#D4AF37' : '#FFFDE7',
+                                                                            border: isAllPublic ? '1px solid #D4AF37' : '1px solid #FFD54F',
+                                                                            color: isAllPublic ? 'white' : '#856404',
+                                                                            borderRadius: '8px',
+                                                                            fontSize: '11px',
+                                                                            fontWeight: 800,
+                                                                            cursor: 'pointer',
+                                                                            transition: 'all 0.2s',
+                                                                            boxShadow: isAllPublic ? '0 2px 8px rgba(212,175,55,0.3)' : 'none'
+                                                                        }}
+                                                                    >
+                                                                        전체 공개
+                                                                    </button>
+                                                                    <button
+                                                                        disabled={isBulkProcessing}
+                                                                        onClick={async () => {
+                                                                            if (window.confirm(`모든 성도의 ${type === 'phone' ? '전화번호' : type === 'birthdate' ? '생일' : '주소'}를 '비공개'로 전환하시겠습니까?`)) {
+                                                                                setIsBulkProcessing(true);
+                                                                                const res = await fetch('/api/admin', {
+                                                                                    method: 'POST',
+                                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                                    body: JSON.stringify({ action: 'bulk_update_privacy', field: `is_${type}_public`, value: false, church_id: churchId })
+                                                                                });
+                                                                                if (res.ok) {
+                                                                                    setMemberList(prev => prev.map(m => ({ ...m, [`is_${type}_public`]: false })));
+                                                                                    alert('모두 비공개로 변경되었습니다.');
+                                                                                }
+                                                                                setIsBulkProcessing(false);
                                                                             }
-                                                                            setIsBulkProcessing(false);
-                                                                        }
-                                                                    }}
-                                                                    style={{ padding: '6px 12px', background: '#F5F5F5', border: '1px solid #DDD', color: '#999', borderRadius: '8px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', transition: 'all 0.2s' }}
-                                                                >
-                                                                    🔒 비공개
-                                                                </button>
+                                                                        }}
+                                                                        style={{
+                                                                            padding: '6px 12px',
+                                                                            background: isAllPrivate ? '#666' : '#F5F5F5',
+                                                                            border: isAllPrivate ? '1px solid #666' : '1px solid #DDD',
+                                                                            color: isAllPrivate ? 'white' : '#999',
+                                                                            borderRadius: '8px',
+                                                                            fontSize: '11px',
+                                                                            fontWeight: 800,
+                                                                            cursor: 'pointer',
+                                                                            transition: 'all 0.2s',
+                                                                            boxShadow: isAllPrivate ? '0 2px 8px rgba(0,0,0,0.1)' : 'none'
+                                                                        }}
+                                                                    >
+                                                                        🔒 비공개
+                                                                    </button>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    ))}
+                                                        );
+                                                    })}
                                                 </div>
                                                 <div style={{ fontSize: '10px', color: '#AAA', textAlign: 'center', marginTop: '4px' }}>
                                                     ※ 설정 시 모든 성도의 해당 정보 공개 여부가 즉시 변경됩니다.
@@ -5730,7 +5760,10 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                     <span style={{ fontSize: '15px', fontWeight: 800, color: '#333' }}>{member.full_name}</span>
                                     {member.church_rank && <span style={{ fontSize: '11px', background: '#F5F2EA', color: '#B8924A', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>{member.church_rank}</span>}
                                 </div>
-                                <div style={{ fontSize: '12px', color: member.phone ? '#555' : '#BBB' }}>📞 {member.phone || (member.is_phone_public ? '미등록' : '비공개')}</div>
+                                <div style={{ fontSize: '12px', color: member.phone ? '#555' : '#BBB', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    📞 {member.phone || (member.is_phone_public ? '미등록' : '비공개')}
+                                    {isAdmin && !member.is_phone_public && member.phone && <span style={{ fontSize: '10px', color: '#999', background: '#F5F5F3', padding: '1px 4px', borderRadius: '4px' }}>🔒 비공개</span>}
+                                </div>
                             </div>
                             {member.phone && (
                                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -5763,7 +5796,10 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div>
                                         <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700, marginBottom: '2px' }}>휴대폰 번호</div>
-                                        <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.phone ? '#333' : '#BBB' }}>{selectedMember.phone || (selectedMember.is_phone_public ? '미등록' : '비공개')}</div>
+                                        <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.phone ? '#333' : '#BBB', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            {selectedMember.phone || (selectedMember.is_phone_public ? '미등록' : '비공개')}
+                                            {isAdmin && !selectedMember.is_phone_public && selectedMember.phone && <span style={{ fontSize: '10px', color: '#C62828', background: '#FFEBEE', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>🔒 비공개 설정됨</span>}
+                                        </div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '6px' }}>
                                         {selectedMember.phone && <a href={`tel:${selectedMember.phone}`} style={{ textDecoration: 'none', background: '#333', color: 'white', padding: '10px 16px', borderRadius: '14px', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center' }}>📞 전화</a>}
@@ -5772,11 +5808,17 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                 </div>
                                 <div style={{ borderTop: '1px solid #F0ECE4', paddingTop: '15px' }}>
                                     <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700, marginBottom: '2px' }}>생년월일</div>
-                                    <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.birthdate ? '#333' : '#BBB' }}>{selectedMember.birthdate || (selectedMember.is_birthdate_public ? '미등록' : '비공개')}</div>
+                                    <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.birthdate ? '#333' : '#BBB', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        {selectedMember.birthdate || (selectedMember.is_birthdate_public ? '미등록' : '비공개')}
+                                        {isAdmin && !selectedMember.is_birthdate_public && selectedMember.birthdate && <span style={{ fontSize: '10px', color: '#C62828', background: '#FFEBEE', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>🔒 비공개 설정됨</span>}
+                                    </div>
                                 </div>
                                 <div style={{ borderTop: '1px solid #F0ECE4', paddingTop: '15px' }}>
                                     <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700, marginBottom: '2px' }}>주소</div>
-                                    <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.address ? '#333' : '#BBB' }}>{selectedMember.address || (selectedMember.is_address_public ? '미등록' : '비공개')}</div>
+                                    <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.address ? '#333' : '#BBB', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        {selectedMember.address || (selectedMember.is_address_public ? '미등록' : '비공개')}
+                                        {isAdmin && !selectedMember.is_address_public && selectedMember.address && <span style={{ fontSize: '10px', color: '#C62828', background: '#FFEBEE', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>🔒 비공개 설정됨</span>}
+                                    </div>
                                 </div>
                             </div>
                         </div>
