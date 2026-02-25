@@ -252,6 +252,7 @@ export default function App() {
     const [newCcmTitle, setNewCcmTitle] = useState(""); // ✅ 새로운 찬양 제목
     const [newCcmArtist, setNewCcmArtist] = useState(""); // ✅ 새로운 찬양 가수
     const [newCcmUrl, setNewCcmUrl] = useState(""); // ✅ 새로운 찬양 유튜브 주소
+    const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]); // ✅ 단체문자 등을 위한 선택된 성도 ID 목록
     const dragOffset = useRef({ x: 0, y: 0 });
     const playerRef = useRef<any>(null);
 
@@ -4834,19 +4835,39 @@ export default function App() {
                                                 return null;
                                             })()}
 
+                                            {/* ✅ 전체 선택 / 해제 컨트롤 */}
+                                            <div style={{ padding: '0 4px', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => {
+                                                    const filteredList = memberList.filter(m => adminMemberSearchTerm ? m.full_name?.includes(adminMemberSearchTerm) || m.phone?.includes(adminMemberSearchTerm) || m.church_rank?.includes(adminMemberSearchTerm) : true);
+                                                    if (selectedMemberIds.length === filteredList.length && filteredList.length > 0) {
+                                                        setSelectedMemberIds([]);
+                                                    } else {
+                                                        setSelectedMemberIds(filteredList.map(m => m.id));
+                                                    }
+                                                }}>
+                                                    <div style={{ width: '20px', height: '20px', borderRadius: '6px', border: '2px solid #D4AF37', background: selectedMemberIds.length > 0 && selectedMemberIds.length === memberList.filter(m => adminMemberSearchTerm ? m.full_name?.includes(adminMemberSearchTerm) || m.phone?.includes(adminMemberSearchTerm) || m.church_rank?.includes(adminMemberSearchTerm) : true).length ? '#D4AF37' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                                                        {selectedMemberIds.length > 0 && selectedMemberIds.length === memberList.filter(m => adminMemberSearchTerm ? m.full_name?.includes(adminMemberSearchTerm) || m.phone?.includes(adminMemberSearchTerm) || m.church_rank?.includes(adminMemberSearchTerm) : true).length && <span style={{ color: 'white', fontSize: '12px' }}>✓</span>}
+                                                    </div>
+                                                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#333' }}>전체 선택 ({memberList.filter(m => adminMemberSearchTerm ? m.full_name?.includes(adminMemberSearchTerm) || m.phone?.includes(adminMemberSearchTerm) || m.church_rank?.includes(adminMemberSearchTerm) : true).length}명)</span>
+                                                </div>
+                                                {selectedMemberIds.length > 0 && (
+                                                    <span style={{ fontSize: '12px', color: '#D4AF37', fontWeight: 700 }}>{selectedMemberIds.length}명 선택됨</span>
+                                                )}
+                                            </div>
+
                                             {/* 단체 문자 발송 버튼 */}
                                             {memberList.filter(m => adminMemberSearchTerm ? m.full_name?.includes(adminMemberSearchTerm) || m.phone?.includes(adminMemberSearchTerm) || m.church_rank?.includes(adminMemberSearchTerm) : true).length > 0 && (
                                                 <div style={{ padding: '0 4px', marginBottom: '16px' }}>
                                                     <button onClick={() => {
                                                         const targetPhones = memberList
-                                                            .filter(m => adminMemberSearchTerm ? m.full_name?.includes(adminMemberSearchTerm) || m.phone?.includes(adminMemberSearchTerm) || m.church_rank?.includes(adminMemberSearchTerm) : true)
+                                                            .filter(m => selectedMemberIds.includes(m.id))
                                                             .filter(m => m.phone)
                                                             .map(m => m.phone)
                                                             .join(',');
-                                                        if (!targetPhones) { alert('검색된 성도 중 전화번호가 등록된 분이 없습니다.'); return; }
+                                                        if (!targetPhones) { alert('선택된 성도 중 전화번호가 등록된 분이 없습니다.'); return; }
                                                         window.location.href = `sms:${targetPhones}`;
-                                                    }} style={{ width: '100%', padding: '12px', background: '#2E7D32', color: 'white', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 10px rgba(46,125,50,0.2)' }}>
-                                                        💬 검색된 관리 대상 단체 문자 발송 ({memberList.filter(m => adminMemberSearchTerm ? m.full_name?.includes(adminMemberSearchTerm) || m.phone?.includes(adminMemberSearchTerm) || m.church_rank?.includes(adminMemberSearchTerm) : true).filter(m => m.phone).length}명)
+                                                    }} style={{ width: '100%', padding: '12px', background: selectedMemberIds.length > 0 ? '#2E7D32' : '#AAA', color: 'white', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 800, cursor: selectedMemberIds.length > 0 ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: selectedMemberIds.length > 0 ? '0 4px 10px rgba(46,125,50,0.2)' : 'none' }}>
+                                                        💬 선택된 성도 단체 문자 발송 ({memberList.filter(m => selectedMemberIds.includes(m.id)).filter(m => m.phone).length}명)
                                                     </button>
                                                 </div>
                                             )}
@@ -4862,8 +4883,19 @@ export default function App() {
                                                             return 0;
                                                         })
                                                         .map(member => (
-                                                            <div key={member.id} style={{ background: 'white', padding: '16px', borderRadius: '15px', border: '1px solid #EEE' }}>
+                                                            <div key={member.id} style={{ background: 'white', padding: '16px', borderRadius: '15px', border: selectedMemberIds.includes(member.id) ? '2px solid #D4AF37' : '1px solid #EEE', position: 'relative' }}>
                                                                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                                                    {/* 개별 선택 체크박스 */}
+                                                                    <div onClick={() => {
+                                                                        if (selectedMemberIds.includes(member.id)) {
+                                                                            setSelectedMemberIds(prev => prev.filter(id => id !== member.id));
+                                                                        } else {
+                                                                            setSelectedMemberIds(prev => [...prev, member.id]);
+                                                                        }
+                                                                    }} style={{ width: '22px', height: '22px', borderRadius: '7px', border: '2px solid #D4AF37', background: selectedMemberIds.includes(member.id) ? '#D4AF37' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                                                                        {selectedMemberIds.includes(member.id) && <span style={{ color: 'white', fontSize: '14px' }}>✓</span>}
+                                                                    </div>
+
                                                                     <div style={{ width: 44, height: 44, borderRadius: '22px', overflow: 'hidden', flexShrink: 0, background: '#F5F5F5', border: '1px solid #EEE' }}>
                                                                         <img alt="" src={member.avatar_url || 'https://via.placeholder.com/44'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                                     </div>
@@ -5158,12 +5190,19 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
                     }
                 }
                 if (data) {
+                    // ✅ 전화번호 자동 동기화 로직 보강
+                    const rawMetaPhone = user?.user_metadata?.phone_number || user?.user_metadata?.mobile || '';
+                    let cleanMetaPhone = rawMetaPhone.replace(/[^0-9]/g, '');
+                    if (cleanMetaPhone.startsWith('8210')) cleanMetaPhone = '0' + cleanMetaPhone.substring(2);
+                    else if (cleanMetaPhone.startsWith('82')) cleanMetaPhone = '0' + cleanMetaPhone.substring(2);
+                    const formattedMetaPhone = cleanMetaPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+
                     setProfileForm({
                         full_name: data.full_name || user?.user_metadata?.full_name || '',
-                        phone: data.phone || '',
+                        phone: data.phone || formattedMetaPhone || cleanMetaPhone || '',
                         birthdate: data.birthdate || '',
                         address: data.address || '',
-                        avatar_url: data.avatar_url || '',
+                        avatar_url: data.avatar_url || user?.user_metadata?.avatar_url || '',
                         is_phone_public: data.is_phone_public || false,
                         is_birthdate_public: data.is_birthdate_public || false,
                         is_birthdate_lunar: data.is_birthdate_lunar || false,
