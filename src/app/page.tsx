@@ -4901,9 +4901,36 @@ export default function App() {
                                                                     </div>
                                                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                            <div style={{ fontSize: '15px', fontWeight: 800, color: '#333' }}>{member.full_name}</div>
+                                                                            <div style={{ fontSize: '15px', fontWeight: 800, color: '#333' }}>
+                                                                                {member.full_name}
+                                                                                {!member.is_approved && <span style={{ marginLeft: '6px', fontSize: '10px', color: '#E57373', border: '1px solid #E57373', padding: '1px 4px', borderRadius: '4px', background: '#FFEBEE' }}>승인대기</span>}
+                                                                            </div>
                                                                             {member.church_rank && <div style={{ fontSize: '11px', background: '#F9F7F2', color: '#B8924A', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>{member.church_rank}</div>}
-                                                                            <button onClick={() => setSelectedMemberForEdit(member)} style={{ marginLeft: 'auto', background: '#F5F5F5', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', color: '#666' }}>수정</button>
+
+                                                                            {/* 승인 대기 상태일 때 승인 버튼 노출 */}
+                                                                            {!member.is_approved ? (
+                                                                                <button
+                                                                                    onClick={async () => {
+                                                                                        if (window.confirm(`${member.full_name} 성도를 승인하시겠습니까?`)) {
+                                                                                            const res = await fetch('/api/admin', {
+                                                                                                method: 'POST',
+                                                                                                headers: { 'Content-Type': 'application/json' },
+                                                                                                body: JSON.stringify({ action: 'approve_user', user_id: member.id, is_approved: true })
+                                                                                            });
+                                                                                            if (res.ok) {
+                                                                                                setMemberList(prev => prev.map(m => m.id === member.id ? { ...m, is_approved: true } : m));
+                                                                                                alert(`${member.full_name} 성도가 승인되었습니다. 🎉`);
+                                                                                            }
+                                                                                        }
+                                                                                    }}
+                                                                                    style={{ marginLeft: 'auto', background: '#D4AF37', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 6px rgba(212,175,55,0.3)' }}
+                                                                                >
+                                                                                    ✅ 승인하기
+                                                                                </button>
+                                                                            ) : (
+                                                                                <button onClick={() => setSelectedMemberForEdit(member)} style={{ marginLeft: 'auto', background: '#F5F5F5', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', color: '#666' }}>수정</button>
+                                                                            )}
+
                                                                             {memberList.filter(m => m.full_name === member.full_name && m.id !== member.id).length > 0 && (
                                                                                 <button
                                                                                     onClick={() => {
@@ -4911,7 +4938,7 @@ export default function App() {
                                                                                         setMergeSearchKeyword(member.full_name || '');
                                                                                         setShowMergeModal(true);
                                                                                     }}
-                                                                                    style={{ background: '#FFF9C4', border: '1px solid #FBC02D', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', color: '#856404' }}
+                                                                                    style={{ background: '#FFF9C4', border: '1px solid #FBC02D', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', color: '#856404', marginLeft: member.is_approved ? '0' : '4px' }}
                                                                                 >
                                                                                     🔗 통합
                                                                                 </button>
