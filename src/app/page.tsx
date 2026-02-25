@@ -782,6 +782,7 @@ export default function App() {
     const [mergeSearchKeyword, setMergeSearchKeyword] = useState('');
     const [memberSortBy, setMemberSortBy] = useState<'name' | 'email' | 'rank'>('name');
     const [adminMemberSearchTerm, setAdminMemberSearchTerm] = useState('');
+    const [showOnlyDuplicates, setShowOnlyDuplicates] = useState(false); // ✅ 중복 성도만 보기 필터
 
 
     useEffect(() => {
@@ -4583,7 +4584,7 @@ export default function App() {
                                 </>
                             ) : adminTab === 'members' ? (
                                 <>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '500px', overflowY: 'auto' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                                         {/* ✅ 성도 개별 정보 수정 허용 설정 (여기서 멤버탭으로 이동) */}
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px', background: '#F9F7F2', borderRadius: '15px', border: '1px solid #F0ECE4', marginBottom: '5px' }}>
                                             <div>
@@ -4616,7 +4617,8 @@ export default function App() {
                                         </div>
 
                                         {/* 엑셀 업로드 영역 */}
-                                        <div style={{ background: '#F9F7F2', padding: '18px', borderRadius: '15px', border: '1px dashed #D4AF37', position: 'relative' }}>
+                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>📤 명단 대용량 업로드 (엑셀)</div>
+                                        <div style={{ background: '#F9F7F2', padding: '18px', borderRadius: '15px', border: '1px dashed #D4AF37', position: 'relative', marginBottom: '20px' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                                                 <div style={{ fontSize: '13px', fontWeight: 800, color: '#333' }}>📊 성도 명단 엑셀 업로드</div>
                                                 <button
@@ -4730,41 +4732,35 @@ export default function App() {
                                         </div>
 
                                         {/* 성도 관리 컨트롤러 */}
-                                        <div style={{ background: 'white', padding: '16px', borderRadius: '15px', border: '1px solid #EEE', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
-                                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#333', whiteSpace: 'nowrap', alignSelf: 'center' }}>⚙️ 관리 도구</div>
-                                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
-                                                    <button
-                                                        onClick={handleExcelExport}
-                                                        style={{ padding: '8px 12px', background: '#E8F5E9', color: '#2E7D32', border: '1px solid #C8E6C9', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
-                                                    >
-                                                        📥 엑셀 다운로드
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setShowAddMemberModal(true)}
-                                                        style={{ padding: '8px 12px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
-                                                    >
-                                                        👤 개별 추가
-                                                    </button>
-                                                    <button
-                                                        onClick={async () => {
-                                                            if (window.confirm('정말 모든 성도 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-                                                                const res = await fetch('/api/admin', {
-                                                                    method: 'POST',
-                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({ action: 'clear_all_members', church_id: churchId })
-                                                                });
-                                                                if (res.ok) {
-                                                                    setMemberList([]);
-                                                                    alert('모든 성도 데이터가 성공적으로 삭제되었습니다.');
-                                                                }
-                                                            }
-                                                        }}
-                                                        style={{ padding: '8px 12px', background: '#FFEBEE', color: '#C62828', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
-                                                    >
-                                                        🗑️ 전체 삭제
-                                                    </button>
+                                        <div style={{ background: 'white', padding: '20px', borderRadius: '20px', border: '1px solid #EEE', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div style={{ fontSize: '16px', fontWeight: 900, color: '#333' }}>👤 성도 명단 관리</div>
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <button onClick={() => setShowAddMemberModal(true)} style={{ padding: '8px 14px', background: '#333', color: 'white', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>+ 개별 추가</button>
+                                                    <button onClick={handleExcelExport} style={{ padding: '8px 14px', background: '#E8F5E9', color: '#2E7D32', border: '1px solid #C8E6C9', borderRadius: '10px', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>📥 엑셀 받기</button>
                                                 </div>
+                                            </div>
+
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
+                                                <div style={{ background: '#F8F9FA', padding: '12px', borderRadius: '12px', border: '1px solid #F1F3F5' }}>
+                                                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>전체 성도</div>
+                                                    <div style={{ fontSize: '18px', fontWeight: 900, color: '#333' }}>{memberList.length}명</div>
+                                                </div>
+                                                <div style={{ background: '#FFF5F5', padding: '12px', borderRadius: '12px', border: '1px solid #FFE3E3' }}>
+                                                    <div style={{ fontSize: '11px', color: '#E03131', marginBottom: '4px' }}>승인 대기</div>
+                                                    <div style={{ fontSize: '18px', fontWeight: 900, color: '#E03131' }}>{memberList.filter(m => !m.is_approved).length}명</div>
+                                                </div>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (window.confirm('정말 모든 성도 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_all_members', church_id: churchId }) });
+                                                            if (res.ok) { setMemberList([]); alert('모든 성도 데이터가 성공적으로 삭제되었습니다.'); }
+                                                        }
+                                                    }}
+                                                    style={{ background: '#FFF5F5', color: '#C62828', border: '1px solid #FFC9C9', borderRadius: '12px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', textAlign: 'center' }}
+                                                >
+                                                    🗑️ 데이터 초기화
+                                                </button>
                                             </div>
 
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#F5F5F3', padding: '10px 14px', borderRadius: '12px' }}>
@@ -4796,19 +4792,42 @@ export default function App() {
                                                 </div>
                                             </div>
 
-                                            {/* 성도 검색 바 */}
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'white', padding: '10px 14px', borderRadius: '12px', border: '1px solid #EEE' }}>
-                                                <span style={{ fontSize: '16px' }}>🔍</span>
-                                                <input
-                                                    type="text"
-                                                    placeholder="이름이나 전화번호, 직분으로 성도를 검색하세요"
-                                                    value={adminMemberSearchTerm}
-                                                    onChange={(e) => setAdminMemberSearchTerm(e.target.value)}
-                                                    style={{ border: 'none', outline: 'none', fontSize: '13px', flex: 1 }}
-                                                />
-                                                {adminMemberSearchTerm && (
-                                                    <button onClick={() => setAdminMemberSearchTerm('')} style={{ background: 'none', border: 'none', color: '#AAA', cursor: 'pointer', fontSize: '12px' }}>✕</button>
-                                                )}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                                {/* 성도 검색 바 */}
+                                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px', background: 'white', padding: '10px 14px', borderRadius: '12px', border: '1px solid #EEE' }}>
+                                                    <span style={{ fontSize: '16px' }}>🔍</span>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="이름이나 전화번호, 직분으로 성도를 검색하세요"
+                                                        value={adminMemberSearchTerm}
+                                                        onChange={(e) => setAdminMemberSearchTerm(e.target.value)}
+                                                        style={{ border: 'none', outline: 'none', fontSize: '13px', flex: 1 }}
+                                                    />
+                                                    {adminMemberSearchTerm && (
+                                                        <button onClick={() => setAdminMemberSearchTerm('')} style={{ background: 'none', border: 'none', color: '#AAA', cursor: 'pointer', fontSize: '12px' }}>✕</button>
+                                                    )}
+                                                </div>
+
+                                                {/* 중복된 성도만 보기 필터 */}
+                                                <button
+                                                    onClick={() => setShowOnlyDuplicates(!showOnlyDuplicates)}
+                                                    style={{
+                                                        padding: '10px 14px',
+                                                        borderRadius: '12px',
+                                                        border: '1px solid',
+                                                        borderColor: showOnlyDuplicates ? '#D4AF37' : '#EEE',
+                                                        background: showOnlyDuplicates ? '#FFFDE7' : 'white',
+                                                        color: showOnlyDuplicates ? '#856404' : '#666',
+                                                        fontSize: '13px',
+                                                        fontWeight: 700,
+                                                        cursor: 'pointer',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '6px'
+                                                    }}
+                                                >
+                                                    {showOnlyDuplicates ? '👀 전체 성도 보기' : '🔗 중복 성도 찾기'}
+                                                </button>
                                             </div>
 
                                             {/* 오늘의 생일 알림 */}
@@ -4876,6 +4895,13 @@ export default function App() {
                                                 memberList.length === 0 ? <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>등록된 성도가 없습니다.</div> :
                                                     [...memberList]
                                                         .filter(m => adminMemberSearchTerm ? m.full_name?.includes(adminMemberSearchTerm) || m.phone?.includes(adminMemberSearchTerm) || m.church_rank?.includes(adminMemberSearchTerm) : true)
+                                                        .filter(m => {
+                                                            if (!showOnlyDuplicates) return true;
+                                                            return memberList.some(other =>
+                                                                other.id !== m.id &&
+                                                                (other.full_name || '').trim().replace(/\s/g, '').toLowerCase() === (m.full_name || '').trim().replace(/\s/g, '').toLowerCase()
+                                                            );
+                                                        })
                                                         .sort((a, b) => {
                                                             if (memberSortBy === 'name') return (a.full_name || '').localeCompare(b.full_name || '');
                                                             if (memberSortBy === 'email') return (a.email || '').localeCompare(b.email || '');
@@ -4934,9 +4960,28 @@ export default function App() {
                                                                                 ) : (
                                                                                     <button onClick={() => setSelectedMemberForEdit(member)} style={{ background: '#F5F5F5', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', color: '#666' }}>수정</button>
                                                                                 )}
-                                                                                {memberList.filter(m => (m.full_name || '').replace(/\s/g, '') === (member.full_name || '').replace(/\s/g, '') && m.id !== member.id).length > 0 && (
-                                                                                    <button onClick={() => { setMergeTarget(member); setMergeSearchKeyword(member.full_name || ''); setShowMergeModal(true); }} style={{ background: '#FFF9C4', border: '1px solid #FBC02D', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', color: '#856404' }}>🔗 통합</button>
-                                                                                )}
+                                                                                {/* 통합 버튼: 중복 발견 시 강조, 아닐 때도 상시 노출로 변경 */}
+                                                                                {(() => {
+                                                                                    const isDuplicate = memberList.some(m =>
+                                                                                        m.id !== member.id &&
+                                                                                        (m.full_name || '').trim().replace(/\s/g, '').toLowerCase() === (member.full_name || '').trim().replace(/\s/g, '').toLowerCase()
+                                                                                    );
+                                                                                    return (
+                                                                                        <button
+                                                                                            onClick={() => { setMergeTarget(member); setMergeSearchKeyword(member.full_name || ''); setShowMergeModal(true); }}
+                                                                                            style={{
+                                                                                                background: isDuplicate ? '#FFF9C4' : '#F5F5F5',
+                                                                                                border: isDuplicate ? '1px solid #FBC02D' : 'none',
+                                                                                                padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, cursor: 'pointer',
+                                                                                                color: isDuplicate ? '#856404' : '#666',
+                                                                                                position: 'relative'
+                                                                                            }}
+                                                                                        >
+                                                                                            🔗 통합
+                                                                                            {isDuplicate && <span style={{ position: 'absolute', top: '-6px', right: '-6px', width: '8px', height: '8px', background: '#FF5252', borderRadius: '50%', border: '2px solid white' }}></span>}
+                                                                                        </button>
+                                                                                    );
+                                                                                })()}
                                                                                 <button
                                                                                     onClick={async () => {
                                                                                         if (window.confirm(`${member.full_name} 성도를 삭제하시겠습니까?`)) {
