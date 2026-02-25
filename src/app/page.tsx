@@ -4004,7 +4004,7 @@ export default function App() {
                         </h3>
                         <ul style={{ fontSize: '14px', color: '#555', lineHeight: 1.8, paddingLeft: '20px' }}>
                             <li><strong>큐티 등록 최적화:</strong> 전날 저녁 또는 당일 아침 8시 이전에 큐티를 등록하세요. 'AI 자동 생성' 기능을 활용하면 핵심 메시지를 요약하는 시간을 크게 단축할 수 있습니다.</li>
-                            <li><strong>주일 설교 요약:</strong> 매주 월요일, 주일 설교 원고를 [설교 및 나눔질문 생성] 메뉴에 붙여넣으세요. 생성된 질문은 성도들의 소그룹(구역) 나눔 자료로 훌륭하게 활용됩니다.</li>
+                            <li><strong>설교 요약:</strong> 매주 수요일, 주일 설교 원고를 [설교 및 나눔질문 생성] 메뉴에 붙여넣으세요. 생성된 질문은 성도들의 소그룹(구역) 나눔 자료로 훌륭하게 활용됩니다.</li>
                             <li><strong>공지사항 활용:</strong> 교회 광고는 단순한 전달보다 '따뜻한 사랑의 메시지'와 함께 공지하세요. 등록 즉시 전체 성도에게 푸시가 전송됩니다.</li>
                         </ul>
                     </div>
@@ -4019,6 +4019,31 @@ export default function App() {
                             <li><strong>상담/기도 요청 대응:</strong> 성도들의 요청이 도착하면 최대한 빠르게(24시간 내) 따뜻한 답변을 남겨주세요. 앱의 신뢰도와 사역적 친밀감이 비약적으로 상승합니다.</li>
                             <li><strong>큐티왕 시상:</strong> [이달의 큐티왕] 통계를 바탕으로 매달 성적표를 매기는 대신, 꾸준히 참여하는 성도님들을 주일 예배 때 가볍게 독려하고 시상해 보세요.</li>
                         </ul>
+                    </div>
+
+                    {/* 섹션 4: 관리자 핵심 기능 및 꿀팁 */}
+                    <div className="guide-box" style={{ background: '#FFF8F8', padding: '25px', borderRadius: '20px', border: '1px solid #FFEBEB' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#D32F2F', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '22px' }}>🛠️</span> 관리자 핵심 기능 & 스마트 꿀팁
+                        </h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            <div style={{ background: 'white', padding: '15px', borderRadius: '12px', border: '1px solid #FEE2E2' }}>
+                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>👤 성도 관리 및 소통</div>
+                                <ul style={{ fontSize: '13px', color: '#555', lineHeight: 1.7, margin: 0, paddingLeft: '20px' }}>
+                                    <li><strong>개별/단체 문자 발송:</strong> [성도 주소록]에서 특정 성도나 그룹을 선택해 바로 문자를 보낼 수 있습니다. (심방 및 공지용)</li>
+                                    <li><strong>개인정보 공개 설정:</strong> 성도 개개인의 전화번호, 주소 등 민감한 정보의 공개/비공개 여부를 관리자가 직접 제어하여 유연하게 운영할 수 있습니다.</li>
+                                    <li><strong>간편한 성도 등록:</strong> 한두 명은 개별 등록하고, 다수의 성도는 [성도 대량 등록] 메뉴에서 엑셀 양식을 다운받아 업로드하면 한 번에 반영됩니다.</li>
+                                </ul>
+                            </div>
+                            <div style={{ background: 'white', padding: '15px', borderRadius: '12px', border: '1px solid #FEE2E2' }}>
+                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>💡 운영 노하우 꿀팁</div>
+                                <ul style={{ fontSize: '13px', color: '#555', lineHeight: 1.7, margin: 0, paddingLeft: '20px' }}>
+                                    <li><strong>푸시 알림 시간대:</strong> 성도들이 출근하거나 활동을 시작하는 오전 7시~8시 사이에 푸시 알림을 보내는 것이 참여율이 가장 높습니다.</li>
+                                    <li><strong>데이터 백업:</strong> 주기적으로 성도 명부나 큐티 통계를 엑셀로 내려받아 교회 내부 PC에도 보관하는 습관을 들이세요.</li>
+                                    <li><strong>AI 상담 모니터링:</strong> 소미가 성도들과 나누는 대화의 흐름을 주기적으로 체크해 보세요(사생활 제외). 성도들이 현재 어떤 고민을 주로 하는지 사역 방향을 잡는 데 도움을 줍니다.</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
