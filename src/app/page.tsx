@@ -64,7 +64,7 @@ interface Notification {
     id: number;
     user_id: string;
     actor_name: string;
-    type: 'comment';
+    type: string;
     post_id: number;
     is_read: boolean;
     created_at: string;
@@ -253,6 +253,9 @@ export default function App() {
     const [newCcmArtist, setNewCcmArtist] = useState(""); // ✅ 새로운 찬양 가수
     const [newCcmUrl, setNewCcmUrl] = useState(""); // ✅ 새로운 찬양 유튜브 주소
     const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]); // ✅ 단체문자 등을 위한 선택된 성도 ID 목록
+    const [isSubmittingCounseling, setIsSubmittingCounseling] = useState(false); // ✅ 상담 요청 중복 방지
+    const [submittingReplyId, setSubmittingReplyId] = useState<string | null>(null); // ✅ 상담 답변 중복 방지
+    const [submittingCommentId, setSubmittingCommentId] = useState<any>(null); // ✅ 댓글 등록 중복 방지
     const dragOffset = useRef({ x: 0, y: 0 });
     const playerRef = useRef<any>(null);
 
@@ -2716,6 +2719,8 @@ export default function App() {
                 const commentText = commentInputs[diaryId];
                 if (!commentText?.trim() || !user) return;
 
+                if (submittingCommentId === diaryId) return;
+                setSubmittingCommentId(diaryId);
                 try {
                     const res = await fetch('/api/thanksgiving/comments', {
                         method: 'POST',
@@ -2737,7 +2742,11 @@ export default function App() {
                         }));
                         setCommentInputs({ ...commentInputs, [diaryId]: "" }); // 입력창 초기화
                     }
-                } catch (e) { console.error("댓글 달기 오류:", e); }
+                } catch (e) {
+                    console.error("댓글 달기 오류:", e);
+                } finally {
+                    setSubmittingCommentId(null);
+                }
             };
 
             const handleDeleteThanksgivingComment = async (diaryId: any, commentId: any) => {
@@ -2970,7 +2979,16 @@ export default function App() {
                                                     placeholder="공감의 댓글을 달아주세요..."
                                                     style={{ flex: 1, padding: '10px 12px', borderRadius: '10px', border: '1px solid #fae1cd', fontSize: '13px', outline: 'none' }}
                                                 />
-                                                <button onClick={() => handleAddThanksgivingComment(diary.id)} style={{ background: '#E07A5F', color: 'white', border: 'none', borderRadius: '10px', padding: '0 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>등록</button>
+                                                <button
+                                                    disabled={submittingCommentId === diary.id}
+                                                    onClick={() => handleAddThanksgivingComment(diary.id)}
+                                                    style={{
+                                                        background: submittingCommentId === diary.id ? '#CCC' : '#E07A5F',
+                                                        color: 'white', border: 'none', borderRadius: '10px', padding: '0 12px', fontSize: '12px', fontWeight: 700, cursor: submittingCommentId === diary.id ? 'default' : 'pointer'
+                                                    }}
+                                                >
+                                                    {submittingCommentId === diary.id ? '...' : '등록'}
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -3613,18 +3631,28 @@ export default function App() {
                             <div style={{ marginBottom: '30px', background: 'white', padding: '20px', borderRadius: '15px', border: '1px solid #EEE', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
                                 <h3 style={{ fontSize: '15px', marginTop: 0, color: '#333' }}>새 요청 작성하기 <span style={{ fontSize: '12px', color: '#999', fontWeight: 400 }}>(목사님만 볼 수 있습니다)</span></h3>
                                 <textarea value={counselingInput} onChange={e => setCounselingInput(e.target.value)} placeholder="담임목사님께 나누고 싶은 고민이나 기도 제목을 적어주세요. 목사님께서 확인 후 직접 답변해주시며 실시간 알림이 발송됩니다." style={{ width: '100%', padding: '15px', borderRadius: '10px', border: '1px solid #DDD', minHeight: '120px', resize: 'vertical', fontSize: '14px', marginBottom: '10px', outline: 'none' }} />
-                                <button onClick={async () => {
-                                    if (!counselingInput.trim()) return;
-                                    try {
-                                        const r = await fetch('/api/counseling', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: user?.id, user_name: user?.user_metadata?.full_name || '성도', church_id: churchId, content: counselingInput }) });
-                                        if (r.ok) {
-                                            const newReq = await r.json();
-                                            setCounselingRequests([newReq, ...counselingRequests]);
-                                            setCounselingInput('');
-                                            alert("요청이 담임목사님께 성공적으로 전송되었습니다.");
+                                <button
+                                    disabled={isSubmittingCounseling}
+                                    onClick={async () => {
+                                        if (!counselingInput.trim() || isSubmittingCounseling) return;
+                                        setIsSubmittingCounseling(true);
+                                        try {
+                                            const r = await fetch('/api/counseling', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: user?.id, user_name: user?.user_metadata?.full_name || '성도', church_id: churchId, content: counselingInput }) });
+                                            if (r.ok) {
+                                                const newReq = await r.json();
+                                                setCounselingRequests([newReq, ...counselingRequests]);
+                                                setCounselingInput('');
+                                                alert("요청이 담임목사님께 성공적으로 전송되었습니다.");
+                                            }
+                                        } catch (e) {
+                                        } finally {
+                                            setIsSubmittingCounseling(false);
                                         }
-                                    } catch (e) { }
-                                }} style={{ width: '100%', padding: '14px', background: '#333', color: 'white', borderRadius: '10px', border: 'none', fontWeight: 700, cursor: 'pointer' }}>요청 보내기 🚀</button>
+                                    }}
+                                    style={{ width: '100%', padding: '14px', background: isSubmittingCounseling ? '#999' : '#333', color: 'white', borderRadius: '10px', border: 'none', fontWeight: 700, cursor: isSubmittingCounseling ? 'default' : 'pointer' }}
+                                >
+                                    {isSubmittingCounseling ? '전송 중...' : '요청 보내기 🚀'}
+                                </button>
                             </div>
                         )}
 
@@ -3662,18 +3690,28 @@ export default function App() {
                                         <div style={{ marginTop: '10px', background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '10px', padding: '10px' }}>
                                             <div style={{ fontSize: '12px', fontWeight: 700, color: '#999', marginBottom: '8px' }}>답변을 등록하면 성도에게 푸시 알림이 즉시 전송됩니다.</div>
                                             <textarea value={counselingReplyInput[req.id] || ''} onChange={e => setCounselingReplyInput({ ...counselingReplyInput, [req.id]: e.target.value })} placeholder="답변을 작성해주세요." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', minHeight: '80px', fontSize: '13px', marginBottom: '8px', outline: 'none' }} />
-                                            <button onClick={async () => {
-                                                const replyContent = counselingReplyInput[req.id];
-                                                if (!replyContent?.trim()) return;
-                                                try {
-                                                    const r = await fetch('/api/counseling', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: req.id, reply: replyContent, admin_name: adminInfo?.name }) });
-                                                    if (r.ok) {
-                                                        const updated = await r.json();
-                                                        setCounselingRequests(counselingRequests.map(c => c.id === req.id ? updated : c));
-                                                        alert("답변이 전송되었습니다.");
+                                            <button
+                                                disabled={submittingReplyId === req.id}
+                                                onClick={async () => {
+                                                    const replyContent = counselingReplyInput[req.id];
+                                                    if (!replyContent?.trim() || submittingReplyId === req.id) return;
+                                                    setSubmittingReplyId(req.id);
+                                                    try {
+                                                        const r = await fetch('/api/counseling', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: req.id, reply: replyContent, admin_name: adminInfo?.name }) });
+                                                        if (r.ok) {
+                                                            const updated = await r.json();
+                                                            setCounselingRequests(counselingRequests.map(c => c.id === req.id ? updated : c));
+                                                            alert("답변이 전송되었습니다.");
+                                                        }
+                                                    } catch (e) {
+                                                    } finally {
+                                                        setSubmittingReplyId(null);
                                                     }
-                                                } catch (e) { }
-                                            }} style={{ width: '100%', padding: '10px', background: '#1A5D55', color: 'white', borderRadius: '8px', border: 'none', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>답변 등록 완료 작성하기 (성도에게 알림 전송)</button>
+                                                }}
+                                                style={{ width: '100%', padding: '10px', background: submittingReplyId === req.id ? '#999' : '#1A5D55', color: 'white', borderRadius: '8px', border: 'none', fontWeight: 700, fontSize: '13px', cursor: submittingReplyId === req.id ? 'default' : 'pointer' }}
+                                            >
+                                                {submittingReplyId === req.id ? '답변 전송 중...' : '답변 등록 완료 작성하기 (성도에게 알림 전송)'}
+                                            </button>
                                         </div>
                                     ) : (
                                         <div style={{ fontSize: '13px', color: '#999', marginTop: '10px', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -3800,7 +3838,14 @@ export default function App() {
                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: n.is_read ? 'transparent' : '#FF3D00', marginTop: '5px', flexShrink: 0 }} />
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontSize: '13px', color: '#333', lineHeight: 1.5 }}>
-                                            <strong>{n.actor_name}</strong>님이 성도님의 은혜나눔에 따뜻한 댓글을 남기셨습니다.
+                                            {n.type === 'comment' && <><strong>{n.actor_name}</strong>님이 은혜나눔에 댓글을 남기셨습니다.</>}
+                                            {n.type === 'community_post' && <>✨ <strong>{n.actor_name}</strong> 성도님이 새로운 은혜를 나누셨습니다.</>}
+                                            {n.type === 'thanks_comment' && <><strong>{n.actor_name}</strong>님이 감사일기에 댓글을 남기셨습니다.</>}
+                                            {n.type === 'counseling_req' && <><strong>{n.actor_name}</strong> 성도님이 새로운 상담/기도 요청을 보내셨습니다.</>}
+                                            {n.type === 'counseling_reply' && <><strong>{n.actor_name}</strong>께서 상담/기도 요청에 답변을 남기셨습니다.</>}
+                                            {n.type === 'announcement' && <>📢 새 공지사항: <strong>{n.actor_name}</strong></>}
+                                            {n.type === 'qt' && <>📖 <strong>{n.actor_name}</strong> 말씀이 업로드되었습니다.</>}
+                                            {!['comment', 'community_post', 'thanks_comment', 'counseling_req', 'counseling_reply', 'announcement', 'qt'].includes(n.type) && <><strong>{n.actor_name}</strong>님이 새로운 알림을 보내셨습니다.</>}
                                         </div>
                                         <div style={{ fontSize: '11px', color: '#999', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                             <span>🕒</span>

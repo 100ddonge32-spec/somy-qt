@@ -47,10 +47,12 @@ export async function POST(req: NextRequest) {
 
         if (insertError) throw insertError;
 
-        // 모든 사용자에게 푸시 알림 전송 로직
+        // 해당 교회의 모든 사용자에게 푸시 알림 전송 로직
+        const targetChurchId = church_id || 'jesus-in';
         const { data: subscriptions } = await supabaseAdmin
             .from('push_subscriptions')
-            .select('user_id, subscription');
+            .select('subscription, profiles!inner(church_id)')
+            .eq('profiles.church_id', targetChurchId);
 
         if (subscriptions && subscriptions.length > 0) {
             const pushPromises = subscriptions.map(sub => {
@@ -65,6 +67,23 @@ export async function POST(req: NextRequest) {
                 return Promise.resolve();
             });
             await Promise.all(pushPromises);
+        }
+
+        // [DB 알림] 해당 교원의 모든 사용자에게 알림 저장
+        const { data: profiles } = await supabaseAdmin
+            .from('profiles')
+            .select('id')
+            .eq('church_id', targetChurchId);
+
+        if (profiles && profiles.length > 0) {
+            const notis = profiles.map(p => ({
+                user_id: p.id,
+                type: 'announcement',
+                actor_name: title, // 공지 제목을 행위자 명으로 활용
+                post_id: announcement.id,
+                is_read: false
+            }));
+            await supabaseAdmin.from('notifications').insert(notis);
         }
 
         return NextResponse.json(announcement);

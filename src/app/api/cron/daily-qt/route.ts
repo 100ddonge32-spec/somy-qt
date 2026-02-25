@@ -2,11 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 import { getTodayReading } from '@/lib/reading-plan';
+import webpush from 'web-push';
 
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
+);
+
+webpush.setVapidDetails(
+    'mailto:pastorbaek@kakao.com',
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BCpTn0SHIYSZzjST5xxL1Cv9svmlp3f9Xmvt9FSALBvo4QwLQCBlo_mu4ThoMHgINRmAk4c9sxwVwI2QtDyHr1I',
+    process.env.VAPID_PRIVATE_KEY || 'LAAS6aJenIKYBShIGZsWVKhXNOMKwkuXvpf2NLCGZAI'
 );
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -111,6 +118,41 @@ export async function GET(req: NextRequest) {
         if (error) {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
+
+        // [푸시 알림] 자동 생성된 오늘 큐티 알림 전송
+        try {
+            const { data: subscriptions } = await supabaseAdmin
+                .from('push_subscriptions')
+                .select('subscription');
+
+            if (subscriptions && subscriptions.length > 0) {
+                const payload = JSON.stringify({
+                    title: '📖 오늘의 큐티가 도착했습니다!',
+                    body: `${today} ${reference} 말씀이 준비되었습니다. ✨`,
+                    url: '/'
+                });
+
+                await Promise.all(subscriptions.map(async (sub) => {
+                    if (sub.subscription) {
+                        try {
+                            await webpush.sendNotification(sub.subscription, payload);
+                        } catch (e) { }
+                    }
+                }));
+            }
+
+            // [DB 알림] 모든 사용자에게 알림 저장
+            const { data: profiles } = await supabaseAdmin.from('profiles').select('id');
+            if (profiles && profiles.length > 0) {
+                const notis = profiles.map(p => ({
+                    user_id: p.id,
+                    type: 'qt',
+                    actor_name: `${today} ${reference}`,
+                    is_read: false
+                }));
+                await supabaseAdmin.from('notifications').insert(notis);
+            }
+        } catch (e) { }
 
         return NextResponse.json({
             success: true,

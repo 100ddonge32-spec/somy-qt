@@ -66,6 +66,8 @@ export async function POST(req: NextRequest) {
             const { data: usersToNotify } = await supabaseAdmin.from('profiles').select('id').eq('church_id', cid).neq('id', user_id);
             if (usersToNotify && usersToNotify.length > 0) {
                 const userIds = usersToNotify.map(u => u.id);
+
+                // 푸시 알람
                 const { data: subs } = await supabaseAdmin.from('push_subscriptions').select('subscription').in('user_id', userIds);
                 if (subs && subs.length > 0) {
                     const payload = JSON.stringify({
@@ -76,6 +78,16 @@ export async function POST(req: NextRequest) {
                     const pushPromises = subs.map(sub => webpush.sendNotification(sub.subscription, payload).catch(e => { }));
                     await Promise.allSettled(pushPromises);
                 }
+
+                // DB 알림
+                const notis = userIds.map(uid => ({
+                    user_id: uid,
+                    type: 'community_post',
+                    actor_name: user_name,
+                    post_id: data.id,
+                    is_read: false
+                }));
+                await supabaseAdmin.from('notifications').insert(notis);
             }
         }
 
