@@ -53,7 +53,10 @@ export async function POST(req: NextRequest) {
         sermon_q3,
         custom_ccm_list,
         community_visible,
-        allow_member_edit
+        allow_member_edit,
+        today_book_title,
+        today_book_description,
+        today_book_image_url
     } = body;
 
     // ✅ DB 컬럼이 없을 가능성이 크므로 plan 필드에 플래그를 심어서 저장하는 '김부장의 신의 한 수' 적용
@@ -75,7 +78,10 @@ export async function POST(req: NextRequest) {
             sermon_q1,
             sermon_q2,
             sermon_q3,
-            custom_ccm_list
+            custom_ccm_list,
+            today_book_title,
+            today_book_description,
+            today_book_image_url
         });
 
     if (error) {

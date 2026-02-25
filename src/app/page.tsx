@@ -6,7 +6,7 @@ import { getGraceVerse } from '@/lib/navigator-verses';
 import { getTodayCcm, CcmVideo, CCM_LIST } from "@/lib/ccm";
 import * as XLSX from 'xlsx';
 
-type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "adminGuide" | "profile" | "memberSearch";
+type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "adminGuide" | "profile" | "memberSearch" | "book";
 
 const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://cdn.imweb.me/thumbnail/20210813/569458bf12dd0.png";
@@ -128,6 +128,40 @@ function getYouVersionUrl(reference: string): string {
 
     return `https://www.bible.com/ko/search/bible?q=${encodeURIComponent(reference)}`;
 }
+
+const BookView = ({ book, onBack }: { book: any, onBack: () => void }) => {
+    return (
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', animation: 'fade-in 0.4s ease-out' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button onClick={onBack} style={{ background: '#F5F5F5', border: 'none', width: '36px', height: '36px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '18px' }}>←</button>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>📚 오늘의 책 추천</h2>
+            </div>
+
+            <div style={{ background: 'white', borderRadius: '28px', padding: '28px', border: '1px solid #F0ECE4', boxShadow: '0 15px 35px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
+                <div style={{ width: '100%', maxWidth: '200px', aspectRatio: '2/3', background: '#F9F7F2', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', position: 'relative' }}>
+                    {book.today_book_image_url ? (
+                        <img src={book.today_book_image_url} alt={book.today_book_title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', color: '#DDD' }}>📖</div>
+                    )}
+                </div>
+
+                <div style={{ textAlign: 'center', width: '100%' }}>
+                    <h3 style={{ fontSize: '20px', fontWeight: 900, color: '#333', marginBottom: '8px', wordBreak: 'keep-all' }}>{book.today_book_title || '오늘의 추천 도서'}</h3>
+                    <div style={{ width: '40px', height: '3px', background: '#D4AF37', margin: '12px auto', borderRadius: '2px' }}></div>
+                </div>
+
+                <div style={{ width: '100%', background: '#F9F7F2', padding: '24px', borderRadius: '20px', border: '1px solid #F0ECE4' }}>
+                    <p style={{ margin: 0, fontSize: '15px', color: '#555', lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'keep-all' }}>
+                        {book.today_book_description || '교회 성도님들을 위해 엄선한 오늘의 추천 도서입니다. 풍성한 영적 독서의 시간을 가져보세요.'}
+                    </p>
+                </div>
+            </div>
+
+            <button onClick={onBack} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '16px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', marginTop: '10px', boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }}>확인</button>
+        </div>
+    );
+};
 
 const StatsView = ({ memberList }: { memberList: any[] }) => {
     // Gender Calculation
@@ -333,6 +367,8 @@ export default function App() {
     const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null); // ✅ 로고 업로드 대기 파일
     const [isMemberUploading, setIsMemberUploading] = useState(false); // ✅ 업로드 중 애니메이션 스테이트
     const [isLogoUploading, setIsLogoUploading] = useState(false); // ✅ 로고 업로드 중
+    const [isBookUploading, setIsBookUploading] = useState(false); // ✅ 책 이미지 업로드 중
+    const [isBookAiLoading, setIsBookAiLoading] = useState(false); // ✅ 책 소개 AI 생성 중
     const [isManualSermon, setIsManualSermon] = useState(false); // ✅ 수동 설교 지정 모드 여부
 
     const [churchSettings, setChurchSettings] = useState<any>({
@@ -350,6 +386,9 @@ export default function App() {
         sermon_q2: '',
         sermon_q3: '',
         custom_ccm_list: [],
+        today_book_title: '',
+        today_book_description: '',
+        today_book_image_url: '',
     });
     const [settingsForm, setSettingsForm] = useState<any>({
         church_name: CHURCH_NAME,
@@ -366,6 +405,9 @@ export default function App() {
         sermon_q2: '',
         sermon_q3: '',
         custom_ccm_list: [],
+        today_book_title: '',
+        today_book_description: '',
+        today_book_image_url: '',
     });
 
     // [최적화] 커스텀 CCM 목록 우선순위 결정 로직
@@ -1328,6 +1370,9 @@ export default function App() {
     }, [ccmVolume, initPlayer, lastToggleTime]);
 
     const renderContent = () => {
+        if (view === "book") {
+            return <BookView book={churchSettings} onBack={handleBack} />;
+        }
         if (view === "home") {
             return (
                 <div style={{
@@ -1816,6 +1861,19 @@ export default function App() {
                             transition: 'all 0.2s'
                         }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                             📖 소미 활용 가이드 보기
+                        </button>
+
+                        <button onClick={() => setView('book')} style={{
+                            width: '100%', padding: "16px",
+                            background: "linear-gradient(135deg, #ffffff 0%, #FDFCFB 100%)",
+                            color: "#6D4C41",
+                            fontWeight: 800, fontSize: "15px", borderRadius: "18px",
+                            border: "1px solid #EFEBE9", cursor: "pointer",
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                            boxShadow: '0 4px 12px rgba(109,76,65,0.08)',
+                            transition: 'all 0.2s'
+                        }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                            📚 오늘의 책 추천 보기
                         </button>
 
                         {isAdmin && (
@@ -4986,6 +5044,70 @@ export default function App() {
                                                 ) : (
                                                     <div style={{ textAlign: 'center', fontSize: '11px', color: '#999', padding: '10px' }}>등록된 배경음악이 없습니다. (기본 목록이 재생됩니다)</div>
                                                 )}
+                                            </div>
+
+                                            {/* ✅ 오늘의 책 관리 섹션 추가 */}
+                                            <div style={{ marginTop: '10px', padding: '15px', background: '#F5F5F3', borderRadius: '15px', border: '1px solid #EEE' }}>
+                                                <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    📚 오늘의 책 추천 관리
+                                                </div>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                                        <input type="text" value={settingsForm.today_book_title || ''} onChange={e => setSettingsForm({ ...settingsForm, today_book_title: e.target.value })} placeholder="추천 도서 제목" style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
+                                                        <button
+                                                            disabled={isBookAiLoading}
+                                                            onClick={async () => {
+                                                                if (!settingsForm.today_book_title) return alert('책 제목을 입력해 주세요!');
+                                                                setIsBookAiLoading(true);
+                                                                try {
+                                                                    const res = await fetch('/api/book-generate', {
+                                                                        method: 'POST',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({ title: settingsForm.today_book_title })
+                                                                    });
+                                                                    const data = await res.json();
+                                                                    if (data.description) {
+                                                                        setSettingsForm({ ...settingsForm, today_book_description: data.description });
+                                                                    }
+                                                                } catch (e) { alert('AI 생성 중 오류가 발생했습니다.'); }
+                                                                finally { setIsBookAiLoading(false); }
+                                                            }}
+                                                            style={{ padding: '0 12px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>
+                                                            {isBookAiLoading ? '생성 중...' : 'AI 자동생성'}
+                                                        </button>
+                                                    </div>
+                                                    <textarea value={settingsForm.today_book_description || ''} onChange={e => setSettingsForm({ ...settingsForm, today_book_description: e.target.value })} placeholder="책 소개 또는 추천사 (직접 입력도 가능)" style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px', resize: 'none' }} />
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                        <div style={{ flex: 1, fontSize: '12px', color: '#666' }}>📖 책 이미지 (표지)</div>
+                                                        <input type="file" id="book-img-upload" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (!file) return;
+                                                            setIsBookUploading(true);
+                                                            try {
+                                                                const formData = new FormData();
+                                                                formData.append('file', file);
+                                                                const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
+                                                                const data = await res.json();
+                                                                if (data.url) {
+                                                                    setSettingsForm({ ...settingsForm, today_book_image_url: data.url });
+                                                                }
+                                                            } catch (e) { alert('이미지 업로드 실패'); }
+                                                            finally { setIsBookUploading(false); }
+                                                        }} />
+                                                        <button
+                                                            onClick={() => document.getElementById('book-img-upload')?.click()}
+                                                            disabled={isBookUploading}
+                                                            style={{ padding: '6px 12px', background: '#FFF', border: '1px solid #DDD', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>
+                                                            {isBookUploading ? '업로드 중...' : '이미지 선택'}
+                                                        </button>
+                                                    </div>
+                                                    {settingsForm.today_book_image_url && (
+                                                        <div style={{ padding: '8px', background: 'white', borderRadius: '8px', border: '1px solid #EEE', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                            <img src={settingsForm.today_book_image_url} alt="표지 미리보기" style={{ width: '40px', height: '60px', objectFit: 'cover', borderRadius: '4px' }} />
+                                                            <span style={{ fontSize: '11px', color: '#999' }}>이미지가 선택되었습니다.</span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                             {settingsForm.church_logo_url && (
                                                 <div style={{ marginTop: '10px', padding: '15px', background: '#F5F5F5', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
