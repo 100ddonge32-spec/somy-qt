@@ -20,13 +20,18 @@ export async function GET(req: NextRequest) {
         .maybeSingle();
 
     if (!data) {
-        // 기본값(ID 1) 조회
         const { data: defaultData } = await supabaseAdmin
             .from('church_settings')
             .select('*')
             .eq('id', 1)
             .single();
         data = defaultData;
+    }
+
+    if (data) {
+        // ✅ DB 컬럼이 없을 경우를 대비해 plan 필드에 저장된 정보를 읽어와 매핑합니다.
+        data.allow_member_edit = data.allow_member_edit || (data.plan && data.plan.includes('member_edit_on')) || false;
+        if (data.plan) data.plan = data.plan.split('|')[0]; // 원래 plan 값만 추출
     }
 
     return NextResponse.json({ settings: data });
@@ -46,20 +51,23 @@ export async function POST(req: NextRequest) {
         sermon_q2,
         sermon_q3,
         custom_ccm_list,
-        community_visible
+        community_visible,
+        allow_member_edit
     } = body;
+
+    // ✅ DB 컬럼이 없을 가능성이 크므로 plan 필드에 플래그를 심어서 저장하는 '김부장의 신의 한 수' 적용
+    const encodedPlan = (plan || 'free').split('|')[0] + (allow_member_edit ? '|member_edit_on' : '');
 
     const { error } = await supabaseAdmin
         .from('church_settings')
         .upsert({
-            id: 1, // 현재는 단일 교회이므로 고정 ID 1 사용
+            id: 1,
             church_name,
             church_logo_url,
             church_url,
             app_subtitle,
-            plan: plan || 'free',
+            plan: encodedPlan,
             community_visible: community_visible ?? true,
-            allow_member_edit: body.allow_member_edit ?? false, // ✅ 누락된 필드 추가
             sermon_url,
             sermon_summary,
             sermon_q1,
@@ -69,6 +77,7 @@ export async function POST(req: NextRequest) {
         });
 
     if (error) {
+        console.error("[Settings POST Error]", error);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
     return NextResponse.json({ success: true });

@@ -5167,77 +5167,22 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
         const loadProfile = async () => {
             if (!user?.id) return;
             try {
+                // 1. 서버 측 동기화 API 호출 (이미 ID가 있더라도 누락된 정보를 위해 머지 로직 실행됨)
+                await fetch('/api/auth/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: user.id,
+                        email: user.email,
+                        name: user.user_metadata?.full_name || user.user_metadata?.name,
+                        avatar_url: user.user_metadata?.avatar_url
+                    })
+                });
+
+                // 2. 최신 프로필 정보 조회 (단순 조회)
                 let { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
 
-                // ✅ 데이터가 없거나, 핵심 정보(직분/전화번호)가 비어있는 경우 동기화 시도
-                if (!data || (!data.phone && !data.church_rank)) {
-                    let match = null;
-
-                    // 1. 이메일로 매칭
-                    if (user.email) {
-                        const { data: emailMatch } = await supabase.from('profiles').select('*').eq('email', user.email).is('id', null).maybeSingle();
-                        if (emailMatch) match = emailMatch;
-                    }
-
-                    // 2. 전화번호로 매칭
-                    if (!match) {
-                        const rawPhone = user?.user_metadata?.phone_number || user?.user_metadata?.mobile || '';
-                        let cleanPhone = rawPhone.replace(/[^0-9]/g, '');
-                        if (cleanPhone.startsWith('8210')) cleanPhone = '0' + cleanPhone.substring(2);
-                        else if (cleanPhone.startsWith('82')) cleanPhone = '0' + cleanPhone.substring(2);
-                        if (cleanPhone) {
-                            const formattedPhone = cleanPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
-                            const { data: phoneMatch } = await supabase.from('profiles').select('*').or(`phone.eq.${cleanPhone},phone.eq.${formattedPhone}`).is('id', null).maybeSingle();
-                            if (phoneMatch) match = phoneMatch;
-                        }
-                    }
-
-                    // 3. 이름으로 매칭 (공백 제거 후 비교)
-                    if (!match && user?.user_metadata?.full_name) {
-                        const cleanName = user.user_metadata.full_name.replace(/\s+/g, '');
-                        // DB의 full_name도 공백이 제거된 채로 저장되어 있으므로 정확히 일치함
-                        const { data: nameMatch } = await supabase.from('profiles').select('*').eq('full_name', cleanName).is('id', null).limit(1).maybeSingle();
-                        if (nameMatch) {
-                            console.log(`[Sync] 이름 기반 매칭 성공: ${cleanName}`);
-                            match = nameMatch;
-                        } else {
-                            // 혹시 DB에 공백이 있을 경우를 위해 Like 검색 시도 (백동희 -> %백%동%희%)
-                            const fuzzyName = `%${cleanName.split('').join('%')}%`;
-                            const { data: fuzzyMatch } = await supabase.from('profiles').select('*').ilike('full_name', fuzzyName).is('id', null).limit(1).maybeSingle();
-                            if (fuzzyMatch) {
-                                console.log(`[Sync] 퍼지 이름 기반 매칭 성공: ${fuzzyName}`);
-                                match = fuzzyMatch;
-                            }
-                        }
-                    }
-
-                    if (match) {
-                        if (data) {
-                            // 이미 프로필 row는 생성되어 있는데 내용이 부실한 경우 -> 관리자 데이터로 업데이트 후 원본 매치 데이터 삭제
-                            const updateFields = {
-                                full_name: data.full_name || match.full_name,
-                                phone: data.phone || match.phone,
-                                birthdate: data.birthdate || match.birthdate,
-                                address: data.address || match.address,
-                                church_rank: data.church_rank || match.church_rank,
-                                church_id: data.church_id || match.church_id || 'jesus-in',
-                                avatar_url: data.avatar_url || match.avatar_url,
-                                is_approved: true
-                            };
-                            await supabase.from('profiles').update(updateFields).eq('id', user.id);
-                            // 관리자가 올렸던 (연결되지 않았던) 로우는 삭제하여 중복 방지
-                            await supabase.from('profiles').delete().eq('email', match.email).is('id', null);
-                            const { data: merged } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-                            data = merged;
-                        } else {
-                            // 아예 프로필 row가 없는 경우 -> 관리자 데이터에 id 부여
-                            await supabase.from('profiles').update({ id: user.id, email: user.email || match.email, is_approved: true }).eq('email', match.email);
-                            data = { ...match, id: user.id, is_approved: true };
-                        }
-                    }
-                }
                 if (data) {
-                    // ✅ 전화번호 자동 동기화 로직 보강
                     const rawMetaPhone = user?.user_metadata?.phone_number || user?.user_metadata?.mobile || '';
                     let cleanMetaPhone = rawMetaPhone.replace(/[^0-9]/g, '');
                     if (cleanMetaPhone.startsWith('8210')) cleanMetaPhone = '0' + cleanMetaPhone.substring(2);
@@ -5265,24 +5210,27 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
         if (!user?.id) return;
         setIsSavingProfile(true);
         try {
-            if (profileForm.phone) {
-                const cleanInputPhone = profileForm.phone.replace(/[^0-9]/g, '');
-                const formattedInputPhone = cleanInputPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
-                const { data: duplicate } = await supabase.from('profiles').select('*').or(`phone.eq.${cleanInputPhone},phone.eq.${formattedInputPhone}`).is('id', null).maybeSingle();
-                if (duplicate) {
-                    await supabase.from('profiles').delete().eq('id', user.id).neq('email', duplicate.email);
-                    const { error: mergeError } = await supabase.from('profiles').update({ ...profileForm, id: user.id, email: user.email }).eq('email', duplicate.email);
-                    if (!mergeError) {
-                        alert('기존에 등록된 성도 정보와 성공적으로 연결되었습니다! ✨');
-                        return;
-                    }
-                }
+            const res = await fetch('/api/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: user.id,
+                    profileData: profileForm
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || '저장 중 오류가 발생했습니다.');
+
+            if (data.merged) {
+                alert('기존에 등록된 성도 정보와 성공적으로 연결되었습니다! ✨');
+            } else {
+                alert('프로필 정보가 저장되었습니다! ✨');
             }
-            const { error } = await supabase.from('profiles').update(profileForm).eq('id', user.id);
-            if (error) throw error;
-            alert('프로필 정보가 저장되었습니다! ✨');
-        } catch (e) { alert('저장 실패: ' + (e as Error).message); }
-        finally { setIsSavingProfile(false); }
+        } catch (e) {
+            alert('저장 실패: ' + (e as Error).message);
+        } finally {
+            setIsSavingProfile(false);
+        }
     };
 
     return (
