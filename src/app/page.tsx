@@ -4493,20 +4493,24 @@ export default function App() {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                             <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>교회 이름</label>
-                                            <input type="text" value={settingsForm.name} onChange={e => setSettingsForm({ ...settingsForm, name: e.target.value })} placeholder="앱 메인에 표시될 교회 이름 (예: 샘플교회)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                            <input type="text" value={settingsForm.church_name} onChange={e => setSettingsForm({ ...settingsForm, church_name: e.target.value })} placeholder="앱 메인에 표시될 교회 이름 (예: 샘플교회)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                             <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>앱 부제목 (슬로건)</label>
-                                            <input type="text" value={settingsForm.slogan} onChange={e => setSettingsForm({ ...settingsForm, slogan: e.target.value })} placeholder="예: 말씀과 기도로 거룩해지는 공동체" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                            <input type="text" value={settingsForm.app_subtitle} onChange={e => setSettingsForm({ ...settingsForm, app_subtitle: e.target.value })} placeholder="예: 말씀과 기도로 거룩해지는 공동체" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>유튜브 설교/본문 주소</label>
+                                            <input type="text" value={settingsForm.sermon_url} onChange={e => setSettingsForm({ ...settingsForm, sermon_url: e.target.value })} placeholder="유튜브 영상 주소 (https://youtu.be/...)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                             <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>로고 이미지 URL</label>
-                                            <input type="text" value={settingsForm.logoUrl} onChange={e => setSettingsForm({ ...settingsForm, logoUrl: e.target.value })} placeholder="로고 이미지 주소 (https://...)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                            <input type="text" value={settingsForm.church_logo_url} onChange={e => setSettingsForm({ ...settingsForm, church_logo_url: e.target.value })} placeholder="로고 이미지 주소 (https://...)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                                             <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>지원 포맷: JPG, PNG, GIF, WebP</div>
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>배경 이미지 URL</label>
-                                            <input type="text" value={settingsForm.bgUrl} onChange={e => setSettingsForm({ ...settingsForm, bgUrl: e.target.value })} placeholder="배경 이미지 주소 (선택사항)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>교회 홈페이지/배경 URL</label>
+                                            <input type="text" value={settingsForm.church_url} onChange={e => setSettingsForm({ ...settingsForm, church_url: e.target.value })} placeholder="교회 링크 주소 (선택사항)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#F9F7F2', borderRadius: '10px', border: '1px solid #F0ECE4', marginTop: '4px' }}>
                                             <div>
@@ -4514,14 +4518,14 @@ export default function App() {
                                                 <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>성도들이 자신의 연락처/주소를 직접 수정할 수 있게 합니다.</div>
                                             </div>
                                             <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                                                <input type="checkbox" checked={settingsForm.allowMemberEdit} onChange={e => setSettingsForm({ ...settingsForm, allowMemberEdit: e.target.checked })} style={{ width: '18px', height: '18px', accentColor: '#D4AF37' }} />
+                                                <input type="checkbox" checked={settingsForm.allow_member_edit} onChange={e => setSettingsForm({ ...settingsForm, allow_member_edit: e.target.checked })} style={{ width: '18px', height: '18px', accentColor: '#D4AF37' }} />
                                             </label>
                                         </div>
-                                        {settingsForm.logoUrl && (
+                                        {settingsForm.church_logo_url && (
                                             <div style={{ marginTop: '10px', padding: '15px', background: '#F5F5F5', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
                                                 <div style={{ fontSize: '11px', fontWeight: 700, color: '#888' }}>적용 미리보기</div>
-                                                <img alt="로고 미리보기" src={settingsForm.logoUrl} onError={(e) => e.currentTarget.style.display = 'none'} onLoad={(e) => e.currentTarget.style.display = 'block'} style={{ width: '60px', height: '60px', objectFit: 'contain', borderRadius: '12px', background: 'white', padding: '5px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }} />
-                                                <div style={{ fontSize: '14px', fontWeight: 800 }}>{settingsForm.name || '교회 이름'}</div>
+                                                <img alt="로고 미리보기" src={settingsForm.church_logo_url} onError={(e) => e.currentTarget.style.display = 'none'} onLoad={(e) => e.currentTarget.style.display = 'block'} style={{ width: '60px', height: '60px', objectFit: 'contain', borderRadius: '12px', background: 'white', padding: '5px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }} />
+                                                <div style={{ fontSize: '14px', fontWeight: 800 }}>{settingsForm.church_name || '교회 이름'}</div>
                                             </div>
                                         )}
                                     </div>
