@@ -4590,7 +4590,27 @@ export default function App() {
                                                 <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>성도들이 자신의 연락처/주소를 직접 수정할 수 있게 합니다.</div>
                                             </div>
                                             <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                                                <input type="checkbox" checked={settingsForm.allow_member_edit} onChange={e => setSettingsForm({ ...settingsForm, allow_member_edit: e.target.checked })} style={{ width: '20px', height: '20px', accentColor: '#D4AF37' }} />
+                                                <input type="checkbox" checked={settingsForm.allow_member_edit} onChange={async (e) => {
+                                                    const newVal = e.target.checked;
+                                                    const updatedForm = { ...settingsForm, allow_member_edit: newVal };
+                                                    setSettingsForm(updatedForm);
+
+                                                    // ✅ 체크 즉시 서버에 자동 저장 시도
+                                                    try {
+                                                        const res = await fetch('/api/settings', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify(updatedForm),
+                                                        });
+                                                        const data = await res.json();
+                                                        if (data.success) {
+                                                            setChurchSettings(updatedForm); // 앱 전역 상태 동기화
+                                                            console.log("성도 정보 수정 권한 설정 자동 저장 완료");
+                                                        }
+                                                    } catch (err) {
+                                                        console.error("자동 저장 실패:", err);
+                                                    }
+                                                }} style={{ width: '20px', height: '20px', accentColor: '#D4AF37' }} />
                                             </label>
                                         </div>
 
