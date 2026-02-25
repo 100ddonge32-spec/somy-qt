@@ -4611,159 +4611,157 @@ export default function App() {
                                     </div>
                                 </>
                             ) : adminTab === 'members' ? (
-                                <>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '500px', overflowY: 'auto' }}>
-                                        {/* 엑셀 업로드 영역 */}
-                                        <div style={{ background: '#F9F7F2', padding: '18px', borderRadius: '15px', border: '1px dashed #D4AF37', position: 'relative' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                                <div style={{ fontSize: '13px', fontWeight: 800, color: '#333' }}>📊 성도 명단 엑셀 업로드</div>
-                                                <button
-                                                    onClick={downloadTemplate}
-                                                    style={{
-                                                        padding: '4px 10px',
-                                                        fontSize: '11px',
-                                                        background: '#FFF',
-                                                        color: '#B8924A',
-                                                        border: '1px solid #D4AF37',
-                                                        borderRadius: '6px',
-                                                        fontWeight: 700,
-                                                        cursor: 'pointer',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '4px'
-                                                    }}
-                                                >
-                                                    📥 양식 다운로드
-                                                </button>
-                                            </div>
-                                            <div style={{ background: 'white', padding: '12px', borderRadius: '10px', border: '1px solid #F0ECE4', marginBottom: '12px' }}>
-                                                <input id="excel-upload-input" type="file" accept=".xlsx, .xls" onChange={(e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (file) setSelectedUploadFile(file);
-                                                }} style={{ display: 'none' }} />
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '500px', overflowY: 'auto' }}>
+                                    {/* 엑셀 업로드 영역 */}
+                                    <div style={{ background: '#F9F7F2', padding: '18px', borderRadius: '15px', border: '1px dashed #D4AF37', position: 'relative' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                            <div style={{ fontSize: '13px', fontWeight: 800, color: '#333' }}>📊 성도 명단 엑셀 업로드</div>
+                                            <button
+                                                onClick={downloadTemplate}
+                                                style={{
+                                                    padding: '4px 10px',
+                                                    fontSize: '11px',
+                                                    background: '#FFF',
+                                                    color: '#B8924A',
+                                                    border: '1px solid #D4AF37',
+                                                    borderRadius: '6px',
+                                                    fontWeight: 700,
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px'
+                                                }}
+                                            >
+                                                📥 양식 다운로드
+                                            </button>
+                                        </div>
+                                        <div style={{ background: 'white', padding: '12px', borderRadius: '10px', border: '1px solid #F0ECE4', marginBottom: '12px' }}>
+                                            <input id="excel-upload-input" type="file" accept=".xlsx, .xls" onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) setSelectedUploadFile(file);
+                                            }} style={{ display: 'none' }} />
 
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                                    {!selectedUploadFile ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                {!selectedUploadFile ? (
+                                                    <button
+                                                        onClick={() => document.getElementById('excel-upload-input')?.click()}
+                                                        style={{ width: '100%', padding: '12px', background: '#FAFAFA', border: '2px dashed #EEE', borderRadius: '10px', color: '#999', fontSize: '13px', cursor: 'pointer' }}
+                                                    >
+                                                        📁 엑셀 파일 선택하기
+                                                    </button>
+                                                ) : (
+                                                    <div style={{ padding: '10px', background: '#FFF9C4', borderRadius: '10px', border: '1px solid #FFF176', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                        <div style={{ fontSize: '12px', color: '#856404', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
+                                                            📄 {selectedUploadFile.name}
+                                                            <span onClick={() => setSelectedUploadFile(null)} style={{ cursor: 'pointer', color: '#999' }}>✕</span>
+                                                        </div>
                                                         <button
-                                                            onClick={() => document.getElementById('excel-upload-input')?.click()}
-                                                            style={{ width: '100%', padding: '12px', background: '#FAFAFA', border: '2px dashed #EEE', borderRadius: '10px', color: '#999', fontSize: '13px', cursor: 'pointer' }}
-                                                        >
-                                                            📁 엑셀 파일 선택하기
-                                                        </button>
-                                                    ) : (
-                                                        <div style={{ padding: '10px', background: '#FFF9C4', borderRadius: '10px', border: '1px solid #FFF176', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                            <div style={{ fontSize: '12px', color: '#856404', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
-                                                                📄 {selectedUploadFile.name}
-                                                                <span onClick={() => setSelectedUploadFile(null)} style={{ cursor: 'pointer', color: '#999' }}>✕</span>
-                                                            </div>
-                                                            <button
-                                                                disabled={isMemberUploading}
-                                                                onClick={async () => {
-                                                                    if (!selectedUploadFile) return;
-                                                                    setIsMemberUploading(true); // ✅ 애니메이션 시작
-                                                                    const formData = new FormData();
-                                                                    formData.append('file', selectedUploadFile);
-                                                                    formData.append('church_id', churchId);
+                                                            disabled={isMemberUploading}
+                                                            onClick={async () => {
+                                                                if (!selectedUploadFile) return;
+                                                                setIsMemberUploading(true); // ✅ 애니메이션 시작
+                                                                const formData = new FormData();
+                                                                formData.append('file', selectedUploadFile);
+                                                                formData.append('church_id', churchId);
 
-                                                                    try {
-                                                                        const res = await fetch('/api/admin/bulk-upload', {
-                                                                            method: 'POST',
-                                                                            body: formData
-                                                                        });
-                                                                        const result = await res.json();
-                                                                        if (result.success) {
-                                                                            alert(`${result.count}명의 성도 정보가 업데이트 되었습니다! ✅`);
-                                                                            setSelectedUploadFile(null);
-                                                                            // 리스트 새로고침
-                                                                            const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
-                                                                            const data = await r.json();
-                                                                            if (Array.isArray(data)) setMemberList(data);
-                                                                        } else {
-                                                                            const errorMsg = result.errors ? `\n\n[심층진단]:\n${result.errors.join('\n')}` : `\n(DB에 해당 데이터 칸이 없을 수 있습니다.)`;
-                                                                            alert(`업데이트 실패: ${result.count || 0}명 성공${errorMsg}`);
-                                                                        }
-                                                                    } catch (e) {
-                                                                        alert('파일 처리 중 오류가 발생했습니다.');
-                                                                    } finally {
-                                                                        setIsMemberUploading(false); // ✅ 애니메이션 종료
+                                                                try {
+                                                                    const res = await fetch('/api/admin/bulk-upload', {
+                                                                        method: 'POST',
+                                                                        body: formData
+                                                                    });
+                                                                    const result = await res.json();
+                                                                    if (result.success) {
+                                                                        alert(`${result.count}명의 성도 정보가 업데이트 되었습니다! ✅`);
+                                                                        setSelectedUploadFile(null);
+                                                                        // 리스트 새로고침
+                                                                        const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                        const data = await r.json();
+                                                                        if (Array.isArray(data)) setMemberList(data);
+                                                                    } else {
+                                                                        const errorMsg = result.errors ? `\n\n[심층진단]:\n${result.errors.join('\n')}` : `\n(DB에 해당 데이터 칸이 없을 수 있습니다.)`;
+                                                                        alert(`업데이트 실패: ${result.count || 0}명 성공${errorMsg}`);
                                                                     }
-                                                                }}
-                                                                style={{
-                                                                    width: '100%',
-                                                                    padding: '12px',
-                                                                    background: isMemberUploading ? '#999' : '#333',
-                                                                    color: 'white',
-                                                                    border: 'none',
-                                                                    borderRadius: '8px',
-                                                                    fontWeight: 800,
-                                                                    fontSize: '13px',
-                                                                    cursor: isMemberUploading ? 'default' : 'pointer',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center',
-                                                                    gap: '8px',
-                                                                    transition: 'all 0.3s'
-                                                                }}
-                                                            >
-                                                                {isMemberUploading ? (
-                                                                    <>
-                                                                        <div className="spinner-small" style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
-                                                                        업로드 중... 잠시만 기다려주세요
-                                                                    </>
-                                                                ) : (
-                                                                    '🚀 성도 명단 업로드 시작'
-                                                                )}
-                                                            </button>
-                                                            <style>{`
+                                                                } catch (e) {
+                                                                    alert('파일 처리 중 오류가 발생했습니다.');
+                                                                } finally {
+                                                                    setIsMemberUploading(false); // ✅ 애니메이션 종료
+                                                                }
+                                                            }}
+                                                            style={{
+                                                                width: '100%',
+                                                                padding: '12px',
+                                                                background: isMemberUploading ? '#999' : '#333',
+                                                                color: 'white',
+                                                                border: 'none',
+                                                                borderRadius: '8px',
+                                                                fontWeight: 800,
+                                                                fontSize: '13px',
+                                                                cursor: isMemberUploading ? 'default' : 'pointer',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                gap: '8px',
+                                                                transition: 'all 0.3s'
+                                                            }}
+                                                        >
+                                                            {isMemberUploading ? (
+                                                                <>
+                                                                    <div className="spinner-small" style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+                                                                    업로드 중... 잠시만 기다려주세요
+                                                                </>
+                                                            ) : (
+                                                                '🚀 성도 명단 업로드 시작'
+                                                            )}
+                                                        </button>
+                                                        <style>{`
                                                         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
                                                     `}</style>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div style={{ fontSize: '11px', color: '#888', lineHeight: 1.5 }}>
-                                                <strong style={{ color: '#D4AF37' }}>💡 권장 양식:</strong><br />
-                                                성명 | 휴대폰 | 생년월일 | 성별 | 교회직분 | 교적번호 | 주소<br />
-                                                <span style={{ color: '#999' }}>(※ 엑셀 내부 사진 삽입은 지원되지 않습니다. 사진은 개별 수정으로 등록해 주세요.)</span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
+                                        <div style={{ fontSize: '11px', color: '#888', lineHeight: 1.5 }}>
+                                            <strong style={{ color: '#D4AF37' }}>💡 권장 양식:</strong><br />
+                                            성명 | 휴대폰 | 생년월일 | 성별 | 교회직분 | 교적번호 | 주소<br />
+                                            <span style={{ color: '#999' }}>(※ 엑셀 내부 사진 삽입은 지원되지 않습니다. 사진은 개별 수정으로 등록해 주세요.)</span>
+                                        </div>
+                                    </div>
 
-                                        {/* 성도 관리 컨트롤러 */}
-                                        <div style={{ background: 'white', padding: '16px', borderRadius: '15px', border: '1px solid #EEE', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
-                                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#333', whiteSpace: 'nowrap', alignSelf: 'center' }}>⚙️ 관리 도구</div>
-                                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
-                                                    <button
-                                                        onClick={handleExcelExport}
-                                                        style={{ padding: '8px 12px', background: '#E8F5E9', color: '#2E7D32', border: '1px solid #C8E6C9', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
-                                                    >
-                                                        📥 엑셀 다운로드
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setShowAddMemberModal(true)}
-                                                        style={{ padding: '8px 12px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
-                                                    >
-                                                        👤 개별 추가
-                                                    </button>
-                                                    <button
-                                                        onClick={async () => {
-                                                            if (window.confirm('정말 모든 성도 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-                                                                const res = await fetch('/api/admin', {
-                                                                    method: 'POST',
-                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({ action: 'clear_all_members', church_id: churchId })
-                                                                });
-                                                                if (res.ok) {
-                                                                    setMemberList([]);
-                                                                    alert('모든 성도 데이터가 성공적으로 삭제되었습니다.');
-                                                                }
+                                    {/* 성도 관리 컨트롤러 */}
+                                    <div style={{ background: 'white', padding: '16px', borderRadius: '15px', border: '1px solid #EEE', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
+                                            <div style={{ fontSize: '14px', fontWeight: 800, color: '#333', whiteSpace: 'nowrap', alignSelf: 'center' }}>⚙️ 관리 도구</div>
+                                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
+                                                <button
+                                                    onClick={handleExcelExport}
+                                                    style={{ padding: '8px 12px', background: '#E8F5E9', color: '#2E7D32', border: '1px solid #C8E6C9', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                >
+                                                    📥 엑셀 다운로드
+                                                </button>
+                                                <button
+                                                    onClick={() => setShowAddMemberModal(true)}
+                                                    style={{ padding: '8px 12px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                >
+                                                    👤 개별 추가
+                                                </button>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (window.confirm('정말 모든 성도 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                                                            const res = await fetch('/api/admin', {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ action: 'clear_all_members', church_id: churchId })
+                                                            });
+                                                            if (res.ok) {
+                                                                setMemberList([]);
+                                                                alert('모든 성도 데이터가 성공적으로 삭제되었습니다.');
                                                             }
-                                                        }}
-                                                        style={{ padding: '8px 12px', background: '#FFEBEE', color: '#C62828', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
-                                                    >
-                                                        🗑️ 전체 삭제
-                                                    </button>
-                                                </div>
+                                                        }
+                                                    }}
+                                                    style={{ padding: '8px 12px', background: '#FFEBEE', color: '#C62828', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                >
+                                                    🗑️ 전체 삭제
+                                                </button>
                                             </div>
                                         </div>
 
@@ -5062,80 +5060,78 @@ export default function App() {
                                             </div>
                                         </div>
                                     </div>
-                                </>
+                                </div>
                             ) : (
-                                <>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                        <div style={{ fontSize: '13px', color: '#666', background: '#F5F5F3', padding: '14px', borderRadius: '12px', lineHeight: 1.5 }}>
-                                            🛡️ <strong>슈퍼 관리자 전용 (마스터 모드)</strong><br />
-                                            전체 교회의 현황을 파악하고 관리자를 지정합니다.
-                                        </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                    <div style={{ fontSize: '13px', color: '#666', background: '#F5F5F3', padding: '14px', borderRadius: '12px', lineHeight: 1.5 }}>
+                                        🛡️ <strong>슈퍼 관리자 전용 (마스터 모드)</strong><br />
+                                        전체 교회의 현황을 파악하고 관리자를 지정합니다.
+                                    </div>
 
-                                        {/* 교회별 등록 인원 통계 */}
-                                        <div style={{ background: '#FFF9C4', padding: '18px', borderRadius: '18px', border: '1px solid #FFF176' }}>
-                                            <div style={{ fontSize: '14px', fontWeight: 800, color: '#333', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <span>⛪ 교회별 등록 성도수</span>
-                                                <button onClick={async () => {
-                                                    const r = await fetch('/api/admin?action=get_church_stats');
-                                                    const data = await r.json();
-                                                    if (data) setChurchStats(data);
-                                                }} style={{ background: 'white', border: '1px solid #E0E0E0', borderRadius: '8px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>새로고침</button>
-                                            </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                {Object.keys(churchStats).length > 0 ? (
-                                                    Object.entries(churchStats).map(([cid, count]) => (
-                                                        <div key={cid} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.5)', padding: '8px 12px', borderRadius: '10px' }}>
-                                                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#555' }}>📍 {cid}</span>
-                                                            <span style={{ fontSize: '14px', fontWeight: 800, color: '#D4AF37' }}>{count}명</span>
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <div style={{ fontSize: '12px', color: '#999', textAlign: 'center', padding: '10px' }}>'새로고침'을 눌러 통계를 확인하세요.</div>
-                                                )}
-                                            </div>
+                                    {/* 교회별 등록 인원 통계 */}
+                                    <div style={{ background: '#FFF9C4', padding: '18px', borderRadius: '18px', border: '1px solid #FFF176' }}>
+                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#333', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span>⛪ 교회별 등록 성도수</span>
+                                            <button onClick={async () => {
+                                                const r = await fetch('/api/admin?action=get_church_stats');
+                                                const data = await r.json();
+                                                if (data) setChurchStats(data);
+                                            }} style={{ background: 'white', border: '1px solid #E0E0E0', borderRadius: '8px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>새로고침</button>
                                         </div>
-
-                                        <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                            <div>
-                                                <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>새 관리자 정보 등록</label>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                    <input id="admin-email-input" type="email" placeholder="관리자 이메일 (예: pastor@kakao.com)" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }} />
-                                                    <input id="admin-church-id-input" type="text" placeholder="교회 아이디 (영문 추천, 예: sarang)" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }} />
-                                                    <button onClick={async () => {
-                                                        const emailInput = document.getElementById('admin-email-input') as HTMLInputElement;
-                                                        const churchIdInput = document.getElementById('admin-church-id-input') as HTMLInputElement;
-                                                        const email = emailInput?.value;
-                                                        const cId = churchIdInput?.value;
-                                                        if (!email || !cId) { alert('이메일과 교회 아이디를 모두 입력해주세요.'); return; }
-                                                        const res = await fetch('/api/admin', {
-                                                            method: 'POST',
-                                                            headers: { 'Content-Type': 'application/json' },
-                                                            body: JSON.stringify({ action: 'add_admin', email: email.trim(), role: 'church_admin', church_id: cId.trim() })
-                                                        });
-                                                        if (res.ok) {
-                                                            alert(`[${cId}] 관리자가 성공적으로 등록되었습니다!\n이제 해당 관리자에게 접속 링크를 전달하세요.`);
-                                                            emailInput.value = '';
-                                                            churchIdInput.value = '';
-                                                        } else {
-                                                            alert('등록에 실패했습니다.');
-                                                        }
-                                                    }} style={{ padding: '14px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
-                                                        🚀 새로운 교회 등록 및 관리자 임명
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <div style={{ background: '#F0F4F8', padding: '15px', borderRadius: '15px', border: '1px solid #D1D9E6' }}>
-                                                <div style={{ fontSize: '12px', fontWeight: 700, color: '#4A5568', marginBottom: '8px' }}>💡 새로운 교회 시작 가이드</div>
-                                                <ol style={{ fontSize: '11px', color: '#718096', paddingLeft: '18px', lineHeight: 1.6, margin: 0 }}>
-                                                    <li>위에서 관리자 이메일과 <strong>교회 아이디</strong>를 등록합니다.</li>
-                                                    <li>등록한 아이디가 포함된 링크를 전달합니다.<br />
-                                                        <code style={{ background: '#E2E8F0', padding: '2px 4px', borderRadius: '4px', fontSize: '10px' }}>?church=[아이디]</code></li>
-                                                    <li>관리자가 접속 후 [관리자 센터]에서 교회 이름, 로고를 직접 세팅하면 끝!</li>
-                                                </ol>
-                                            </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            {Object.keys(churchStats).length > 0 ? (
+                                                Object.entries(churchStats).map(([cid, count]) => (
+                                                    <div key={cid} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.5)', padding: '8px 12px', borderRadius: '10px' }}>
+                                                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#555' }}>📍 {cid}</span>
+                                                        <span style={{ fontSize: '14px', fontWeight: 800, color: '#D4AF37' }}>{count}명</span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div style={{ fontSize: '12px', color: '#999', textAlign: 'center', padding: '10px' }}>'새로고침'을 눌러 통계를 확인하세요.</div>
+                                            )}
                                         </div>
                                     </div>
-                                </>
+
+                                    <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        <div>
+                                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>새 관리자 정보 등록</label>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                <input id="admin-email-input" type="email" placeholder="관리자 이메일 (예: pastor@kakao.com)" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }} />
+                                                <input id="admin-church-id-input" type="text" placeholder="교회 아이디 (영문 추천, 예: sarang)" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }} />
+                                                <button onClick={async () => {
+                                                    const emailInput = document.getElementById('admin-email-input') as HTMLInputElement;
+                                                    const churchIdInput = document.getElementById('admin-church-id-input') as HTMLInputElement;
+                                                    const email = emailInput?.value;
+                                                    const cId = churchIdInput?.value;
+                                                    if (!email || !cId) { alert('이메일과 교회 아이디를 모두 입력해주세요.'); return; }
+                                                    const res = await fetch('/api/admin', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ action: 'add_admin', email: email.trim(), role: 'church_admin', church_id: cId.trim() })
+                                                    });
+                                                    if (res.ok) {
+                                                        alert(`[${cId}] 관리자가 성공적으로 등록되었습니다!\n이제 해당 관리자에게 접속 링크를 전달하세요.`);
+                                                        emailInput.value = '';
+                                                        churchIdInput.value = '';
+                                                    } else {
+                                                        alert('등록에 실패했습니다.');
+                                                    }
+                                                }} style={{ padding: '14px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                                                    🚀 새로운 교회 등록 및 관리자 임명
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div style={{ background: '#F0F4F8', padding: '15px', borderRadius: '15px', border: '1px solid #D1D9E6' }}>
+                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#4A5568', marginBottom: '8px' }}>💡 새로운 교회 시작 가이드</div>
+                                            <ol style={{ fontSize: '11px', color: '#718096', paddingLeft: '18px', lineHeight: 1.6, margin: 0 }}>
+                                                <li>위에서 관리자 이메일과 <strong>교회 아이디</strong>를 등록합니다.</li>
+                                                <li>등록한 아이디가 포함된 링크를 전달합니다.<br />
+                                                    <code style={{ background: '#E2E8F0', padding: '2px 4px', borderRadius: '4px', fontSize: '10px' }}>?church=[아이디]</code></li>
+                                                <li>관리자가 접속 후 [관리자 센터]에서 교회 이름, 로고를 직접 세팅하면 끝!</li>
+                                            </ol>
+                                        </div>
+                                    </div>
+                                </div>
                             )}
                         </div>
                     </div>
