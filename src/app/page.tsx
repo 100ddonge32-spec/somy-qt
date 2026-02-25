@@ -1818,17 +1818,19 @@ export default function App() {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                         {(qtData.fullPassage || '').split('\n').filter(l => l.trim()).map((line, idx) => {
                                             const trimmedLine = line.trim();
-                                            // 1절, 2절 등을 추출하는 정규식. 앞에 공백이나 구두점이 포함될 수 있음.
-                                            const match = trimmedLine.match(/^(\d+)[.\s\u00A0]*(.*)/);
+                                            // 1절, 2절 또는 8:1, 8:2 형식을 모두 추출하는 정규식
+                                            const match = trimmedLine.match(/^(\d+[:.]\d+|\d+)[.\s\u00A0]*(.*)/);
 
                                             if (match) {
+                                                const label = match[1];
+                                                const content = match[2];
                                                 return (
                                                     <div key={idx} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                                                        <span style={{ color: '#D4AF37', fontSize: '13px', fontWeight: 800, minWidth: '20px', textAlign: 'right', paddingTop: '4px', fontStyle: 'italic' }}>
-                                                            {match[1]}
+                                                        <span style={{ color: '#D4AF37', fontSize: '13px', fontWeight: 800, minWidth: '24px', textAlign: 'right', paddingTop: '4px', fontStyle: 'italic' }}>
+                                                            {label}
                                                         </span>
                                                         <span style={{ fontSize: '16px', lineHeight: 1.8, color: '#333', flex: 1, wordBreak: 'keep-all', fontWeight: 500 }}>
-                                                            {match[2]}
+                                                            {content}
                                                         </span>
                                                     </div>
                                                 );
