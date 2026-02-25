@@ -249,6 +249,9 @@ export default function App() {
     const [showIpod, setShowIpod] = useState(true); // 아이팟 표시 여부
     const [selectedMemberForEdit, setSelectedMemberForEdit] = useState<any>(null); // ✅ 성도 정보 수정을 위한 선택된 멤버
     const [showWelcome, setShowWelcome] = useState(false); // 소미 소개 카드 표시 여부 (기본 닫힘)
+    const [newCcmTitle, setNewCcmTitle] = useState(""); // ✅ 새로운 찬양 제목
+    const [newCcmArtist, setNewCcmArtist] = useState(""); // ✅ 새로운 찬양 가수
+    const [newCcmUrl, setNewCcmUrl] = useState(""); // ✅ 새로운 찬양 유튜브 주소
     const dragOffset = useRef({ x: 0, y: 0 });
     const playerRef = useRef<any>(null);
 
@@ -4520,6 +4523,57 @@ export default function App() {
                                             <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
                                                 <input type="checkbox" checked={settingsForm.allow_member_edit} onChange={e => setSettingsForm({ ...settingsForm, allow_member_edit: e.target.checked })} style={{ width: '18px', height: '18px', accentColor: '#D4AF37' }} />
                                             </label>
+                                        </div>
+
+                                        {/* ✅ 배경음악(CCM) 관리 섹션 추가 */}
+                                        <div style={{ marginTop: '10px', padding: '15px', background: '#F5F5F3', borderRadius: '15px', border: '1px solid #EEE' }}>
+                                            <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                🎵 배경음악(CCM) 플레이리스트 관리
+                                            </div>
+
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+                                                <input type="text" value={newCcmTitle} onChange={e => setNewCcmTitle(e.target.value)} placeholder="찬양 제목 (예: 은혜로운 찬양)" style={{ padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
+                                                <input type="text" value={newCcmArtist} onChange={e => setNewCcmArtist(e.target.value)} placeholder="가수/아티스트 (예: 어노인팅)" style={{ padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
+                                                <div style={{ display: 'flex', gap: '6px' }}>
+                                                    <input type="text" value={newCcmUrl} onChange={e => setNewCcmUrl(e.target.value)} placeholder="유튜브 주소 (https://...)" style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
+                                                    <button
+                                                        onClick={() => {
+                                                            if (!newCcmTitle || !newCcmUrl) { alert('제목과 유튜브 주소를 입력해 주세요!'); return; }
+                                                            let vid = '';
+                                                            if (newCcmUrl.includes('v=')) vid = newCcmUrl.split('v=')[1].split('&')[0];
+                                                            else if (newCcmUrl.includes('youtu.be/')) vid = newCcmUrl.split('youtu.be/')[1].split('?')[0];
+                                                            else vid = newCcmUrl;
+
+                                                            const newList = [...(settingsForm.custom_ccm_list || []), { title: newCcmTitle, artist: newCcmArtist || '추천 찬양', youtubeId: vid }];
+                                                            setSettingsForm({ ...settingsForm, custom_ccm_list: newList });
+                                                            setNewCcmTitle(""); setNewCcmArtist(""); setNewCcmUrl("");
+                                                        }}
+                                                        style={{ padding: '0 15px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}
+                                                    >추가</button>
+                                                </div>
+                                            </div>
+
+                                            {settingsForm.custom_ccm_list && settingsForm.custom_ccm_list.length > 0 ? (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '150px', overflowY: 'auto', paddingRight: '4px' }}>
+                                                    {settingsForm.custom_ccm_list.map((ccm: any, idx: number) => (
+                                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'white', padding: '8px 10px', borderRadius: '8px', border: '1px solid #EEE' }}>
+                                                            <div style={{ flex: 1, overflow: 'hidden' }}>
+                                                                <div style={{ fontSize: '12px', fontWeight: 700, color: '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ccm.title}</div>
+                                                                <div style={{ fontSize: '11px', color: '#999' }}>{ccm.artist} • {ccm.youtubeId}</div>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => {
+                                                                    const newList = settingsForm.custom_ccm_list.filter((_: any, i: number) => i !== idx);
+                                                                    setSettingsForm({ ...settingsForm, custom_ccm_list: newList });
+                                                                }}
+                                                                style={{ background: 'none', border: 'none', color: '#FF5252', cursor: 'pointer', fontSize: '16px', padding: '0 5px' }}
+                                                            >×</button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div style={{ textAlign: 'center', fontSize: '11px', color: '#999', padding: '10px' }}>등록된 배경음악이 없습니다. (기본 목록이 재생됩니다)</div>
+                                            )}
                                         </div>
                                         {settingsForm.church_logo_url && (
                                             <div style={{ marginTop: '10px', padding: '15px', background: '#F5F5F5', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
