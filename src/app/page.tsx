@@ -4515,16 +4515,6 @@ export default function App() {
                                             <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>교회 홈페이지/배경 URL</label>
                                             <input type="text" value={settingsForm.church_url} onChange={e => setSettingsForm({ ...settingsForm, church_url: e.target.value })} placeholder="교회 링크 주소 (선택사항)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#F9F7F2', borderRadius: '10px', border: '1px solid #F0ECE4', marginTop: '4px' }}>
-                                            <div>
-                                                <div style={{ fontSize: '13px', fontWeight: 700, color: '#333' }}>성도 개별 정보수정 허용</div>
-                                                <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>성도들이 자신의 연락처/주소를 직접 수정할 수 있게 합니다.</div>
-                                            </div>
-                                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                                                <input type="checkbox" checked={settingsForm.allow_member_edit} onChange={e => setSettingsForm({ ...settingsForm, allow_member_edit: e.target.checked })} style={{ width: '18px', height: '18px', accentColor: '#D4AF37' }} />
-                                            </label>
-                                        </div>
-
                                         {/* ✅ 배경음악(CCM) 관리 섹션 추가 */}
                                         <div style={{ marginTop: '10px', padding: '15px', background: '#F5F5F3', borderRadius: '15px', border: '1px solid #EEE' }}>
                                             <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -4593,6 +4583,17 @@ export default function App() {
                             ) : adminTab === 'members' ? (
                                 <>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '500px', overflowY: 'auto' }}>
+                                        {/* ✅ 성도 개별 정보 수정 허용 설정 (여기서 멤버탭으로 이동) */}
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px', background: '#F9F7F2', borderRadius: '15px', border: '1px solid #F0ECE4', marginBottom: '5px' }}>
+                                            <div>
+                                                <div style={{ fontSize: '13px', fontWeight: 800, color: '#333' }}>👤 성도 개별 정보수정 허용</div>
+                                                <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>성도들이 자신의 연락처/주소를 직접 수정할 수 있게 합니다.</div>
+                                            </div>
+                                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                                                <input type="checkbox" checked={settingsForm.allow_member_edit} onChange={e => setSettingsForm({ ...settingsForm, allow_member_edit: e.target.checked })} style={{ width: '20px', height: '20px', accentColor: '#D4AF37' }} />
+                                            </label>
+                                        </div>
+
                                         {/* 엑셀 업로드 영역 */}
                                         <div style={{ background: '#F9F7F2', padding: '18px', borderRadius: '15px', border: '1px dashed #D4AF37', position: 'relative' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
