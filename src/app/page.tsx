@@ -4962,7 +4962,7 @@ export default function App() {
                                             </div>
 
                                             {/* 성도 관리 컨트롤러 */}
-                                            <div style={{ background: 'white', padding: '20px', borderRadius: '20px', border: '1px solid #EEE', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+                                            <div style={{ background: 'white', padding: '20px', borderRadius: '20px', border: '1px solid #EEE', display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <div style={{ fontSize: '16px', fontWeight: 900, color: '#333' }}>👤 성도 명단 관리</div>
                                                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -4993,7 +4993,7 @@ export default function App() {
                                                     </button>
                                                 </div>
 
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#F5F5F3', padding: '10px 14px', borderRadius: '12px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#F5F5F3', padding: '6px 12px', borderRadius: '10px' }}>
                                                     <div style={{ fontSize: '11px', fontWeight: 800, color: '#666' }}>🔄 정렬 방식:</div>
                                                     <div style={{ display: 'flex', gap: '4px' }}>
                                                         {[
@@ -5022,16 +5022,16 @@ export default function App() {
                                                     </div>
                                                 </div>
 
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
                                                     {/* 성도 검색 바 */}
-                                                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px', background: 'white', padding: '10px 14px', borderRadius: '12px', border: '1px solid #EEE' }}>
+                                                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', background: 'white', padding: '8px 12px', borderRadius: '10px', border: '1px solid #EEE' }}>
                                                         <span style={{ fontSize: '16px' }}>🔍</span>
                                                         <input
                                                             type="text"
-                                                            placeholder="이름이나 전화번호, 직분으로 성도를 검색하세요"
+                                                            placeholder="이름, 번호, 직분 검색"
                                                             value={adminMemberSearchTerm}
                                                             onChange={(e) => setAdminMemberSearchTerm(e.target.value)}
-                                                            style={{ border: 'none', outline: 'none', fontSize: '13px', flex: 1 }}
+                                                            style={{ border: 'none', outline: 'none', fontSize: '13px', flex: 1, width: '100%' }}
                                                         />
                                                         {adminMemberSearchTerm && (
                                                             <button onClick={() => setAdminMemberSearchTerm('')} style={{ background: 'none', border: 'none', color: '#AAA', cursor: 'pointer', fontSize: '12px' }}>✕</button>
@@ -5042,21 +5042,23 @@ export default function App() {
                                                     <button
                                                         onClick={() => setShowOnlyDuplicates(!showOnlyDuplicates)}
                                                         style={{
-                                                            padding: '10px 14px',
-                                                            borderRadius: '12px',
+                                                            padding: '8px 12px',
+                                                            borderRadius: '10px',
                                                             border: '1px solid',
                                                             borderColor: showOnlyDuplicates ? '#D4AF37' : '#EEE',
                                                             background: showOnlyDuplicates ? '#FFFDE7' : 'white',
                                                             color: showOnlyDuplicates ? '#856404' : '#666',
-                                                            fontSize: '13px',
+                                                            fontSize: '12px',
                                                             fontWeight: 700,
                                                             cursor: 'pointer',
                                                             display: 'flex',
                                                             alignItems: 'center',
-                                                            gap: '6px'
+                                                            gap: '4px',
+                                                            whiteSpace: 'nowrap',
+                                                            flexShrink: 0
                                                         }}
                                                     >
-                                                        {showOnlyDuplicates ? '👀 전체 성도 보기' : '🔗 중복 성도 찾기'}
+                                                        {showOnlyDuplicates ? '👀 전체' : '🔗 중복 찾기'}
                                                     </button>
                                                 </div>
 
