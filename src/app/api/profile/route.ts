@@ -52,6 +52,9 @@ export async function POST(req: NextRequest) {
                 if ('is_birthdate_lunar' in safeMergedData) {
                     delete (safeMergedData as any).is_birthdate_lunar;
                 }
+                if (safeMergedData.birthdate === "") {
+                    safeMergedData.birthdate = null;
+                }
 
                 const { error: mergeError } = await supabaseAdmin
                     .from('profiles')
@@ -68,6 +71,11 @@ export async function POST(req: NextRequest) {
         // 현재 DB에 is_birthdate_lunar 컬럼이 없는 경우 에러 방지를 위해 제거
         if ('is_birthdate_lunar' in safeData) {
             delete (safeData as any).is_birthdate_lunar;
+        }
+
+        // 빈 문자열로 날짜가 들어오면 null로 치환 (DB 에러 방지)
+        if (safeData.birthdate === "") {
+            safeData.birthdate = null;
         }
 
         const { error } = await supabaseAdmin
