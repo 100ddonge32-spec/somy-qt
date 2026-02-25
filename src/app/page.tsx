@@ -248,6 +248,8 @@ export default function App() {
     const [isDragging, setIsDragging] = useState(false);
     const [showIpod, setShowIpod] = useState(true); // 아이팟 표시 여부
     const [selectedMemberForEdit, setSelectedMemberForEdit] = useState<any>(null); // ✅ 성도 정보 수정을 위한 선택된 멤버
+    const [memberEditForm, setMemberEditForm] = useState<any>(null);
+    const [initialMemberEditForm, setInitialMemberEditForm] = useState<any>(null);
     const [showWelcome, setShowWelcome] = useState(false); // 소미 소개 카드 표시 여부 (기본 닫힘)
     const [newCcmTitle, setNewCcmTitle] = useState(""); // ✅ 새로운 찬양 제목
     const [newCcmArtist, setNewCcmArtist] = useState(""); // ✅ 새로운 찬양 가수
@@ -4117,14 +4119,16 @@ export default function App() {
 
     // 성도 상세 정보 수정 모달 (관리자용)
     const renderMemberEditModal = () => {
-        if (!selectedMemberForEdit) return null;
+        if (!selectedMemberForEdit || !memberEditForm) return null;
         const m = selectedMemberForEdit;
+        const isDirty = initialMemberEditForm ? JSON.stringify(initialMemberEditForm) !== JSON.stringify(memberEditForm) : false;
+
         return (
             <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(5px)' }}>
-                <div style={{ background: 'white', borderRadius: '24px', padding: '30px', width: '100%', maxWidth: '400px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', animation: 'modal-up 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+                <div style={{ background: 'white', borderRadius: '24px', padding: '24px', width: '100%', maxWidth: '420px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', animation: 'modal-up 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                         <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>📝 성도 정보 상세 수정</h3>
-                        <button onClick={() => setSelectedMemberForEdit(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
+                        <button onClick={() => { setSelectedMemberForEdit(null); setMemberEditForm(null); }} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px', position: 'relative' }}>
@@ -4171,36 +4175,52 @@ export default function App() {
                         </div>
                         <div>
                             <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>성함</label>
-                            <input id="edit-name" defaultValue={m.full_name} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                            <input value={memberEditForm.full_name} onChange={e => setMemberEditForm({ ...memberEditForm, full_name: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                         </div>
                         <div>
                             <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>직분</label>
-                            <input id="edit-rank" defaultValue={m.church_rank} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                            <input value={memberEditForm.church_rank} onChange={e => setMemberEditForm({ ...memberEditForm, church_rank: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                         </div>
                         <div>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>전화번호</label>
-                            <input id="edit-phone" defaultValue={m.phone} placeholder="010-0000-0000" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>전화번호</label>
+                                <label style={{ fontSize: '10px', color: '#888', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <input type="checkbox" checked={memberEditForm.is_phone_public} onChange={e => setMemberEditForm({ ...memberEditForm, is_phone_public: e.target.checked })} /> 공개
+                                </label>
+                            </div>
+                            <input value={memberEditForm.phone} onChange={e => setMemberEditForm({ ...memberEditForm, phone: e.target.value })} placeholder="010-0000-0000" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                         </div>
                         <div>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>생년월일</label>
-                            <input id="edit-birth" type="date" defaultValue={m.birthdate} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>생년월일</label>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <label style={{ fontSize: '10px', color: '#888', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <input type="checkbox" checked={memberEditForm.is_birthdate_lunar} onChange={e => setMemberEditForm({ ...memberEditForm, is_birthdate_lunar: e.target.checked })} /> 음력
+                                    </label>
+                                    <label style={{ fontSize: '10px', color: '#888', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <input type="checkbox" checked={memberEditForm.is_birthdate_public} onChange={e => setMemberEditForm({ ...memberEditForm, is_birthdate_public: e.target.checked })} /> 공개
+                                    </label>
+                                </div>
+                            </div>
+                            <input type="date" value={memberEditForm.birthdate} onChange={e => setMemberEditForm({ ...memberEditForm, birthdate: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                         </div>
                         <div>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>주소</label>
-                            <input id="edit-addr" defaultValue={m.address} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>주소</label>
+                                <label style={{ fontSize: '10px', color: '#888', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <input type="checkbox" checked={memberEditForm.is_address_public} onChange={e => setMemberEditForm({ ...memberEditForm, is_address_public: e.target.checked })} /> 공개
+                                </label>
+                            </div>
+                            <input value={memberEditForm.address} onChange={e => setMemberEditForm({ ...memberEditForm, address: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: '10px', marginTop: '25px' }}>
-                        <button onClick={() => setSelectedMemberForEdit(null)} style={{ flex: 1, padding: '14px', background: '#F5F5F5', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', color: '#666' }}>취소</button>
+                        <button onClick={() => { setSelectedMemberForEdit(null); setMemberEditForm(null); }} style={{ flex: 1, padding: '14px', background: '#F5F5F5', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', color: '#666' }}>취소</button>
                         <button
                             onClick={async () => {
                                 const updateData = {
-                                    church_id: churchId || 'jesus-in', // church_id가 유실되지 않도록 명시적으로 포함
-                                    full_name: (document.getElementById('edit-name') as any)?.value || '',
-                                    church_rank: (document.getElementById('edit-rank') as any)?.value || '',
-                                    phone: (document.getElementById('edit-phone') as any)?.value || '',
-                                    birthdate: (document.getElementById('edit-birth') as any)?.value || '',
-                                    address: (document.getElementById('edit-addr') as any)?.value || '',
+                                    church_id: churchId || 'jesus-in',
+                                    ...memberEditForm
                                 };
                                 const res = await fetch('/api/admin', {
                                     method: 'POST',
@@ -4210,13 +4230,15 @@ export default function App() {
                                 if (res.ok) {
                                     setMemberList((prev: any[]) => prev.map((item: any) => item.id === m.id ? { ...item, ...updateData } : item));
                                     setSelectedMemberForEdit(null);
+                                    setMemberEditForm(null);
                                     alert('정보가 성공적으로 수정되었습니다! ✨');
                                 } else {
                                     alert('수정 중 오류가 발생했습니다.');
                                 }
                             }}
-                            style={{ flex: 2, padding: '14px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}>
-                            수정 완료
+                            disabled={!isDirty}
+                            style={{ flex: 2, padding: '14px', background: isDirty ? '#333' : '#CCC', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: isDirty ? 'pointer' : 'default', transition: 'all 0.3s' }}>
+                            {isDirty ? '수정 완료' : '변경사항 없음'}
                         </button>
                     </div>
                 </div>
@@ -5118,7 +5140,22 @@ export default function App() {
                                                                                         ✅ 승인
                                                                                     </button>
                                                                                 ) : (
-                                                                                    <button onClick={() => setSelectedMemberForEdit(member)} style={{ background: '#F5F5F5', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', color: '#666' }}>수정</button>
+                                                                                    <button onClick={() => {
+                                                                                        setSelectedMemberForEdit(member);
+                                                                                        const form = {
+                                                                                            full_name: member.full_name || '',
+                                                                                            church_rank: member.church_rank || '',
+                                                                                            phone: member.phone || '',
+                                                                                            birthdate: member.birthdate || '',
+                                                                                            address: member.address || '',
+                                                                                            is_phone_public: member.is_phone_public || false,
+                                                                                            is_birthdate_public: member.is_birthdate_public || false,
+                                                                                            is_birthdate_lunar: member.is_birthdate_lunar || false,
+                                                                                            is_address_public: member.is_address_public || false
+                                                                                        };
+                                                                                        setMemberEditForm(form);
+                                                                                        setInitialMemberEditForm(form);
+                                                                                    }} style={{ background: '#F5F5F5', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', color: '#666' }}>수정</button>
                                                                                 )}
                                                                                 {/* 통합 버튼: 중복 발견 시 강조, 아닐 때도 상시 노출로 변경 */}
                                                                                 {(() => {
@@ -5393,7 +5430,11 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
         is_birthdate_lunar: false,
         is_address_public: false
     });
+    const [initialProfile, setInitialProfile] = useState<any>(null);
     const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+    // 변경사항 체크: 초기값과 현재 폼이 하나라도 다르면 true
+    const isDirty = initialProfile ? JSON.stringify(initialProfile) !== JSON.stringify(profileForm) : false;
 
     useEffect(() => {
         const loadProfile = async () => {
@@ -5421,7 +5462,7 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
                     else if (cleanMetaPhone.startsWith('82')) cleanMetaPhone = '0' + cleanMetaPhone.substring(2);
                     const formattedMetaPhone = cleanMetaPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
 
-                    setProfileForm({
+                    const loadedProfile = {
                         full_name: data.full_name || user?.user_metadata?.full_name || '',
                         phone: data.phone || formattedMetaPhone || cleanMetaPhone || '',
                         birthdate: data.birthdate || '',
@@ -5431,7 +5472,9 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
                         is_birthdate_public: data.is_birthdate_public || false,
                         is_birthdate_lunar: data.is_birthdate_lunar || false,
                         is_address_public: data.is_address_public || false
-                    });
+                    };
+                    setProfileForm(loadedProfile);
+                    setInitialProfile(loadedProfile);
                 }
             } catch (e) { console.error("프로필 로딩 에러:", e); }
         };
@@ -5458,6 +5501,7 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
             } else {
                 alert('프로필 정보가 저장되었습니다! ✨');
             }
+            setInitialProfile(profileForm); // 저장 성공 후 현재 상태를 초기상태로 업데이트
         } catch (e) {
             alert('저장 실패: ' + (e as Error).message);
         } finally {
@@ -5559,8 +5603,23 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
                         </div>
                     </div>
                 </div>
-                <button onClick={handleSubmit} disabled={isSavingProfile} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', marginTop: '30px' }}>
-                    {isSavingProfile ? '저장 중...' : '💾 정보 수정하기'}
+                <button
+                    onClick={handleSubmit}
+                    disabled={isSavingProfile || !isDirty}
+                    style={{
+                        width: '100%',
+                        padding: '16px',
+                        background: isDirty ? '#333' : '#CCC',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '15px',
+                        fontWeight: 700,
+                        cursor: isDirty ? 'pointer' : 'default',
+                        marginTop: '30px',
+                        transition: 'all 0.3s'
+                    }}
+                >
+                    {isSavingProfile ? '저장 중...' : isDirty ? '💾 정보 수정하기' : '변경사항 없음'}
                 </button>
             </div>
         </div>
