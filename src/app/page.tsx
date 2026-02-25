@@ -134,7 +134,7 @@ const BookView = ({ book, onBack }: { book: any, onBack: () => void }) => {
         <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', animation: 'fade-in 0.4s ease-out' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <button onClick={onBack} style={{ background: '#F5F5F5', border: 'none', width: '36px', height: '36px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '18px' }}>←</button>
-                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>📚 오늘의 책 추천</h2>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>📚 이달의 책 추천</h2>
             </div>
 
             <div style={{ background: 'white', borderRadius: '28px', padding: '28px', border: '1px solid #F0ECE4', boxShadow: '0 15px 35px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
@@ -147,13 +147,13 @@ const BookView = ({ book, onBack }: { book: any, onBack: () => void }) => {
                 </div>
 
                 <div style={{ textAlign: 'center', width: '100%' }}>
-                    <h3 style={{ fontSize: '20px', fontWeight: 900, color: '#333', marginBottom: '8px', wordBreak: 'keep-all' }}>{book.today_book_title || '오늘의 추천 도서'}</h3>
+                    <h3 style={{ fontSize: '20px', fontWeight: 900, color: '#333', marginBottom: '8px', wordBreak: 'keep-all' }}>{book.today_book_title || '이달의 추천 도서'}</h3>
                     <div style={{ width: '40px', height: '3px', background: '#D4AF37', margin: '12px auto', borderRadius: '2px' }}></div>
                 </div>
 
                 <div style={{ width: '100%', background: '#F9F7F2', padding: '24px', borderRadius: '20px', border: '1px solid #F0ECE4' }}>
                     <p style={{ margin: 0, fontSize: '15px', color: '#555', lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'keep-all' }}>
-                        {book.today_book_description || '교회 성도님들을 위해 엄선한 오늘의 추천 도서입니다. 풍성한 영적 독서의 시간을 가져보세요.'}
+                        {book.today_book_description || '교회 성도님들을 위해 엄선한 이달의 추천 도서입니다. 풍성한 영적 독서의 시간을 가져보세요.'}
                     </p>
                 </div>
             </div>
@@ -1677,6 +1677,37 @@ export default function App() {
                                     </div>
                                 </div>
 
+                                {/* 이달의 책 추천 카드 */}
+                                <div onClick={() => setView('book')} style={{
+                                    width: '100%',
+                                    maxWidth: '320px',
+                                    background: 'linear-gradient(135deg, #FFF 0%, #FAFAFA 100%)',
+                                    borderRadius: '24px',
+                                    padding: '16px 20px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '15px',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 8px 25px rgba(0,0,0,0.04)',
+                                    border: '1px solid #F0ECE4',
+                                    marginTop: '5px',
+                                    animation: 'fade-in 1s ease-out',
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.08)'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.04)'; }}>
+                                    <div style={{ width: '50px', height: '70px', background: '#F5F5F3', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', flexShrink: 0 }}>
+                                        {churchSettings.today_book_image_url ? (
+                                            <img src={churchSettings.today_book_image_url} alt="책" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : (
+                                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>📚</div>
+                                        )}
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontSize: '12px', color: '#D4AF37', fontWeight: 800, marginBottom: '4px', letterSpacing: '0.5px' }}>SOMY'S CHOICE</div>
+                                        <div style={{ fontSize: '15px', fontWeight: 900, color: '#333', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{churchSettings.today_book_title || '이달의 추천 도서'}</div>
+                                        <div style={{ fontSize: '13px', color: '#888', fontWeight: 500 }}>지금 읽어보기 →</div>
+                                    </div>
+                                </div>
+
                                 {/* Character Section (오늘의 말씀)을 4개 액션버튼 바로 아래로 이동 */}
                                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", flex: 1, justifyContent: 'center', width: "100%", marginTop: '10px', marginBottom: '10px' }}>
                                     <div style={{ background: "rgba(255, 255, 255, 0.9)", borderRadius: "24px", padding: "24px", width: "100%", maxWidth: "320px", boxShadow: "0 10px 30px rgba(0,0,0,0.06)", border: "1px solid #F0ECE4", animation: "fade-in 0.8s ease-out", display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', textAlign: 'left', backdropFilter: 'blur(10px)', userSelect: 'none' }}>
@@ -1863,18 +1894,6 @@ export default function App() {
                             📖 소미 활용 가이드 보기
                         </button>
 
-                        <button onClick={() => setView('book')} style={{
-                            width: '100%', padding: "16px",
-                            background: "linear-gradient(135deg, #ffffff 0%, #FDFCFB 100%)",
-                            color: "#6D4C41",
-                            fontWeight: 800, fontSize: "15px", borderRadius: "18px",
-                            border: "1px solid #EFEBE9", cursor: "pointer",
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                            boxShadow: '0 4px 12px rgba(109,76,65,0.08)',
-                            transition: 'all 0.2s'
-                        }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                            📚 오늘의 책 추천 보기
-                        </button>
 
                         {isAdmin && (
                             <button onClick={() => setView('admin')} style={{
@@ -5046,10 +5065,10 @@ export default function App() {
                                                 )}
                                             </div>
 
-                                            {/* ✅ 오늘의 책 관리 섹션 추가 */}
+                                            {/* ✅ 이달의 책 관리 섹션 추가 */}
                                             <div style={{ marginTop: '10px', padding: '15px', background: '#F5F5F3', borderRadius: '15px', border: '1px solid #EEE' }}>
                                                 <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                    📚 오늘의 책 추천 관리
+                                                    📚 이달의 책 추천 관리
                                                 </div>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                     <div style={{ display: 'flex', gap: '6px' }}>

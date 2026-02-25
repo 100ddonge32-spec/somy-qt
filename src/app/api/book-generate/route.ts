@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
                 },
                 {
                     role: 'user',
-                    content: `[책 제목]\n${title}`
+                    content: `[이달의 책 제목]\n${title}`
                 }
             ],
             temperature: 0.7,
