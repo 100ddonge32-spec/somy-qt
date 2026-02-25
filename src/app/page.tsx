@@ -3827,12 +3827,25 @@ export default function App() {
                                     }
                                     // 게시판으로 이동 및 데이터 새로고침
                                     try {
-                                        const res = await fetch(`/api/community?church_id=${churchId}`);
-                                        const data = await res.json();
-                                        if (Array.isArray(data)) setCommunityPosts(data);
+                                        if (['comment', 'community_post'].includes(n.type)) {
+                                            const res = await fetch(`/api/community?church_id=${churchId}`);
+                                            const data = await res.json();
+                                            if (Array.isArray(data)) setCommunityPosts(data);
+                                            setView('community');
+                                        } else if (n.type === 'thanks_comment') {
+                                            setView('thanksgiving');
+                                        } else if (['counseling_req', 'counseling_reply'].includes(n.type)) {
+                                            const res = await fetch(`/api/counseling?church_id=${churchId}&user_id=${user?.id}&admin=${isAdmin}`);
+                                            const data = await res.json();
+                                            if (Array.isArray(data)) setCounselingRequests(data);
+                                            setView('counseling');
+                                        } else if (n.type === 'qt') {
+                                            setView('qt');
+                                        } else {
+                                            setView('home');
+                                        }
                                     } catch (e) { }
 
-                                    setView('community');
                                     setShowNotiList(false);
                                 }} style={{ padding: '15px', borderBottom: '1px solid #F9F9F9', cursor: 'pointer', background: n.is_read ? 'white' : '#FFF9F9', transition: 'background 0.2s', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: n.is_read ? 'transparent' : '#FF3D00', marginTop: '5px', flexShrink: 0 }} />

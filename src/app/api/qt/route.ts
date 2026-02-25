@@ -149,18 +149,18 @@ export async function POST(req: NextRequest) {
     try {
         const { data: subscriptions } = await supabaseAdmin
             .from('push_subscriptions')
-            .select('subscription');
+            .select('user_id, subscription');
 
         if (subscriptions && subscriptions.length > 0) {
-            const payload = JSON.stringify({
-                title: '📖 오늘의 큐티가 도착했습니다!',
-                body: `${date} ${reference} 말씀이 등록되었습니다.`,
-                url: '/'
-            });
-
             await Promise.all(subscriptions.map(async (sub) => {
                 if (sub.subscription) {
                     try {
+                        const payload = JSON.stringify({
+                            title: '📖 오늘의 큐티가 도착했습니다!',
+                            body: `${date} ${reference} 말씀이 등록되었습니다.`,
+                            url: '/',
+                            userId: sub.user_id
+                        });
                         await webpush.sendNotification(sub.subscription, payload);
                     } catch (e) { }
                 }

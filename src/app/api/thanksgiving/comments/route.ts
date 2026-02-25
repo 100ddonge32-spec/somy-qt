@@ -62,7 +62,8 @@ export async function POST(req: NextRequest) {
                         const pushPayload = JSON.stringify({
                             title: '🔔 감사일기에 댓글이 달렸어요!',
                             body: `${user_name}님이 성도님의 감사일기에 댓글을 남기셨습니다.`,
-                            url: '/?view=thanksgiving'
+                            url: '/?view=thanksgiving',
+                            userId: diary.user_id
                         });
                         await webpush.sendNotification(sub.subscription, pushPayload);
                     } catch (pushErr) {

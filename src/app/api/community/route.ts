@@ -68,14 +68,17 @@ export async function POST(req: NextRequest) {
                 const userIds = usersToNotify.map(u => u.id);
 
                 // 푸시 알람
-                const { data: subs } = await supabaseAdmin.from('push_subscriptions').select('subscription').in('user_id', userIds);
+                const { data: subs } = await supabaseAdmin.from('push_subscriptions').select('user_id, subscription').in('user_id', userIds);
                 if (subs && subs.length > 0) {
-                    const payload = JSON.stringify({
-                        title: `✨ 새로운 은혜나눔`,
-                        body: `${user_name}님이 새로운 글을 올리셨습니다.`,
-                        url: '/'
+                    const pushPromises = subs.map(sub => {
+                        const payload = JSON.stringify({
+                            title: `✨ 새로운 은혜나눔`,
+                            body: `${user_name}님이 새로운 글을 올리셨습니다.`,
+                            url: '/',
+                            userId: sub.user_id
+                        });
+                        return webpush.sendNotification(sub.subscription, payload).catch(e => { });
                     });
-                    const pushPromises = subs.map(sub => webpush.sendNotification(sub.subscription, payload).catch(e => { }));
                     await Promise.allSettled(pushPromises);
                 }
 

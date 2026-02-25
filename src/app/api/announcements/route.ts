@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
         const targetChurchId = church_id || 'jesus-in';
         const { data: subscriptions } = await supabaseAdmin
             .from('push_subscriptions')
-            .select('subscription, profiles!inner(church_id)')
+            .select('user_id, subscription, profiles!inner(church_id)')
             .eq('profiles.church_id', targetChurchId);
 
         if (subscriptions && subscriptions.length > 0) {
@@ -60,7 +60,8 @@ export async function POST(req: NextRequest) {
                     const payload = JSON.stringify({
                         title: `📢 [공지] ${title}`,
                         body: content.length > 30 ? content.substring(0, 30) + '...' : content,
-                        url: '/'
+                        url: '/',
+                        userId: sub.user_id
                     });
                     return webpush.sendNotification(sub.subscription, payload).catch(e => console.error('Push fail', e));
                 }

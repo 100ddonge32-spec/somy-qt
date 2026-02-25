@@ -73,7 +73,12 @@ export async function POST(req: NextRequest) {
                         for (const sub of subsData) {
                             if (!sub.subscription) continue;
                             try {
-                                const payload = JSON.stringify({ title: '🙏 새 상담/기도 요청', body: `${user_name} 성도님의 요청이 도착했습니다.`, url: '/?view=counseling' });
+                                const payload = JSON.stringify({
+                                    title: '🙏 새 상담/기도 요청',
+                                    body: `${user_name} 성도님의 요청이 도착했습니다.`,
+                                    url: '/?view=counseling',
+                                    userId: p.id
+                                });
                                 await webpush.sendNotification(sub.subscription, payload);
                             } catch (e) { }
                         }
@@ -115,7 +120,12 @@ export async function PATCH(req: NextRequest) {
                 for (const sub of subsData) {
                     if (!sub.subscription) continue;
                     try {
-                        const payload = JSON.stringify({ title: '🙏 상담/기도 답변 도착', body: `담임목사님의 답변이 작성되었습니다.`, url: '/?view=counseling' });
+                        const payload = JSON.stringify({
+                            title: '🙏 상담/기도 답변 도착',
+                            body: `담임목사님의 답변이 작성되었습니다.`,
+                            url: '/?view=counseling',
+                            userId: data.user_id
+                        });
                         await webpush.sendNotification(sub.subscription, payload);
                     } catch (e) { }
                 }

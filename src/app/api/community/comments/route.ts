@@ -65,7 +65,8 @@ export async function POST(req: NextRequest) {
                         const pushPayload = JSON.stringify({
                             title: '🔔 새로운 댓글이 달렸어요!',
                             body: `${user_name}님이 성도님의 은혜나눔에 댓글을 남기셨습니다.`,
-                            url: '/?view=community'
+                            url: '/?view=community',
+                            userId: post.user_id
                         });
                         await webpush.sendNotification(sub.subscription, pushPayload);
                         console.log('Push Notification Sent Success');
