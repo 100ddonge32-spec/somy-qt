@@ -4453,6 +4453,8 @@ export default function App() {
                                         church_rank: mergeTarget.church_rank || '',
                                         phone: mergeTarget.phone || '',
                                         birthdate: mergeTarget.birthdate || '',
+                                        gender: mergeTarget.gender || '',
+                                        member_no: mergeTarget.member_no || '',
                                         address: mergeTarget.address || '',
                                         avatar_url: mergeTarget.avatar_url || '',
                                         is_approved: true
@@ -5161,6 +5163,8 @@ export default function App() {
                                                                                 <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', whiteSpace: 'nowrap' }}>{member.full_name}</div>
                                                                                 {!member.is_approved && <span style={{ fontSize: '10px', color: '#E57373', border: '1px solid #E57373', padding: '2px 4px', borderRadius: '4px', background: '#FFEBEE', fontWeight: 700, whiteSpace: 'nowrap' }}>승인대기</span>}
                                                                                 {member.church_rank && <div style={{ fontSize: '11px', background: '#F9F7F2', color: '#B8924A', padding: '2px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>{member.church_rank}</div>}
+                                                                                {member.gender && <div style={{ fontSize: '11px', background: '#F5F5F5', color: '#666', padding: '2px 6px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>{member.gender}</div>}
+                                                                                {member.member_no && <div style={{ fontSize: '11px', background: '#E3F2FD', color: '#1565C0', padding: '2px 6px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>NO. {member.member_no}</div>}
                                                                             </div>
 
                                                                             <div style={{ display: 'flex', gap: '4px', flexShrink: 0, marginLeft: 'auto', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
