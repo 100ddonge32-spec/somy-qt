@@ -47,10 +47,15 @@ export async function POST(req: NextRequest) {
                 // 현재 내 로우 삭제 (있다면)
                 await supabaseAdmin.from('profiles').delete().eq('id', user_id).neq('email', duplicate.email);
 
-                // 관리자 로우를 내 ID로 업데이트
+                // 관리자 로우를 내 ID로 업데이트 (데이터 정제)
+                const safeMergedData = { ...profileData, id: user_id };
+                if ('is_birthdate_lunar' in safeMergedData) {
+                    delete safeMergedData.is_birthdate_lunar;
+                }
+
                 const { error: mergeError } = await supabaseAdmin
                     .from('profiles')
-                    .update({ ...profileData, id: user_id })
+                    .update(safeMergedData)
                     .eq('email', duplicate.email);
 
                 if (mergeError) throw mergeError;
@@ -58,10 +63,16 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // 2. 일반 업데이트
+        // 2. 일반 업데이트 (데이터 정제: DB에 없는 컬럼 제외)
+        const safeData = { ...profileData };
+        // 현재 DB에 is_birthdate_lunar 컬럼이 없는 경우가 많아 에러 방지를 위해 제거
+        if ('is_birthdate_lunar' in safeData) {
+            delete safeData.is_birthdate_lunar;
+        }
+
         const { error } = await supabaseAdmin
             .from('profiles')
-            .update(profileData)
+            .update(safeData)
             .eq('id', user_id);
 
         if (error) throw error;
