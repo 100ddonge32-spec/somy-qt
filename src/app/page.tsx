@@ -3550,7 +3550,7 @@ export default function App() {
                 <div style={{ padding: "20px", maxWidth: "600px", margin: "0 auto", background: "#FDFCFB", minHeight: "100vh", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
                         <button onClick={() => setView('admin')} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
-                        <div style={{ fontWeight: 800, fontSize: "16px", color: '#333' }}>🎙️ 주일 설교 자동 요약봇</div>
+                        <div style={{ fontWeight: 800, fontSize: "16px", color: '#333' }}>🎙️ 설교 자동 요약봇</div>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
