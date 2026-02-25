@@ -91,9 +91,21 @@ export async function POST(req: NextRequest) {
         // 성도 상세 정보 수정 (관리자용)
         if (action === 'update_member') {
             const { user_id, update_data } = body;
+            const safeUpdateData = { ...update_data };
+
+            // DB 스키마에 없는 컬럼 제거
+            if ('is_birthdate_lunar' in safeUpdateData) {
+                delete (safeUpdateData as any).is_birthdate_lunar;
+            }
+
+            // 날짜 형식 보정
+            if (safeUpdateData.birthdate === "") {
+                safeUpdateData.birthdate = null;
+            }
+
             const { data, error } = await supabaseAdmin
                 .from('profiles')
-                .update(update_data)
+                .update(safeUpdateData)
                 .eq('id', user_id)
                 .select();
             if (error) throw error;
@@ -103,9 +115,18 @@ export async function POST(req: NextRequest) {
         // 개별 성도 추가
         if (action === 'add_member') {
             const { member_data } = body;
+            const safeMemberData = { ...member_data };
+
+            if ('is_birthdate_lunar' in safeMemberData) {
+                delete (safeMemberData as any).is_birthdate_lunar;
+            }
+            if (safeMemberData.birthdate === "") {
+                safeMemberData.birthdate = null;
+            }
+
             const { data, error } = await supabaseAdmin
                 .from('profiles')
-                .insert([member_data])
+                .insert([safeMemberData])
                 .select();
             if (error) throw error;
             return NextResponse.json(data);
