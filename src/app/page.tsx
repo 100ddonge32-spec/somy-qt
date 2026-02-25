@@ -4792,7 +4792,7 @@ export default function App() {
                                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                                             <div style={{ fontSize: '15px', fontWeight: 800, color: '#333' }}>{member.full_name}</div>
                                                                             {member.church_rank && <div style={{ fontSize: '11px', background: '#F9F7F2', color: '#B8924A', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>{member.church_rank}</div>}
-                                                                            <button onClick={() => setEditingMember(member)} style={{ marginLeft: 'auto', background: '#F5F5F5', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', color: '#666' }}>수정</button>
+                                                                            <button onClick={() => setSelectedMemberForEdit(member)} style={{ marginLeft: 'auto', background: '#F5F5F5', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', color: '#666' }}>수정</button>
                                                                             <button onClick={async () => {
                                                                                 if (window.confirm(`${member.full_name} 성도를 삭제하시겠습니까?`)) {
                                                                                     const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_member', id: member.id, church_id: churchId }) });
