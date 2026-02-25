@@ -198,13 +198,17 @@ export default function App() {
     const [ccmVolume, setCcmVolume] = useState(50);
     const [isCcmPlaying, setIsCcmPlaying] = useState(false);
     const [selectedUploadFile, setSelectedUploadFile] = useState<File | null>(null); // ✅ 업로드 대기 파일 스테이트
+    const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null); // ✅ 로고 업로드 대기 파일
     const [isMemberUploading, setIsMemberUploading] = useState(false); // ✅ 업로드 중 애니메이션 스테이트
+    const [isLogoUploading, setIsLogoUploading] = useState(false); // ✅ 로고 업로드 중
+    const [isManualSermon, setIsManualSermon] = useState(false); // ✅ 수동 설교 지정 모드 여부
 
     const [churchSettings, setChurchSettings] = useState<any>({
         church_name: CHURCH_NAME,
         church_logo_url: CHURCH_LOGO,
         church_url: CHURCH_URL,
         sermon_url: "",
+        manual_sermon_url: "",
         app_subtitle: APP_SUBTITLE,
         plan: 'free',
         community_visible: true,
@@ -220,6 +224,7 @@ export default function App() {
         church_logo_url: CHURCH_LOGO,
         church_url: CHURCH_URL,
         sermon_url: "",
+        manual_sermon_url: "",
         app_subtitle: APP_SUBTITLE,
         plan: 'free',
         community_visible: true,
@@ -3260,8 +3265,8 @@ export default function App() {
                                     q1: churchSettings.sermon_q1 || '',
                                     q2: churchSettings.sermon_q2 || '',
                                     q3: churchSettings.sermon_q3 || '',
-                                    videoUrl: '',
-                                    inputType: 'text'
+                                    videoUrl: churchSettings.manual_sermon_url || '',
+                                    inputType: churchSettings.manual_sermon_url ? 'video' : 'text'
                                 });
                                 setView('sermonManage');
                             }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
@@ -3310,8 +3315,8 @@ export default function App() {
            SERMON VIEW
         ══════════════════════════════ */
         if (view === "sermon") {
-            const getYoutubeEmbedUrl = (url: string) => {
-                const targetUrl = url || "https://www.youtube.com/watch?v=dQw4w9WgXcQ"; // 영상 없을 때 기본 안내용 영상(또는 샘플)
+            const getYoutubeEmbedUrl = (url: string, manualUrl?: string) => {
+                const targetUrl = manualUrl || url || "https://www.youtube.com/watch?v=dQw4w9WgXcQ"; // 수동 주소 우선
 
                 if (targetUrl.startsWith('UC') && targetUrl.length > 20) {
                     const playlistId = 'UU' + targetUrl.substring(2);
@@ -3324,7 +3329,7 @@ export default function App() {
 
                 return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1` : null;
             };
-            const embedUrl = getYoutubeEmbedUrl(churchSettings?.sermon_url || "");
+            const embedUrl = getYoutubeEmbedUrl(churchSettings?.sermon_url || "", churchSettings?.manual_sermon_url);
 
             return (
                 <div style={{
@@ -3530,6 +3535,7 @@ export default function App() {
             const handleSaveSermonManage = async () => {
                 const newSettings = {
                     ...churchSettings,
+                    manual_sermon_url: sermonManageForm.videoUrl, // 수동 지정 주소로 저장
                     sermon_summary: sermonManageForm.summary,
                     sermon_q1: sermonManageForm.q1,
                     sermon_q2: sermonManageForm.q2,
@@ -4735,14 +4741,56 @@ export default function App() {
                                                 <input type="text" value={settingsForm.app_subtitle} onChange={e => setSettingsForm({ ...settingsForm, app_subtitle: e.target.value })} placeholder="예: 말씀과 기도로 거룩해지는 공동체" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                                <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>유튜브 설교/본문 주소</label>
-                                                <input type="text" value={settingsForm.sermon_url} onChange={e => setSettingsForm({ ...settingsForm, sermon_url: e.target.value })} placeholder="유튜브 영상 주소 (https://youtu.be/...)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                                <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <span>유튜브 채널 ID (자동 업데이트용)</span>
+                                                    <span style={{ fontSize: '10px', color: '#999', fontWeight: 400 }}>예: UC4UTt4...</span>
+                                                </label>
+                                                <input type="text" value={settingsForm.sermon_url} onChange={e => setSettingsForm({ ...settingsForm, sermon_url: e.target.value })} placeholder="유튜브 채널 ID 입력" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                                             </div>
+
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '12px', background: '#FFFDE7', borderRadius: '12px', border: '1px solid #FFF59D' }}>
+                                                <label style={{ fontSize: '12px', fontWeight: 700, color: '#856404' }}>이번 주 설교 영상 주소 (수동 지정)</label>
+                                                <input type="text" value={settingsForm.manual_sermon_url || ''} onChange={e => setSettingsForm({ ...settingsForm, manual_sermon_url: e.target.value })} placeholder="특정 영상 주소 (입력 시 채널 ID보다 우선 표시)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #FFE082', fontSize: '14px', outline: 'none', background: 'white' }} />
+                                                <div style={{ fontSize: '10px', color: '#B8924A' }}>※ '설교 요약/질문 관리'에서 생성 시 자동으로 업데이트됩니다.</div>
+                                            </div>
+
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                                <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>로고 이미지 URL</label>
-                                                <input type="text" value={settingsForm.church_logo_url} onChange={e => setSettingsForm({ ...settingsForm, church_logo_url: e.target.value })} placeholder="로고 이미지 주소 (https://...)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
-                                                <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>지원 포맷: JPG, PNG, GIF, WebP</div>
+                                                <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>로고 이미지</label>
+                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                    <input type="text" value={settingsForm.church_logo_url} onChange={e => setSettingsForm({ ...settingsForm, church_logo_url: e.target.value })} placeholder="로고 URL 또는 직접 업로드" style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                                    <input type="file" id="logo-upload" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (!file) return;
+                                                        setIsLogoUploading(true);
+                                                        const formData = new FormData();
+                                                        formData.append('file', file);
+                                                        formData.append('church_id', churchId);
+                                                        try {
+                                                            const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
+                                                            const data = await res.json();
+                                                            if (data.url) {
+                                                                setSettingsForm({ ...settingsForm, church_logo_url: data.url });
+                                                                alert('로고가 업로드 되었습니다!');
+                                                            } else {
+                                                                alert('업로드 실패: ' + data.error);
+                                                            }
+                                                        } catch (err) {
+                                                            alert('업로드 중 오류가 발생했습니다.');
+                                                        } finally {
+                                                            setIsLogoUploading(false);
+                                                        }
+                                                    }} />
+                                                    <button
+                                                        onClick={() => document.getElementById('logo-upload')?.click()}
+                                                        disabled={isLogoUploading}
+                                                        style={{ padding: '12px 14px', background: '#F5F5F3', color: '#555', border: '1px solid #DDD', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                    >
+                                                        {isLogoUploading ? '...' : '📁 파일 선택'}
+                                                    </button>
+                                                </div>
+                                                <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>권장: 가로형 투명 PNG (배경이 있는 경우 로고만 있는 이미지)</div>
                                             </div>
+
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                 <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>교회 홈페이지/배경 URL</label>
                                                 <input type="text" value={settingsForm.church_url} onChange={e => setSettingsForm({ ...settingsForm, church_url: e.target.value })} placeholder="교회 링크 주소 (선택사항)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
