@@ -129,6 +129,138 @@ function getYouVersionUrl(reference: string): string {
     return `https://www.bible.com/ko/search/bible?q=${encodeURIComponent(reference)}`;
 }
 
+const StatsView = ({ memberList }: { memberList: any[] }) => {
+    // Gender Calculation
+    const maleCount = memberList.filter(m => m.gender === '남성').length;
+    const femaleCount = memberList.filter(m => m.gender === '여성').length;
+    const totalGender = maleCount + femaleCount || 1;
+
+    // Age Calculation
+    const currentYear = new Date().getFullYear();
+    const ageGroups = [
+        { label: '10대 이하', min: 0, max: 19 },
+        { label: '20대', min: 20, max: 29 },
+        { label: '30대', min: 30, max: 39 },
+        { label: '40대', min: 40, max: 49 },
+        { label: '50대', min: 50, max: 59 },
+        { label: '60대', min: 60, max: 69 },
+        { label: '70대 이상', min: 70, max: 150 },
+    ];
+
+    const ageData = ageGroups.map(group => {
+        const count = memberList.filter(m => {
+            if (!m.birthdate) return false;
+            const birthYear = new Date(m.birthdate).getFullYear();
+            const age = currentYear - birthYear;
+            return age >= group.min && age <= group.max;
+        }).length;
+        return { ...group, count };
+    });
+
+    const maxAgeCount = Math.max(...ageData.map(d => d.count), 1);
+
+    // Registration Trend (Last 6 months)
+    const months = Array.from({ length: 6 }, (_, i) => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - (5 - i));
+        return d.toISOString().slice(0, 7); // YYYY-MM
+    });
+
+    const trendData = months.map(month => {
+        const count = memberList.filter(m => m.created_at?.startsWith(month)).length;
+        return { month, count };
+    });
+
+    const maxTrendCount = Math.max(...trendData.map(d => d.count), 1);
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Summary Card */}
+            <div style={{ background: 'linear-gradient(135deg, #333 0%, #555 100%)', padding: '22px', borderRadius: '22px', color: 'white', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}>
+                <div style={{ fontSize: '13px', opacity: 0.8, marginBottom: '4px' }}>전체 등록 성도</div>
+                <div style={{ fontSize: '28px', fontWeight: 900 }}>{memberList.length} <span style={{ fontSize: '16px', fontWeight: 600 }}>명</span></div>
+            </div>
+
+            {/* Gender Chart */}
+            <div style={{ background: 'white', padding: '20px', borderRadius: '20px', border: '1px solid #EEE', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>🚻</span> 성별 통계
+                </div>
+                <div style={{ display: 'flex', height: '32px', borderRadius: '16px', overflow: 'hidden', background: '#F5F5F3', marginBottom: '12px', border: '1px solid #F0F0F0' }}>
+                    <div style={{ width: `${(maleCount / totalGender) * 100}%`, background: 'linear-gradient(90deg, #42A5F5, #2196F3)', transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)' }} />
+                    <div style={{ width: `${(femaleCount / totalGender) * 100}%`, background: 'linear-gradient(90deg, #F06292, #EC407A)', transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)' }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 4px', fontSize: '12px', fontWeight: 700 }}>
+                    <div style={{ color: '#1E88E5', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#42A5F5' }}></div>
+                        남성: {maleCount}명 ({Math.round((maleCount / totalGender) * 100)}%)
+                    </div>
+                    <div style={{ color: '#D81B60', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        여성: {femaleCount}명 ({Math.round((femaleCount / totalGender) * 100)}%)
+                        <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#EC407A' }}></div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Age Chart */}
+            <div style={{ background: 'white', padding: '20px', borderRadius: '20px', border: '1px solid #EEE', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>🎂</span> 연령대별 분포
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {ageData.map((group, idx) => (
+                        <div key={group.label} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '64px', fontSize: '11px', color: '#666', fontWeight: 700 }}>{group.label}</div>
+                            <div style={{ flex: 1, background: '#F8F9FA', height: '14px', borderRadius: '7px', overflow: 'hidden', border: '1px solid #F1F3F5' }}>
+                                <div style={{
+                                    width: `${(group.count / maxAgeCount) * 100}%`,
+                                    background: `linear-gradient(90deg, ${idx % 2 === 0 ? '#D4AF37' : '#B8924A'}, ${idx % 2 === 0 ? '#F9D423' : '#D4AF37'})`,
+                                    height: '100%',
+                                    transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    borderRadius: '0 7px 7px 0'
+                                }} />
+                            </div>
+                            <div style={{ width: '36px', fontSize: '12px', fontWeight: 800, color: '#333', textAlign: 'right' }}>{group.count}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Trend Chart */}
+            <div style={{ background: 'white', padding: '20px', borderRadius: '20px', border: '1px solid #EEE', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>📈</span> 가입 추이 (최근 6개월)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '140px', padding: '0 4px', gap: '12px' }}>
+                    {trendData.map(d => (
+                        <div key={d.month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', height: '100%' }}>
+                            <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                <div style={{
+                                    width: '100%',
+                                    maxWidth: '32px',
+                                    background: 'linear-gradient(0deg, #333333 0%, #555555 100%)',
+                                    height: `${(d.count / maxTrendCount) * 100}%`,
+                                    borderRadius: '6px 6px 4px 4px',
+                                    position: 'relative',
+                                    transition: 'height 1s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                                }}>
+                                    {d.count > 0 && <span style={{ position: 'absolute', top: '-22px', left: '50%', transform: 'translateX(-50%)', fontSize: '11px', fontWeight: 900, color: '#333' }}>{d.count}</span>}
+                                </div>
+                            </div>
+                            <div style={{ fontSize: '10px', color: '#888', fontWeight: 600, marginTop: '4px' }}>{d.month.split('-')[1]}월</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div style={{ fontSize: '11px', color: '#AAA', textAlign: 'center', padding: '10px' }}>
+                ※ 생년월일이나 성별이 등록되지 않은 성도는 통계에서 제외될 수 있습니다.
+            </div>
+        </div>
+    );
+};
+
 export default function App() {
     const [view, setView] = useState<View>("home");
     const [messages, setMessages] = useState([
@@ -779,7 +911,7 @@ export default function App() {
         finally { setIsHistoryLoading(false); }
     };
     const [settingsSaving, setSettingsSaving] = useState(false);
-    const [adminTab, setAdminTab] = useState<"settings" | "members" | "master">("settings");
+    const [adminTab, setAdminTab] = useState<"settings" | "members" | "master" | "stats">("settings");
     const [memberList, setMemberList] = useState<any[]>([]);
     const [isManagingMembers, setIsManagingMembers] = useState(false);
     const [isHistoryMode, setIsHistoryMode] = useState(false);
@@ -4720,6 +4852,16 @@ export default function App() {
                                             if (Array.isArray(data)) setMemberList(data);
                                         } finally { setIsManagingMembers(false); }
                                     }} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'members' ? 'white' : 'transparent', boxShadow: adminTab === 'members' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'members' ? '#333' : '#777' }}>👥 성도</button>
+                                    <button onClick={async () => {
+                                        setAdminTab('stats');
+                                        if (memberList.length === 0) {
+                                            try {
+                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                const data = await r.json();
+                                                if (Array.isArray(data)) setMemberList(data);
+                                            } catch (e) { }
+                                        }
+                                    }} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'stats' ? 'white' : 'transparent', boxShadow: adminTab === 'stats' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'stats' ? '#333' : '#777' }}>📊 통계</button>
                                     {isSuperAdmin && (
                                         <button onClick={() => setAdminTab('master')} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'master' ? 'white' : 'transparent', boxShadow: adminTab === 'master' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'master' ? '#333' : '#777' }}>👑 마스터</button>
                                     )}
@@ -4860,6 +5002,8 @@ export default function App() {
                                             </button>
                                         </div>
                                     </>
+                                ) : adminTab === 'stats' ? (
+                                    <StatsView memberList={memberList} />
                                 ) : adminTab === 'members' ? (
                                     <>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
