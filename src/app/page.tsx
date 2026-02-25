@@ -5126,7 +5126,7 @@ export default function App() {
                                                                             </div>
 
                                                                             <div style={{ display: 'flex', gap: '4px', flexShrink: 0, marginLeft: 'auto', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                                                                                {!member.is_approved ? (
+                                                                                {!member.is_approved && (
                                                                                     <button
                                                                                         onClick={async () => {
                                                                                             if (window.confirm(`${member.full_name} 성도를 승인하시겠습니까?`)) {
@@ -5141,24 +5141,23 @@ export default function App() {
                                                                                     >
                                                                                         ✅ 승인
                                                                                     </button>
-                                                                                ) : (
-                                                                                    <button onClick={() => {
-                                                                                        setSelectedMemberForEdit(member);
-                                                                                        const form = {
-                                                                                            full_name: member.full_name || '',
-                                                                                            church_rank: member.church_rank || '',
-                                                                                            phone: member.phone || '',
-                                                                                            birthdate: member.birthdate || '',
-                                                                                            address: member.address || '',
-                                                                                            is_phone_public: member.is_phone_public || false,
-                                                                                            is_birthdate_public: member.is_birthdate_public || false,
-                                                                                            is_birthdate_lunar: member.is_birthdate_lunar || false,
-                                                                                            is_address_public: member.is_address_public || false
-                                                                                        };
-                                                                                        setMemberEditForm(form);
-                                                                                        setInitialMemberEditForm(form);
-                                                                                    }} style={{ background: '#F5F5F5', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', color: '#666' }}>수정</button>
                                                                                 )}
+                                                                                <button onClick={() => {
+                                                                                    setSelectedMemberForEdit(member);
+                                                                                    const form = {
+                                                                                        full_name: member.full_name || '',
+                                                                                        church_rank: member.church_rank || '',
+                                                                                        phone: member.phone || '',
+                                                                                        birthdate: member.birthdate || '',
+                                                                                        address: member.address || '',
+                                                                                        is_phone_public: member.is_phone_public || false,
+                                                                                        is_birthdate_public: member.is_birthdate_public || false,
+                                                                                        is_birthdate_lunar: member.is_birthdate_lunar || false,
+                                                                                        is_address_public: member.is_address_public || false
+                                                                                    };
+                                                                                    setMemberEditForm(form);
+                                                                                    setInitialMemberEditForm(form);
+                                                                                }} style={{ background: '#F5F5F5', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', color: '#666' }}>수정</button>
                                                                                 {(() => {
                                                                                     const isDuplicate = memberList.some(m => m.id !== member.id && (m.full_name || '').trim().replace(/\s/g, '').toLowerCase() === (member.full_name || '').trim().replace(/\s/g, '').toLowerCase());
                                                                                     return (
