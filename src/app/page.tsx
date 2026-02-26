@@ -6035,7 +6035,8 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
         is_phone_public: false,
         is_birthdate_public: false,
         is_birthdate_lunar: false,
-        is_address_public: false
+        is_address_public: false,
+        created_at: ''
     };
 
     const [profileForm, setProfileForm] = useState(initialDefault);
@@ -6049,6 +6050,12 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
         const loadProfile = async () => {
             if (!user?.id) return;
             try {
+                // 0. 메타데이터에서 휴대폰 추출
+                const rawMetaPhone = user?.user_metadata?.phone_number || user?.user_metadata?.mobile || '';
+                let cleanMetaPhone = rawMetaPhone.replace(/[^0-9]/g, '');
+                if (cleanMetaPhone.startsWith('8210')) cleanMetaPhone = '0' + cleanMetaPhone.substring(2);
+                else if (cleanMetaPhone.startsWith('82')) cleanMetaPhone = '0' + cleanMetaPhone.substring(2);
+
                 // 1. 서버 측 동기화 API 호출 (이미 ID가 있더라도 누락된 정보를 위해 머지 로직 실행됨)
                 await fetch('/api/auth/sync', {
                     method: 'POST',
@@ -6057,7 +6064,8 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
                         user_id: user.id,
                         email: user.email,
                         name: user.user_metadata?.full_name || user.user_metadata?.name,
-                        avatar_url: user.user_metadata?.avatar_url
+                        avatar_url: user.user_metadata?.avatar_url,
+                        phone: cleanMetaPhone
                     })
                 });
 
@@ -6080,7 +6088,8 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
                         is_phone_public: data.is_phone_public || false,
                         is_birthdate_public: data.is_birthdate_public || false,
                         is_birthdate_lunar: data.is_birthdate_lunar || false,
-                        is_address_public: data.is_address_public || false
+                        is_address_public: data.is_address_public || false,
+                        created_at: data.created_at || ''
                     };
                     setProfileForm(loadedProfile);
                     setInitialProfile(loadedProfile);
@@ -6206,6 +6215,13 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
                             <input type="checkbox" id="birth_pub" checked={profileForm.is_birthdate_public} onChange={e => setProfileForm({ ...profileForm, is_birthdate_public: e.target.checked })} />
                             <label htmlFor="birth_pub" style={{ fontSize: '12px', color: '#888' }}>다른 성도님들께 생일을 공개합니다.</label>
                         </div>
+                    </div>
+                    <div>
+                        <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>📅 교회 등록일</label>
+                        <div style={{ padding: '12px', borderRadius: '12px', background: '#F9F9F9', border: '1px solid #EEE', fontSize: '14px', color: '#666' }}>
+                            {profileForm.created_at ? new Date(profileForm.created_at).toLocaleDateString() : '정보 없음'}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#AAA', marginTop: '4px' }}>등록일 수정을 원하시면 관리자에게 문의해주세요.</div>
                     </div>
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>

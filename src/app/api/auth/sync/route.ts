@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-        const { user_id, email, name, avatar_url } = await req.json();
+        const { user_id, email, name, avatar_url, phone: rawPhone } = await req.json();
 
         if (!user_id) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
@@ -45,7 +45,22 @@ export async function POST(req: NextRequest) {
             if (emailMatch) match = emailMatch;
         }
 
-        // 2-2. 이름 매칭 (공백 제거 후 비교)
+        // 2-2. 휴대폰 매칭
+        const inputPhone = rawPhone || (profileById?.phone);
+        if (!match && inputPhone) {
+            const cleanPhone = inputPhone.replace(/[^0-9]/g, '');
+            const formattedPhone = cleanPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+
+            const { data: phoneMatch } = await supabaseAdmin
+                .from('profiles')
+                .select('*')
+                .or(`phone.eq.${cleanPhone},phone.eq.${formattedPhone}`)
+                .is('id', null)
+                .maybeSingle();
+            if (phoneMatch) match = phoneMatch;
+        }
+
+        // 2-3. 이름 매칭 (공백 제거 후 비교)
         if (!match && name) {
             const cleanName = name.replace(/\s+/g, '');
             const { data: nameMatch } = await supabaseAdmin.from('profiles').select('*').eq('full_name', cleanName).is('id', null).maybeSingle();
@@ -69,15 +84,32 @@ export async function POST(req: NextRequest) {
                     birthdate: profileById.birthdate || match.birthdate,
                     address: profileById.address || match.address,
                     church_rank: profileById.church_rank || match.church_rank,
+                    member_no: profileById.member_no || match.member_no,
+                    gender: profileById.gender || match.gender,
                     avatar_url: profileById.avatar_url || match.avatar_url,
+                    created_at: profileById.created_at || match.created_at,
                     is_approved: true
                 };
                 await supabaseAdmin.from('profiles').update(updateFields).eq('id', user_id);
-                await supabaseAdmin.from('profiles').delete().eq('email', match.email).is('id', null);
+                // 중복 로우 삭제 (이메일이 다를 수 있으므로 match.id(null인 로우의 PK) 등으로 식별하는게 좋지만, 현재 profiles는 id가 pk)
+                // match 로우는 id가 null인 상태로 upsert되었을 수 있으나, 보통 PK가 있을 것임.
+                // admin 업로드 로우는 id가 보통 생성되지 않거나 다른 방식일 텐데, 
+                // match.email 등으로 삭제하거나, 실제 match.id가 있으면 그것으로 삭제.
+                if (match.id && match.id !== user_id) {
+                    await supabaseAdmin.from('profiles').delete().eq('id', match.id);
+                } else if (match.email && match.email !== email) {
+                    await supabaseAdmin.from('profiles').delete().eq('email', match.email).is('id', null);
+                }
+
                 return NextResponse.json({ status: 'merged', is_approved: true });
             } else {
                 // 프로필 로우가 아예 없음 -> 관리자 데이터에 ID 부여
-                await supabaseAdmin.from('profiles').update({ id: user_id, email: email || match.email, is_approved: true }).eq('email', match.email);
+                await supabaseAdmin.from('profiles').update({
+                    id: user_id,
+                    email: email || match.email,
+                    is_approved: true
+                }).eq('email', match.email).is('id', null);
+
                 return NextResponse.json({ status: 'linked', is_approved: true });
             }
         }
