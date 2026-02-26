@@ -394,6 +394,9 @@ export default function App() {
     const [isPosterUploading, setIsPosterUploading] = useState(false); // ✅ 포스터 업로드 중
     const [showEventPopup, setShowEventPopup] = useState(false); // ✅ 이벤트 팝업 노출 여부 (유저 클라이언트용)
     const [isManualSermon, setIsManualSermon] = useState(false); // ✅ 수동 설교 지정 모드 여부
+    const [hasNewCommunity, setHasNewCommunity] = useState(false);
+    const [hasNewThanksgiving, setHasNewThanksgiving] = useState(false);
+    const [hasNewSermon, setHasNewSermon] = useState(false);
 
     const [churchSettings, setChurchSettings] = useState<any>({
         church_name: CHURCH_NAME,
@@ -927,15 +930,43 @@ export default function App() {
         };
         loadSettings();
 
-        const loadAnnouncements = async () => {
-            const cId = churchId || 'jesus-in';
-            try {
-                const r = await fetch(`/api/announcements?church_id=${cId}`, { cache: 'no-store' });
-                const data = await r.json();
-                if (Array.isArray(data)) setAnnouncements(data);
-            } catch (err) { }
-        };
         if (churchId) loadAnnouncements();
+
+        // ✅ 새 글 및 설교 업데이트 체크 로직
+        const checkNewContent = async () => {
+            const cId = churchId || 'jesus-in';
+            const kstOffset = 9 * 60 * 60 * 1000;
+            const today = new Date(Date.now() + kstOffset).toISOString().split('T')[0];
+
+            try {
+                // 1. 은혜나눔 새글 (오늘 올라온 글이 있는지)
+                const { count: cCount } = await supabase
+                    .from('community_posts')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('church_id', cId)
+                    .gte('created_at', today);
+                setHasNewCommunity((cCount || 0) > 0);
+
+                // 2. 감사일기 새글
+                const { count: tCount } = await supabase
+                    .from('thanksgiving_diaries')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('church_id', cId)
+                    .gte('created_at', today);
+                setHasNewThanksgiving((tCount || 0) > 0);
+
+                // 3. 설교 업데이트 (설교 URL이 있고, 설정이 오늘 수정되었는지)
+                // note: 정확한 비교를 위해 DB에 sermon_updated_at이 있으면 좋으나, 현재는 church_settings의 updated_at 활용
+                const r = await fetch(`/api/settings?church_id=${cId}`);
+                const { settings } = await r.json();
+                if (settings && settings.sermon_url) {
+                    const updatedAt = new Date(settings.updated_at || settings.created_at);
+                    const updatedKST = new Date(updatedAt.getTime() + kstOffset).toISOString().split('T')[0];
+                    setHasNewSermon(updatedKST === today);
+                }
+            } catch (e) { console.error("Badges check failed", e); }
+        };
+        if (churchId) checkNewContent();
 
     }, [churchId]);
     const [qtData, setQtData] = useState({
@@ -1672,6 +1703,7 @@ export default function App() {
                                     <div style={{ position: 'relative', flex: 1 }}>
                                         <button onClick={async () => {
                                             setView("community");
+                                            setHasNewCommunity(false); // 클릭 시 뱃지 제거
                                             try {
                                                 const res = await fetch(`/api/community?church_id=${churchId}`);
                                                 const data = await res.json();
@@ -1684,8 +1716,10 @@ export default function App() {
                                             border: "1px solid #f2cddb", cursor: "pointer",
                                             boxShadow: "0 10px 20px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(173, 20, 87, 0.08), inset 0 3px 5px rgba(255,255,255,1), inset 0 -3px 0 rgba(255,255,255,0.8)",
                                             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
-                                            transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+                                            transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                                            position: 'relative'
                                         }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                                            {hasNewCommunity && <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '2px 5px', borderRadius: '8px', border: '1.5px solid white' }}>N</div>}
                                             <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>💌</div>
                                             <span>은혜나눔 게시판</span>
                                         </button>
@@ -1702,6 +1736,7 @@ export default function App() {
                                     <div style={{ position: 'relative', flex: 1 }}>
                                         <button onClick={async () => {
                                             setView("thanksgiving");
+                                            setHasNewThanksgiving(false);
                                             try {
                                                 const res = await fetch(`/api/thanksgiving?church_id=${churchId}`);
                                                 const data = await res.json();
@@ -1714,8 +1749,10 @@ export default function App() {
                                             border: "1px solid #fae1cd", cursor: "pointer",
                                             boxShadow: "0 10px 20px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(224, 122, 95, 0.08), inset 0 3px 5px rgba(255,255,255,1), inset 0 -3px 0 rgba(255,255,255,0.8)",
                                             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
-                                            transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+                                            transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                                            position: 'relative'
                                         }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                                            {hasNewThanksgiving && <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '2px 5px', borderRadius: '8px', border: '1.5px solid white' }}>N</div>}
                                             <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>🌻</div>
                                             <span>감사일기 쓰기</span>
                                         </button>
@@ -1797,6 +1834,7 @@ export default function App() {
                                                 setPlayRequested(false);
                                             }
                                             setView('sermon');
+                                            setHasNewSermon(false);
                                         }} style={{
                                             flex: 1, padding: "14px 10px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #fff4f2 100%)", color: "#BA2D0B",
@@ -1804,8 +1842,10 @@ export default function App() {
                                             border: "1px solid #fcd3c8", cursor: "pointer",
                                             boxShadow: "0 10px 20px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(230, 48, 0, 0.09), inset 0 3px 5px rgba(255,255,255,1), inset 0 -3px 0 rgba(255,255,255,0.8)",
                                             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
-                                            transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+                                            transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                                            position: 'relative'
                                         }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                                            {hasNewSermon && <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '2px 5px', borderRadius: '8px', border: '1.5px solid white' }}>N</div>}
                                             <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>
                                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="#FF0000"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" /></svg>
                                             </div>
