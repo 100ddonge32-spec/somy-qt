@@ -172,7 +172,8 @@ const EventPosterPopup = ({ imageUrl, onClose }: { imageUrl: string, onClose: ()
                     <img src={imageUrl} alt="행사 포스터" style={{ width: '100%', height: 'auto', display: 'block' }} />
                     <div style={{ padding: '12px', background: '#333', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <button onClick={() => {
-                            localStorage.setItem('somy_hide_poster', new Date().toDateString());
+                            const hideKey = `somy_hide_poster_${btoa(imageUrl).substring(0, 16)}`;
+                            localStorage.setItem(hideKey, new Date().toDateString());
                             onClose();
                         }} style={{ background: 'none', border: 'none', color: '#BBB', fontSize: '13px', cursor: 'pointer' }}>오늘 하루 안보기</button>
                         <button onClick={onClose} style={{ background: '#D4AF37', border: 'none', color: 'white', padding: '6px 20px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>닫기</button>
@@ -913,7 +914,8 @@ export default function App() {
 
                     // ✅ 행사 포스터 팝업 노출 로직 (오늘 하루 안보기 체크)
                     if (saneSettings.event_poster_url && saneSettings.event_poster_visible) {
-                        const hideDate = localStorage.getItem('somy_hide_poster');
+                        const hideKey = `somy_hide_poster_${btoa(saneSettings.event_poster_url).substring(0, 16)}`;
+                        const hideDate = localStorage.getItem(hideKey) || localStorage.getItem('somy_hide_poster');
                         if (hideDate !== new Date().toDateString()) {
                             setShowEventPopup(true);
                         }
@@ -1243,6 +1245,14 @@ export default function App() {
                 setChurchSettings({ ...settingsForm });
                 setShowSettings(false);
                 alert('설정이 저장되었습니다! ✅');
+
+                // ✅ 저장 후 즉시 포스터 팝업 체크
+                if (settingsForm.event_poster_url && settingsForm.event_poster_visible) {
+                    const hideKey = `somy_hide_poster_${btoa(settingsForm.event_poster_url).substring(0, 16)}`;
+                    if (localStorage.getItem(hideKey) !== new Date().toDateString()) {
+                        setShowEventPopup(true);
+                    }
+                }
                 // 요금제가 바뀌었을 수 있으므로 큐티 다시 불러오기
                 fetchQt();
             } else {
