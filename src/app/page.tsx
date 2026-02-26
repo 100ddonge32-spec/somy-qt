@@ -5850,11 +5850,14 @@ export default function App() {
                                                                 .map(m => m.phone.replace(/[^0-9]/g, ''));
                                                             if (targetPhones.length === 0) { alert('선택된 성도 중 전화번호가 등록된 분이 없습니다.'); return; }
                                                             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                                                            const uniquePhones = [...new Set(targetPhones)];
                                                             let smsUrl = '';
                                                             if (isIOS) {
-                                                                smsUrl = `sms:${targetPhones.join(',')},&body=`;
+                                                                // iOS: 세미콜론(;)이 가장 안정적이지만 맨 앞에는 붙이지 않습니다.
+                                                                smsUrl = `sms:${uniquePhones.join(';')}`;
                                                             } else {
-                                                                smsUrl = `sms:${targetPhones.join(',')}`;
+                                                                // 안드로이드: 콤마(,)가 표준입니다.
+                                                                smsUrl = `sms:${uniquePhones.join(',')}`;
                                                             }
 
                                                             const link = document.createElement('a');
@@ -6614,11 +6617,14 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                         return;
                                     }
                                     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                                    const uniquePhones = [...new Set(phones)];
                                     let smsUrl = '';
                                     if (isIOS) {
-                                        smsUrl = `sms:${phones.join(',')},&body=`;
+                                        // iOS: 구분자 사이에만 세미콜론(;) 사용
+                                        smsUrl = `sms:${uniquePhones.join(';')}`;
                                     } else {
-                                        smsUrl = `sms:${phones.join(',')}`;
+                                        // 안드로이드: 콤마(,) 사용
+                                        smsUrl = `sms:${uniquePhones.join(',')}`;
                                     }
 
                                     const link = document.createElement('a');
