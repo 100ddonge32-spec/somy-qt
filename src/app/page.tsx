@@ -6057,7 +6057,7 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
                 else if (cleanMetaPhone.startsWith('82')) cleanMetaPhone = '0' + cleanMetaPhone.substring(2);
 
                 // 1. 서버 측 동기화 API 호출 (이미 ID가 있더라도 누락된 정보를 위해 머지 로직 실행됨)
-                await fetch('/api/auth/sync', {
+                const syncRes = await fetch('/api/auth/sync', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -6068,6 +6068,8 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
                         phone: cleanMetaPhone
                     })
                 });
+                const syncResult = await syncRes.json();
+                console.log("[SyncResult]", syncResult);
 
                 // 2. 최신 프로필 정보 조회 (준비될 때까지 잠깐 대기 후 시도)
                 const fetchProfile = async () => {

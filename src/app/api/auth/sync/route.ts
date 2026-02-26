@@ -11,138 +11,125 @@ export async function POST(req: NextRequest) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!url || !key) {
-        return NextResponse.json({ error: 'Missing Supabase keys on server' }, { status: 500 });
-    }
+    if (!url || !key) return NextResponse.json({ error: 'Missing Supabase keys' }, { status: 500 });
 
     try {
-        const { user_id, email, name, avatar_url, phone: rawPhone } = await req.json();
-
+        const { user_id, email, name: rawName, avatar_url, phone: rawPhone } = await req.json();
         if (!user_id) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
-        console.log(`[Sync] 프로필 확인/생성 시작: ${user_id} (${email})`);
+        console.log(`[Sync] TargetID: ${user_id}, Name: ${rawName}, Phone: ${rawPhone}`);
 
-        // 0. 관리자인지 먼저 확인 (관리자라면 자동 승인 대상)
         let isAdminMember = false;
         if (email) {
-            const { data: adminCheck } = await supabaseAdmin
-                .from('app_admins')
-                .select('*')
-                .eq('email', email.toLowerCase().trim())
-                .single();
+            const { data: adminCheck } = await supabaseAdmin.from('app_admins').select('*').eq('email', email.toLowerCase().trim()).single();
             if (adminCheck) isAdminMember = true;
         }
 
-        // 1. 기존 프로필 확인 (ID 기준)
+        // 현재 로그인한 유저의 프로필
         const { data: profileById } = await supabaseAdmin.from('profiles').select('*').eq('id', user_id).maybeSingle();
 
-        // 2. 통합 대상 스캔 (연결되지 않은 관리자 등록 데이터)
         let match = null;
 
-        // 2-1. 이메일 매칭
+        // 1. 이메일 매칭 (가장 정확 - 실제 이메일이 일치하는 경우)
         if (email) {
-            const { data: emailMatch } = await supabaseAdmin.from('profiles').select('*').eq('email', email).is('id', null).maybeSingle();
-            if (emailMatch) match = emailMatch;
+            // 나 자신이 아닌 다른 행 중에서 이메일이 같은 행 찾기
+            const { data } = await supabaseAdmin.from('profiles')
+                .select('*')
+                .eq('email', email)
+                .neq('id', user_id)
+                .maybeSingle();
+            if (data) match = data;
         }
 
-        // 2-2. 휴대폰 매칭
+        // 2. 가상 이메일/휴대폰 매칭 (어드민 업로드 데이터 찾기)
         const inputPhone = rawPhone || (profileById?.phone);
         if (!match && inputPhone) {
             const cleanPhone = inputPhone.replace(/[^0-9]/g, '');
-            const formattedPhone = cleanPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+            const fakeEmail = `${cleanPhone}@church.local`;
 
-            const { data: phoneMatch } = await supabaseAdmin
-                .from('profiles')
+            // 가상 이메일로 매칭 시도
+            const { data: emailMatch } = await supabaseAdmin.from('profiles')
                 .select('*')
-                .or(`phone.eq.${cleanPhone},phone.eq.${formattedPhone}`)
-                .is('id', null)
+                .eq('email', fakeEmail)
+                .neq('id', user_id)
                 .maybeSingle();
-            if (phoneMatch) match = phoneMatch;
-        }
 
-        // 2-3. 이름 매칭 (공백 제거 후 비교)
-        if (!match && name) {
-            const cleanName = name.replace(/\s+/g, '');
-            const { data: nameMatch } = await supabaseAdmin.from('profiles').select('*').eq('full_name', cleanName).is('id', null).maybeSingle();
-            if (nameMatch) {
-                match = nameMatch;
+            if (emailMatch) {
+                match = emailMatch;
             } else {
-                // 퍼지 매칭 시도
-                const fuzzyName = `%${cleanName.split('').join('%')}%`;
-                const { data: fuzzyMatch } = await supabaseAdmin.from('profiles').select('*').ilike('full_name', fuzzyName).is('id', null).limit(1).maybeSingle();
-                if (fuzzyMatch) match = fuzzyMatch;
+                // 전화번호 텍스트로도 매칭 시도
+                const formattedPhone = cleanPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+                const { data: phoneMatch } = await supabaseAdmin.from('profiles')
+                    .select('*')
+                    .or(`phone.eq.${cleanPhone},phone.eq.${formattedPhone}`)
+                    .neq('id', user_id)
+                    .maybeSingle();
+                if (phoneMatch) match = phoneMatch;
             }
         }
 
-        // 3. 통합 또는 생성
+        // 3. 이름 매칭 (마지막 수단)
+        if (!match && rawName) {
+            const cleanName = rawName.replace(/\s+/g, '');
+            const { data: nameMatches } = await supabaseAdmin.from('profiles')
+                .select('*')
+                .ilike('full_name', `%${cleanName}%`)
+                .neq('id', user_id);
+
+            if (nameMatches && nameMatches.length > 0) {
+                // 어드민 데이터(가상 이메일 보유)를 우선적으로 찾음
+                const adminRow = nameMatches.find(m => m.email?.includes('@church.local') || m.email?.includes('@noemail.local'));
+                match = adminRow || nameMatches[0];
+            }
+        }
+
         if (match) {
-            console.log(`[Sync] 매칭 발견: ${match.full_name} (${match.phone || match.email})`);
+            console.log(`[Sync] 매칭 성공: ${match.full_name} (${match.id})`);
+
+            // 필드 병합 데이터 준비
+            const updateFields = {
+                full_name: (profileById?.full_name && profileById.full_name !== '성도') ? profileById.full_name : match.full_name,
+                phone: profileById?.phone || match.phone,
+                birthdate: profileById?.birthdate || match.birthdate,
+                address: profileById?.address || match.address,
+                church_rank: profileById?.church_rank || match.church_rank,
+                member_no: profileById?.member_no || match.member_no,
+                gender: profileById?.gender || match.gender,
+                avatar_url: profileById?.avatar_url || match.avatar_url,
+                created_at: profileById?.created_at || match.created_at, // 가급적 행 생성일 유지
+                is_approved: true
+            };
+
             if (profileById) {
-                // 이미 ID로 프로필이 있는데 관리자 데이터와 매칭됨 -> 내용 병합 후 관리자 로우 삭제
-                const updateFields = {
-                    full_name: profileById.full_name || match.full_name,
-                    phone: profileById.phone || match.phone,
-                    birthdate: profileById.birthdate || match.birthdate,
-                    address: profileById.address || match.address,
-                    church_rank: profileById.church_rank || match.church_rank,
-                    member_no: profileById.member_no || match.member_no,
-                    gender: profileById.gender || match.gender,
-                    avatar_url: profileById.avatar_url || match.avatar_url,
-                    created_at: profileById.created_at || match.created_at,
-                    is_approved: true
-                };
+                // 1) 현재 유저 행 업데이트
                 await supabaseAdmin.from('profiles').update(updateFields).eq('id', user_id);
-                // 중복 로우 삭제
-                if (match.id && match.id !== user_id) {
-                    await supabaseAdmin.from('profiles').delete().eq('id', match.id);
-                } else if (match.email && match.email !== email) {
-                    await supabaseAdmin.from('profiles').delete().eq('email', match.email).is('id', null);
-                } else if (match.phone && !match.id) {
-                    await supabaseAdmin.from('profiles').delete().eq('phone', match.phone).is('id', null);
-                }
-
-                return NextResponse.json({ status: 'merged', is_approved: true });
+                // 2) 매칭된 구(Admin) 행 삭제
+                await supabaseAdmin.from('profiles').delete().eq('id', match.id);
+                return NextResponse.json({ status: 'merged', name: updateFields.full_name });
             } else {
-                // 프로필 로우가 아예 없음 -> 관리자 데이터에 ID 부여
-                const updateData: any = { id: user_id, is_approved: true };
-                if (email) updateData.email = email;
-
-                // match.id (PK) 가 있으면 그것으로 업데이트
-                if (match.id) {
-                    await supabaseAdmin.from('profiles').update(updateData).eq('id', match.id).is('id', null);
-                } else if (match.email) {
-                    await supabaseAdmin.from('profiles').update(updateData).eq('email', match.email).is('id', null);
-                } else {
-                    await supabaseAdmin.from('profiles').update(updateData).eq('full_name', match.full_name).eq('phone', match.phone).is('id', null);
-                }
-
-                return NextResponse.json({ status: 'linked', is_approved: true });
+                // 3) 아예 행이 없었으면 match 행에 user_id 부여 (가장 깔끔)
+                const linkData: any = { ...updateFields, id: user_id, email: email || match.email };
+                await supabaseAdmin.from('profiles').update(linkData).eq('id', match.id);
+                return NextResponse.json({ status: 'linked', name: linkData.full_name });
             }
         }
 
+        // 매칭 실패 시 기본 동작
         if (!profileById) {
-            // 매칭된 것도 없고 프로필도 없으면 신규 생성
             await supabaseAdmin.from('profiles').insert({
                 id: user_id,
-                email: email,
-                full_name: name || '성도',
-                avatar_url: avatar_url || null,
+                email: email || `${user_id}@noemail.local`,
+                full_name: rawName || '성도',
                 church_id: 'jesus-in',
                 is_approved: isAdminMember
             });
-            return NextResponse.json({ status: 'created', is_approved: isAdminMember });
-        }
-
-        // 관리자 자동 승인 체크
-        if (isAdminMember && !profileById.is_approved) {
-            await supabaseAdmin.from('profiles').update({ is_approved: true }).eq('id', user_id);
-            return NextResponse.json({ status: 'updated_to_approved', is_approved: true });
+            return NextResponse.json({ status: 'created' });
         }
 
         return NextResponse.json({ status: 'exists', is_approved: profileById.is_approved });
 
     } catch (err: any) {
-        console.error('[Sync] 에러:', err.message);
+        console.error('[Sync Error]', err);
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
