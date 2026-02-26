@@ -4062,10 +4062,6 @@ export default function App() {
             return <ProfileView user={user} supabase={supabase} setView={setView} baseFont={baseFont} allowMemberEdit={churchSettings?.allow_member_edit} />;
         }
 
-        if (view === "book") {
-            return <BookView book={churchSettings} onBack={() => setView('home')} />;
-        }
-
         if (view === "memberSearch") {
             return <MemberSearchView churchId={churchId} setView={setView} baseFont={baseFont} isAdmin={isAdmin} />;
         }
@@ -4681,7 +4677,7 @@ export default function App() {
                                     }}
                                 >
                                     <div style={{ width: '36px', height: '36px', borderRadius: '12px', background: '#F5F5F3', overflow: 'hidden', border: '2px solid white', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
-                                        <img src={m.avatar_url || 'https://via.placeholder.com/36'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <img src={m.avatar_url || 'https://via.placeholder.com/36'} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     </div>
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontSize: '13px', fontWeight: 800, color: '#333' }}>{m.full_name}</div>
@@ -5953,7 +5949,7 @@ export default function App() {
                 )
             }
             {renderInstallGuide()}
-        </div >
+        </div>
     );
 }
 
