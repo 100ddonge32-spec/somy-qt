@@ -5850,8 +5850,12 @@ export default function App() {
                                                                 .map(m => m.phone.replace(/[^0-9]/g, ''));
                                                             if (targetPhones.length === 0) { alert('선택된 성도 중 전화번호가 등록된 분이 없습니다.'); return; }
                                                             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-                                                            const phoneJoiner = isIOS ? ';' : ',';
-                                                            const smsUrl = isIOS ? `sms:${targetPhones.join(phoneJoiner)}&body=` : `sms:${targetPhones.join(phoneJoiner)}`;
+                                                            let smsUrl = '';
+                                                            if (isIOS) {
+                                                                smsUrl = `sms:/open?addresses=${targetPhones.join(',')}&body=`;
+                                                            } else {
+                                                                smsUrl = `sms:${targetPhones.join(',')}`;
+                                                            }
                                                             window.location.href = smsUrl;
                                                         }} style={{ width: '100%', padding: '12px', background: selectedMemberIds.length > 0 ? '#2E7D32' : '#AAA', color: 'white', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 800, cursor: selectedMemberIds.length > 0 ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: selectedMemberIds.length > 0 ? '0 4px 10px rgba(46,125,50,0.2)' : 'none' }}>
                                                             💬 선택된 성도 단체 문자 발송 ({memberList.filter(m => selectedMemberIds.includes(m.id)).filter(m => m.phone).length}명)
@@ -6605,8 +6609,12 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                         return;
                                     }
                                     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-                                    const phoneJoiner = isIOS ? ';' : ',';
-                                    const smsUrl = isIOS ? `sms:${phones.join(phoneJoiner)}&body=` : `sms:${phones.join(phoneJoiner)}`;
+                                    let smsUrl = '';
+                                    if (isIOS) {
+                                        smsUrl = `sms:/open?addresses=${phones.join(',')}&body=`;
+                                    } else {
+                                        smsUrl = `sms:${phones.join(',')}`;
+                                    }
                                     window.location.href = smsUrl;
                                 }}
                                 style={{
