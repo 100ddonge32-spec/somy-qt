@@ -6651,17 +6651,20 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                                     const uniquePhones = phones.map(p => p.trim()).filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
 
-                                    // [이과장의 어드바이스] 너무 많은 인원(20명 이상)은 통신사에서 차단될 수 있음
                                     if (uniquePhones.length > 20) {
-                                        if (!confirm(`현재 ${uniquePhones.length}명이 선택되었습니다. 아이폰/안드로이드 통신사 제한으로 인해 문자가 일부만 전송될 수 있습니다. 계속할까요?\n(추천: '복사' 버튼을 눌러 직접 붙여넣기)`)) return;
+                                        if (!confirm(`현재 ${uniquePhones.length}명이 선택되었습니다. 통신사 제한으로 인해 문자가 일부만 전송될 수 있습니다. 계속할까요?`)) return;
                                     }
 
-                                    // iOS는 세미콜론(;), 안드로이드는 콤마(,) 사용
+                                    // [이과장의 필살기] iOS 최신 버전 호환을 위한 sms:; 접두사 및 구분자 설정
                                     const separator = isIOS ? ';' : ',';
-                                    const smsUrl = isIOS ? `sms:${uniquePhones.join(separator)}` : `sms:${uniquePhones.join(separator)}`;
+                                    const smsUrl = isIOS ? `sms:;${uniquePhones.join(separator)}` : `sms:${uniquePhones.join(separator)}`;
 
-                                    // 팝업 차단 및 인터페이스 트리거 안정성 확보
-                                    window.location.assign(smsUrl);
+                                    // [이과장의 필살기] window.location 대신 임시 링크를 만들어 보안 정책 우회
+                                    const link = document.createElement('a');
+                                    link.href = smsUrl;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
                                 }}
                                 style={{
                                     flex: 4, padding: '14px', background: selectedIds.length > 0 ? '#333' : '#F5F5F3',
@@ -6673,14 +6676,42 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                 💬 {selectedIds.length > 0 ? `발송 (${selectedIds.length}명)` : '단체 문자'}
                             </button>
                             <button
-                                onClick={() => {
+                                onClick={(e) => {
+                                    e.stopPropagation();
                                     const targetMembers = selectedIds.length > 0 ? results.filter(m => selectedIds.includes(m.id)) : results;
                                     const phones = targetMembers.filter(m => m.phone).map(m => m.phone.replace(/[^0-9]/g, ''));
                                     if (phones.length === 0) return;
                                     const uniquePhones = phones.filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
-                                    // 붙여넣기 시 가장 호환성 좋은 콤마+공백 조합
-                                    navigator.clipboard.writeText(uniquePhones.join(', '));
-                                    alert('전화번호가 복사되었습니다! ✨\n문자 앱 실행 후 받는 사람 칸에 붙여넣기 하세요.');
+                                    const textToCopy = uniquePhones.join(', ');
+
+                                    // [이과장의 필살기] 인앱 브라우저 및 iOS 보안 정책 대응용 레거시 복사 방식
+                                    const textArea = document.createElement("textarea");
+                                    textArea.value = textToCopy;
+                                    textArea.style.position = "fixed";
+                                    textArea.style.left = "-9999px";
+                                    textArea.style.top = "0";
+                                    document.body.appendChild(textArea);
+                                    textArea.focus();
+                                    textArea.select();
+
+                                    let successful = false;
+                                    try {
+                                        successful = document.execCommand('copy');
+                                    } catch (err) {
+                                        successful = false;
+                                    }
+                                    document.body.removeChild(textArea);
+
+                                    if (successful) {
+                                        alert('전화번호가 복사되었습니다! ✨\n문자 앱 실행 후 [받는 사람] 칸에 붙여넣기 하세요.');
+                                    } else {
+                                        // 최후의 수단: navigator.clipboard 재시도
+                                        navigator.clipboard.writeText(textToCopy).then(() => {
+                                            alert('전화번호가 복사되었습니다! ✨');
+                                        }).catch(() => {
+                                            alert('복사에 실패했습니다. 기기 보호 설정을 확인해 주세요.');
+                                        });
+                                    }
                                 }}
                                 style={{
                                     flex: 1, padding: '14px', background: '#F5F5F3', color: '#555', border: '1px solid #E5E5E5',
