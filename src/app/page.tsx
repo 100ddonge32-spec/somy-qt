@@ -543,7 +543,7 @@ export default function App() {
     }, []);
 
     useEffect(() => {
-        if (ccmIndex === null) return;
+        if (ccmIndex === null || !user) return; // ✅ 로그인 전에는 음악을 준비하거나 재생하지 않음
 
         // 인덱스 범위 초과 방지 (목록이 바뀌었을 때 대비)
         const safeIdx = ccmIndex >= activeCcmList.length ? 0 : ccmIndex;
@@ -561,7 +561,7 @@ export default function App() {
             }
             setPlayerStatus("Switching..");
         }
-    }, [ccmIndex, activeCcmList]);
+    }, [ccmIndex, activeCcmList, user]); // ✅ user 상태 변화 감지 추가
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -595,7 +595,7 @@ export default function App() {
     }, []);
 
     const initPlayer = useCallback(() => {
-        if (!isApiReady || !todayCcm || playerRef.current || ccmIndex === null) return;
+        if (!isApiReady || !todayCcm || playerRef.current || ccmIndex === null || !user) return;
 
         const container = document.getElementById('ccm-player-hidden-global');
         if (!container) return;
@@ -5373,7 +5373,7 @@ export default function App() {
 
     // 소미 시그니처 레트로 플레이어 (저작권 걱정 없는 독자적 디자인)
     const renderMiniPlayer = () => {
-        if (!todayCcm || view === 'ccm') return null;
+        if (!todayCcm || view === 'ccm' || !user) return null;
 
         const handleStart = (clientX: number, clientY: number) => {
             setIsDragging(true);
