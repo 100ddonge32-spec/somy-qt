@@ -76,6 +76,7 @@ export async function POST(req: NextRequest) {
 
         // 3. 통합 또는 생성
         if (match) {
+            console.log(`[Sync] 매칭 발견: ${match.full_name} (${match.phone || match.email})`);
             if (profileById) {
                 // 이미 ID로 프로필이 있는데 관리자 데이터와 매칭됨 -> 내용 병합 후 관리자 로우 삭제
                 const updateFields = {
@@ -91,24 +92,29 @@ export async function POST(req: NextRequest) {
                     is_approved: true
                 };
                 await supabaseAdmin.from('profiles').update(updateFields).eq('id', user_id);
-                // 중복 로우 삭제 (이메일이 다를 수 있으므로 match.id(null인 로우의 PK) 등으로 식별하는게 좋지만, 현재 profiles는 id가 pk)
-                // match 로우는 id가 null인 상태로 upsert되었을 수 있으나, 보통 PK가 있을 것임.
-                // admin 업로드 로우는 id가 보통 생성되지 않거나 다른 방식일 텐데, 
-                // match.email 등으로 삭제하거나, 실제 match.id가 있으면 그것으로 삭제.
+                // 중복 로우 삭제
                 if (match.id && match.id !== user_id) {
                     await supabaseAdmin.from('profiles').delete().eq('id', match.id);
                 } else if (match.email && match.email !== email) {
                     await supabaseAdmin.from('profiles').delete().eq('email', match.email).is('id', null);
+                } else if (match.phone && !match.id) {
+                    await supabaseAdmin.from('profiles').delete().eq('phone', match.phone).is('id', null);
                 }
 
                 return NextResponse.json({ status: 'merged', is_approved: true });
             } else {
                 // 프로필 로우가 아예 없음 -> 관리자 데이터에 ID 부여
-                await supabaseAdmin.from('profiles').update({
-                    id: user_id,
-                    email: email || match.email,
-                    is_approved: true
-                }).eq('email', match.email).is('id', null);
+                const updateData: any = { id: user_id, is_approved: true };
+                if (email) updateData.email = email;
+
+                // match.id (PK) 가 있으면 그것으로 업데이트
+                if (match.id) {
+                    await supabaseAdmin.from('profiles').update(updateData).eq('id', match.id).is('id', null);
+                } else if (match.email) {
+                    await supabaseAdmin.from('profiles').update(updateData).eq('email', match.email).is('id', null);
+                } else {
+                    await supabaseAdmin.from('profiles').update(updateData).eq('full_name', match.full_name).eq('phone', match.phone).is('id', null);
+                }
 
                 return NextResponse.json({ status: 'linked', is_approved: true });
             }

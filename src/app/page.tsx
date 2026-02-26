@@ -6069,8 +6069,20 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
                     })
                 });
 
-                // 2. 최신 프로필 정보 조회 (단순 조회)
-                let { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+                // 2. 최신 프로필 정보 조회 (준비될 때까지 잠깐 대기 후 시도)
+                const fetchProfile = async () => {
+                    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+                    return data;
+                };
+
+                // 첫 시도
+                let data = await fetchProfile();
+
+                // 데이터가 비었거나 필수값이 없으면 1초 후 재시도 (동기화 완료 대기)
+                if (!data || (!data.phone && !data.birthdate && !data.address)) {
+                    await new Promise(r => setTimeout(r, 1000));
+                    data = await fetchProfile();
+                }
 
                 if (data) {
                     const rawMetaPhone = user?.user_metadata?.phone_number || user?.user_metadata?.mobile || '';
