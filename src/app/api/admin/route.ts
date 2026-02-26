@@ -33,8 +33,8 @@ export async function GET(req: NextRequest) {
                 return NextResponse.json({ role: 'user' });
             }
 
-            const { data, error } = await query.single();
-            return NextResponse.json(data || { role: 'user' });
+            const { data, error } = await query.limit(1);
+            return NextResponse.json((data && data.length > 0) ? data[0] : { role: 'user' });
         }
 
         if (action === 'list_members') {
