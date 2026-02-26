@@ -167,10 +167,20 @@ export async function POST(req: NextRequest) {
         };
 
         if (profileById) {
-            // "이미 존재함" 에러 대신 정보를 업데이트하고 상태를 반환함
+            // 이미 존재함 -> 정보 업데이트 (교회 명부 매칭은 안 됐지만 자기 정보는 갱신)
             await supabaseAdmin.from('profiles').update(dataToSet).eq('id', user_id);
             return NextResponse.json({ status: 'updated', name: dataToSet.full_name, is_approved: dataToSet.is_approved, church_id: 'jesus-in' });
         } else {
+            // [정석 보완] 신규 생성 시, 최소한의 정보(이름/번호)가 없는 익명 유저는 DB에 넣지 않음 (성도 유령 방지)
+            const isAnonymous = !email || email.includes('anonymous.local') || email.includes('noemail.local');
+            const hasRealName = rawName && rawName.trim() !== '' && rawName.trim() !== '.' && !isSystemGeneratedName && rawName.trim() !== '성도';
+            const hasPhone = rawPhone && rawPhone.trim().length > 5;
+
+            if (isAnonymous && !hasRealName && !hasPhone) {
+                console.log(`[Sync] Skipping profile creation for anonymous visitor: ${user_id}`);
+                return NextResponse.json({ status: 'visitor', is_approved: null, church_id: 'jesus-in' });
+            }
+
             await supabaseAdmin.from('profiles').insert(dataToSet);
             return NextResponse.json({ status: 'created', name: dataToSet.full_name, is_approved: dataToSet.is_approved, church_id: 'jesus-in' });
         }

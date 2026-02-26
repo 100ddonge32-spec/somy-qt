@@ -87,8 +87,17 @@ export async function GET(req: NextRequest) {
                 query = query.eq('church_id', churchId);
             }
 
-            const { data, error } = await query.order('created_at', { ascending: false });
+            let { data, error } = await query.order('created_at', { ascending: false });
             if (error) throw error;
+
+            // [정석 보완] 이름이 '성도'이면서 전화번호도 없는 '유령 계정'은 관리자 목록에서 제외 (UI 정리)
+            if (data) {
+                data = data.filter(m => {
+                    const isGhost = (m.full_name === '성도' || m.full_name === '이름 없음') && !m.phone;
+                    return !isGhost || m.is_approved; // 승인된 경우는 유령이라도 일단 보여줌
+                });
+            }
+
             return NextResponse.json(data);
         }
 
