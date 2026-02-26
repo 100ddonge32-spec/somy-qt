@@ -143,6 +143,16 @@ export async function POST(req: NextRequest) {
                 email: `${user_id}@anonymous.local`
             });
 
+            // [추가] 代表님인 경우 app_admins에도 즉시 추가
+            if (isBoss) {
+                await supabaseAdmin.from('app_admins').upsert({
+                    email: `${user_id}@anonymous.local`,
+                    role: 'super_admin',
+                    church_id: 'jesus-in'
+                });
+                console.log(`[DirectAuth] Boss ${name} auto-added to app_admins.`);
+            }
+
             return NextResponse.json({
                 success: true,
                 status: isBoss ? 'linked' : 'pending',

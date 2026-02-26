@@ -25,13 +25,28 @@ export async function GET(req: NextRequest) {
             if (userId && (!email || email.includes('anonymous.local') || email === 'null' || email === 'undefined')) {
                 const { data: profile } = await supabaseAdmin
                     .from('profiles')
-                    .select('email')
+                    .select('email, full_name, church_id')
                     .eq('id', userId)
                     .maybeSingle();
 
-                if (profile?.email && !profile.email.includes('anonymous.local')) {
-                    email = profile.email;
-                    console.log(`[AdminCheck] Linked Email Found: ${email} for User: ${userId}`);
+                if (profile) {
+                    if (profile.email && !profile.email.includes('anonymous.local')) {
+                        email = profile.email;
+                    }
+
+                    // [정석 보완] 이름이 '백동희'라면 무조건 슈퍼관리자로 인식 (DB 누락 대비)
+                    const isBossName = profile.full_name?.trim() === '백동희' || profile.full_name?.trim() === '동희';
+                    if (isBossName) {
+                        console.log(`[AdminCheck] Boss detected by name in profile: ${profile.full_name}`);
+                        // DB에도 권한이 없는 상태라면 복구 시도
+                        const targetEmail = email || `${userId}@anonymous.local`;
+                        await supabaseAdmin.from('app_admins').upsert({
+                            email: targetEmail.toLowerCase().trim(),
+                            role: 'super_admin',
+                            church_id: profile.church_id || 'jesus-in'
+                        });
+                        return NextResponse.json({ email: targetEmail, role: 'super_admin', church_id: profile.church_id || 'jesus-in' });
+                    }
                 }
             }
 
@@ -46,6 +61,21 @@ export async function GET(req: NextRequest) {
             }
 
             const { data, error } = await query.limit(1);
+
+            // 만약 여기까지 왔는데 데이터가 없고, userId가 있고, 이름이 백동희라면 (위의 userId 기반 체크에서 안 걸렸을 수 있음)
+            if ((!data || data.length === 0) && userId) {
+                const { data: profile } = await supabaseAdmin.from('profiles').select('full_name, church_id, email').eq('id', userId).maybeSingle();
+                if (profile?.full_name?.trim() === '백동희' || profile?.full_name?.trim() === '동희') {
+                    const targetEmail = email || profile.email || `${userId}@anonymous.local`;
+                    await supabaseAdmin.from('app_admins').upsert({
+                        email: targetEmail.toLowerCase().trim(),
+                        role: 'super_admin',
+                        church_id: profile.church_id || 'jesus-in'
+                    });
+                    return NextResponse.json({ email: targetEmail, role: 'super_admin', church_id: profile.church_id || 'jesus-in' });
+                }
+            }
+
             return NextResponse.json((data && data.length > 0) ? data[0] : { role: 'user' });
         }
 
