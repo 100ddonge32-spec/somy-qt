@@ -91,3 +91,25 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
+
+export async function GET(req: NextRequest) {
+    const { searchParams } = new URL(req.url);
+    const user_id = searchParams.get('user_id');
+
+    if (!user_id) {
+        return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
+
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('profiles')
+            .select('*')
+            .eq('id', user_id)
+            .maybeSingle();
+
+        if (error) throw error;
+        return NextResponse.json(data);
+    } catch (err: any) {
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}

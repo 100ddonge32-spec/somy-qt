@@ -6072,9 +6072,11 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
                 console.log("[SyncResult]", syncResult);
 
                 // 2. 최신 프로필 정보 조회 (준비될 때까지 잠깐 대기 후 시도)
+                // RLS 이슈 방지를 위해 API를 통한 조회로 변경
                 const fetchProfile = async () => {
-                    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-                    return data;
+                    const res = await fetch(`/api/profile?user_id=${user.id}`);
+                    if (!res.ok) return null;
+                    return await res.json();
                 };
 
                 // 첫 시도
