@@ -930,6 +930,14 @@ export default function App() {
         };
         loadSettings();
 
+        const loadAnnouncements = async () => {
+            const cId = churchId || 'jesus-in';
+            try {
+                const r = await fetch(`/api/announcements?church_id=${cId}`, { cache: 'no-store' });
+                const data = await r.json();
+                if (Array.isArray(data)) setAnnouncements(data);
+            } catch (err) { }
+        };
         if (churchId) loadAnnouncements();
 
         // ✅ 새 글 및 설교 업데이트 체크 로직
@@ -1255,7 +1263,8 @@ export default function App() {
                 "교회직분": "성도",
                 "휴대폰": "010-1234-5678",
                 "주소": "서울특별시 ...",
-                "이메일": "hong@example.com (필수 아님)"
+                "이메일": "hong@example.com (필수 아님)",
+                "등록일": "2024-01-01"
             }
         ]);
         const wb = XLSX.utils.book_new();
@@ -4536,6 +4545,10 @@ export default function App() {
                             </div>
                             <input value={memberEditForm.address} onChange={e => setMemberEditForm({ ...memberEditForm, address: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                         </div>
+                        <div>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>교회 등록일</label>
+                            <input type="date" value={memberEditForm.created_at ? new Date(memberEditForm.created_at).toISOString().split('T')[0] : ''} onChange={e => setMemberEditForm({ ...memberEditForm, created_at: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                        </div>
                     </div>
                     <div style={{ display: 'flex', gap: '10px', marginTop: '25px' }}>
                         <button onClick={() => { setSelectedMemberForEdit(null); setMemberEditForm(null); }} style={{ flex: 1, padding: '14px', background: '#F5F5F5', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', color: '#666' }}>취소</button>
@@ -4816,14 +4829,12 @@ export default function App() {
             '교적번호': m.member_no || '',
             '생년월일': m.birthdate || '',
             '성별': m.gender || '',
-            '교회직분': m.church_rank || '',
+            '직분': m.church_rank || '',
             '휴대폰': m.phone || '',
             '주소': m.address || '',
             '이메일': m.email || '',
-            '승인상태': m.is_approved ? '승인됨' : '미승인',
-            '전화공개': m.is_phone_public ? '공개' : '비공개',
-            '생일공개': m.is_birthdate_public ? '공개' : '비공개',
-            '주소공개': m.is_address_public ? '공개' : '비공개'
+            '등록일': m.created_at ? new Date(m.created_at).toISOString().split('T')[0] : '',
+            '승인상태': m.is_approved ? '승인됨' : '미승인'
         }));
 
         const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -5692,7 +5703,8 @@ export default function App() {
                                                                                             is_phone_public: member.is_phone_public || false,
                                                                                             is_birthdate_public: member.is_birthdate_public || false,
                                                                                             is_birthdate_lunar: member.is_birthdate_lunar || false,
-                                                                                            is_address_public: member.is_address_public || false
+                                                                                            is_address_public: member.is_address_public || false,
+                                                                                            created_at: member.created_at || ''
                                                                                         };
                                                                                         setMemberEditForm(form);
                                                                                         setInitialMemberEditForm(form);
@@ -5739,6 +5751,9 @@ export default function App() {
                                                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#666', gap: '8px' }}>
                                                                                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>🏠 {member.address || '주소 없음'}</span>
                                                                                 {member.is_address_public ? <span style={{ fontSize: '10px', background: '#E8F5E9', color: '#2E7D32', padding: '2px 4px', borderRadius: '4px', flexShrink: 0, fontWeight: 700 }}>공개</span> : <span style={{ fontSize: '10px', background: '#F5F5F5', color: '#999', padding: '2px 4px', borderRadius: '4px', flexShrink: 0 }}>🔒 비공개</span>}
+                                                                            </div>
+                                                                            <div style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
+                                                                                📅 등록일: {member.created_at ? new Date(member.created_at).toLocaleDateString() : '없음'}
                                                                             </div>
                                                                             {member.family_members && member.family_members.length > 0 && (
                                                                                 <div style={{ fontSize: '11px', color: '#888', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -6395,6 +6410,12 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                             <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.address ? '#333' : '#BBB', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 {selectedMember.address || (selectedMember.is_address_public ? '미등록' : '비공개')}
                                                 {isAdmin && !selectedMember.is_address_public && selectedMember.address && <span style={{ fontSize: '10px', color: '#C62828', background: '#FFEBEE', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>🔒 비공개 설정됨</span>}
+                                            </div>
+                                        </div>
+                                        <div style={{ borderTop: '1px solid #F0ECE4', paddingTop: '15px' }}>
+                                            <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700, marginBottom: '2px' }}>등록일</div>
+                                            <div style={{ fontSize: '16px', fontWeight: 600, color: '#333' }}>
+                                                {selectedMember.created_at ? new Date(selectedMember.created_at).toLocaleDateString() : '정보 없음'}
                                             </div>
                                         </div>
                                     </div>

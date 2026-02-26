@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
             const member_no = findValue(['교적번호', '교적', 'No', 'MemberNo']);
             const gender = findValue(['성별', 'Gender', 'Sex']);
             let avatar_url = findValue(['교인사진', '사진', '사진URL', 'Photo', 'Image']);
+            const registeredDateInput = findValue(['등록일', '가입일', 'RegisteredAt', 'CreatedAt', 'JoinDate']);
 
             // 이미지 주소 정제 (텍스트가 아닌 객체가 들어오거나 URL이 아닌 경우 처리)
             if (avatar_url && typeof avatar_url === 'object') {
@@ -84,7 +85,22 @@ export async function POST(req: NextRequest) {
                         if (!isNaN(date.getTime())) formattedBirthdate = date.toISOString().split('T')[0];
                     }
                 } catch (e) {
-                    console.warn(`[Bulk] ${full_name} 날짜 변환 에러:`, birthdateInput);
+                    console.warn(`[Bulk] ${full_name} 생일 날짜 변환 에러:`, birthdateInput);
+                }
+            }
+
+            let formattedRegisteredAt = null;
+            if (registeredDateInput) {
+                try {
+                    if (typeof registeredDateInput === 'number') {
+                        const date = new Date((registeredDateInput - 25569) * 86400 * 1000);
+                        formattedRegisteredAt = date.toISOString();
+                    } else {
+                        const date = new Date(registeredDateInput);
+                        if (!isNaN(date.getTime())) formattedRegisteredAt = date.toISOString();
+                    }
+                } catch (e) {
+                    console.warn(`[Bulk] ${full_name} 등록일 날짜 변환 에러:`, registeredDateInput);
                 }
             }
 
@@ -98,20 +114,26 @@ export async function POST(req: NextRequest) {
                 continue;
             }
 
+            const upsertData: any = {
+                full_name,
+                email,
+                phone: phone || null,
+                birthdate: formattedBirthdate,
+                address: address || null,
+                avatar_url: avatar_url,
+                member_no: member_no || null,
+                gender: gender || null,
+                church_rank: church_rank || null,
+                church_id: church_id || 'jesus-in'
+            };
+
+            if (formattedRegisteredAt) {
+                upsertData.created_at = formattedRegisteredAt;
+            }
+
             const { error } = await supabaseAdmin
                 .from('profiles')
-                .upsert({
-                    full_name,
-                    email,
-                    phone: phone || null,
-                    birthdate: formattedBirthdate,
-                    address: address || null,
-                    avatar_url: avatar_url,
-                    member_no: member_no || null,
-                    gender: gender || null,
-                    church_rank: church_rank || null,
-                    church_id: church_id || 'jesus-in'
-                }, { onConflict: 'email' });
+                .upsert(upsertData, { onConflict: 'email' });
 
             if (error) {
                 console.error(`[Bulk Error] ${full_name} (${email}):`, error.message);
