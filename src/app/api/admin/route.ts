@@ -134,11 +134,13 @@ export async function POST(req: NextRequest) {
 
         // 개별 성도 삭제
         if (action === 'delete_member') {
-            const { user_id } = body;
+            const targetId = user_id || body.id;
+            if (!targetId) throw new Error('삭제할 성도의 ID가 없습니다.');
+
             const { error } = await supabaseAdmin
                 .from('profiles')
                 .delete()
-                .eq('id', user_id);
+                .eq('id', targetId);
             if (error) throw error;
             return NextResponse.json({ success: true });
         }

@@ -5664,7 +5664,7 @@ export default function App() {
                                                                                     <button
                                                                                         onClick={async () => {
                                                                                             if (window.confirm(`${member.full_name} 성도를 삭제하시겠습니까?`)) {
-                                                                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_member', id: member.id, church_id: churchId }) });
+                                                                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_member', user_id: member.id, church_id: churchId }) });
                                                                                                 if (res.ok) setMemberList(prev => prev.filter(m => m.id !== member.id));
                                                                                             }
                                                                                         }}
