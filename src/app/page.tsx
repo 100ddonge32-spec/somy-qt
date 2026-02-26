@@ -130,6 +130,7 @@ function getYouVersionUrl(reference: string): string {
 }
 
 const BookView = ({ book, onBack }: { book: any, onBack: () => void }) => {
+    // ... (rest of BookView unchanged)
     return (
         <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', animation: 'fade-in 0.4s ease-out' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -159,6 +160,26 @@ const BookView = ({ book, onBack }: { book: any, onBack: () => void }) => {
             </div>
 
             <button onClick={onBack} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '16px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', marginTop: '10px', boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }}>확인</button>
+        </div>
+    );
+};
+
+const EventPosterPopup = ({ imageUrl, onClose }: { imageUrl: string, onClose: () => void }) => {
+    return (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', backdropFilter: 'blur(5px)' }}>
+            <div style={{ position: 'relative', maxWidth: '400px', width: '100%', animation: 'scale-up 0.3s ease-out' }}>
+                <div style={{ background: 'white', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+                    <img src={imageUrl} alt="행사 포스터" style={{ width: '100%', height: 'auto', display: 'block' }} />
+                    <div style={{ padding: '12px', background: '#333', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <button onClick={() => {
+                            localStorage.setItem('somy_hide_poster', new Date().toDateString());
+                            onClose();
+                        }} style={{ background: 'none', border: 'none', color: '#BBB', fontSize: '13px', cursor: 'pointer' }}>오늘 하루 안보기</button>
+                        <button onClick={onClose} style={{ background: '#D4AF37', border: 'none', color: 'white', padding: '6px 20px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>닫기</button>
+                    </div>
+                </div>
+                <button onClick={onClose} style={{ position: 'absolute', top: '-15px', right: '-15px', width: '36px', height: '36px', background: 'white', borderRadius: '50%', border: 'none', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 5px 15px rgba(0,0,0,0.1)', cursor: 'pointer' }}>✕</button>
+            </div>
         </div>
     );
 };
@@ -369,6 +390,8 @@ export default function App() {
     const [isLogoUploading, setIsLogoUploading] = useState(false); // ✅ 로고 업로드 중
     const [isBookUploading, setIsBookUploading] = useState(false); // ✅ 책 이미지 업로드 중
     const [isBookAiLoading, setIsBookAiLoading] = useState(false); // ✅ 책 소개 AI 생성 중
+    const [isPosterUploading, setIsPosterUploading] = useState(false); // ✅ 포스터 업로드 중
+    const [showEventPopup, setShowEventPopup] = useState(false); // ✅ 이벤트 팝업 노출 여부 (유저 클라이언트용)
     const [isManualSermon, setIsManualSermon] = useState(false); // ✅ 수동 설교 지정 모드 여부
 
     const [churchSettings, setChurchSettings] = useState<any>({
@@ -389,6 +412,8 @@ export default function App() {
         today_book_title: '',
         today_book_description: '',
         today_book_image_url: '',
+        event_poster_url: '',
+        event_poster_visible: false,
     });
     const [settingsForm, setSettingsForm] = useState<any>({
         church_name: CHURCH_NAME,
@@ -408,6 +433,8 @@ export default function App() {
         today_book_title: '',
         today_book_description: '',
         today_book_image_url: '',
+        event_poster_url: '',
+        event_poster_visible: false,
     });
 
     // [최적화] 커스텀 CCM 목록 우선순위 결정 로직
@@ -883,6 +910,14 @@ export default function App() {
                     };
                     setChurchSettings(saneSettings);
                     setSettingsForm(saneSettings);
+
+                    // ✅ 행사 포스터 팝업 노출 로직 (오늘 하루 안보기 체크)
+                    if (saneSettings.event_poster_url && saneSettings.event_poster_visible) {
+                        const hideDate = localStorage.getItem('somy_hide_poster');
+                        if (hideDate !== new Date().toDateString()) {
+                            setShowEventPopup(true);
+                        }
+                    }
                 }
             } catch (err) {
                 console.error("[Settings] Load Failed:", err);
@@ -4027,6 +4062,10 @@ export default function App() {
             return <ProfileView user={user} supabase={supabase} setView={setView} baseFont={baseFont} allowMemberEdit={churchSettings?.allow_member_edit} />;
         }
 
+        if (view === "book") {
+            return <BookView book={churchSettings} onBack={() => setView('home')} />;
+        }
+
         if (view === "memberSearch") {
             return <MemberSearchView churchId={churchId} setView={setView} baseFont={baseFont} isAdmin={isAdmin} />;
         }
@@ -4894,6 +4933,8 @@ export default function App() {
             </div>
             {renderContent()}
 
+            {showEventPopup && churchSettings.event_poster_url && churchSettings.event_poster_visible && <EventPosterPopup imageUrl={churchSettings.event_poster_url} onClose={() => setShowEventPopup(false)} />}
+
             {/* 전역으로 분리한 설정 모달 */}
             {
                 showSettings && (
@@ -5063,6 +5104,54 @@ export default function App() {
                                                 ) : (
                                                     <div style={{ textAlign: 'center', fontSize: '11px', color: '#999', padding: '10px' }}>등록된 배경음악이 없습니다. (기본 목록이 재생됩니다)</div>
                                                 )}
+                                            </div>
+
+                                            {/* ✅ 행사 포스터 팝업 관리 섹션 추가 */}
+                                            <div style={{ marginTop: '10px', padding: '15px', background: '#F0F7FF', borderRadius: '15px', border: '1px solid #E0EFFF' }}>
+                                                <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>🖼️ 행사 포스터 팝업 관리</div>
+                                                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '6px' }}>
+                                                        <input type="checkbox" checked={settingsForm.event_poster_visible} onChange={e => setSettingsForm({ ...settingsForm, event_poster_visible: e.target.checked })} />
+                                                        <span style={{ fontSize: '11px', fontWeight: 700, color: settingsForm.event_poster_visible ? '#007AFF' : '#999' }}>{settingsForm.event_poster_visible ? '활성' : '비활성'}</span>
+                                                    </label>
+                                                </div>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                        <div style={{ flex: 1, fontSize: '12px', color: '#666' }}>📢 팝업용 포스터 이미지</div>
+                                                        <input type="file" id="poster-img-upload" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (!file) return;
+                                                            setIsPosterUploading(true);
+                                                            try {
+                                                                const formData = new FormData();
+                                                                formData.append('file', file);
+                                                                formData.append('church_id', churchId || 'jesus-in');
+                                                                const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
+                                                                const data = await res.json();
+                                                                if (data.url) {
+                                                                    setSettingsForm((prev: any) => ({ ...prev, event_poster_url: data.url }));
+                                                                }
+                                                            } catch (e) { alert('이미지 업로드 실패'); }
+                                                            finally { setIsPosterUploading(false); }
+                                                        }} />
+                                                        <button
+                                                            onClick={() => document.getElementById('poster-img-upload')?.click()}
+                                                            disabled={isPosterUploading}
+                                                            style={{ padding: '6px 12px', background: '#FFF', border: '1px solid #DDD', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}>
+                                                            {isPosterUploading ? '업로드 중...' : '이미지 선택'}
+                                                        </button>
+                                                    </div>
+                                                    {settingsForm.event_poster_url && (
+                                                        <div style={{ padding: '8px', background: 'white', borderRadius: '8px', border: '1px solid #EEE', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                            <img src={settingsForm.event_poster_url} alt="포스터 미리보기" style={{ width: '60px', height: '80px', objectFit: 'cover', borderRadius: '4px' }} />
+                                                            <div style={{ flex: 1 }}>
+                                                                <div style={{ fontSize: '11px', color: '#007AFF', fontWeight: 700 }}>포스터가 등록되었습니다.</div>
+                                                                <div style={{ fontSize: '10px', color: '#999' }}>상단 스위치를 켜면 성도들에게 팝업이 노출됩니다.</div>
+                                                            </div>
+                                                            <button onClick={() => setSettingsForm({ ...settingsForm, event_poster_url: '' })} style={{ background: 'none', border: 'none', color: '#FF5252', fontSize: '16px', cursor: 'pointer' }}>✕</button>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             {/* ✅ 이달의 책 관리 섹션 추가 */}
