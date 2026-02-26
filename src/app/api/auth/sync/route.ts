@@ -73,8 +73,18 @@ export async function POST(req: NextRequest) {
             }
         }
 
+        // 이름 보완: 요청에 없으면 Auth 서버에서 직접 조회 시도 (Android 등에서 메타데이터 지연 대응)
+        let nameForMatch = (rawName || '').trim();
+        if (!nameForMatch || nameForMatch === '.') {
+            try {
+                const { data: { user: authUser } } = await supabaseAdmin.auth.admin.getUserById(user_id);
+                nameForMatch = (authUser?.user_metadata?.full_name || authUser?.user_metadata?.name || '').trim();
+            } catch (authErr) {
+                console.error('[Sync] Auth fetch failed:', authErr);
+            }
+        }
+
         // 3. 이름 매칭 (마지막 수단 - 2글자 미만이거나 도트(.)는 제외)
-        const nameForMatch = (rawName || '').trim();
         if (!match && nameForMatch && nameForMatch.length >= 2 && nameForMatch !== '.') {
             const cleanInputName = nameForMatch.replace(/\s+/g, '').toLowerCase();
 
@@ -100,9 +110,9 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // 이름 비정상 확인 (점 하나만 있거나, 카카오 ID 형태면 '이름 없음' 처리)
         const isSystemGeneratedName = nameForMatch.startsWith('kakao_') || nameForMatch.startsWith('user_');
-        const finalName = (nameForMatch && nameForMatch !== '.' && !isSystemGeneratedName) ? nameForMatch : '이름 없음';
+        // '이름 없음'이라고 DB에 고정해버리면 수정이 힘들므로, 정말 없을 때만 '성도' 또는 null 처리
+        const finalName = (nameForMatch && nameForMatch !== '.' && !isSystemGeneratedName) ? nameForMatch : (email ? email.split('@')[0] : '성도');
 
         if (match) {
             console.log(`[Sync] 매칭 성공: ${match.full_name} (${match.id})`);

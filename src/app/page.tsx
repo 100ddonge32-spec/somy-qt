@@ -852,7 +852,7 @@ export default function App() {
                     body: JSON.stringify({
                         user_id: user.id,
                         email: user.email,
-                        name: user.user_metadata?.full_name || user.user_metadata?.name,
+                        name: user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.nickname,
                         avatar_url: user.user_metadata?.avatar_url
                     })
                 });
@@ -860,7 +860,11 @@ export default function App() {
                     const syncData = await syncRes.json();
                     setIsApproved(!!syncData.is_approved);
                     setChurchId(syncData.church_id || 'jesus-in');
-                    if (syncData.full_name) setProfileName(syncData.full_name);
+                    if (syncData.full_name && syncData.full_name !== '이름 없음') {
+                        setProfileName(syncData.full_name);
+                    } else if (user.email) {
+                        setProfileName(user.email.split('@')[0]);
+                    }
                     if (syncData.is_approved) subscribePush(user.id);
                 }
                 return;
@@ -869,7 +873,11 @@ export default function App() {
             // 상태 업데이트
             setIsApproved(data.is_approved);
             if (data.church_id) setChurchId(data.church_id);
-            if (data.full_name) setProfileName(data.full_name);
+            if (data.full_name && data.full_name !== '이름 없음') {
+                setProfileName(data.full_name);
+            } else if (user.email) {
+                setProfileName(user.email.split('@')[0]);
+            }
 
             if (data.is_approved) {
                 console.log("🎊 승인 확인됨 (서버 최신 데이터)");
@@ -6252,9 +6260,9 @@ export default function App() {
                                                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%', marginBottom: '6px', flexWrap: 'wrap' }}>
                                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', flex: 1, minWidth: '100px' }}>
                                                                                     <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', whiteSpace: 'nowrap' }}>
-                                                                                        {(member.full_name && member.full_name !== '.') ? member.full_name : (member.email ? member.email.split('@')[0] : '이름 없음')}
+                                                                                        {(member.full_name && member.full_name !== '.' && member.full_name !== '이름 없음') ? member.full_name : (member.email ? member.email.split('@')[0] : '성도')}
                                                                                     </div>
-                                                                                    {!member.full_name || member.full_name === '.' ? (
+                                                                                    {!member.full_name || member.full_name === '.' || member.full_name === '이름 없음' ? (
                                                                                         <span style={{ fontSize: '10px', color: '#666', background: '#EEE', padding: '2px 4px', borderRadius: '4px' }}>이름 미입력</span>
                                                                                     ) : null}
                                                                                     {!member.is_approved && <span style={{ fontSize: '10px', color: '#E57373', border: '1px solid #E57373', padding: '2px 4px', borderRadius: '4px', background: '#FFEBEE', fontWeight: 700, whiteSpace: 'nowrap' }}>승인대기</span>}
