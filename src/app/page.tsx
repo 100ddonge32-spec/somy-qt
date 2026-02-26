@@ -1316,24 +1316,27 @@ export default function App() {
 
             const result = await res.json();
             if (res.ok && result.success) {
+                // ... (성공 처리)
                 if (result.status === 'linked') {
                     alert(`${result.name} 성도님, 반갑습니다! 🎊\n환영합니다. 소미와 함께 풍성한 은례 나누세요.`);
                 } else {
                     alert(`${result.name}님, 가입 신청이 접수되었습니다! ⏳\n교회 관리자의 승인 후 바로 이용하실 수 있어요.`);
                 }
 
-                // 로그인 상태 강제 업데이트
                 const { data: { session } } = await supabase.auth.getSession();
                 setUser(session?.user ?? null);
                 if (result.church_id) setChurchId(result.church_id);
-
-                // 승인 상태 체크
                 checkApprovalStatus(true);
             } else {
-                throw new Error(result.error || "인증 처리 중 오류가 발생했습니다.");
+                throw new Error(result.error || "서버 인증 처리 중 오류가 발생했습니다.");
             }
         } catch (err: any) {
-            alert("오류가 발생했습니다: " + err.message);
+            console.error("[Login Error]", err);
+            let msg = err.message;
+            if (msg.includes("API key")) {
+                msg = "Supabase API 키가 유효하지 않거나 서버 설정이 누락되었습니다. (Vercel 환경변수나 Supabase Dashboard의 Anonymous Auth 설정을 확인해주세요)";
+            }
+            alert("오류가 발생했습니다: " + msg);
         } finally {
             setIsDirectLoggingIn(false);
         }

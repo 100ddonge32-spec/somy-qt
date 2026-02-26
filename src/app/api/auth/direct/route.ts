@@ -8,6 +8,13 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(req: NextRequest) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!url || !key) {
+        return NextResponse.json({ error: 'Supabase 설정(URL 또는 Service Role Key)이 서버 환경변수에 누락되었습니다.' }, { status: 500 });
+    }
+
     try {
         const { name, phoneTail, birthdate, user_id } = await req.json();
 
