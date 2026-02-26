@@ -2317,7 +2317,7 @@ export default function App() {
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 user_id: user.id,
-                                user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
+                                user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
                                 avatar_url: user.user_metadata?.avatar_url || null,
                                 content: graceInput,
                                 church_id: churchId,
@@ -2609,7 +2609,7 @@ export default function App() {
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({
                                                 user_id: user.id,
-                                                user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '성도',
+                                                user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '성도',
                                                 avatar_url: user.user_metadata?.avatar_url || null,
                                                 answers: answers // 답변 데이터 포함
                                             }),
@@ -2993,7 +2993,7 @@ export default function App() {
                         body: JSON.stringify({
                             post_id: postId,
                             user_id: user.id,
-                            user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
+                            user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
                             content: commentText,
                             is_private: isPrivate
                         })
@@ -3125,7 +3125,7 @@ export default function App() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             user_id: user.id,
-                            user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
+                            user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
                             avatar_url: user.user_metadata?.avatar_url || null,
                             content: communityInput, // ✅ communityInput 사용
                             church_id: churchId,
@@ -3497,7 +3497,7 @@ export default function App() {
                         body: JSON.stringify({
                             diary_id: diaryId,
                             user_id: user.id,
-                            user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
+                            user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
                             content: commentText,
                             is_private: isPrivate
                         })
@@ -3621,7 +3621,7 @@ export default function App() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             user_id: user.id,
-                            user_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
+                            user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
                             avatar_url: user.user_metadata?.avatar_url || null,
                             content: thanksgivingInput,
                             church_id: churchId,
@@ -4265,7 +4265,7 @@ export default function App() {
                                     return;
                                 }
 
-                                let user_name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도";
+                                let user_name = profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도";
                                 let avatar_url = user.user_metadata?.avatar_url || '';
 
                                 let combinedContent = "";
