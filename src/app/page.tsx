@@ -6516,6 +6516,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
     const [results, setResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [selectedMember, setSelectedMember] = useState<any>(null);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
     useEffect(() => {
         const fetchInitial = async () => {
@@ -6554,16 +6555,65 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
             </div>
             <div style={{ marginTop: '10px' }}>
 
-                {/* 단체 문자 발송 버튼 */}
+                {/* 단체 문자 발송 섹션 (관리자 전용) */}
                 {
                     isAdmin && results.length > 0 && (
-                        <div style={{ marginBottom: '16px' }}>
-                            <button onClick={() => {
-                                const phones = results.filter(m => m.phone).map(m => m.phone.replace(/[^0-9]/g, ''));
-                                if (phones.length === 0) { alert('검색 결과에 전화번호가 등록된 성도가 없습니다.'); return; }
-                                window.location.href = `sms:${phones.join(',')}`;
-                            }} style={{ width: '100%', padding: '14px', background: '#F5F5F3', color: '#333', border: '1px solid #E5E5E5', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
-                                💬 검색된 성도에게 단체 문자 보내기 ({results.filter(m => m.phone).length}명)
+                        <div style={{ marginBottom: '16px', background: 'white', padding: '16px', borderRadius: '20px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                <div
+                                    style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                                    onClick={() => {
+                                        if (selectedIds.length === results.length) {
+                                            setSelectedIds([]);
+                                        } else {
+                                            setSelectedIds(results.map(m => m.id));
+                                        }
+                                    }}
+                                >
+                                    <div style={{
+                                        width: '20px', height: '20px', borderRadius: '6px', border: '2px solid #333',
+                                        background: selectedIds.length > 0 && selectedIds.length === results.length ? '#333' : 'white',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s'
+                                    }}>
+                                        {selectedIds.length > 0 && selectedIds.length === results.length && <span style={{ color: 'white', fontSize: '12px' }}>✓</span>}
+                                    </div>
+                                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>
+                                        전체 선택 ({results.length}명)
+                                    </span>
+                                </div>
+                                {selectedIds.length > 0 && (
+                                    <span style={{ fontSize: '13px', color: '#666', fontWeight: 700 }}>
+                                        {selectedIds.length}명 선택됨
+                                    </span>
+                                )}
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    const targetMembers = selectedIds.length > 0
+                                        ? results.filter(m => selectedIds.includes(m.id))
+                                        : results;
+
+                                    const phones = targetMembers
+                                        .filter(m => m.phone)
+                                        .map(m => m.phone.replace(/[^0-9]/g, ''));
+
+                                    if (phones.length === 0) {
+                                        alert('선택된 성도 중 전화번호가 등록된 분이 없습니다.');
+                                        return;
+                                    }
+                                    window.location.href = `sms:${phones.join(',')}`;
+                                }}
+                                style={{
+                                    width: '100%', padding: '14px',
+                                    background: selectedIds.length > 0 ? '#333' : '#F5F5F3',
+                                    color: selectedIds.length > 0 ? 'white' : '#999',
+                                    border: 'none', borderRadius: '12px', fontWeight: 700,
+                                    cursor: 'pointer', display: 'flex', alignItems: 'center',
+                                    justifyContent: 'center', gap: '8px', transition: 'all 0.3s'
+                                }}
+                            >
+                                💬 {selectedIds.length > 0 ? `선택된 ${selectedIds.length}명에게` : '검색된 전체 성도에게'} 문자 보내기
                             </button>
                         </div>
                     )
@@ -6604,7 +6654,39 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                         <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>검색 결과가 없습니다.</div>
                     ) : (
                         results.map(member => (
-                            <div key={member.id} onClick={() => setSelectedMember(member)} style={{ background: 'white', padding: '16px', borderRadius: '20px', border: '1px solid #F0ECE4', display: 'flex', gap: '14px', alignItems: 'flex-start', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', cursor: 'pointer' }}>
+                            <div
+                                key={member.id}
+                                onClick={() => setSelectedMember(member)}
+                                style={{
+                                    background: 'white', padding: '16px', borderRadius: '20px',
+                                    border: selectedIds.includes(member.id) ? '2px solid #333' : '1px solid #F0ECE4',
+                                    display: 'flex', gap: '14px', alignItems: 'flex-start',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.02)', cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                {/* 관리자 개별 선택 체크박스 */}
+                                {isAdmin && (
+                                    <div
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (selectedIds.includes(member.id)) {
+                                                setSelectedIds(prev => prev.filter(id => id !== member.id));
+                                            } else {
+                                                setSelectedIds(prev => [...prev, member.id]);
+                                            }
+                                        }}
+                                        style={{
+                                            width: '22px', height: '22px', borderRadius: '7px',
+                                            border: '2px solid #333',
+                                            background: selectedIds.includes(member.id) ? '#333' : 'white',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            cursor: 'pointer', flexShrink: 0, marginTop: '11px'
+                                        }}
+                                    >
+                                        {selectedIds.includes(member.id) && <span style={{ color: 'white', fontSize: '14px' }}>✓</span>}
+                                    </div>
+                                )}
                                 <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#F5F2EA', overflow: 'hidden', flexShrink: 0 }}>
                                     <img alt="" src={member.avatar_url || 'https://via.placeholder.com/44'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 </div>
