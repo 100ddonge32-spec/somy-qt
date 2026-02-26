@@ -860,9 +860,13 @@ export default function App() {
                     const syncData = await syncRes.json();
                     setIsApproved(!!syncData.is_approved);
                     setChurchId(syncData.church_id || 'jesus-in');
-                    if (syncData.full_name && syncData.full_name !== '이름 없음') {
+                    if (syncData.name && syncData.name !== '이름 없음' && syncData.name !== '.') {
+                        setProfileName(syncData.name);
+                    } else if (syncData.full_name && syncData.full_name !== '이름 없음' && syncData.full_name !== '.') {
                         setProfileName(syncData.full_name);
-                    } else if (user.email) {
+                    } else if (user.user_metadata?.full_name || user.user_metadata?.name) {
+                        setProfileName(user.user_metadata.full_name || user.user_metadata.name);
+                    } else if (user.email && !user.email.includes('anonymous.local')) {
                         setProfileName(user.email.split('@')[0]);
                     }
                     if (syncData.is_approved) subscribePush(user.id);
@@ -873,9 +877,11 @@ export default function App() {
             // 상태 업데이트
             setIsApproved(data.is_approved);
             if (data.church_id) setChurchId(data.church_id);
-            if (data.full_name && data.full_name !== '이름 없음') {
+            if (data.full_name && data.full_name !== '이름 없음' && data.full_name !== '.') {
                 setProfileName(data.full_name);
-            } else if (user.email) {
+            } else if (user.user_metadata?.full_name || user.user_metadata?.name) {
+                setProfileName(user.user_metadata.full_name || user.user_metadata.name);
+            } else if (user.email && !user.email.includes('anonymous.local')) {
                 setProfileName(user.email.split('@')[0]);
             }
 
@@ -1281,10 +1287,6 @@ export default function App() {
         console.log("[FetchQt] Starting...");
         fetchQt();
 
-        // 오늘의 큐티 로드
-        console.log("[FetchQt] Starting...");
-        fetchQt();
-
         // 인증 상태 변화 감지 (supabase logic)
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
             setUser(session?.user ?? null);
@@ -1337,6 +1339,7 @@ export default function App() {
                 const { data: { session } } = await supabase.auth.getSession();
                 setUser(session?.user ?? null);
                 if (result.church_id) setChurchId(result.church_id);
+                if (result.name) setProfileName(result.name);
                 checkApprovalStatus(true);
             } else {
                 throw new Error(result.error || "서버 인증 처리 중 오류가 발생했습니다.");
@@ -1851,9 +1854,9 @@ export default function App() {
                                     </div>
                                 ) : (
                                     <>
-                                        <div style={{ fontSize: '18px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>승인 대기 중입니다</div>
+                                        <div style={{ fontSize: '18px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>{profileName || '성도'}님, 반가워요!</div>
                                         <div style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, marginBottom: '24px' }}>
-                                            성도님 반가워요!<br />아직 관리자의 승인이 완료되지 않았습니다.<br />잠시만 기다려 주시면 곧 이용하실 수 있어요.
+                                            아직 교회 관리자의 승인이 완료되지 않았습니다.<br />잠시만 기다려 주시면 곧 모든 기능을 이용하실 수 있어요.
                                             <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', margin: '15px auto 0', border: '2px solid #EEE' }}>
                                                 <img src={SOMY_IMG} alt="소미" style={{ width: '100%', height: '100%', objectFit: "cover" }} />
                                             </div>

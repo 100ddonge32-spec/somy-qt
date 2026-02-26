@@ -24,39 +24,51 @@ export async function POST(req: NextRequest) {
 
         console.log(`[DirectAuth] Login Try - Name: ${name}, PhoneTail: ${phoneTail}, Birthdate: ${birthdate}`);
 
-        // 1. 이름과 전화번호 뒷자리로 후보군 찾기
-        // (이름은 공백 제거 후 비교)
-        const cleanName = name.replace(/\s+/g, '').toLowerCase();
+        // 1. 이름으로 먼저 후보군 찾기 (이름은 공백을 포함할 수 있으므로 앞뒤 공백만 제거)
+        const inputNameClean = name.replace(/\s+/g, '').toLowerCase();
 
-        const { data: candidates, error: fetchError } = await supabaseAdmin
+        // DB 단에서 이름으로 필터링 (완전 일치 또는 포함)
+        const { data: nameMatches, error: fetchError } = await supabaseAdmin
             .from('profiles')
             .select('*')
-            .not('phone', 'is', null);
+            .or(`full_name.ilike.%${name.trim()}%,full_name.ilike.%${inputNameClean}%`);
 
         if (fetchError) throw fetchError;
 
-        // 메모리 상에서 정밀 매칭
-        // - 이름 일치
-        // - 전화번호 뒷자리 일치
-        // - (있다면) 생년월일 일치
-        const match = candidates?.find(c => {
+        console.log(`[DirectAuth] Name matches count: ${nameMatches?.length}`);
+
+        const match = nameMatches?.find(c => {
+            // 정밀 이름 비교 (공백 제거)
             const dbName = (c.full_name || '').replace(/\s+/g, '').toLowerCase();
+            const inputName = name.replace(/\s+/g, '').toLowerCase();
+
+            // 전화번호 비교
             const dbPhone = (c.phone || '').replace(/[^0-9]/g, '');
-            const dbBirth = c.birthdate || ''; // YYYY-MM-DD or YYYYMMDD
-            const cleanDbBirth = dbBirth.replace(/[^0-9]/g, '');
-            const cleanInputBirth = (birthdate || '').replace(/[^0-9]/g, '');
+            const inputPhoneTail = (phoneTail || '').replace(/[^0-9]/g, '');
 
-            const isNameMatch = dbName === cleanName;
-            const isPhoneMatch = dbPhone.endsWith(phoneTail);
+            // 생년월일 비교
+            const dbBirth = (c.birthdate || '').replace(/[^0-9]/g, '');
+            const inputBirth = (birthdate || '').replace(/[^0-9]/g, '');
 
-            // 생년월일은 입력했을 때만 검증 (매칭 정확도 향상용)
-            let isBirthMatch = true;
-            if (cleanInputBirth && cleanDbBirth) {
-                // 뒷부분 비교 (예: 19900101 vs 900101 혹은 전체 비교)
-                isBirthMatch = cleanDbBirth.endsWith(cleanInputBirth) || cleanInputBirth.endsWith(cleanDbBirth);
+            const isNameMatch = dbName === inputName;
+            // 전화번호가 있는 경우에만 뒷자리 비교
+            const isPhoneMatch = dbPhone && inputPhoneTail ? dbPhone.endsWith(inputPhoneTail) : false;
+
+            // 1순위: 이름과 전화번호 뒷자리가 모두 일치
+            if (isNameMatch && isPhoneMatch) {
+                // 생년월일 정보도 있다면 그것까지 확인 (더 정확한 매칭)
+                if (inputBirth && dbBirth) {
+                    return dbBirth.endsWith(inputBirth) || inputBirth.endsWith(dbBirth);
+                }
+                return true;
             }
 
-            return isNameMatch && isPhoneMatch && isBirthMatch;
+            // 2순위: 이름이 정확히 일치하고, 생년월일이 일치하는 경우 (전화번호가 DB에 없을 수 있음)
+            if (isNameMatch && inputBirth && dbBirth && (dbBirth.endsWith(inputBirth) || inputBirth.endsWith(dbBirth))) {
+                return true;
+            }
+
+            return false;
         });
 
         if (match) {
