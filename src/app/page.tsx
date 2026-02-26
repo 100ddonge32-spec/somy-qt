@@ -6655,13 +6655,13 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                         if (!confirm(`현재 ${uniquePhones.length}명이 선택되었습니다. 통신사 제한으로 인해 문자가 일부만 전송될 수 있습니다. 계속할까요?`)) return;
                                     }
 
-                                    // [이과장의 최종 병기] iOS는 sms:;번호1;번호2 형식이 가장 안정적임
-                                    const separator = isIOS ? ';' : ',';
+                                    // [이과장의 최종 분석] 주신 자료에 따르면 MFMessageComposeViewController를 쓸 수 없는 웹 환경에서는
+                                    // sms: 주소 방식이 최선입니다. 단체방 유도를 위해 표준인 ','를 쓰고 &body= 를 붙입니다.
+                                    const separator = ',';
                                     const smsUrl = isIOS
-                                        ? `sms:;${uniquePhones.join(separator)}&body=`
+                                        ? `sms:${uniquePhones.join(separator)}&body=`
                                         : `sms:${uniquePhones.join(separator)}?body=`;
 
-                                    // [이과장의 세밀 검토] a태그 방식이 인앱 브라우저에서 가장 확실함
                                     const link = document.createElement('a');
                                     link.href = smsUrl;
                                     document.body.appendChild(link);
@@ -6685,8 +6685,8 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                     if (phones.length === 0) return;
                                     const uniquePhones = phones.filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
 
-                                    // [이과장의 최종 병기] 마지막에 세미콜론(;)을 붙여야 붙여넣기 시 풍선으로 자동 변환됨
-                                    const textToCopy = uniquePhones.join('; ') + ';';
+                                    // [이과장의 최종 분석] 아이폰 주소창(To:)에 붙여넣을 때 가장 안정적인 콤마+공백 형식입니다.
+                                    const textToCopy = uniquePhones.join(', ');
 
                                     const textArea = document.createElement("textarea");
                                     textArea.value = textToCopy;
@@ -6702,7 +6702,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                     document.body.removeChild(textArea);
 
                                     if (successful) {
-                                        alert('번호가 복사되었습니다! ✨\n\n[아이폰 전송 팁]\n문자 앱 [받는 사람] 칸에 붙여넣기 하면 번호들이 즉시 풍선으로 바뀝니다. 만약 그대로라면 엔터를 치거나 빈 공간을 터치하세요!');
+                                        alert('번호가 복사되었습니다! ✨\n\n[아이폰 단체문자 설정 안내]\n만약 개별로 전송된다면 아이폰 [설정 > 메시지]에서\n1️⃣ MMS 메시지: ON\n2️⃣ 그룹 메시지: ON\n상태인지 확인해 주세요!');
                                     } else {
                                         navigator.clipboard.writeText(textToCopy).then(() => {
                                             alert('번호가 복사되었습니다! ✨');
