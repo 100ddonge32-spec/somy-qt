@@ -1332,11 +1332,11 @@ export default function App() {
             }
         } catch (err: any) {
             console.error("[Login Error]", err);
-            let msg = err.message;
-            if (msg.includes("API key")) {
-                msg = "Supabase API 키가 유효하지 않거나 서버 설정이 누락되었습니다. (Vercel 환경변수나 Supabase Dashboard의 Anonymous Auth 설정을 확인해주세요)";
-            }
-            alert("오류가 발생했습니다: " + msg);
+            let msg = err.message || "알 수 없는 오류가 발생했습니다.";
+
+            // 더 구체적인 디버깅을 위해 에러 객체 전체 정보를 포함
+            const errorDetail = err.toString();
+            alert(`오류가 발생했습니다.\n\n메시지: ${msg}\n상세정보: ${errorDetail}\n\n* Vercel 환경변수(Service Role Key)와 Supabase Anonymous Auth 설정을 다시 확인해주세요.`);
         } finally {
             setIsDirectLoggingIn(false);
         }
