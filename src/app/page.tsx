@@ -5855,8 +5855,8 @@ export default function App() {
                                                                 .filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
                                                             let smsUrl = '';
                                                             if (isIOS) {
-                                                                // iOS: 최신 방식인 ?addresses= 파라미터를 사용합니다.
-                                                                smsUrl = `sms:?addresses=${uniquePhones.join(',')}`;
+                                                                // iOS: 최신 버전에서는 addresses= 뒤에 세미콜론(;)으로 구분하는 것이 가장 확실합니다.
+                                                                smsUrl = `sms:?addresses=${uniquePhones.join(';')}&body=`;
                                                             } else {
                                                                 // 안드로이드: 콤마(,)가 표준입니다.
                                                                 smsUrl = `sms:${uniquePhones.join(',')}`;
@@ -6624,8 +6624,8 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                         .filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
                                     let smsUrl = '';
                                     if (isIOS) {
-                                        // iOS: 최신 그룹 SMS 수신인 지정 방식
-                                        smsUrl = `sms:?addresses=${uniquePhones.join(',')}`;
+                                        // iOS: 최신 그룹 SMS 수진인 지정 방식 (세미콜론 사용)
+                                        smsUrl = `sms:?addresses=${uniquePhones.join(';')}&body=`;
                                     } else {
                                         // 안드로이드: 콤마(,) 사용
                                         smsUrl = `sms:${uniquePhones.join(',')}`;
