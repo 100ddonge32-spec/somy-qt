@@ -838,7 +838,6 @@ export default function App() {
 
             // Supabase 쿼리에 유니크한 필터를 섞어 캐시 방지 시도
             const { data, error } = await supabase
-            const { data, error } = await supabase
                 .from('profiles')
                 .select('is_approved, church_id, full_name')
                 .eq('id', user.id)
