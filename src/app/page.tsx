@@ -768,10 +768,52 @@ export default function App() {
         window.addEventListener('click', igniteEngine);
         window.addEventListener('touchstart', igniteEngine);
         return () => {
-            window.removeEventListener('click', igniteEngine);
-            window.removeEventListener('touchstart', igniteEngine);
         };
     }, [ccmVolume]);
+
+    // [이과장의 푸시 엔진] 브라우저 알림 권한을 얻고 서버에 구독 정보를 저장합니다.
+    const subscribePush = async (userId: string) => {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+        try {
+            const registration = await navigator.serviceWorker.ready;
+
+            // 기존 구독 취소 후 재구독 (갱신을 위해)
+            const existingSub = await registration.pushManager.getSubscription();
+            if (existingSub) await existingSub.unsubscribe();
+
+            const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BCpTn0SHIYSZzjST5xxL1Cv9svmlp3f9Xmvt9FSALBvo4QwLQCBlo_mu4ThoMHgINRmAk4c9sxwVwI2QtDyHr1I')
+            });
+
+            await fetch('/api/auth/push-subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, subscription })
+            });
+            console.log("✅ 푸시 구독 성공!");
+        } catch (e) {
+            console.error("❌ 푸시 구독 실패:", e);
+        }
+    };
+
+    // [이과장의 배지 시스템] 새로운 글이 있는지 시간을 비교하여 N 배지를 결정합니다.
+    const checkNewContent = useCallback(async () => {
+        try {
+            const { data: latestPost } = await supabase.from('community_posts').select('created_at').eq('church_id', churchId).order('created_at', { ascending: false }).limit(1).single();
+            const { data: latestThanks } = await supabase.from('thanksgiving_diaries').select('created_at').eq('church_id', churchId).order('created_at', { ascending: false }).limit(1).single();
+            const { data: latestSermon } = await supabase.from('church_settings').select('updated_at').eq('id', churchId).single();
+
+            const lastCommunity = localStorage.getItem(`last_view_community_${churchId}`) || '0';
+            const lastThanks = localStorage.getItem(`last_view_thanks_${churchId}`) || '0';
+            const lastSermon = localStorage.getItem(`last_view_sermon_${churchId}`) || '0';
+
+            if (latestPost && new Date(latestPost.created_at).getTime() > Number(lastCommunity)) setHasNewCommunity(true);
+            if (latestThanks && new Date(latestThanks.created_at).getTime() > Number(lastThanks)) setHasNewThanksgiving(true);
+            if (latestSermon && new Date(latestSermon.updated_at).getTime() > Number(lastSermon)) setHasNewSermon(true);
+        } catch (e) { }
+    }, [churchId]);
 
     // 승인 상태 및 교회 정보 체크 함수 (서버와 동기화 포함)
     const checkApprovalStatus = useCallback(async () => {
@@ -794,7 +836,8 @@ export default function App() {
                 if (syncRes.ok) {
                     const syncData = await syncRes.json();
                     setIsApproved(syncData.is_approved);
-                    console.log("동기화 완료:", syncData);
+                    setChurchId(syncData.church_id || 'jesus-in');
+                    if (syncData.is_approved) subscribePush(user.id); // 승인 시 푸시 구독 호출
                 }
                 return;
             }
@@ -1717,7 +1760,8 @@ export default function App() {
                                     <div style={{ position: 'relative', flex: 1 }}>
                                         <button onClick={async () => {
                                             setView("community");
-                                            setHasNewCommunity(false); // 클릭 시 뱃지 제거
+                                            setHasNewCommunity(false);
+                                            localStorage.setItem(`last_view_community_${churchId}`, Date.now().toString());
                                             try {
                                                 const res = await fetch(`/api/community?church_id=${churchId}`);
                                                 const data = await res.json();
@@ -1751,6 +1795,7 @@ export default function App() {
                                         <button onClick={async () => {
                                             setView("thanksgiving");
                                             setHasNewThanksgiving(false);
+                                            localStorage.setItem(`last_view_thanks_${churchId}`, Date.now().toString());
                                             try {
                                                 const res = await fetch(`/api/thanksgiving?church_id=${churchId}`);
                                                 const data = await res.json();
@@ -1849,6 +1894,7 @@ export default function App() {
                                             }
                                             setView('sermon');
                                             setHasNewSermon(false);
+                                            localStorage.setItem(`last_view_sermon_${churchId}`, Date.now().toString());
                                         }} style={{
                                             flex: 1, padding: "14px 10px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #fff4f2 100%)", color: "#BA2D0B",
