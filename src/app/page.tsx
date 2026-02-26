@@ -5850,7 +5850,9 @@ export default function App() {
                                                                 .map(m => m.phone.replace(/[^0-9]/g, ''));
                                                             if (targetPhones.length === 0) { alert('선택된 성도 중 전화번호가 등록된 분이 없습니다.'); return; }
                                                             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-                                                            const uniquePhones = [...new Set(targetPhones.map(p => p.trim()).filter(p => p.length > 0))];
+                                                            const uniquePhones = targetPhones
+                                                                .map(p => p.trim())
+                                                                .filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
                                                             let smsUrl = '';
                                                             if (isIOS) {
                                                                 // iOS: 최신 방식인 ?addresses= 파라미터를 사용합니다.
@@ -6625,7 +6627,9 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                         return;
                                     }
                                     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-                                    const uniquePhones = [...new Set(phones.map(p => p.trim()).filter(p => p.length > 0))];
+                                    const uniquePhones = phones
+                                        .map(p => p.trim())
+                                        .filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
                                     let smsUrl = '';
                                     if (isIOS) {
                                         // iOS: 최신 그룹 SMS 수신인 지정 방식
