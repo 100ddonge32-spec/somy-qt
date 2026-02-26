@@ -6655,12 +6655,13 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                         if (!confirm(`현재 ${uniquePhones.length}명이 선택되었습니다. 통신사 제한으로 인해 문자가 일부만 전송될 수 있습니다. 계속할까요?`)) return;
                                     }
 
-                                    // [이과장의 승부수] iOS 최신 버전(17, 18)은 콤마(,)가 표준이며, &body= 가 있어야 그룹이 유지됨
-                                    const separator = ',';
+                                    // [이과장의 최종 병기] iOS는 sms:;번호1;번호2 형식이 가장 안정적임
+                                    const separator = isIOS ? ';' : ',';
                                     const smsUrl = isIOS
-                                        ? `sms:${uniquePhones.join(separator)}&body=`
+                                        ? `sms:;${uniquePhones.join(separator)}&body=`
                                         : `sms:${uniquePhones.join(separator)}?body=`;
 
+                                    // [이과장의 세밀 검토] a태그 방식이 인앱 브라우저에서 가장 확실함
                                     const link = document.createElement('a');
                                     link.href = smsUrl;
                                     document.body.appendChild(link);
@@ -6684,8 +6685,8 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                     if (phones.length === 0) return;
                                     const uniquePhones = phones.filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
 
-                                    // [이과장의 승부수] '공백' 없이 콤마로만 연결해야 아이폰에서 각각의 번호로 인식(버블링)됨
-                                    const textToCopy = uniquePhones.join(',');
+                                    // [이과장의 최종 병기] 마지막에 세미콜론(;)을 붙여야 붙여넣기 시 풍선으로 자동 변환됨
+                                    const textToCopy = uniquePhones.join('; ') + ';';
 
                                     const textArea = document.createElement("textarea");
                                     textArea.value = textToCopy;
@@ -6701,7 +6702,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                     document.body.removeChild(textArea);
 
                                     if (successful) {
-                                        alert('번호가 복사되었습니다! ✨\n\n[아이폰 전송 꿀팁]\n문자 앱 [받는 사람] 칸에 붙여넣기 한 후, 빈 공간을 한 번 터치하거나 엔터를 누르면 번호들이 각각 파란색/초록색 풍선으로 바뀝니다. 그 후 내용을 입력하세요!');
+                                        alert('번호가 복사되었습니다! ✨\n\n[아이폰 전송 팁]\n문자 앱 [받는 사람] 칸에 붙여넣기 하면 번호들이 즉시 풍선으로 바뀝니다. 만약 그대로라면 엔터를 치거나 빈 공간을 터치하세요!');
                                     } else {
                                         navigator.clipboard.writeText(textToCopy).then(() => {
                                             alert('번호가 복사되었습니다! ✨');
