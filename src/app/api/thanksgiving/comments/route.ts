@@ -20,12 +20,12 @@ webpush.setVapidDetails(
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { diary_id, user_id, user_name, content } = body;
+        const { diary_id, user_id, user_name, content, is_private } = body;
 
         // 1. 댓글 삽입
         const { data: comment, error: commentError } = await supabaseAdmin
             .from('thanksgiving_comments')
-            .insert([{ diary_id, user_id, user_name, content }])
+            .insert([{ diary_id, user_id, user_name, content, is_private: !!is_private }])
             .select()
             .single();
 
@@ -74,6 +74,31 @@ export async function POST(req: NextRequest) {
         }
 
         return NextResponse.json(comment);
+    } catch (err: any) {
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}
+
+export async function PATCH(req: NextRequest) {
+    try {
+        const body = await req.json();
+        const { id, content, is_private } = body;
+
+        if (!id) return NextResponse.json({ error: 'Comment ID is required' }, { status: 400 });
+
+        const updateData: any = {};
+        if (content !== undefined) updateData.content = content;
+        if (is_private !== undefined) updateData.is_private = is_private;
+
+        const { data: updatedComment, error } = await supabaseAdmin
+            .from('thanksgiving_comments')
+            .update(updateData)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return NextResponse.json(updatedComment);
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }

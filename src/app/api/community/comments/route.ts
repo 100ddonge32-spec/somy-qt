@@ -21,12 +21,12 @@ webpush.setVapidDetails(
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { post_id, user_id, user_name, content } = body;
+        const { post_id, user_id, user_name, content, is_private } = body;
 
         // 1. 댓글 삽입
         const { data: comment, error: commentError } = await supabaseAdmin
             .from('community_comments')
-            .insert([{ post_id, user_id, user_name, content }])
+            .insert([{ post_id, user_id, user_name, content, is_private: !!is_private }])
             .select()
             .single();
 
@@ -105,17 +105,23 @@ export async function DELETE(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
     try {
         const body = await req.json();
-        const { id, content } = body;
+        const { id, content, is_private } = body;
 
         if (!id) return NextResponse.json({ error: 'Comment ID is required' }, { status: 400 });
 
-        const { error } = await supabaseAdmin
+        const updateData: any = {};
+        if (content !== undefined) updateData.content = content;
+        if (is_private !== undefined) updateData.is_private = is_private;
+
+        const { data: updatedComment, error } = await supabaseAdmin
             .from('community_comments')
-            .update({ content })
-            .eq('id', id);
+            .update(updateData)
+            .eq('id', id)
+            .select()
+            .single();
 
         if (error) throw error;
-        return NextResponse.json({ success: true });
+        return NextResponse.json(updatedComment);
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
