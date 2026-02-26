@@ -102,6 +102,22 @@ export async function POST(req: NextRequest) {
 
             if (match.id !== user_id) {
                 await supabaseAdmin.from('profiles').delete().eq('id', match.id);
+
+                // [추가] 관리자 권한 이전 로직
+                // 기존 프로필(match.id)이나 기존 이메일이 app_admins에 있었다면 새 ID로도 권한 부여
+                const adminCheckEmail = match.email;
+                const { data: adminEntries } = await supabaseAdmin.from('app_admins')
+                    .select('*')
+                    .or(`email.eq.${match.id},email.eq.${adminCheckEmail}`);
+
+                if (adminEntries && adminEntries.length > 0) {
+                    for (const entry of adminEntries) {
+                        await supabaseAdmin.from('app_admins').upsert({
+                            ...entry,
+                            email: `${user_id}@anonymous.local` // 새 익명 ID 이메일로 권한 추가
+                        });
+                    }
+                }
             }
 
             return NextResponse.json({

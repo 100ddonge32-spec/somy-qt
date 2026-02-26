@@ -18,16 +18,28 @@ export async function GET(req: NextRequest) {
     try {
         if (action === 'check_admin') {
             const userId = searchParams.get('user_id');
-            const email = searchParams.get('email');
+            let email = searchParams.get('email');
+
+            // [추가] 익명 로그인 유저가 실명 인증을 통해 'profiles' 테이블에 실제 이메일을 연결했을 경우
+            // 세션 이메일은 익명이지만, 실제 교회 데이터와 연결된 이메일로 권한을 체크해야 함
+            if (userId && (!email || email.includes('anonymous.local') || email === 'null' || email === 'undefined')) {
+                const { data: profile } = await supabaseAdmin
+                    .from('profiles')
+                    .select('email')
+                    .eq('id', userId)
+                    .maybeSingle();
+
+                if (profile?.email && !profile.email.includes('anonymous.local')) {
+                    email = profile.email;
+                    console.log(`[AdminCheck] Linked Email Found: ${email} for User: ${userId}`);
+                }
+            }
 
             let query = supabaseAdmin.from('app_admins').select('*');
 
             if (email && email !== 'undefined' && email !== 'null') {
                 query = query.eq('email', email.toLowerCase().trim());
             } else if (userId) {
-                // 이메일이 없는 익명 사용자의 경우 user_id 필드(추가 필요) 또는 email 필드에 id를 활용했을 수 있음
-                // 여기서는 email 필드에 id를 넣었을 경우를 대비해 OR 조건으로 검색하거나 
-                // email 필드 자체가 id를 포함하고 있는지 확인
                 query = query.or(`email.eq.${userId},email.ilike.%${userId}%`);
             } else {
                 return NextResponse.json({ role: 'user' });
