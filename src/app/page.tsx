@@ -1785,7 +1785,7 @@ export default function App() {
                                             transition: 'all 0.3s'
                                         }}
                                     >
-                                        {isDirectLoggingIn ? '처리 중...' : '소미와 대화 시작하기'}
+                                        {isDirectLoggingIn ? '처리 중...' : '가입하기'}
                                     </button>
 
                                     <div style={{ marginTop: '16px', fontSize: '11px', color: '#BBB', lineHeight: 1.5 }}>
