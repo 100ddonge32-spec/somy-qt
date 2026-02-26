@@ -4220,6 +4220,10 @@ export default function App() {
 
                 <div style={{ marginTop: '40px', textAlign: 'center', padding: '30px 0', borderTop: '1px solid #EEE' }}>
                     <button onClick={() => setView('home')} style={{ padding: '14px 40px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 5px 15px rgba(0,0,0,0.1)' }}>홈으로 돌아가기</button>
+                    <div style={{ marginTop: '40px', paddingBottom: '20px' }}>
+                        <p style={{ fontSize: '11px', color: '#BBB', margin: 0, fontWeight: 500 }}>© 2024 SOMY. All rights reserved.</p>
+                        <p style={{ fontSize: '12px', color: '#999', marginTop: '5px', fontWeight: 600 }}>by pastor Baek dong hie</p>
+                    </div>
                 </div>
             </div>
         );
