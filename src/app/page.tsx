@@ -5867,14 +5867,6 @@ export default function App() {
                                                             document.body.appendChild(link);
                                                             link.click();
                                                             document.body.removeChild(link);
-
-                                                            // 만약 메시지 앱이 안 뜨는 경우를 대비해 2초 후 안내문구 (선택사항)
-                                                            setTimeout(() => {
-                                                                if (confirm('메시지 앱이 열리지 않았나요?\n확인을 누르시면 번호들을 클립보드에 복사해 드립니다.')) {
-                                                                    navigator.clipboard.writeText(uniquePhones.join(', '));
-                                                                    alert('번호가 복사되었습니다. 메시지 앱 수신인 칸에 붙여넣기 해주세요.');
-                                                                }
-                                                            }, 2000);
                                                         }} style={{ width: '100%', padding: '12px', background: selectedMemberIds.length > 0 ? '#2E7D32' : '#AAA', color: 'white', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 800, cursor: selectedMemberIds.length > 0 ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: selectedMemberIds.length > 0 ? '0 4px 10px rgba(46,125,50,0.2)' : 'none' }}>
                                                             💬 선택된 성도 단체 문자 발송 ({memberList.filter(m => selectedMemberIds.includes(m.id)).filter(m => m.phone).length}명)
                                                         </button>
@@ -6644,13 +6636,6 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                     document.body.appendChild(link);
                                     link.click();
                                     document.body.removeChild(link);
-
-                                    setTimeout(() => {
-                                        if (confirm('메시지 창이 열리지 않았나요?\n번호들을 복사하시겠습니까?')) {
-                                            navigator.clipboard.writeText(uniquePhones.join(', '));
-                                            alert('복사되었습니다. 직접 붙여넣어 전송하실 수 있습니다.');
-                                        }
-                                    }, 2000);
                                 }}
                                 style={{
                                     width: '100%', padding: '14px',
