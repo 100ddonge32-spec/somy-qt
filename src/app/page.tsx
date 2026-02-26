@@ -376,6 +376,7 @@ export default function App() {
     const [user, setUser] = useState<any>(null);
     const [adminInfo, setAdminInfo] = useState<any>(null);
     const [isApproved, setIsApproved] = useState(false);
+    const [profileName, setProfileName] = useState<string | null>(null);
     const [churchId, setChurchId] = useState('jesus-in');
     const isAdmin = !!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin');
     const isSuperAdmin = adminInfo?.role === 'super_admin';
@@ -837,8 +838,9 @@ export default function App() {
 
             // Supabase 쿼리에 유니크한 필터를 섞어 캐시 방지 시도
             const { data, error } = await supabase
+            const { data, error } = await supabase
                 .from('profiles')
-                .select('is_approved, church_id')
+                .select('is_approved, church_id, full_name')
                 .eq('id', user.id)
                 .neq('email', `cache_bust_${cacheBuster}`) // 무의미한 필터로 캐시 무시 유도
                 .single();
@@ -859,6 +861,7 @@ export default function App() {
                     const syncData = await syncRes.json();
                     setIsApproved(!!syncData.is_approved);
                     setChurchId(syncData.church_id || 'jesus-in');
+                    if (syncData.full_name) setProfileName(syncData.full_name);
                     if (syncData.is_approved) subscribePush(user.id);
                 }
                 return;
@@ -867,6 +870,7 @@ export default function App() {
             // 상태 업데이트
             setIsApproved(data.is_approved);
             if (data.church_id) setChurchId(data.church_id);
+            if (data.full_name) setProfileName(data.full_name);
 
             if (data.is_approved) {
                 console.log("🎊 승인 확인됨 (서버 최신 데이터)");
@@ -881,7 +885,7 @@ export default function App() {
     useEffect(() => {
         if (user) {
             // DB 기반 관리자 권한 체크
-            fetch(`/api/admin?action=check_admin&email=${user.email}`)
+            fetch(`/api/admin?action=check_admin&email=${user.email}&user_id=${user.id}`)
                 .then(r => r.ok ? r.json() : null)
                 .then(data => {
                     if (data) {
@@ -1644,7 +1648,7 @@ export default function App() {
                                 fontSize: '12px', border: '1px solid rgba(255,255,255,0.8)',
                                 backdropFilter: 'blur(5px)'
                             }}>
-                                <span style={{ color: '#333', fontWeight: 700 }}>{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
+                                <span style={{ color: '#333', fontWeight: 700 }}>{profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
                                 <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontWeight: 600, fontSize: '11px', padding: 0 }}>로그아웃</button>
                             </div>
                         )}

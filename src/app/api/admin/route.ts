@@ -16,12 +16,24 @@ export async function GET(req: NextRequest) {
     const action = searchParams.get('action'); // 'check_admin' | 'list_members'
 
     try {
-        if (action === 'check_admin' && email) {
-            const { data, error } = await supabaseAdmin
-                .from('app_admins')
-                .select('*')
-                .eq('email', email.toLowerCase().trim())
-                .single();
+        if (action === 'check_admin') {
+            const userId = searchParams.get('user_id');
+            const email = searchParams.get('email');
+
+            let query = supabaseAdmin.from('app_admins').select('*');
+
+            if (email && email !== 'undefined' && email !== 'null') {
+                query = query.eq('email', email.toLowerCase().trim());
+            } else if (userId) {
+                // 이메일이 없는 익명 사용자의 경우 user_id 필드(추가 필요) 또는 email 필드에 id를 활용했을 수 있음
+                // 여기서는 email 필드에 id를 넣었을 경우를 대비해 OR 조건으로 검색하거나 
+                // email 필드 자체가 id를 포함하고 있는지 확인
+                query = query.or(`email.eq.${userId},email.ilike.%${userId}%`);
+            } else {
+                return NextResponse.json({ role: 'user' });
+            }
+
+            const { data, error } = await query.single();
             return NextResponse.json(data || { role: 'user' });
         }
 
