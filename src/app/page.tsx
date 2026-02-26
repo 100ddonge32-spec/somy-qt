@@ -6214,145 +6214,153 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
     };
 
     return (
-        <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", padding: "30px 20px", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '24px' }}>
-                <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
-                <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0 }}>교회 성도 검색</h2>
-            </div>
-            <div style={{ position: 'sticky', top: 'env(safe-area-inset-top)', background: '#FDFCFB', zIndex: 10, paddingBottom: '10px' }}>
+        <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", padding: "20px", ...baseFont }}>
+            <div style={{ position: 'sticky', top: 0, background: '#FDFCFB', zIndex: 100, padding: '10px 0 15px 0', borderBottom: '1px solid #F0F0F0', margin: '0 -20px 24px -20px', paddingLeft: '20px', paddingRight: '20px', paddingTop: 'env(safe-area-inset-top)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '16px' }}>
+                    <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
+                    <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0 }}>교회 성도 검색</h2>
+                </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                     <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch()} placeholder="성함을 입력하세요 (예: 홍길동)" style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '14px', outline: 'none', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }} />
                     <button onClick={handleSearch} style={{ padding: '0 20px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>검색</button>
                 </div>
             </div>
+            <div style={{ marginTop: '10px' }}>
 
-            {/* 단체 문자 발송 버튼 */}
-            {isAdmin && results.length > 0 && (
-                <div style={{ marginBottom: '16px' }}>
-                    <button onClick={() => {
-                        const phones = results.filter(m => m.phone).map(m => m.phone.replace(/[^0-9]/g, ''));
-                        if (phones.length === 0) { alert('검색 결과에 전화번호가 등록된 성도가 없습니다.'); return; }
-                        window.location.href = `sms:${phones.join(',')}`;
-                    }} style={{ width: '100%', padding: '14px', background: '#F5F5F3', color: '#333', border: '1px solid #E5E5E5', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
-                        💬 검색된 성도에게 단체 문자 보내기 ({results.filter(m => m.phone).length}명)
-                    </button>
-                </div>
-            )}
-
-            {/* 오늘의 생일 알림 */}
-            {(() => {
-                const kstBase = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
-                const todaySolarMMDD = kstBase.toISOString().slice(5, 10);
-                const todayLunarMMDD = getLunarTodayMMDD();
-                const birthdayMembers = (results || []).filter(m => {
-                    if (!m?.birthdate) return false;
-                    const bd = String(m.birthdate).slice(5, 10);
-                    return m.is_birthdate_lunar ? (todayLunarMMDD && bd === todayLunarMMDD) : bd === todaySolarMMDD;
-                });
-                if (birthdayMembers.length > 0) {
-                    return (
-                        <div style={{ background: 'linear-gradient(135deg, #FFF9C4 0%, #FFF59D 100%)', padding: '16px', borderRadius: '20px', marginBottom: '16px', border: '1px solid #FFF176', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 4px 15px rgba(255,235,59,0.2)' }}>
-                            <div style={{ fontSize: '24px' }}>🎉</div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#856404' }}>오늘 생일인 성도님이 계세요!</div>
-                                <div style={{ fontSize: '13px', color: '#666', marginTop: '2px' }}>
-                                    {birthdayMembers.map(m => m.full_name).join(', ')}님, 축하드립니다! 🎂
-                                </div>
-                            </div>
+                {/* 단체 문자 발송 버튼 */}
+                {
+                    isAdmin && results.length > 0 && (
+                        <div style={{ marginBottom: '16px' }}>
+                            <button onClick={() => {
+                                const phones = results.filter(m => m.phone).map(m => m.phone.replace(/[^0-9]/g, ''));
+                                if (phones.length === 0) { alert('검색 결과에 전화번호가 등록된 성도가 없습니다.'); return; }
+                                window.location.href = `sms:${phones.join(',')}`;
+                            }} style={{ width: '100%', padding: '14px', background: '#F5F5F3', color: '#333', border: '1px solid #E5E5E5', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
+                                💬 검색된 성도에게 단체 문자 보내기 ({results.filter(m => m.phone).length}명)
+                            </button>
                         </div>
-                    );
+                    )
                 }
-                return null;
-            })()}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
-                {isSearching ? (
-                    <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>성도 정보를 불러오는 중...</div>
-                ) : results.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>검색 결과가 없습니다.</div>
-                ) : (
-                    results.map(member => (
-                        <div key={member.id} onClick={() => setSelectedMember(member)} style={{ background: 'white', padding: '16px', borderRadius: '20px', border: '1px solid #F0ECE4', display: 'flex', gap: '14px', alignItems: 'flex-start', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', cursor: 'pointer' }}>
-                            <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#F5F2EA', overflow: 'hidden', flexShrink: 0 }}>
-                                <img alt="" src={member.avatar_url || 'https://via.placeholder.com/44'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                                    <span style={{ fontSize: '15px', fontWeight: 800, color: '#333' }}>{member.full_name}</span>
-                                    {member.church_rank && <span style={{ fontSize: '11px', background: '#F5F2EA', color: '#B8924A', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>{member.church_rank}</span>}
-                                    {member.gender && <span style={{ fontSize: '11px', background: '#F5F5F5', color: '#666', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>{member.gender}</span>}
-                                    {member.member_no && <span style={{ fontSize: '11px', background: '#E3F2FD', color: '#1565C0', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>{member.member_no}</span>}
-                                </div>
-                                <div style={{ fontSize: '12px', color: member.phone ? '#555' : '#BBB', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    📞 {member.phone || (member.is_phone_public ? '미등록' : '비공개')}
-                                    {isAdmin && !member.is_phone_public && member.phone && <span style={{ fontSize: '10px', color: '#999', background: '#F5F5F3', padding: '1px 4px', borderRadius: '4px' }}>🔒 비공개</span>}
-                                </div>
-                            </div>
-                            {member.phone && (
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <button onClick={(e) => { e.stopPropagation(); window.location.href = `sms:${member.phone.replace(/[^0-9]/g, '')}`; }} style={{ background: '#E3F2FD', border: 'none', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                                        <span style={{ fontSize: '18px' }}>💬</span>
-                                    </button>
-                                    <button onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${member.phone}`; }} style={{ background: '#E8F5E9', border: 'none', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                                        <span style={{ fontSize: '18px' }}>📞</span>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    ))
-                )}
-            </div>
-
-            {selectedMember && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', zIndex: 2000, display: 'flex', alignItems: 'end', justifyContent: 'center' }} onClick={() => setSelectedMember(null)}>
-                    <div style={{ background: 'white', width: '100%', maxWidth: '600px', borderRadius: '32px 32px 0 0', padding: '40px 24px', position: 'relative', animation: 'slide-up 0.3s ease-out' }} onClick={e => e.stopPropagation()}>
-                        <button onClick={() => setSelectedMember(null)} style={{ position: 'absolute', top: '20px', right: '20px', background: '#F5F5F3', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>×</button>
-                        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                            <div style={{ width: 100, height: 100, borderRadius: '50%', background: '#F5F2EA', margin: '0 auto 16px', padding: '4px', border: '1px solid #F0ECE4' }}>
-                                <img alt="" src={selectedMember.avatar_url || 'https://via.placeholder.com/100'} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-                            </div>
-                            <h3 style={{ fontSize: '24px', fontWeight: 800, color: '#333', margin: '0 0 6px' }}>{selectedMember.full_name}</h3>
-                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                                {selectedMember.church_rank && <span style={{ fontSize: '14px', background: '#F5F2EA', color: '#B8924A', padding: '4px 12px', borderRadius: '10px', fontWeight: 700 }}>{selectedMember.church_rank}</span>}
-                                {selectedMember.gender && <span style={{ fontSize: '14px', background: '#F5F5F5', color: '#666', padding: '4px 12px', borderRadius: '10px', fontWeight: 700 }}>{selectedMember.gender}</span>}
-                                {selectedMember.member_no && <span style={{ fontSize: '14px', background: '#E3F2FD', color: '#1565C0', padding: '4px 12px', borderRadius: '10px', fontWeight: 700 }}>NO. {selectedMember.member_no}</span>}
-                            </div>
-                        </div>
-                        <div style={{ background: '#FDFCFB', padding: '20px', borderRadius: '24px', border: '1px solid #F0ECE4' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div>
-                                        <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700, marginBottom: '2px' }}>휴대폰 번호</div>
-                                        <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.phone ? '#333' : '#BBB', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            {selectedMember.phone || (selectedMember.is_phone_public ? '미등록' : '비공개')}
-                                            {isAdmin && !selectedMember.is_phone_public && selectedMember.phone && <span style={{ fontSize: '10px', color: '#C62828', background: '#FFEBEE', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>🔒 비공개 설정됨</span>}
+                {/* 오늘의 생일 알림 */}
+                {
+                    (() => {
+                        const kstBase = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+                        const todaySolarMMDD = kstBase.toISOString().slice(5, 10);
+                        const todayLunarMMDD = getLunarTodayMMDD();
+                        const birthdayMembers = (results || []).filter(m => {
+                            if (!m?.birthdate) return false;
+                            const bd = String(m.birthdate).slice(5, 10);
+                            return m.is_birthdate_lunar ? (todayLunarMMDD && bd === todayLunarMMDD) : bd === todaySolarMMDD;
+                        });
+                        if (birthdayMembers.length > 0) {
+                            return (
+                                <div style={{ background: 'linear-gradient(135deg, #FFF9C4 0%, #FFF59D 100%)', padding: '16px', borderRadius: '20px', marginBottom: '16px', border: '1px solid #FFF176', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 4px 15px rgba(255,235,59,0.2)' }}>
+                                    <div style={{ fontSize: '24px' }}>🎉</div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#856404' }}>오늘 생일인 성도님이 계세요!</div>
+                                        <div style={{ fontSize: '13px', color: '#666', marginTop: '2px' }}>
+                                            {birthdayMembers.map(m => m.full_name).join(', ')}님, 축하드립니다! 🎂
                                         </div>
                                     </div>
-                                    <div style={{ display: 'flex', gap: '6px' }}>
-                                        {selectedMember.phone && <a href={`tel:${selectedMember.phone}`} style={{ textDecoration: 'none', background: '#333', color: 'white', padding: '10px 16px', borderRadius: '14px', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center' }}>📞 전화</a>}
-                                        {selectedMember.phone && <a href={`sms:${selectedMember.phone}`} style={{ textDecoration: 'none', background: '#F5F5F3', color: '#555', padding: '10px 16px', borderRadius: '14px', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center' }}>💬 문자</a>}
+                                </div>
+                            );
+                        }
+                        return null;
+                    })()
+                }
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
+                    {isSearching ? (
+                        <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>성도 정보를 불러오는 중...</div>
+                    ) : results.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>검색 결과가 없습니다.</div>
+                    ) : (
+                        results.map(member => (
+                            <div key={member.id} onClick={() => setSelectedMember(member)} style={{ background: 'white', padding: '16px', borderRadius: '20px', border: '1px solid #F0ECE4', display: 'flex', gap: '14px', alignItems: 'flex-start', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', cursor: 'pointer' }}>
+                                <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#F5F2EA', overflow: 'hidden', flexShrink: 0 }}>
+                                    <img alt="" src={member.avatar_url || 'https://via.placeholder.com/44'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                                        <span style={{ fontSize: '15px', fontWeight: 800, color: '#333' }}>{member.full_name}</span>
+                                        {member.church_rank && <span style={{ fontSize: '11px', background: '#F5F2EA', color: '#B8924A', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>{member.church_rank}</span>}
+                                        {member.gender && <span style={{ fontSize: '11px', background: '#F5F5F5', color: '#666', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>{member.gender}</span>}
+                                        {member.member_no && <span style={{ fontSize: '11px', background: '#E3F2FD', color: '#1565C0', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>{member.member_no}</span>}
+                                    </div>
+                                    <div style={{ fontSize: '12px', color: member.phone ? '#555' : '#BBB', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        📞 {member.phone || (member.is_phone_public ? '미등록' : '비공개')}
+                                        {isAdmin && !member.is_phone_public && member.phone && <span style={{ fontSize: '10px', color: '#999', background: '#F5F5F3', padding: '1px 4px', borderRadius: '4px' }}>🔒 비공개</span>}
                                     </div>
                                 </div>
-                                <div style={{ borderTop: '1px solid #F0ECE4', paddingTop: '15px' }}>
-                                    <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700, marginBottom: '2px' }}>생년월일</div>
-                                    <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.birthdate ? '#333' : '#BBB', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        {selectedMember.birthdate || (selectedMember.is_birthdate_public ? '미등록' : '비공개')}
-                                        {isAdmin && !selectedMember.is_birthdate_public && selectedMember.birthdate && <span style={{ fontSize: '10px', color: '#C62828', background: '#FFEBEE', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>🔒 비공개 설정됨</span>}
+                                {member.phone && (
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button onClick={(e) => { e.stopPropagation(); window.location.href = `sms:${member.phone.replace(/[^0-9]/g, '')}`; }} style={{ background: '#E3F2FD', border: 'none', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                            <span style={{ fontSize: '18px' }}>💬</span>
+                                        </button>
+                                        <button onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${member.phone}`; }} style={{ background: '#E8F5E9', border: 'none', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                            <span style={{ fontSize: '18px' }}>📞</span>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                {
+                    selectedMember && (
+                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', zIndex: 2000, display: 'flex', alignItems: 'end', justifyContent: 'center' }} onClick={() => setSelectedMember(null)}>
+                            <div style={{ background: 'white', width: '100%', maxWidth: '600px', borderRadius: '32px 32px 0 0', padding: '40px 24px', position: 'relative', animation: 'slide-up 0.3s ease-out' }} onClick={e => e.stopPropagation()}>
+                                <button onClick={() => setSelectedMember(null)} style={{ position: 'absolute', top: '20px', right: '20px', background: '#F5F5F3', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>×</button>
+                                <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                                    <div style={{ width: 100, height: 100, borderRadius: '50%', background: '#F5F2EA', margin: '0 auto 16px', padding: '4px', border: '1px solid #F0ECE4' }}>
+                                        <img alt="" src={selectedMember.avatar_url || 'https://via.placeholder.com/100'} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                                    </div>
+                                    <h3 style={{ fontSize: '24px', fontWeight: 800, color: '#333', margin: '0 0 6px' }}>{selectedMember.full_name}</h3>
+                                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                        {selectedMember.church_rank && <span style={{ fontSize: '14px', background: '#F5F2EA', color: '#B8924A', padding: '4px 12px', borderRadius: '10px', fontWeight: 700 }}>{selectedMember.church_rank}</span>}
+                                        {selectedMember.gender && <span style={{ fontSize: '14px', background: '#F5F5F5', color: '#666', padding: '4px 12px', borderRadius: '10px', fontWeight: 700 }}>{selectedMember.gender}</span>}
+                                        {selectedMember.member_no && <span style={{ fontSize: '14px', background: '#E3F2FD', color: '#1565C0', padding: '4px 12px', borderRadius: '10px', fontWeight: 700 }}>NO. {selectedMember.member_no}</span>}
                                     </div>
                                 </div>
-                                <div style={{ borderTop: '1px solid #F0ECE4', paddingTop: '15px' }}>
-                                    <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700, marginBottom: '2px' }}>주소</div>
-                                    <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.address ? '#333' : '#BBB', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        {selectedMember.address || (selectedMember.is_address_public ? '미등록' : '비공개')}
-                                        {isAdmin && !selectedMember.is_address_public && selectedMember.address && <span style={{ fontSize: '10px', color: '#C62828', background: '#FFEBEE', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>🔒 비공개 설정됨</span>}
+                                <div style={{ background: '#FDFCFB', padding: '20px', borderRadius: '24px', border: '1px solid #F0ECE4' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div>
+                                                <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700, marginBottom: '2px' }}>휴대폰 번호</div>
+                                                <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.phone ? '#333' : '#BBB', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    {selectedMember.phone || (selectedMember.is_phone_public ? '미등록' : '비공개')}
+                                                    {isAdmin && !selectedMember.is_phone_public && selectedMember.phone && <span style={{ fontSize: '10px', color: '#C62828', background: '#FFEBEE', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>🔒 비공개 설정됨</span>}
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '6px' }}>
+                                                {selectedMember.phone && <a href={`tel:${selectedMember.phone}`} style={{ textDecoration: 'none', background: '#333', color: 'white', padding: '10px 16px', borderRadius: '14px', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center' }}>📞 전화</a>}
+                                                {selectedMember.phone && <a href={`sms:${selectedMember.phone}`} style={{ textDecoration: 'none', background: '#F5F5F3', color: '#555', padding: '10px 16px', borderRadius: '14px', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center' }}>💬 문자</a>}
+                                            </div>
+                                        </div>
+                                        <div style={{ borderTop: '1px solid #F0ECE4', paddingTop: '15px' }}>
+                                            <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700, marginBottom: '2px' }}>생년월일</div>
+                                            <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.birthdate ? '#333' : '#BBB', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                {selectedMember.birthdate || (selectedMember.is_birthdate_public ? '미등록' : '비공개')}
+                                                {isAdmin && !selectedMember.is_birthdate_public && selectedMember.birthdate && <span style={{ fontSize: '10px', color: '#C62828', background: '#FFEBEE', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>🔒 비공개 설정됨</span>}
+                                            </div>
+                                        </div>
+                                        <div style={{ borderTop: '1px solid #F0ECE4', paddingTop: '15px' }}>
+                                            <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700, marginBottom: '2px' }}>주소</div>
+                                            <div style={{ fontSize: '16px', fontWeight: 600, color: selectedMember.address ? '#333' : '#BBB', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                {selectedMember.address || (selectedMember.is_address_public ? '미등록' : '비공개')}
+                                                {isAdmin && !selectedMember.is_address_public && selectedMember.address && <span style={{ fontSize: '10px', color: '#C62828', background: '#FFEBEE', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>🔒 비공개 설정됨</span>}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
+                                <button onClick={() => setSelectedMember(null)} style={{ width: '100%', padding: '16px', background: '#F5F5F3', color: '#666', border: 'none', borderRadius: '16px', fontWeight: 700, cursor: 'pointer', marginTop: '24px' }}>닫기</button>
                             </div>
                         </div>
-                        <button onClick={() => setSelectedMember(null)} style={{ width: '100%', padding: '16px', background: '#F5F5F3', color: '#666', border: 'none', borderRadius: '16px', fontWeight: 700, cursor: 'pointer', marginTop: '24px' }}>닫기</button>
-                    </div>
-                </div>
-            )}
+                    )
+                }
+            </div>
         </div>
     );
 }
