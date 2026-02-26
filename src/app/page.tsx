@@ -478,6 +478,7 @@ export default function App() {
     const [isInApp, setIsInApp] = useState(false); // ✅ 카톡 등 인앱 브라우저 여부
     const [vName, setVName] = useState(""); // ✅ 인증용 성함
     const [vPhone, setVPhone] = useState(""); // ✅ 인증용 연락처
+    const [vBirthdate, setVBirthdate] = useState(""); // ✅ 인증용 생년월일
     const [loginName, setLoginName] = useState(""); // ✅ 로그인용 성함
     const [loginPhoneTail, setLoginPhoneTail] = useState(""); // ✅ 로그인용 전화번호 뒷자리
     const [loginBirthdate, setLoginBirthdate] = useState(""); // ✅ 로그인용 생년월일
@@ -1402,16 +1403,20 @@ export default function App() {
                     email: user.email,
                     name: vName.trim(),
                     phone: vPhone.trim(),
+                    birthdate: vBirthdate.trim(),
                     avatar_url: user.user_metadata?.avatar_url
                 })
             });
 
             const result = await res.json();
-            if (res.ok && (result.status === 'merged' || result.status === 'linked')) {
-                alert(`${result.name} 성도님으로 확인되었습니다! 🎊\n환영합니다. 이제 소미를 이용하실 수 있어요.`);
+            if (res.ok && (result.status === 'merged' || result.status === 'linked' || result.status === 'updated')) {
+                alert(`${result.name} 성도님으로 정보가 등록되었습니다! 🎊\n관리자가 확인 후 승인해 드릴 예정입니다. 잠시만 기다려 주세요.`);
                 checkApprovalStatus(true);
-            } else if (result.status === 'exists') {
-                alert("이미 승인 대기 또는 등록된 정보가 있습니다. 관리자에게 문의해 주세요.");
+                setShowVerification(false);
+            } else if (result.status === 'already_approved') {
+                alert("이미 승인이 완료되었습니다! 메인 화면으로 이동합니다.");
+                checkApprovalStatus(true);
+                setShowVerification(false);
             } else {
                 alert("일치하는 성도 정보를 찾을 수 없습니다. 입력 정보를 다시 확인하시거나 관리자 승인을 기다려 주세요.");
             }
@@ -1864,7 +1869,7 @@ export default function App() {
                                     <div style={{ animation: 'fade-in 0.5s ease-out' }}>
                                         <div style={{ fontSize: '18px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>기존 성도 정보 연결</div>
                                         <div style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, marginBottom: '20px' }}>
-                                            교회에 이미 등록된 성도님이신가요?<br />성함과 연락처를 입력하시면 바로 연결됩니다.
+                                            교회에 이미 등록된 성도님이신가요?<br />성함과 연락처, 생년월일을 입력하시면 바로 연결됩니다.
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
                                             <input
@@ -1879,6 +1884,14 @@ export default function App() {
                                                 placeholder="연락처 (예: 01012345678)"
                                                 value={vPhone}
                                                 onChange={(e) => setVPhone(e.target.value)}
+                                                style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #DDD', fontSize: '14px' }}
+                                            />
+                                            <input
+                                                type="text"
+                                                inputMode="numeric"
+                                                placeholder="생년월일 6자리 (예: 800101)"
+                                                value={vBirthdate}
+                                                onChange={(e) => setVBirthdate(e.target.value)}
                                                 style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #DDD', fontSize: '14px' }}
                                             />
                                         </div>
