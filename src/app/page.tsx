@@ -815,14 +815,25 @@ export default function App() {
         } catch (e) { }
     }, [churchId]);
 
-    // 승인 상태 및 교회 정보 체크 함수 (서버와 동기화 포함)
-    const checkApprovalStatus = useCallback(async () => {
+    // 승인 상태 및 교회 정보 체크 함수 (캐시 무시 및 강력한 실시간 체크)
+    const checkApprovalStatus = useCallback(async (force = false) => {
         if (!user) return;
+
         try {
-            const { data, error } = await supabase.from('profiles').select('is_approved, church_id').eq('id', user.id).single();
+            // 1. 세션 리프레시 (force가 true일 때만 - 버튼 클릭 시)
+            if (force) {
+                await supabase.auth.refreshSession();
+            }
+
+            // 2. Supabase에서 직접 최신 프로필 가져오기
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('is_approved, church_id')
+                .eq('id', user.id)
+                .single();
 
             if (error || !data) {
-                console.log("프로필 정보가 없거나 조회 실패, 서버와 동기화 시도...");
+                console.log("프로필 없음, 동기화 시작...");
                 const syncRes = await fetch('/api/auth/sync', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -837,24 +848,23 @@ export default function App() {
                     const syncData = await syncRes.json();
                     setIsApproved(syncData.is_approved);
                     setChurchId(syncData.church_id || 'jesus-in');
-                    if (syncData.is_approved) subscribePush(user.id); // 승인 시 푸시 구독 호출
+                    if (syncData.is_approved) subscribePush(user.id);
                 }
                 return;
             }
 
-            if (data) {
-                setIsApproved(data.is_approved);
-                if (data.church_id) {
-                    console.log(`[Approval] Church ID found: ${data.church_id}`);
-                    setChurchId(data.church_id);
-                } else {
-                    setChurchId('jesus-in'); // 기본값 강제
-                }
+            // 3. 상태 업데이트 (무조건 서버 데이터 기준)
+            setIsApproved(data.is_approved);
+            if (data.church_id) setChurchId(data.church_id);
+
+            if (data.is_approved) {
+                subscribePush(user.id);
+                checkNewContent();
             }
-        } catch (err) {
-            console.error("상태 확인 중 오류:", err);
+        } catch (e) {
+            console.error("승인 체크 에러:", e);
         }
-    }, [user, setIsApproved, setChurchId]);
+    }, [user, checkNewContent]);
 
     useEffect(() => {
         if (user) {
@@ -1640,8 +1650,10 @@ export default function App() {
                                         onClick={() => {
                                             const btn = document.getElementById('refresh-btn');
                                             if (btn) btn.innerText = "상태 확인 중...";
-                                            checkApprovalStatus().finally(() => {
+                                            // true를 넘겨서 세션과 데이터를 강제 리프레시함
+                                            checkApprovalStatus(true).finally(() => {
                                                 if (btn) btn.innerText = "🔄 상태 다시 확인하기";
+                                                // 승인이 확인되면 자동으로 화면이 바뀜
                                             });
                                         }}
                                         id="refresh-btn"
