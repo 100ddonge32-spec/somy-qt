@@ -44,8 +44,8 @@ export async function POST(req: NextRequest) {
         // 2. 가상 이메일/휴대폰 매칭 (어드민 업로드 데이터 찾기)
         const inputPhone = rawPhone || (profileById?.phone);
         if (!match && inputPhone) {
-            const cleanPhone = inputPhone.replace(/[^0-9]/g, '');
-            const fakeEmail = `${cleanPhone}@church.local`;
+            const cleanInputPhone = inputPhone.replace(/[^0-9]/g, '');
+            const fakeEmail = `${cleanInputPhone}@church.local`;
 
             // 가상 이메일로 매칭 시도
             const { data: emailMatch } = await supabaseAdmin.from('profiles')
@@ -57,31 +57,51 @@ export async function POST(req: NextRequest) {
             if (emailMatch) {
                 match = emailMatch;
             } else {
-                // 전화번호 텍스트로도 매칭 시도
-                const formattedPhone = cleanPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
-                const { data: phoneMatch } = await supabaseAdmin.from('profiles')
+                // 전화번호가 유사한 모든 후보를 가져와서 메모리에서 정밀 비교
+                const { data: phoneCandidates } = await supabaseAdmin.from('profiles')
                     .select('*')
-                    .or(`phone.eq.${cleanPhone},phone.eq.${formattedPhone}`)
-                    .neq('id', user_id)
-                    .maybeSingle();
-                if (phoneMatch) match = phoneMatch;
+                    .not('phone', 'is', null)
+                    .neq('id', user_id);
+
+                if (phoneCandidates) {
+                    const phoneMatch = phoneCandidates.find(p => {
+                        const cleanP = (p.phone || '').replace(/[^0-9]/g, '');
+                        return cleanP.length >= 8 && cleanP === cleanInputPhone;
+                    });
+                    if (phoneMatch) match = phoneMatch;
+                }
             }
         }
 
-        // 3. 이름 매칭 (마지막 수단)
-        if (!match && rawName) {
-            const cleanName = rawName.replace(/\s+/g, '');
-            const { data: nameMatches } = await supabaseAdmin.from('profiles')
+        // 3. 이름 매칭 (마지막 수단 - 2글자 미만이거나 도트(.)는 제외)
+        const nameForMatch = (rawName || '').trim();
+        if (!match && nameForMatch && nameForMatch.length >= 2 && nameForMatch !== '.') {
+            const cleanInputName = nameForMatch.replace(/\s+/g, '').toLowerCase();
+
+            // 이름이 포함된 후보들을 가져와서 정밀 비교
+            const { data: nameCandidates } = await supabaseAdmin.from('profiles')
                 .select('*')
-                .ilike('full_name', `%${cleanName}%`)
+                .not('full_name', 'is', null)
                 .neq('id', user_id);
 
-            if (nameMatches && nameMatches.length > 0) {
-                // 어드민 데이터(가상 이메일 보유)를 우선적으로 찾음
-                const adminRow = nameMatches.find(m => m.email?.includes('@church.local') || m.email?.includes('@noemail.local'));
-                match = adminRow || nameMatches[0];
+            if (nameCandidates && nameCandidates.length > 0) {
+                const matches = nameCandidates.filter(c => {
+                    const cleanDbName = (c.full_name || '').replace(/\s+/g, '').toLowerCase();
+                    return cleanDbName === cleanInputName;
+                });
+
+                if (matches.length > 0) {
+                    // 어드민 데이터(가상 이메일 보유)를 우선적으로 찾음
+                    const adminRow = matches.find(m => m.email?.includes('@church.local') || m.email?.includes('@noemail.local'));
+                    // 만약 정확히 일치하는 이름이 있다면 그것을 우선
+                    const exactMatch = matches.find(m => m.full_name?.trim() === nameForMatch);
+                    match = exactMatch || adminRow || matches[0];
+                }
             }
         }
+
+        // 이름 비정상 확인 (점 하나만 있는 경우 등)
+        const finalName = (nameForMatch && nameForMatch !== '.') ? nameForMatch : '성도';
 
         if (match) {
             console.log(`[Sync] 매칭 성공: ${match.full_name} (${match.id})`);
@@ -119,7 +139,7 @@ export async function POST(req: NextRequest) {
             await supabaseAdmin.from('profiles').insert({
                 id: user_id,
                 email: email || `${user_id}@noemail.local`,
-                full_name: rawName || '성도',
+                full_name: finalName,
                 church_id: 'jesus-in',
                 is_approved: isAdminMember
             });

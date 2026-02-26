@@ -47,8 +47,8 @@ export async function POST(req: NextRequest) {
             };
 
             // 검색 시 불일치(공백 등으로)를 방지하기 위해 공백을 전부 제거합니다. 
+            // 성명: 공백을 완전히 제거하지 않고 앞뒤 공백만 제거하여 원본성을 유지합니다.
             let full_name = (findValue(['성명', '이름', '성함', 'Name']) || '').toString().trim();
-            full_name = full_name.replace(/\s+/g, '');
 
             if (!full_name) {
                 console.log(`[Bulk] ${index + 1}행: 성명 없음, 건너뜀`);
