@@ -100,8 +100,9 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // 이름 비정상 확인 (점 하나만 있는 경우 등)
-        const finalName = (nameForMatch && nameForMatch !== '.') ? nameForMatch : '성도';
+        // 이름 비정상 확인 (점 하나만 있거나, 카카오 ID 형태면 '이름 없음' 처리)
+        const isSystemGeneratedName = nameForMatch.startsWith('kakao_') || nameForMatch.startsWith('user_');
+        const finalName = (nameForMatch && nameForMatch !== '.' && !isSystemGeneratedName) ? nameForMatch : '이름 없음';
 
         if (match) {
             console.log(`[Sync] 매칭 성공: ${match.full_name} (${match.id})`);

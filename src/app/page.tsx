@@ -476,6 +476,10 @@ export default function App() {
     const [showVerification, setShowVerification] = useState(false); // ✅ 실명 인증 폼 노출 여부
     const [vName, setVName] = useState(""); // ✅ 인증용 성함
     const [vPhone, setVPhone] = useState(""); // ✅ 인증용 연락처
+    const [loginName, setLoginName] = useState(""); // ✅ 로그인용 성함
+    const [loginPhoneTail, setLoginPhoneTail] = useState(""); // ✅ 로그인용 전화번호 뒷자리
+    const [loginBirthdate, setLoginBirthdate] = useState(""); // ✅ 로그인용 생년월일
+    const [isDirectLoggingIn, setIsDirectLoggingIn] = useState(false); // ✅ 로그인 처리 중 상태
     const [isLinking, setIsLinking] = useState(false); // ✅ 링크 처리 중 상태
     const dragOffset = useRef({ x: 0, y: 0 });
     const playerRef = useRef<any>(null);
@@ -1278,6 +1282,63 @@ export default function App() {
         return () => subscription.unsubscribe();
     }, []);
 
+    const handleDirectLogin = async () => {
+        if (!loginName.trim() || !loginPhoneTail.trim()) {
+            alert("성함과 전화번호 뒷자리를 입력해 주세요.");
+            return;
+        }
+
+        setIsDirectLoggingIn(true);
+        try {
+            // 1. 익명 로그인 시도 (세션 생성용)
+            // 이미 로그인된 사용자가 있는 경우 (다른 기기 등) 세션이 꼬일 수 있으므로 
+            // 현재 세션이 있다면 그것을 쓰거나, 없으면 새로 생성
+            const { data: { session: existingSession } } = await supabase.auth.getSession();
+            let authId = existingSession?.user?.id;
+
+            if (!authId) {
+                const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+                if (authError) throw authError;
+                authId = authData.user?.id;
+            }
+
+            // 2. 서버에 인증 정보 확인 및 프로필 연결 요청
+            const res = await fetch('/api/auth/direct', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: authId,
+                    name: loginName.trim(),
+                    phoneTail: loginPhoneTail.trim(),
+                    birthdate: loginBirthdate.trim()
+                })
+            });
+
+            const result = await res.json();
+            if (res.ok && result.success) {
+                if (result.status === 'linked') {
+                    alert(`${result.name} 성도님, 반갑습니다! 🎊\n환영합니다. 소미와 함께 풍성한 은례 나누세요.`);
+                } else {
+                    alert(`${result.name}님, 가입 신청이 접수되었습니다! ⏳\n교회 관리자의 승인 후 바로 이용하실 수 있어요.`);
+                }
+
+                // 로그인 상태 강제 업데이트
+                const { data: { session } } = await supabase.auth.getSession();
+                setUser(session?.user ?? null);
+                if (result.church_id) setChurchId(result.church_id);
+
+                // 승인 상태 체크
+                checkApprovalStatus(true);
+            } else {
+                throw new Error(result.error || "인증 처리 중 오류가 발생했습니다.");
+            }
+        } catch (err: any) {
+            alert("오류가 발생했습니다: " + err.message);
+        } finally {
+            setIsDirectLoggingIn(false);
+        }
+    };
+
     const handleLogin = async (provider: 'google' | 'kakao') => {
         if (provider === 'kakao') {
             // Supabase 내장 카카오 OAuth는 account_email을 강제 요청하므로
@@ -1666,17 +1727,71 @@ export default function App() {
                         <div style={{ fontSize: "12px", color: "#666", letterSpacing: "1px", fontWeight: 700 }}>홈페이지</div>
                     </a>
                     {/* Action Buttons을 최상단으로 옮김 */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%", maxWidth: "320px", animation: "fade-in 1.4s ease-out", paddingBottom: "20px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%", maxWidth: "340px", animation: "fade-in 1.4s ease-out", paddingBottom: "20px" }}>
                         {!user ? (
-                            <div style={{ background: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', border: '1px solid #EEE', textAlign: 'center' }}>
-                                <div style={{ fontSize: '16px', fontWeight: 700, color: '#333', marginBottom: '20px' }}>성도님, 먼저 로그인해주세요</div>
+                            <div style={{ background: 'white', padding: '24px', borderRadius: '28px', boxShadow: '0 10px 40px rgba(0,0,0,0.08)', border: '1px solid #F0ECE4', textAlign: 'center' }}>
+                                <div style={{ fontSize: '18px', fontWeight: 900, color: '#333', marginBottom: '8px' }}>안녕하세요! 반갑습니다 ✨</div>
+                                <div style={{ fontSize: '13px', color: '#888', marginBottom: '24px' }}>성도 정보를 입력하여 시작하세요.</div>
+
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                    <button onClick={() => handleLogin('kakao')} style={{ width: '100%', padding: '14px', background: '#FEE500', color: '#3C1E1E', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 4px 12px rgba(254,229,0,0.3)' }}>
-                                        <span style={{ fontSize: '18px' }}>💬</span> 카카오로 로그인
+                                    <div style={{ textAlign: 'left' }}>
+                                        <label style={{ fontSize: '11px', fontWeight: 800, color: '#AAA', marginLeft: '4px', marginBottom: '4px', display: 'block' }}>성함</label>
+                                        <input
+                                            type="text"
+                                            placeholder="실명을 입력하세요 (예: 홍길동)"
+                                            value={loginName}
+                                            onChange={(e) => setLoginName(e.target.value)}
+                                            style={{ width: '100%', padding: '14px', borderRadius: '14px', border: '1px solid #EEE', fontSize: '14px', outline: 'none', background: '#FAFAFA' }}
+                                        />
+                                    </div>
+                                    <div style={{ textAlign: 'left' }}>
+                                        <label style={{ fontSize: '11px', fontWeight: 800, color: '#AAA', marginLeft: '4px', marginBottom: '4px', display: 'block' }}>전화번호 뒷자리 (4자리)</label>
+                                        <input
+                                            type="tel"
+                                            maxLength={4}
+                                            placeholder="1234"
+                                            value={loginPhoneTail}
+                                            onChange={(e) => setLoginPhoneTail(e.target.value.replace(/[^0-9]/g, ''))}
+                                            style={{ width: '100%', padding: '14px', borderRadius: '14px', border: '1px solid #EEE', fontSize: '14px', outline: 'none', background: '#FAFAFA' }}
+                                        />
+                                    </div>
+                                    <div style={{ textAlign: 'left' }}>
+                                        <label style={{ fontSize: '11px', fontWeight: 800, color: '#AAA', marginLeft: '4px', marginBottom: '4px', display: 'block' }}>생년월일 (선택 - 정확한 매칭용)</label>
+                                        <input
+                                            type="tel"
+                                            maxLength={8}
+                                            placeholder="19900101"
+                                            value={loginBirthdate}
+                                            onChange={(e) => setLoginBirthdate(e.target.value.replace(/[^0-9]/g, ''))}
+                                            style={{ width: '100%', padding: '14px', borderRadius: '14px', border: '1px solid #EEE', fontSize: '14px', outline: 'none', background: '#FAFAFA' }}
+                                        />
+                                    </div>
+
+                                    <button
+                                        onClick={handleDirectLogin}
+                                        disabled={isDirectLoggingIn}
+                                        style={{
+                                            marginTop: '8px',
+                                            width: '100%',
+                                            padding: '16px',
+                                            background: (loginName && loginPhoneTail.length === 4) ? '#333' : '#AAA',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '16px',
+                                            fontSize: '15px',
+                                            fontWeight: 800,
+                                            cursor: (loginName && loginPhoneTail.length === 4) ? 'pointer' : 'default',
+                                            boxShadow: (loginName && loginPhoneTail.length === 4) ? '0 8px 16px rgba(0,0,0,0.1)' : 'none',
+                                            transition: 'all 0.3s'
+                                        }}
+                                    >
+                                        {isDirectLoggingIn ? '처리 중...' : '소미와 대화 시작하기'}
                                     </button>
-                                    <button onClick={() => handleLogin('google')} style={{ width: '100%', padding: '14px', background: 'white', color: '#333', border: '1px solid #DDD', borderRadius: '12px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                                        <span style={{ fontSize: '18px' }}>G</span> 구글로 로그인
-                                    </button>
+
+                                    <div style={{ marginTop: '16px', fontSize: '11px', color: '#BBB', lineHeight: 1.5 }}>
+                                        * 최초 1회만 입력하면 이후 자동으로 로그인됩니다.<br />
+                                        * 교회에 등록되지 않은 경우 승인 대기로 전환됩니다.
+                                    </div>
                                 </div>
                             </div>
                         ) : !isApproved && !isAdmin ? (
