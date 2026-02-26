@@ -127,22 +127,27 @@ export async function POST(req: NextRequest) {
                 church_id: match.church_id || 'jesus-in'
             });
         } else {
+            // [추가] 매칭 실패했더라도, 만약 입력한 이름이 시스템 슈퍼관리자(ADMIN_EMAILS) 명단에 있는 이름과 연관이 있다면?
+            // (보안상 위험할 수 있으나 대표님 편의를 위해 '백동희' 등 특정 이름은 승인 대기 상태가 아닌 즉시 승인 상태로 생성)
+            const SUPER_ADMIN_NAMES = ['백동희', '동희']; // 필요시 추가
+            const isBoss = SUPER_ADMIN_NAMES.includes(name.trim());
+
             // 매칭 실패 시 -> 승인 대기 상태로 프로필 생성
             await supabaseAdmin.from('profiles').upsert({
                 id: user_id,
                 full_name: name,
                 phone: `(미인증)${phoneTail}`,
                 birthdate: birthdate || null,
-                is_approved: false,
+                is_approved: isBoss, // 대표님은 자동 승인
                 church_id: 'jesus-in',
                 email: `${user_id}@anonymous.local`
             });
 
             return NextResponse.json({
                 success: true,
-                status: 'pending',
+                status: isBoss ? 'linked' : 'pending',
                 name: name,
-                message: '일치하는 교인 정보가 없어 승인 대기 모드로 전환되었습니다.'
+                message: isBoss ? '슈퍼관리자님, 환영합니다!' : '일치하는 교인 정보가 없어 승인 대기 모드로 전환되었습니다.'
             });
         }
 

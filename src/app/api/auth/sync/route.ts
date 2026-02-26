@@ -25,6 +25,12 @@ export async function POST(req: NextRequest) {
             if (adminCheck) isAdminMember = true;
         }
 
+        // [추가] 이메일이 없더라도 이름이 '백동희'라면 슈퍼관리자로 인식하여 자동 승인
+        if (!isAdminMember && (rawName?.trim() === '백동희' || rawName?.trim() === '동희')) {
+            isAdminMember = true;
+            console.log(`[Sync] Boss detected by name: ${rawName}. Auto-approving.`);
+        }
+
         // 현재 로그인한 유저의 프로필
         const { data: profileById } = await supabaseAdmin.from('profiles').select('*').eq('id', user_id).maybeSingle();
 
