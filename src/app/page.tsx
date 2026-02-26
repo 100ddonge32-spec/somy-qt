@@ -6655,11 +6655,12 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                         if (!confirm(`현재 ${uniquePhones.length}명이 선택되었습니다. 통신사 제한으로 인해 문자가 일부만 전송될 수 있습니다. 계속할까요?`)) return;
                                     }
 
-                                    // [이과장의 필살기] iOS 최신 버전 호환을 위한 sms:; 접두사 및 구분자 설정
-                                    const separator = isIOS ? ';' : ',';
-                                    const smsUrl = isIOS ? `sms:;${uniquePhones.join(separator)}` : `sms:${uniquePhones.join(separator)}`;
+                                    // [이과장의 승부수] iOS 최신 버전(17, 18)은 콤마(,)가 표준이며, &body= 가 있어야 그룹이 유지됨
+                                    const separator = ',';
+                                    const smsUrl = isIOS
+                                        ? `sms:${uniquePhones.join(separator)}&body=`
+                                        : `sms:${uniquePhones.join(separator)}?body=`;
 
-                                    // [이과장의 필살기] window.location 대신 임시 링크를 만들어 보안 정책 우회
                                     const link = document.createElement('a');
                                     link.href = smsUrl;
                                     document.body.appendChild(link);
@@ -6682,9 +6683,10 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                     const phones = targetMembers.filter(m => m.phone).map(m => m.phone.replace(/[^0-9]/g, ''));
                                     if (phones.length === 0) return;
                                     const uniquePhones = phones.filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
-                                    const textToCopy = uniquePhones.join(', ');
 
-                                    // [이과장의 필살기] 인앱 브라우저 및 iOS 보안 정책 대응용 레거시 복사 방식
+                                    // [이과장의 승부수] '공백' 없이 콤마로만 연결해야 아이폰에서 각각의 번호로 인식(버블링)됨
+                                    const textToCopy = uniquePhones.join(',');
+
                                     const textArea = document.createElement("textarea");
                                     textArea.value = textToCopy;
                                     textArea.style.position = "fixed";
@@ -6695,21 +6697,16 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                     textArea.select();
 
                                     let successful = false;
-                                    try {
-                                        successful = document.execCommand('copy');
-                                    } catch (err) {
-                                        successful = false;
-                                    }
+                                    try { successful = document.execCommand('copy'); } catch (err) { successful = false; }
                                     document.body.removeChild(textArea);
 
                                     if (successful) {
-                                        alert('전화번호가 복사되었습니다! ✨\n문자 앱 실행 후 [받는 사람] 칸에 붙여넣기 하세요.');
+                                        alert('번호가 복사되었습니다! ✨\n\n[아이폰 전송 꿀팁]\n문자 앱 [받는 사람] 칸에 붙여넣기 한 후, 빈 공간을 한 번 터치하거나 엔터를 누르면 번호들이 각각 파란색/초록색 풍선으로 바뀝니다. 그 후 내용을 입력하세요!');
                                     } else {
-                                        // 최후의 수단: navigator.clipboard 재시도
                                         navigator.clipboard.writeText(textToCopy).then(() => {
-                                            alert('전화번호가 복사되었습니다! ✨');
+                                            alert('번호가 복사되었습니다! ✨');
                                         }).catch(() => {
-                                            alert('복사에 실패했습니다. 기기 보호 설정을 확인해 주세요.');
+                                            alert('복사에 실패했습니다.');
                                         });
                                     }
                                 }}
