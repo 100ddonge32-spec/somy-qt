@@ -5850,11 +5850,11 @@ export default function App() {
                                                                 .map(m => m.phone.replace(/[^0-9]/g, ''));
                                                             if (targetPhones.length === 0) { alert('선택된 성도 중 전화번호가 등록된 분이 없습니다.'); return; }
                                                             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-                                                            const uniquePhones = [...new Set(targetPhones)];
+                                                            const uniquePhones = [...new Set(targetPhones.map(p => p.trim()).filter(p => p.length > 0))];
                                                             let smsUrl = '';
                                                             if (isIOS) {
-                                                                // iOS: 세미콜론(;)이 가장 안정적이지만 맨 앞에는 붙이지 않습니다.
-                                                                smsUrl = `sms:${uniquePhones.join(';')}`;
+                                                                // iOS: 최신 방식인 ?addresses= 파라미터를 사용합니다.
+                                                                smsUrl = `sms:?addresses=${uniquePhones.join(',')}`;
                                                             } else {
                                                                 // 안드로이드: 콤마(,)가 표준입니다.
                                                                 smsUrl = `sms:${uniquePhones.join(',')}`;
@@ -5865,6 +5865,14 @@ export default function App() {
                                                             document.body.appendChild(link);
                                                             link.click();
                                                             document.body.removeChild(link);
+
+                                                            // 만약 메시지 앱이 안 뜨는 경우를 대비해 2초 후 안내문구 (선택사항)
+                                                            setTimeout(() => {
+                                                                if (confirm('메시지 앱이 열리지 않았나요?\n확인을 누르시면 번호들을 클립보드에 복사해 드립니다.')) {
+                                                                    navigator.clipboard.writeText(uniquePhones.join(', '));
+                                                                    alert('번호가 복사되었습니다. 메시지 앱 수신인 칸에 붙여넣기 해주세요.');
+                                                                }
+                                                            }, 2000);
                                                         }} style={{ width: '100%', padding: '12px', background: selectedMemberIds.length > 0 ? '#2E7D32' : '#AAA', color: 'white', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 800, cursor: selectedMemberIds.length > 0 ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: selectedMemberIds.length > 0 ? '0 4px 10px rgba(46,125,50,0.2)' : 'none' }}>
                                                             💬 선택된 성도 단체 문자 발송 ({memberList.filter(m => selectedMemberIds.includes(m.id)).filter(m => m.phone).length}명)
                                                         </button>
@@ -6617,11 +6625,11 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                         return;
                                     }
                                     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-                                    const uniquePhones = [...new Set(phones)];
+                                    const uniquePhones = [...new Set(phones.map(p => p.trim()).filter(p => p.length > 0))];
                                     let smsUrl = '';
                                     if (isIOS) {
-                                        // iOS: 구분자 사이에만 세미콜론(;) 사용
-                                        smsUrl = `sms:${uniquePhones.join(';')}`;
+                                        // iOS: 최신 그룹 SMS 수신인 지정 방식
+                                        smsUrl = `sms:?addresses=${uniquePhones.join(',')}`;
                                     } else {
                                         // 안드로이드: 콤마(,) 사용
                                         smsUrl = `sms:${uniquePhones.join(',')}`;
@@ -6632,6 +6640,13 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                     document.body.appendChild(link);
                                     link.click();
                                     document.body.removeChild(link);
+
+                                    setTimeout(() => {
+                                        if (confirm('메시지 창이 열리지 않았나요?\n번호들을 복사하시겠습니까?')) {
+                                            navigator.clipboard.writeText(uniquePhones.join(', '));
+                                            alert('복사되었습니다. 직접 붙여넣어 전송하실 수 있습니다.');
+                                        }
+                                    }, 2000);
                                 }}
                                 style={{
                                     width: '100%', padding: '14px',
