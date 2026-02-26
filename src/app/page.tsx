@@ -3209,7 +3209,7 @@ export default function App() {
                                         {user?.user_metadata?.avatar_url ? <img src={user.user_metadata.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🐑'}
                                     </div>
                                     <span style={{ fontSize: '14px', fontWeight: 700, color: '#555' }}>
-                                        {user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "성도님"}
+                                        {profileName || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "성도님"}
                                     </span>
                                 </div>
                                 <textarea
@@ -3686,7 +3686,7 @@ export default function App() {
                                         {user?.user_metadata?.avatar_url ? <img src={user.user_metadata.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🌻'}
                                     </div>
                                     <span style={{ fontSize: '14px', fontWeight: 700, color: '#555' }}>
-                                        {user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "성도님"}
+                                        {profileName || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "성도님"}
                                     </span>
                                 </div>
                                 <textarea
