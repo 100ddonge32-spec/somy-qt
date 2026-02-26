@@ -5852,11 +5852,14 @@ export default function App() {
                                                             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                                                             let smsUrl = '';
                                                             if (isIOS) {
-                                                                smsUrl = `sms:/open?addresses=${targetPhones.join(',')}&body=`;
+                                                                smsUrl = `sms:;${targetPhones.join(';')}`;
                                                             } else {
                                                                 smsUrl = `sms:${targetPhones.join(',')}`;
                                                             }
-                                                            window.location.href = smsUrl;
+
+                                                            const link = document.createElement('a');
+                                                            link.href = smsUrl;
+                                                            link.click();
                                                         }} style={{ width: '100%', padding: '12px', background: selectedMemberIds.length > 0 ? '#2E7D32' : '#AAA', color: 'white', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 800, cursor: selectedMemberIds.length > 0 ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: selectedMemberIds.length > 0 ? '0 4px 10px rgba(46,125,50,0.2)' : 'none' }}>
                                                             💬 선택된 성도 단체 문자 발송 ({memberList.filter(m => selectedMemberIds.includes(m.id)).filter(m => m.phone).length}명)
                                                         </button>
@@ -6611,11 +6614,14 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                                     let smsUrl = '';
                                     if (isIOS) {
-                                        smsUrl = `sms:/open?addresses=${phones.join(',')}&body=`;
+                                        smsUrl = `sms:;${phones.join(';')}`;
                                     } else {
                                         smsUrl = `sms:${phones.join(',')}`;
                                     }
-                                    window.location.href = smsUrl;
+
+                                    const link = document.createElement('a');
+                                    link.href = smsUrl;
+                                    link.click();
                                 }}
                                 style={{
                                     width: '100%', padding: '14px',
