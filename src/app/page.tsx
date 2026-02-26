@@ -2066,7 +2066,7 @@ export default function App() {
                                         )}
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <div style={{ fontSize: '12px', color: '#D4AF37', fontWeight: 800, marginBottom: '4px', letterSpacing: '0.5px' }}>SOMY'S CHOICE</div>
+                                        <div style={{ fontSize: '12px', color: '#D4AF37', fontWeight: 800, marginBottom: '4px', letterSpacing: '0.5px' }}>오늘의 추천도서</div>
                                         <div style={{ fontSize: '15px', fontWeight: 900, color: '#333', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{churchSettings.today_book_title || '이달의 추천 도서'}</div>
                                         <div style={{ fontSize: '13px', color: '#888', fontWeight: 500 }}>지금 읽어보기 →</div>
                                     </div>
