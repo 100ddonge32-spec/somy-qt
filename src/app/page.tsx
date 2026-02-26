@@ -3066,12 +3066,17 @@ export default function App() {
                                                         </div>
                                                         {editingCommentId === comment.id ? (
                                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-                                                                <input
-                                                                    type="text"
+                                                                <textarea
                                                                     value={editCommentContent}
-                                                                    onChange={(e) => setEditCommentContent(e.target.value)}
+                                                                    onChange={(e) => { setEditCommentContent(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                                                            e.preventDefault();
+                                                                            handleUpdateComment(post.id, comment.id);
+                                                                        }
+                                                                    }}
                                                                     autoFocus
-                                                                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #DDD', borderRadius: '8px', fontSize: '13px', outline: 'none' }}
+                                                                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #DDD', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'none', height: '40px', minHeight: '40px', fontFamily: 'inherit' }}
                                                                 />
                                                                 <div style={{ display: 'flex', gap: '6px' }}>
                                                                     <button onClick={() => handleUpdateComment(post.id, comment.id)} style={{ background: '#333', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>저장</button>
@@ -3085,15 +3090,37 @@ export default function App() {
                                                 ))}
                                             </div>
                                             {/* Comment Input */}
-                                            <div style={{ display: 'flex', gap: '8px' }}>
-                                                <input
-                                                    type="text"
+                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+                                                <textarea
                                                     value={commentInputs[post.id] || ""}
-                                                    onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleAddComment(post.id)}
-                                                    placeholder="따뜻한 격려의 댓글을 달아주세요..."
+                                                    onChange={(e) => {
+                                                        setCommentInputs({ ...commentInputs, [post.id]: e.target.value });
+                                                        e.target.style.height = 'auto';
+                                                        e.target.style.height = e.target.scrollHeight + 'px';
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                                            e.preventDefault();
+                                                            handleAddComment(post.id);
+                                                        }
+                                                    }}
+                                                    placeholder="따뜻한 격려의 댓글..."
                                                     disabled={submittingCommentId === post.id}
-                                                    style={{ flex: 1, padding: '10px 12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', outline: 'none', background: submittingCommentId === post.id ? '#FAFAFA' : 'white' }}
+                                                    style={{
+                                                        flex: 1,
+                                                        padding: '10px 12px',
+                                                        borderRadius: '12px',
+                                                        border: '1px solid #EEE',
+                                                        fontSize: '14px',
+                                                        outline: 'none',
+                                                        background: submittingCommentId === post.id ? '#FAFAFA' : 'white',
+                                                        resize: 'none',
+                                                        height: '40px',
+                                                        minHeight: '40px',
+                                                        maxHeight: '120px',
+                                                        fontFamily: 'inherit',
+                                                        lineHeight: '1.5'
+                                                    }}
                                                 />
                                                 <button
                                                     onClick={() => handleAddComment(post.id)}
@@ -3382,14 +3409,35 @@ export default function App() {
                                                     </div>
                                                 ))}
                                             </div>
-                                            <div style={{ display: 'flex', gap: '8px' }}>
-                                                <input
-                                                    type="text"
+                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+                                                <textarea
                                                     value={commentInputs[diary.id] || ""}
-                                                    onChange={(e) => setCommentInputs({ ...commentInputs, [diary.id]: e.target.value })}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleAddThanksgivingComment(diary.id)}
-                                                    placeholder="공감의 댓글을 달아주세요..."
-                                                    style={{ flex: 1, padding: '10px 12px', borderRadius: '10px', border: '1px solid #fae1cd', fontSize: '13px', outline: 'none' }}
+                                                    onChange={(e) => {
+                                                        setCommentInputs({ ...commentInputs, [diary.id]: e.target.value });
+                                                        e.target.style.height = 'auto';
+                                                        e.target.style.height = e.target.scrollHeight + 'px';
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                                            e.preventDefault();
+                                                            handleAddThanksgivingComment(diary.id);
+                                                        }
+                                                    }}
+                                                    placeholder="공감의 댓글..."
+                                                    style={{
+                                                        flex: 1,
+                                                        padding: '10px 12px',
+                                                        borderRadius: '12px',
+                                                        border: '1px solid #fae1cd',
+                                                        fontSize: '14px',
+                                                        outline: 'none',
+                                                        resize: 'none',
+                                                        height: '40px',
+                                                        minHeight: '40px',
+                                                        maxHeight: '120px',
+                                                        fontFamily: 'inherit',
+                                                        lineHeight: '1.5'
+                                                    }}
                                                 />
                                                 <button
                                                     disabled={submittingCommentId === diary.id}
