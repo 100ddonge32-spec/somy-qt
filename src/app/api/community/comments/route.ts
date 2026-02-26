@@ -101,3 +101,22 @@ export async function DELETE(req: NextRequest) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
+
+export async function PATCH(req: NextRequest) {
+    try {
+        const body = await req.json();
+        const { id, content } = body;
+
+        if (!id) return NextResponse.json({ error: 'Comment ID is required' }, { status: 400 });
+
+        const { error } = await supabaseAdmin
+            .from('community_comments')
+            .update({ content })
+            .eq('id', id);
+
+        if (error) throw error;
+        return NextResponse.json({ success: true });
+    } catch (err: any) {
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}

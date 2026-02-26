@@ -379,6 +379,9 @@ export default function App() {
     const isSuperAdmin = adminInfo?.role === 'super_admin';
     const [editingPostId, setEditingPostId] = useState<any>(null);
     const [editContent, setEditContent] = useState("");
+    const [editingCommentId, setEditingCommentId] = useState<any>(null);
+    const [editCommentContent, setEditCommentContent] = useState("");
+    const [isEditPrivate, setIsEditPrivate] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [showNotiList, setShowNotiList] = useState(false);
     const [ccmIndex, setCcmIndex] = useState<number | null>(null);
@@ -2212,21 +2215,33 @@ export default function App() {
                                     </div>
                                     <p style={{ fontSize: '14px', color: '#666', marginBottom: '16px' }}>오늘 말씀을 통해 받은 은혜를 기록해보세요.</p>
                                     <textarea value={graceInput} onChange={(e) => setGraceInput(e.target.value)} placeholder="성도들과 나누고 싶은 은혜를 자유롭게 적어주세요..." style={{ width: '100%', height: '200px', border: '1px solid #EEE', borderRadius: '15px', padding: '16px', boxSizing: 'border-box', outline: 'none', fontSize: '15px', background: 'white', fontFamily: 'inherit', lineHeight: 1.6 }} />
-                                    {/* 비공개 토글 */}
-                                    <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <span style={{ fontSize: '12px', color: '#999' }}>
-                                            {isPrivatePost ? '🔒 나와 관리자만 볼 수 있어요' : '🌐 성도들과 함께 볼 수 있습니다'}
-                                        </span>
-                                        <button
-                                            onClick={() => setIsPrivatePost(!isPrivatePost)}
-                                            style={{
-                                                padding: '5px 12px', border: 'none', borderRadius: '20px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-                                                background: isPrivatePost ? '#F3E5F5' : '#E8F5E9',
-                                                color: isPrivatePost ? '#7B1FA2' : '#2E7D32',
-                                                transition: 'all 0.2s'
-                                            }}>
-                                            {isPrivatePost ? '🔒 비공개' : '🌐 공개'}
-                                        </button>
+                                    <div
+                                        onClick={() => setIsPrivatePost(!isPrivatePost)}
+                                        style={{
+                                            marginTop: '16px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '10px',
+                                            cursor: 'pointer',
+                                            padding: '12px 16px',
+                                            borderRadius: '16px',
+                                            background: isPrivatePost ? '#F3E5F5' : '#F5F5F3',
+                                            border: isPrivatePost ? '1px solid #7B1FA2' : '1px solid #EEE',
+                                            transition: 'all 0.3s'
+                                        }}
+                                    >
+                                        <div style={{ fontSize: '20px' }}>{isPrivatePost ? '🔒' : '🌐'}</div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontSize: '14px', fontWeight: 700, color: isPrivatePost ? '#7B1FA2' : '#333' }}>
+                                                {isPrivatePost ? '나만 보기 (비공개)' : '성도들과 함께 나누기 (공개)'}
+                                            </div>
+                                            <div style={{ fontSize: '11px', color: isPrivatePost ? '#9575CD' : '#999', marginTop: '2px' }}>
+                                                {isPrivatePost ? '이 내용은 본인과 교회 관리자만 확인할 수 있습니다.' : '작성하신 은혜를 모든 성도님이 함께 보고 은혜받을 수 있습니다.'}
+                                            </div>
+                                        </div>
+                                        <div style={{ width: '40px', height: '22px', background: isPrivatePost ? '#7B1FA2' : '#CCC', borderRadius: '11px', position: 'relative', transition: 'all 0.3s' }}>
+                                            <div style={{ position: 'absolute', top: '2px', left: isPrivatePost ? '20px' : '2px', width: '18px', height: '18px', background: 'white', borderRadius: '50%', transition: 'all 0.3s' }} />
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -2686,7 +2701,9 @@ export default function App() {
             const handleAddComment = async (postId: any) => {
                 const commentText = commentInputs[postId];
                 if (!commentText?.trim() || !user) return;
+                if (submittingCommentId === postId) return;
 
+                setSubmittingCommentId(postId);
                 try {
                     const res = await fetch('/api/community/comments', {
                         method: 'POST',
@@ -2712,6 +2729,33 @@ export default function App() {
                         setCommentInputs({ ...commentInputs, [postId]: "" });
                     }
                 } catch (e) { console.error("댓글 저장 실패:", e); }
+                finally { setSubmittingCommentId(null); }
+            };
+
+            const handleUpdateComment = async (postId: any, commentId: any) => {
+                if (!editCommentContent.trim()) return;
+                try {
+                    const res = await fetch('/api/community/comments', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: commentId, content: editCommentContent })
+                    });
+                    if (res.ok) {
+                        setCommunityPosts(communityPosts.map(post => {
+                            if (post.id === postId) {
+                                return {
+                                    ...post,
+                                    comments: post.comments.map((c: any) =>
+                                        c.id === commentId ? { ...c, content: editCommentContent } : c
+                                    )
+                                };
+                            }
+                            return post;
+                        }));
+                        setEditingCommentId(null);
+                        setEditCommentContent("");
+                    }
+                } catch (e) { console.error("댓글 수정 실패:", e); }
             };
 
             const handleDeleteComment = async (postId: any, commentId: any) => {
@@ -2766,12 +2810,12 @@ export default function App() {
                     const res = await fetch('/api/community', {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id: editingPostId, content: editContent })
+                        body: JSON.stringify({ id: editingPostId, content: editContent, is_private: isEditPrivate })
                     });
                     if (res.ok) {
                         const updatedPost = await res.json();
                         setCommunityPosts(communityPosts.map(post =>
-                            post.id === editingPostId ? { ...post, content: updatedPost.content } : post
+                            post.id === editingPostId ? { ...post, content: updatedPost.content, is_private: updatedPost.is_private } : post
                         ));
                         setEditingPostId(null);
                         setEditContent("");
@@ -2880,12 +2924,27 @@ export default function App() {
                                     placeholder="성도들과 나누고 싶은 은혜를 적어보세요..."
                                     style={{ width: '100%', minHeight: '80px', border: '1px solid #F5F5F5', borderRadius: '12px', padding: '12px', boxSizing: 'border-box', outline: 'none', fontSize: '14px', background: '#FAFAFA', resize: 'none', fontFamily: 'inherit' }}
                                 />
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
                                     <div
                                         onClick={() => setIsPrivatePost(!isPrivatePost)}
-                                        style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: isPrivatePost ? '#7B1FA2' : '#666', background: isPrivatePost ? '#F3E5F5' : '#F5F5F5', padding: '4px 10px', borderRadius: '20px', fontWeight: 600, transition: 'all 0.2s' }}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            cursor: 'pointer',
+                                            fontSize: '13px',
+                                            color: isPrivatePost ? '#7B1FA2' : '#666',
+                                            background: isPrivatePost ? '#F3E5F5' : '#F5F5F5',
+                                            padding: '6px 14px',
+                                            borderRadius: '25px',
+                                            fontWeight: 700,
+                                            transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                            border: isPrivatePost ? '1.5px solid #7B1FA2' : '1.5px solid transparent',
+                                            boxShadow: isPrivatePost ? '0 4px 10px rgba(123,31,162,0.15)' : 'none'
+                                        }}
                                     >
-                                        <span>{isPrivatePost ? '🔒 나만 보기' : '🌐 함께 나누기'}</span>
+                                        <span style={{ fontSize: '15px' }}>{isPrivatePost ? '🔒' : '🌐'}</span>
+                                        <span>{isPrivatePost ? '나만 보기 (비공개)' : '전체 공개 (함께 나누기)'}</span>
                                     </div>
                                     <button
                                         onClick={handlePost}
@@ -2997,12 +3056,31 @@ export default function App() {
                                                             <span style={{ fontWeight: 700, color: '#555' }}>{comment.user_name || '성도'}</span>
                                                             <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                                 {comment.created_at ? new Date(comment.created_at).toLocaleTimeString() : '방금 전'}
-                                                                {(isAdmin || user?.id === comment.user_id) && (
+                                                                {user?.id === comment.user_id && editingCommentId !== comment.id && (
+                                                                    <button onClick={() => { setEditingCommentId(comment.id); setEditCommentContent(comment.content); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#B8924A', padding: 0, fontWeight: 600 }}>수정</button>
+                                                                )}
+                                                                {(isAdmin || user?.id === comment.user_id) && editingCommentId !== comment.id && (
                                                                     <button onClick={() => handleDeleteComment(post.id, comment.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>✕</button>
                                                                 )}
                                                             </span>
                                                         </div>
-                                                        <div style={{ color: '#666' }}>{comment.content}</div>
+                                                        {editingCommentId === comment.id ? (
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                                                                <input
+                                                                    type="text"
+                                                                    value={editCommentContent}
+                                                                    onChange={(e) => setEditCommentContent(e.target.value)}
+                                                                    autoFocus
+                                                                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #DDD', borderRadius: '8px', fontSize: '13px', outline: 'none' }}
+                                                                />
+                                                                <div style={{ display: 'flex', gap: '6px' }}>
+                                                                    <button onClick={() => handleUpdateComment(post.id, comment.id)} style={{ background: '#333', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>저장</button>
+                                                                    <button onClick={() => setEditingCommentId(null)} style={{ background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>취소</button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div style={{ color: '#666', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{comment.content}</div>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
@@ -3014,9 +3092,26 @@ export default function App() {
                                                     onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
                                                     onKeyDown={(e) => e.key === 'Enter' && handleAddComment(post.id)}
                                                     placeholder="따뜻한 격려의 댓글을 달아주세요..."
-                                                    style={{ flex: 1, padding: '10px 12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }}
+                                                    disabled={submittingCommentId === post.id}
+                                                    style={{ flex: 1, padding: '10px 12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', outline: 'none', background: submittingCommentId === post.id ? '#FAFAFA' : 'white' }}
                                                 />
-                                                <button onClick={() => handleAddComment(post.id)} style={{ background: '#333', color: 'white', border: 'none', borderRadius: '10px', padding: '0 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>등록</button>
+                                                <button
+                                                    onClick={() => handleAddComment(post.id)}
+                                                    disabled={submittingCommentId === post.id}
+                                                    style={{
+                                                        background: '#333',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '10px',
+                                                        padding: '0 12px',
+                                                        fontSize: '12px',
+                                                        fontWeight: 700,
+                                                        cursor: submittingCommentId === post.id ? 'default' : 'pointer',
+                                                        opacity: submittingCommentId === post.id ? 0.7 : 1
+                                                    }}
+                                                >
+                                                    {submittingCommentId === post.id ? '...' : '등록'}
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -4505,10 +4600,6 @@ export default function App() {
                         </div>
                         <div style={{ display: 'flex', gap: '10px' }}>
                             <div style={{ flex: 1 }}>
-                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>교적번호</label>
-                                <input value={memberEditForm.member_no || ''} onChange={e => setMemberEditForm({ ...memberEditForm, member_no: e.target.value })} placeholder="예: 2024-001" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
-                            </div>
-                            <div style={{ flex: 1 }}>
                                 <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>직분</label>
                                 <input value={memberEditForm.church_rank} onChange={e => setMemberEditForm({ ...memberEditForm, church_rank: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                             </div>
@@ -4608,10 +4699,6 @@ export default function App() {
                         </div>
                         <div style={{ display: 'flex', gap: '10px' }}>
                             <div style={{ flex: 1 }}>
-                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>교적번호</label>
-                                <input id="add-member-no" placeholder="예: 2024-001" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
-                            </div>
-                            <div style={{ flex: 1 }}>
                                 <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>직분</label>
                                 <input id="add-rank" placeholder="예: 성도, 집사" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                             </div>
@@ -4627,6 +4714,10 @@ export default function App() {
                         <div>
                             <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>주소</label>
                             <input id="add-addr" placeholder="주소를 입력하세요" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>등록일</label>
+                            <input id="add-registered-at" type="date" defaultValue={new Date().toISOString().split('T')[0]} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: '10px', marginTop: '25px' }}>
@@ -4645,11 +4736,11 @@ export default function App() {
                                     email: email,
                                     church_rank: (document.getElementById('add-rank') as any)?.value || '',
                                     gender: (document.getElementById('add-gender') as any)?.value || '',
-                                    member_no: (document.getElementById('add-member-no') as any)?.value || '',
                                     phone: phone,
                                     birthdate: (document.getElementById('add-birth') as any)?.value || null,
                                     address: (document.getElementById('add-addr') as any)?.value || '',
                                     church_id: churchId || 'jesus-in',
+                                    created_at: (document.getElementById('add-registered-at') as any)?.value || new Date().toISOString(),
                                     is_approved: true
                                 };
 
@@ -4826,7 +4917,6 @@ export default function App() {
         const dataToExport = memberList.map(m => ({
             '교인사진': m.avatar_url || '',
             '성명': m.full_name || '',
-            '교적번호': m.member_no || '',
             '생년월일': m.birthdate || '',
             '성별': m.gender || '',
             '직분': m.church_rank || '',
@@ -5454,7 +5544,7 @@ export default function App() {
                                                 </div>
                                                 <div style={{ fontSize: '11px', color: '#888', lineHeight: 1.5 }}>
                                                     <strong style={{ color: '#D4AF37' }}>💡 권장 양식:</strong><br />
-                                                    성명 | 휴대폰 | 생년월일 | 성별 | 교회직분 | 교적번호 | 주소<br />
+                                                    성명 | 휴대폰 | 생년월일 | 성별 | 교회직분 | 등록일 | 주소<br />
                                                     <span style={{ color: '#999' }}>(※ 엑셀 내부 사진 삽입은 지원되지 않습니다. 사진은 개별 수정으로 등록해 주세요.)</span>
                                                 </div>
                                             </div>
