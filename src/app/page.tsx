@@ -475,6 +475,7 @@ export default function App() {
     const [submittingReplyId, setSubmittingReplyId] = useState<string | null>(null); // ✅ 상담 답변 중복 방지
     const [submittingCommentId, setSubmittingCommentId] = useState<any>(null); // ✅ 댓글 등록 중복 방지
     const [showVerification, setShowVerification] = useState(false); // ✅ 실명 인증 폼 노출 여부
+    const [isInApp, setIsInApp] = useState(false); // ✅ 카톡 등 인앱 브라우저 여부
     const [vName, setVName] = useState(""); // ✅ 인증용 성함
     const [vPhone, setVPhone] = useState(""); // ✅ 인증용 연락처
     const [loginName, setLoginName] = useState(""); // ✅ 로그인용 성함
@@ -1283,6 +1284,12 @@ export default function App() {
         };
         checkUser();
 
+        // 인앱 브라우저 체크
+        const ua = navigator.userAgent.toLowerCase();
+        if (ua.includes('kakao') || ua.includes('line') || ua.includes('naver') || ua.includes('kakaotalk')) {
+            setIsInApp(true);
+        }
+
         // 오늘의 큐티 로드
         console.log("[FetchQt] Starting...");
         fetchQt();
@@ -1575,6 +1582,10 @@ export default function App() {
           from { transform: translateX(-50%) translateY(20px); opacity: 0; }
           to { transform: translateX(-50%) translateY(0); opacity: 1; }
       }
+      @keyframes pulse-soft {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.02); opacity: 0.9; }
+      }
       button:active {
           transform: scale(0.96) !important;
           transition: transform 0.1s ease !important;
@@ -1784,6 +1795,15 @@ export default function App() {
                                         />
                                     </div>
 
+                                    {isInApp && (
+                                        <div style={{ padding: '12px', background: '#FFF4E5', borderRadius: '12px', border: '1px solid #FFD599', marginBottom: '10px', animation: 'pulse-soft 2s infinite' }}>
+                                            <div style={{ fontSize: '13px', fontWeight: 800, color: '#E67E22', marginBottom: '4px' }}>⚠️ 브라우저를 먼저 변경해 주세요</div>
+                                            <div style={{ fontSize: '11px', color: '#B3541E', textAlign: 'left', lineHeight: 1.4 }}>
+                                                현재 <b>카카오톡 화면</b>에서는 홈 화면 추가 시 로그인이 풀릴 수 있습니다. 우측 상단 <b>점 3개(...)</b>를 눌러 <b>'다른 브라우저로 열기'</b>(크롬/사파리)를 먼저 선택해 주세요!
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <button
                                         onClick={handleDirectLogin}
                                         disabled={isDirectLoggingIn}
@@ -1809,6 +1829,32 @@ export default function App() {
                                         * 최초 1회만 입력하면 이후 자동으로 로그인됩니다.<br />
                                         * 교회에 등록되지 않은 경우 승인 대기로 전환됩니다.
                                     </div>
+
+                                    <div style={{ margin: '20px 0', height: '1px', background: '#EEE', position: 'relative' }}>
+                                        <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'white', padding: '0 10px', fontSize: '11px', color: '#CCC' }}>또는</span>
+                                    </div>
+
+                                    <button
+                                        onClick={() => handleLogin('kakao')}
+                                        style={{
+                                            width: '100%',
+                                            padding: '16px',
+                                            background: '#FEE500',
+                                            color: '#3C1E1E',
+                                            border: 'none',
+                                            borderRadius: '16px',
+                                            fontSize: '15px',
+                                            fontWeight: 700,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '8px',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        <span style={{ fontSize: '20px' }}>💬</span> 카카오로 로그인 (모든 기기 연동)
+                                    </button>
+                                    <div style={{ marginTop: '8px', fontSize: '10px', color: '#AAA' }}>아이패드, PC 등 다른 기기에서도 정보를 유지하려면<br />카카오 로그인을 추천합니다.</div>
                                 </div>
                             </div>
                         ) : !isApproved && !isAdmin ? (
