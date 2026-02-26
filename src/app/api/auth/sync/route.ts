@@ -106,18 +106,20 @@ export async function POST(req: NextRequest) {
         if (match) {
             console.log(`[Sync] 매칭 성공: ${match.full_name} (${match.id})`);
 
-            // 필드 병합 데이터 준비
-            const updateFields = {
-                full_name: (profileById?.full_name && profileById.full_name !== '성도') ? profileById.full_name : match.full_name,
-                phone: profileById?.phone || match.phone,
-                birthdate: profileById?.birthdate || match.birthdate,
-                address: profileById?.address || match.address,
-                church_rank: profileById?.church_rank || match.church_rank,
-                member_no: profileById?.member_no || match.member_no,
-                gender: profileById?.gender || match.gender,
+            // 필드 병합 데이터 준비 (어드민 업로드 데이터 match가 기준이 됨)
+            const updateFields: any = {
+                // 이름: match(어드민 데이터)의 이름을 우선하되, match에 없으면 현재(profileById) 또는 요청(rawName) 순
+                full_name: match.full_name || rawName || profileById?.full_name || '성도',
+                // 전화번호: match 또는 요청된 번호 우선
+                phone: match.phone || rawPhone || profileById?.phone,
+                birthdate: match.birthdate || profileById?.birthdate,
+                address: match.address || profileById?.address,
+                church_rank: match.church_rank || profileById?.church_rank,
+                member_no: match.member_no || profileById?.member_no,
+                gender: match.gender || profileById?.gender,
                 avatar_url: profileById?.avatar_url || match.avatar_url,
-                created_at: profileById?.created_at || match.created_at, // 가급적 행 생성일 유지
-                is_approved: true
+                church_id: match.church_id || profileById?.church_id || 'jesus-in',
+                is_approved: true // 매칭되었으므로 승인 처리
             };
 
             if (profileById) {
@@ -125,12 +127,12 @@ export async function POST(req: NextRequest) {
                 await supabaseAdmin.from('profiles').update(updateFields).eq('id', user_id);
                 // 2) 매칭된 구(Admin) 행 삭제
                 await supabaseAdmin.from('profiles').delete().eq('id', match.id);
-                return NextResponse.json({ status: 'merged', name: updateFields.full_name });
+                return NextResponse.json({ status: 'merged', name: updateFields.full_name, is_approved: true, church_id: updateFields.church_id });
             } else {
                 // 3) 아예 행이 없었으면 match 행에 user_id 부여 (가장 깔끔)
                 const linkData: any = { ...updateFields, id: user_id, email: email || match.email };
                 await supabaseAdmin.from('profiles').update(linkData).eq('id', match.id);
-                return NextResponse.json({ status: 'linked', name: linkData.full_name });
+                return NextResponse.json({ status: 'linked', name: linkData.full_name, is_approved: true, church_id: updateFields.church_id });
             }
         }
 
@@ -140,13 +142,25 @@ export async function POST(req: NextRequest) {
                 id: user_id,
                 email: email || `${user_id}@noemail.local`,
                 full_name: finalName,
+                phone: rawPhone || null,
                 church_id: 'jesus-in',
                 is_approved: isAdminMember
             });
-            return NextResponse.json({ status: 'created' });
+            return NextResponse.json({ status: 'created', name: finalName, is_approved: isAdminMember, church_id: 'jesus-in' });
         }
 
-        return NextResponse.json({ status: 'exists', is_approved: profileById.is_approved });
+        // 이미 존재하는데 매칭 안 된 경우 (수동 인증 시도 중일 수 있음)
+        if (rawName || rawPhone) {
+            // 정보가 업데이트되었을 수 있으므로 프로필 행 업데이트 시도
+            const patch: any = {};
+            if (rawName) patch.full_name = rawName;
+            if (rawPhone) patch.phone = rawPhone;
+            if (Object.keys(patch).length > 0) {
+                await supabaseAdmin.from('profiles').update(patch).eq('id', user_id);
+            }
+        }
+
+        return NextResponse.json({ status: 'exists', is_approved: profileById.is_approved, church_id: profileById.church_id || 'jesus-in' });
 
     } catch (err: any) {
         console.error('[Sync Error]', err);
