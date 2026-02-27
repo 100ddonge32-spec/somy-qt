@@ -2248,8 +2248,8 @@ export default function App() {
                                             )}
                                         </div>
                                         <div>
-                                            <div style={{ fontSize: '11px', color: '#D4AF37', fontWeight: 800, marginBottom: '2px' }}>성도 추천도서</div>
-                                            <div style={{ fontSize: '13px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '120px' }}>{churchSettings.today_book_title || '추천 도서'}</div>
+                                            <div style={{ fontSize: '15px', color: '#D4AF37', fontWeight: 800, marginBottom: '2px' }}>이달의 추천도서</div>
+                                            <div style={{ fontSize: '15px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '120px' }}>{churchSettings.today_book_title || '추천 도서'}</div>
                                         </div>
                                     </div>
 
@@ -2271,8 +2271,8 @@ export default function App() {
                                     }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.08)'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.04)'; }}>
                                         <div style={{ width: '40px', height: '56px', background: '#FFFDF7', borderRadius: '6px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', border: '1px solid #FAF0D7' }}>✍️</div>
                                         <div>
-                                            <div style={{ fontSize: '11px', color: '#B8924A', fontWeight: 800, marginBottom: '2px' }}>담임목사 칼럼</div>
-                                            <div style={{ fontSize: '13px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '120px' }}>{churchSettings.pastor_column_title || '오늘의 칼럼'}</div>
+                                            <div style={{ fontSize: '15px', color: '#B8924A', fontWeight: 800, marginBottom: '2px' }}>담임목사 칼럼</div>
+                                            <div style={{ fontSize: '15px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '120px' }}>{churchSettings.pastor_column_title || '오늘의 칼럼'}</div>
                                         </div>
                                         {!churchSettings.pastor_column_content && (
                                             <div
@@ -2468,16 +2468,16 @@ export default function App() {
                                     </button>
 
                                     <button onClick={() => setView('memberSearch')} style={{
-                                        padding: "8px 10px",
+                                        padding: "16px 12px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f1f8f3 100%)", color: "#2E7D32",
-                                        fontWeight: 800, fontSize: "13px", borderRadius: "14px",
+                                        fontWeight: 800, fontSize: "15px", borderRadius: "18px",
                                         border: "1px solid #C8E6C9", cursor: "pointer",
                                         boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
-                                        display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px',
+                                        display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                                         justifyContent: 'flex-start'
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                        <div style={{ width: '28px', height: '28px', background: 'white', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🔎</div>
+                                        <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🔎</div>
                                         <span style={{ whiteSpace: 'nowrap' }}>성도 주소록</span>
                                     </button>
                                 </div>
