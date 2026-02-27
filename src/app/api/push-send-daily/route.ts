@@ -37,15 +37,25 @@ export async function GET(req: NextRequest) {
         const messageTitle = '오늘의 큐티말씀이 도착했습니다 🐑';
         const messageBody = qtData ? `오늘의 본문: ${qtData.reference}` : '오늘의 말씀을 묵상하며 하루를 시작해 보세요.';
 
-        // 2. 승인된 성도님들의 구독 정보만 가져오기 (profiles 테이블과 조인)
+        // 2. 승인된 성도님들의 ID 목록 먼지 가져오기
+        const { data: approvedProfiles, error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .select('id')
+            .eq('is_approved', true);
+
+        if (profileError) throw profileError;
+
+        const approvedIds = (approvedProfiles || []).map(p => p.id);
+
+        if (approvedIds.length === 0) {
+            return NextResponse.json({ success: true, sentCount: 0, failedCount: 0 });
+        }
+
+        // 3. 승인된 성도님들의 구독 정보만 가져오기
         const { data: subscriptions, error: subError } = await supabaseAdmin
             .from('push_subscriptions')
-            .select(`
-                user_id,
-                subscription,
-                profiles!inner(is_approved)
-            `)
-            .eq('profiles.is_approved', true);
+            .select('user_id, subscription')
+            .in('user_id', approvedIds);
 
         if (subError) throw subError;
 
