@@ -2016,11 +2016,11 @@ export default function App() {
                                     )}
                                 </div>
 
-                                <div style={{ display: 'flex', gap: '14px', width: '100%' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', width: '100%' }}>
                                     <button onClick={() => setView("chat")} style={{
-                                        flex: 1, padding: "11px 10px",
+                                        padding: "11px 5px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f0f8f8 100%)", color: "#1A5D55",
-                                        fontWeight: 800, fontSize: "14px", borderRadius: "16px",
+                                        fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                         border: "1px solid #cbe4e1", cursor: "pointer",
                                         boxShadow: "0 10px 20px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(0, 105, 92, 0.08), inset 0 3px 5px rgba(255,255,255,1), inset 0 -3px 0 rgba(255,255,255,0.8)",
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
@@ -2029,7 +2029,7 @@ export default function App() {
                                         <div style={{ width: '38px', height: '38px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
                                             <img src={SOMY_IMG} alt="소미" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                         </div>
-                                        <span>AI 소미와 대화</span>
+                                        <span style={{ whiteSpace: 'nowrap' }}>AI 소미 대화</span>
                                     </button>
 
                                     <button onClick={() => {
@@ -2037,21 +2037,19 @@ export default function App() {
                                         setQtStep("read");
                                         setView("qt");
                                     }} style={{
-                                        flex: 1, padding: "11px 10px",
+                                        padding: "11px 5px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #fffbea 100%)", color: "#8E754C",
-                                        fontWeight: 800, fontSize: "14px", borderRadius: "16px",
+                                        fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                         border: "1px solid #f2e29e", cursor: "pointer",
                                         boxShadow: "0 10px 20px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(184, 152, 0, 0.08), inset 0 3px 5px rgba(255,255,255,1), inset 0 -3px 0 rgba(255,255,255,0.8)",
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                         <div style={{ width: '38px', height: '38px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>📖</div>
-                                        <span>오늘의 큐티 시작</span>
+                                        <span style={{ whiteSpace: 'nowrap' }}>오늘의 큐티</span>
                                     </button>
-                                </div>
 
-                                <div style={{ display: 'flex', gap: '14px', width: '100%' }}>
-                                    <div style={{ position: 'relative', flex: 1 }}>
+                                    <div style={{ position: 'relative' }}>
                                         <button onClick={async () => {
                                             setView("community");
                                             setHasNewCommunity(false);
@@ -2062,30 +2060,29 @@ export default function App() {
                                                 if (Array.isArray(data)) setCommunityPosts(data);
                                             } catch (e) { console.error("게시판 로드 실패:", e); }
                                         }} style={{
-                                            width: "100%", padding: "11px 10px",
+                                            width: "100%", padding: "11px 5px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #fff0f5 100%)", color: "#9E2A5B",
-                                            fontWeight: 800, fontSize: "14px", borderRadius: "16px",
+                                            fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                             border: "1px solid #f2cddb", cursor: "pointer",
                                             boxShadow: "0 10px 20px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(173, 20, 87, 0.08), inset 0 3px 5px rgba(255,255,255,1), inset 0 -3px 0 rgba(255,255,255,0.8)",
                                             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
                                             transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                                             position: 'relative'
                                         }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                            {hasNewCommunity && <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '2px 5px', borderRadius: '8px', border: '1.5px solid white' }}>N</div>}
+                                            {hasNewCommunity && <div style={{ position: 'absolute', top: '5px', right: '5px', background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, padding: '1px 4px', borderRadius: '8px', border: '1px solid white' }}>N</div>}
                                             <div style={{ width: '38px', height: '38px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>💌</div>
-                                            <span>은혜나눔 게시판</span>
+                                            <span style={{ whiteSpace: 'nowrap' }}>은혜나눔</span>
                                         </button>
                                         {!showWelcome && (
                                             <div onClick={(e) => { e.stopPropagation(); setShowNotiList(!showNotiList); }} style={{
-                                                position: 'absolute', top: '-6px', right: '-6px', width: '28px', height: '28px', background: 'linear-gradient(145deg, #ffffff, #f0f0f0)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 8px rgba(0,0,0,0.15)', cursor: 'pointer', zIndex: 1200, border: '1.5px solid #E6A4B4', animation: notifications.filter(n => !n.is_read).length > 0 ? 'bell-swing 2s infinite ease-in-out' : 'none', transition: 'all 0.2s'
+                                                position: 'absolute', top: '-6px', right: '-6px', width: '24px', height: '24px', background: 'linear-gradient(145deg, #ffffff, #f0f0f0)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 8px rgba(0,0,0,0.15)', cursor: 'pointer', zIndex: 1200, border: '1.5px solid #E6A4B4', animation: notifications.filter(n => !n.is_read).length > 0 ? 'bell-swing 2s infinite ease-in-out' : 'none', transition: 'all 0.2s'
                                             }} onMouseOver={e => e.currentTarget.style.transform = "scale(1.1) rotate(10deg)"} onMouseOut={e => e.currentTarget.style.transform = "scale(1) rotate(0)"}>
-                                                <span style={{ fontSize: '14px' }}>🔔</span>
-                                                {notifications.filter(n => !n.is_read).length > 0 && <div style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, minWidth: '14px', height: '14px', padding: '0 2px', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white' }}>{notifications.filter(n => !n.is_read).length}</div>}
+                                                <span style={{ fontSize: '12px' }}>🔔</span>
+                                                {notifications.filter(n => !n.is_read).length > 0 && <div style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#FF3D00', color: 'white', fontSize: '8px', fontWeight: 900, minWidth: '12px', height: '12px', padding: '0 2px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid white' }}>{notifications.filter(n => !n.is_read).length}</div>}
                                             </div>
                                         )}
                                     </div>
-                                    {/* 감사일기 버튼 */}
-                                    <div style={{ position: 'relative', flex: 1 }}>
+                                    <div style={{ position: 'relative' }}>
                                         <button onClick={async () => {
                                             setView("thanksgiving");
                                             setHasNewThanksgiving(false);
@@ -2096,18 +2093,18 @@ export default function App() {
                                                 if (Array.isArray(data)) setThanksgivingDiaries(data);
                                             } catch (e) { console.error("감사일기 로드 실패:", e); }
                                         }} style={{
-                                            width: "100%", padding: "11px 10px",
+                                            width: "100%", padding: "11px 5px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #fff6e5 100%)", color: "#E07A5F",
-                                            fontWeight: 800, fontSize: "14px", borderRadius: "16px",
+                                            fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                             border: "1px solid #fae1cd", cursor: "pointer",
                                             boxShadow: "0 10px 20px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(224, 122, 95, 0.08), inset 0 3px 5px rgba(255,255,255,1), inset 0 -3px 0 rgba(255,255,255,0.8)",
                                             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
                                             transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                                             position: 'relative'
                                         }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                            {hasNewThanksgiving && <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '2px 5px', borderRadius: '8px', border: '1.5px solid white' }}>N</div>}
+                                            {hasNewThanksgiving && <div style={{ position: 'absolute', top: '5px', right: '5px', background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, padding: '1px 4px', borderRadius: '8px', border: '1px solid white' }}>N</div>}
                                             <div style={{ width: '38px', height: '38px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>🌻</div>
-                                            <span>감사일기 쓰기</span>
+                                            <span style={{ whiteSpace: 'nowrap' }}>감사일기</span>
                                         </button>
                                     </div>
                                 </div>
@@ -2179,7 +2176,7 @@ export default function App() {
                                     </div>
                                 </div>
 
-                                <div style={{ display: 'flex', gap: '14px', width: '100%' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', width: '100%' }}>
                                     {churchSettings.sermon_url ? (
                                         <button onClick={() => {
                                             if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
@@ -2190,26 +2187,25 @@ export default function App() {
                                             setHasNewSermon(false);
                                             localStorage.setItem(`last_view_sermon_${churchId}`, Date.now().toString());
                                         }} style={{
-                                            flex: 1, padding: "11px 10px",
+                                            padding: "11px 5px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #fff4f2 100%)", color: "#BA2D0B",
-                                            fontWeight: 800, fontSize: "14px", borderRadius: "16px",
+                                            fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                             border: "1px solid #fcd3c8", cursor: "pointer",
                                             boxShadow: "0 10px 20px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(230, 48, 0, 0.09), inset 0 3px 5px rgba(255,255,255,1), inset 0 -3px 0 rgba(255,255,255,0.8)",
                                             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
                                             transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                                             position: 'relative'
                                         }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                            {hasNewSermon && <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '2px 5px', borderRadius: '8px', border: '1.5px solid white' }}>N</div>}
+                                            {hasNewSermon && <div style={{ position: 'absolute', top: '5px', right: '5px', background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, padding: '1px 4px', borderRadius: '8px', border: '1px solid white' }}>N</div>}
                                             <div style={{ width: '38px', height: '38px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>
                                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="#FF0000"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" /></svg>
                                             </div>
-                                            <span>담임목사 설교</span>
+                                            <span style={{ whiteSpace: 'nowrap' }}>담임목사 설교</span>
                                         </button>
                                     ) : null}
-                                    <div style={{ position: 'relative', flex: 1 }}>
+                                    <div style={{ position: 'relative' }}>
                                         <button onClick={async () => {
                                             setView('counseling');
-                                            // 상담 관련 알림 읽음 처리
                                             const counselingNotis = notifications.filter(n => !n.is_read && (
                                                 isAdmin ? (n.type === 'counseling_req' || n.type === 'counseling_user_reply')
                                                     : (n.type === 'counseling_reply')
@@ -2229,9 +2225,9 @@ export default function App() {
                                                 if (Array.isArray(data)) setCounselingRequests(data);
                                             } catch (e) { console.error("상담 로드 실패", e); }
                                         }} style={{
-                                            width: "100%", padding: "11px 10px",
+                                            width: "100%", padding: "11px 5px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #f6f0ff 100%)", color: "#4A148C",
-                                            fontWeight: 800, fontSize: "14px", borderRadius: "16px",
+                                            fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                             border: "1px solid #e1bee7", cursor: "pointer",
                                             boxShadow: "0 10px 20px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(74, 20, 140, 0.08), inset 0 3px 5px rgba(255,255,255,1), inset 0 -3px 0 rgba(255,255,255,0.8)",
                                             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
@@ -2242,15 +2238,13 @@ export default function App() {
                                                 isAdmin ? (n.type === 'counseling_req' || n.type === 'counseling_user_reply')
                                                     : (n.type === 'counseling_reply')
                                             )) && (
-                                                    <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '2px 5px', borderRadius: '8px', border: '1.5px solid white' }}>N</div>
+                                                    <div style={{ position: 'absolute', top: '5px', right: '5px', background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, padding: '1px 4px', borderRadius: '8px', border: '1px solid white' }}>N</div>
                                                 )}
                                             <div style={{ width: '38px', height: '38px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>🙏</div>
-                                            <span>상담/기도 요청</span>
+                                            <span style={{ whiteSpace: 'nowrap' }}>상담/기도 요청</span>
                                         </button>
                                     </div>
-                                </div>
 
-                                <div style={{ display: 'flex', gap: '14px', width: '100%' }}>
                                     <button onClick={async () => {
                                         setView('stats');
                                         setStatsError(null);
@@ -2269,60 +2263,58 @@ export default function App() {
                                             setStatsError(e.name === 'AbortError' ? "시간 초과" : "연결 실패");
                                         }
                                     }} style={{
-                                        flex: 1, padding: "11px 10px",
+                                        padding: "11px 5px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #faf6ec 100%)", color: "#8B6B38",
-                                        fontWeight: 800, fontSize: "14px", borderRadius: "16px",
+                                        fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                         border: "1px solid #e8dcc4", cursor: "pointer",
                                         boxShadow: "0 10px 20px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(184, 146, 74, 0.08), inset 0 3px 5px rgba(255,255,255,1), inset 0 -3px 0 rgba(255,255,255,0.8)",
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                         <div style={{ width: '38px', height: '38px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>📊</div>
-                                        <span>이달의 큐티왕</span>
+                                        <span style={{ whiteSpace: 'nowrap' }}>이달의 큐티왕</span>
                                     </button>
 
                                     <button onClick={() => {
                                         setView('history');
                                         fetchHistory();
                                     }} style={{
-                                        flex: 1, padding: "11px 10px",
+                                        padding: "11px 5px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f1f8f3 100%)", color: "#507558",
-                                        fontWeight: 800, fontSize: "14px", borderRadius: "16px",
+                                        fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                         border: "1px solid #cee8d8", cursor: "pointer",
                                         boxShadow: "0 10px 20px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(112, 145, 118, 0.08), inset 0 3px 5px rgba(255,255,255,1), inset 0 -3px 0 rgba(255,255,255,0.8)",
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                         <div style={{ width: '38px', height: '38px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>🕰️</div>
-                                        <span>나의 묵상 기록</span>
+                                        <span style={{ whiteSpace: 'nowrap' }}>나의 묵상 기록</span>
                                     </button>
-                                </div>
 
-                                <div style={{ display: 'flex', gap: '14px', width: '100%' }}>
                                     <button onClick={() => setView('ccm')} style={{
-                                        flex: 1, padding: "11px 10px",
+                                        padding: "11px 5px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f4f6fa 100%)", color: "#465293",
-                                        fontWeight: 800, fontSize: "14px", borderRadius: "16px",
+                                        fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                         border: "1px solid #cfd5f0", cursor: "pointer",
                                         boxShadow: "0 10px 20px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(63, 81, 181, 0.08), inset 0 3px 5px rgba(255,255,255,1), inset 0 -3px 0 rgba(255,255,255,0.8)",
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                         <div style={{ width: '38px', height: '38px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>🎧</div>
-                                        <span>CCM 듣기</span>
+                                        <span style={{ whiteSpace: 'nowrap' }}>CCM 듣기</span>
                                     </button>
 
                                     <button onClick={() => setView('memberSearch')} style={{
-                                        flex: 1, padding: "11px 10px",
+                                        padding: "11px 5px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f1f8f3 100%)", color: "#2E7D32",
-                                        fontWeight: 800, fontSize: "14px", borderRadius: "16px",
+                                        fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                         border: "1px solid #C8E6C9", cursor: "pointer",
                                         boxShadow: "0 10px 20px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(46, 125, 50, 0.08), inset 0 3px 5px rgba(255,255,255,1), inset 0 -3px 0 rgba(255,255,255,0.8)",
                                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                         <div style={{ width: '38px', height: '38px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>🔎</div>
-                                        <span>성도 주소록</span>
+                                        <span style={{ whiteSpace: 'nowrap' }}>성도 주소록</span>
                                     </button>
                                 </div>
 
@@ -6276,7 +6268,7 @@ export default function App() {
                                                     </div>
                                                 </div>
 
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                                                     <div style={{ background: '#F8F9FA', padding: '12px', borderRadius: '12px', border: '1px solid #F1F3F5', position: 'relative' }}>
                                                         <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>전체 성도</div>
                                                         <div style={{ fontSize: '18px', fontWeight: 900, color: '#333' }}>{memberList.length}명</div>
