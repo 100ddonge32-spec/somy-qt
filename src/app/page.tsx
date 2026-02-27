@@ -4190,18 +4190,33 @@ export default function App() {
                                         const res = await fetch('/api/push-send-daily?secret=somy-push-secret-123');
                                         const data = await res.json();
                                         if (data.success) {
-                                            if (data.sentCount === 0 && data.failedCount === 0) {
-                                                alert('알림을 보낼 구독자가 없습니다. 성도님들이 앱에서 알림 설정을 켰는지 확인해 주세요.');
+                                            if (data.sentCount === 0 && data.failedCount === 0 && (data.totalApprovedCount === 0 || data.totalApprovedCount === undefined)) {
+                                                alert('알림을 보낼 성도님이 없습니다. 먼저 성도 관리에서 승인을 해주세요.');
                                             } else {
-                                                const errorReport = (data.failedCount > 0 && data.errorSamples) ? `\n\n(참고: ${data.failedCount}명은 통신 문제나 브라우저 설정으로 전송되지 못했습니다. 사유: ${data.errorSamples.join(', ')})` : '';
-                                                if (data.sentCount > 0) {
-                                                    alert(`📢 알림 전송 완료!\n\n총 ${data.sentCount}명의 성도님께 알림을 보냈습니다.${errorReport}`);
-                                                } else {
-                                                    alert(`알림 전송에 실패했습니다.${errorReport}`);
+                                                let msg = `📢 알림 발송 완료!\n\n✅ 성공: ${data.sentCount}명\n❌ 실패: ${data.failedCount}명`;
+
+                                                if (data.failedCount > 0 && data.errorSamples) {
+                                                    const koreanErrors = data.errorSamples.map((err: string) => {
+                                                        if (err.includes('expired')) return '만료된 알림 설정';
+                                                        if (err.includes('Permission')) return '권한 거부';
+                                                        if (err.includes('Not Found')) return '구독 정보 없음';
+                                                        return err;
+                                                    });
+                                                    msg += `\n(주요 사유: ${koreanErrors.join(', ')})`;
                                                 }
+
+                                                if (data.totalApprovedCount !== undefined) {
+                                                    const unsubscribedCount = data.totalApprovedCount - (data.sentCount + data.failedCount);
+                                                    msg += `\n\n[상세 현황]\n- 승인된 성도: 총 ${data.totalApprovedCount}명\n- 알림 수신 동의: ${data.sentCount + data.failedCount}명\n- 미동의/미설정: ${unsubscribedCount}명`;
+
+                                                    if (unsubscribedCount > 0) {
+                                                        msg += `\n\n※ 알림이 안 가는 분들은 하단의 '알림 켜기' 버튼을 누르셨는지 확인이 필요합니다.`;
+                                                    }
+                                                }
+                                                alert(msg);
                                             }
                                         } else {
-                                            alert('전송 중 오류가 발생했습니다: ' + (data.error || '알 수 없는 오류'));
+                                            alert('⚠️ 발송 실패: ' + (data.error || '알 수 없는 오류'));
                                         }
                                     } catch (e) { alert('네트워크 연결이 원활하지 않습니다. 잠시 후 다시 시도해 주세요.'); }
                                 }
@@ -6093,21 +6108,27 @@ export default function App() {
                                                             🔄
                                                         </button>
                                                     </div>
+                                                    <div style={{ background: '#E8F5E9', padding: '12px', borderRadius: '12px', border: '1px solid #C8E6C9' }}>
+                                                        <div style={{ fontSize: '11px', color: '#2E7D32', marginBottom: '4px' }}>승인 완료</div>
+                                                        <div style={{ fontSize: '18px', fontWeight: 900, color: '#2E7D32' }}>{memberList.filter(m => m.is_approved).length}명</div>
+                                                    </div>
                                                     <div style={{ background: '#FFF5F5', padding: '12px', borderRadius: '12px', border: '1px solid #FFE3E3' }}>
                                                         <div style={{ fontSize: '11px', color: '#E03131', marginBottom: '4px' }}>승인 대기</div>
                                                         <div style={{ fontSize: '18px', fontWeight: 900, color: '#E03131' }}>{memberList.filter(m => !m.is_approved).length}명</div>
                                                     </div>
-                                                    <button
-                                                        onClick={async () => {
-                                                            if (window.confirm('정말 모든 성도 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-                                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_all_members', church_id: churchId }) });
-                                                                if (res.ok) { setMemberList([]); alert('모든 성도 데이터가 성공적으로 삭제되었습니다.'); }
-                                                            }
-                                                        }}
-                                                        style={{ background: '#FFF5F5', color: '#C62828', border: '1px solid #FFC9C9', borderRadius: '12px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', textAlign: 'center' }}
-                                                    >
-                                                        🗑️ 데이터 초기화
-                                                    </button>
+                                                    <div style={{ gridColumn: 'span 2', display: 'flex', gap: '8px', marginTop: '4px' }}>
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (window.confirm('정말 모든 성도 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                                                                    const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_all_members', church_id: churchId }) });
+                                                                    if (res.ok) { setMemberList([]); alert('모든 성도 데이터가 성공적으로 삭제되었습니다.'); }
+                                                                }
+                                                            }}
+                                                            style={{ flex: 1, background: '#FFF5F5', color: '#C62828', border: '1px solid #FFC9C9', borderRadius: '12px', padding: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', textAlign: 'center' }}
+                                                        >
+                                                            🗑️ 데이터 초기화
+                                                        </button>
+                                                    </div>
                                                 </div>
 
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#F5F5F3', padding: '6px 12px', borderRadius: '10px' }}>

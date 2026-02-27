@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
         const approvedIds = (approvedProfiles || []).map(p => p.id);
 
         if (approvedIds.length === 0) {
-            return NextResponse.json({ success: true, sentCount: 0, failedCount: 0 });
+            return NextResponse.json({ success: true, sentCount: 0, failedCount: 0, totalApprovedCount: 0 });
         }
 
         // 3. 승인된 성도님들의 구독 정보만 가져오기
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
         if (subError) throw subError;
 
         if (!subscriptions || subscriptions.length === 0) {
-            return NextResponse.json({ success: true, sentCount: 0 });
+            return NextResponse.json({ success: true, sentCount: 0, failedCount: 0, totalApprovedCount: approvedIds.length });
         }
 
         const results = await Promise.allSettled(
@@ -113,6 +113,7 @@ export async function GET(req: NextRequest) {
             success: true,
             sentCount,
             failedCount,
+            totalApprovedCount: approvedIds.length,
             errorSamples: errorMessages.slice(0, 3),
             today
         });
