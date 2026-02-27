@@ -1765,14 +1765,30 @@ export default function App() {
                     <div style={{ position: 'absolute', top: '15px', right: '15px', display: 'flex', alignItems: 'center', gap: '10px', zIndex: 10 }}>
                         {user && (
                             <div style={{
-                                display: 'flex', alignItems: 'center', gap: '8px',
-                                background: 'rgba(255,255,255,0.7)', padding: '6px 12px',
-                                borderRadius: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                                fontSize: '12px', border: '1px solid rgba(255,255,255,0.8)',
-                                backdropFilter: 'blur(5px)'
+                                display: 'flex', alignItems: 'center', gap: '10px',
+                                background: 'rgba(255,255,255,0.85)', padding: '6px 14px',
+                                borderRadius: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                                fontSize: '12px', border: '1.5px solid white',
+                                backdropFilter: 'blur(10px)'
                             }}>
-                                <span style={{ color: '#333', fontWeight: 700 }}>{profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
-                                <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontWeight: 600, fontSize: '11px', padding: 0 }}>로그아웃</button>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    {isSuperAdmin ? (
+                                        <span style={{ background: '#333', color: 'white', fontSize: '9px', padding: '1px 5px', borderRadius: '4px', fontWeight: 900 }}>슈퍼관리자</span>
+                                    ) : isAdmin ? (
+                                        <span style={{ background: '#666', color: 'white', fontSize: '9px', padding: '1px 5px', borderRadius: '4px', fontWeight: 900 }}>관리자</span>
+                                    ) : null}
+                                    <span style={{ color: '#333', fontWeight: 800 }}>{profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    {isAdmin && (
+                                        <button
+                                            onClick={() => { setAdminTab('settings'); setSettingsForm({ ...churchSettings }); setShowSettings(true); }}
+                                            style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
+                                            title="교회 설정"
+                                        >⚙️</button>
+                                    )}
+                                    <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontWeight: 600, fontSize: '11px', padding: 0 }}>로그아웃</button>
+                                </div>
                             </div>
                         )}
                         {/* 글씨 확대 버튼 (Aa) */}
@@ -2177,14 +2193,7 @@ export default function App() {
                                             <span style={{ whiteSpace: 'nowrap' }}>은혜나눔</span>
                                             {hasNewCommunity && <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px', zIndex: 1 }}>N</div>}
                                         </button>
-                                        {!showWelcome && (
-                                            <div onClick={(e) => { e.stopPropagation(); setShowNotiList(!showNotiList); }} style={{
-                                                position: 'absolute', top: '50%', transform: 'translateY(-50%)', right: '10px', width: '30px', height: '30px', background: 'linear-gradient(145deg, #ffffff, #f0f0f0)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 8px rgba(0,0,0,0.1)', cursor: 'pointer', zIndex: 1210, border: '1.5px solid #E6A4B4', animation: notifications.filter(n => !n.is_read).length > 0 ? 'bell-swing 2s infinite ease-in-out' : 'none', transition: 'all 0.2s'
-                                            }} onMouseOver={e => e.currentTarget.style.transform = "scale(1.1) rotate(10deg) translateY(-45%)"} onMouseOut={e => e.currentTarget.style.transform = "scale(1) rotate(0) translateY(-50%)"}>
-                                                <span style={{ fontSize: '15px' }}>🔔</span>
-                                                {notifications.filter(n => !n.is_read).length > 0 && <div style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, minWidth: '14px', height: '14px', padding: '0 3px', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid white' }}>{notifications.filter(n => !n.is_read).length}</div>}
-                                            </div>
-                                        )}
+
                                     </div>
 
                                     <div style={{ position: 'relative' }}>
