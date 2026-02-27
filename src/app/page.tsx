@@ -59,6 +59,7 @@ interface Post {
     created_at: string;
     comments: Comment[];
     is_private?: boolean; // 비공개 여부
+    liker_ids?: string[]; // 좋아요 누른 유저 ID 목록
 }
 
 interface Notification {
