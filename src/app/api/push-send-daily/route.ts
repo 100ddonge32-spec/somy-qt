@@ -37,10 +37,17 @@ export async function GET(req: NextRequest) {
         const messageTitle = '오늘의 큐티말씀이 도착했습니다 🐑';
         const messageBody = qtData ? `오늘의 본문: ${qtData.reference}` : '오늘의 말씀을 묵상하며 하루를 시작해 보세요.';
 
-        // 2. 모든 구독자 정보 가져오기 (user_id 포함되어야 삭제 가능)
-        const { data: subscriptions } = await supabaseAdmin
+        // 2. 승인된 성도님들의 구독 정보만 가져오기 (profiles 테이블과 조인)
+        const { data: subscriptions, error: subError } = await supabaseAdmin
             .from('push_subscriptions')
-            .select('user_id, subscription');
+            .select(`
+                user_id,
+                subscription,
+                profiles!inner(is_approved)
+            `)
+            .eq('profiles.is_approved', true);
+
+        if (subError) throw subError;
 
         if (!subscriptions || subscriptions.length === 0) {
             return NextResponse.json({ success: true, sentCount: 0 });
