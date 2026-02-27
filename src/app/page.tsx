@@ -6493,11 +6493,41 @@ export default function App() {
                                                                 alert('번호가 복사되었습니다! 메시지 앱의 수신인 칸에 붙여넣기 하세요.');
                                                             }}
                                                             style={{
-                                                                flex: 1.2, padding: '12px', background: '#F5F5F3', color: '#555', border: '1px solid #E5E5E5', borderRadius: '12px', fontSize: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s'
+                                                                flex: 1, padding: '12px', background: '#F5F5F3', color: '#555', border: '1px solid #E5E5E5', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s'
                                                             }}
                                                             title="번호 복사"
                                                         >
                                                             📋 복사
+                                                        </button>
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (selectedMemberIds.length === 0) { alert('삭제할 성도를 먼저 선택해주세요.'); return; }
+                                                                if (window.confirm(`선택한 ${selectedMemberIds.length}명의 성도 정보를 영구적으로 삭제하시겠습니까?`)) {
+                                                                    try {
+                                                                        const res = await fetch('/api/admin', {
+                                                                            method: 'POST',
+                                                                            headers: { 'Content-Type': 'application/json' },
+                                                                            body: JSON.stringify({ action: 'bulk_delete_members', ids: selectedMemberIds })
+                                                                        });
+                                                                        if (res.ok) {
+                                                                            alert('선택한 성도가 삭제되었습니다.');
+                                                                            setSelectedMemberIds([]);
+                                                                            const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                            if (r.ok) setMemberList(await r.json());
+                                                                        } else {
+                                                                            const err = await res.json();
+                                                                            alert('삭제 실패: ' + err.error);
+                                                                        }
+                                                                    } catch (e) {
+                                                                        alert('삭제 중 오류가 발생했습니다.');
+                                                                    }
+                                                                }
+                                                            }}
+                                                            style={{
+                                                                flex: 1, padding: '12px', background: '#FFF5F5', color: '#C62828', border: '1px solid #FFC9C9', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s'
+                                                            }}
+                                                        >
+                                                            🗑️ 삭제
                                                         </button>
                                                     </div>
                                                 )}

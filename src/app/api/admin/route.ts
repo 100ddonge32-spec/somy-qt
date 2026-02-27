@@ -140,6 +140,21 @@ export async function POST(req: NextRequest) {
             return NextResponse.json(data);
         }
 
+        // 새 교회 및 관리자 지정 (슈퍼관리자용)
+        if (action === 'create_church_admin') {
+            const { target_church_id } = body;
+            const { data, error } = await supabaseAdmin
+                .from('app_admins')
+                .upsert([{
+                    email: email.toLowerCase().trim(),
+                    church_id: target_church_id,
+                    role: 'church_admin'
+                }])
+                .select();
+            if (error) throw error;
+            return NextResponse.json(data);
+        }
+
         // 성도 승인 처리
         if (action === 'approve_user') {
             const { data, error } = await supabaseAdmin
@@ -204,6 +219,19 @@ export async function POST(req: NextRequest) {
                 .from('profiles')
                 .delete()
                 .eq('id', targetId);
+            if (error) throw error;
+            return NextResponse.json({ success: true });
+        }
+
+        // 선택 성도 일괄 삭제
+        if (action === 'bulk_delete_members') {
+            const { ids } = body;
+            if (!ids || !Array.isArray(ids) || ids.length === 0) throw new Error('삭제할 성도 ID 목록이 없습니다.');
+
+            const { error } = await supabaseAdmin
+                .from('profiles')
+                .delete()
+                .in('id', ids);
             if (error) throw error;
             return NextResponse.json({ success: true });
         }
