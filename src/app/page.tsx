@@ -398,6 +398,8 @@ export default function App() {
     const [selectedLogoFile, setSelectedLogoFile] = useState<File | null>(null); // ✅ 로고 업로드 대기 파일
     const [isMemberUploading, setIsMemberUploading] = useState(false); // ✅ 업로드 중 애니메이션 스테이트
     const [isLogoUploading, setIsLogoUploading] = useState(false); // ✅ 로고 업로드 중
+    const lastNotifiedId = useRef<string | null>(null);
+    const birthdayPopupRef = useRef<string | null>(null);
     const [isBookUploading, setIsBookUploading] = useState(false); // ✅ 책 이미지 업로드 중
     const [isBookAiLoading, setIsBookAiLoading] = useState(false); // ✅ 책 소개 AI 생성 중
     const [isPosterUploading, setIsPosterUploading] = useState(false); // ✅ 포스터 업로드 중
@@ -965,12 +967,44 @@ export default function App() {
             // 승인 대기 중일 때 15초마다 자동으로 상태 재확인 & 알림 폴링 (알림 배지 실시간 갱신용)
             const backgroundPoller = setInterval(() => {
                 checkApprovalStatus();
+
+                // 오늘의 생일 체크 (최초 1회 팝업용)
+                const kstToday = new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString().slice(0, 10);
+                if (kstToday !== birthdayPopupRef.current) {
+                    const todaySolarMMDD = kstToday.slice(5, 10);
+                    const todayLunarMMDD = typeof getLunarTodayMMDD === 'function' ? getLunarTodayMMDD() : null;
+                    const birthdayMembers = memberList.filter(m => {
+                        if (!m?.birthdate) return false;
+                        const bd = String(m.birthdate).slice(5, 10);
+                        return m.is_birthdate_lunar ? (todayLunarMMDD && bd === todayLunarMMDD) : bd === todaySolarMMDD;
+                    });
+                    if (birthdayMembers.length > 0) {
+                        setShowNotiList(true);
+                        birthdayPopupRef.current = kstToday;
+                    }
+                }
+
                 fetch(`/api/notifications?user_id=${user.id}`)
                     .then(r => r.ok ? r.json() : [])
                     .then(data => {
+                        const prevNotis = notifications;
                         setNotifications(data);
+
+                        // [자동 팝업 로직] 새로운 읽지 않은 알림이 있는지 확인
+                        const unread = data?.filter((n: any) => !n.is_read) || [];
+                        if (unread.length > 0) {
+                            const latest = unread[0];
+                            if (latest.id !== lastNotifiedId.current) {
+                                lastNotifiedId.current = latest.id;
+                                // 앱 실행 중 새로운 소식이 오면 팝업!
+                                if (prevNotis.length > 0) {
+                                    setShowNotiList(true);
+                                }
+                            }
+                        }
+
                         if (typeof navigator !== 'undefined' && 'setAppBadge' in navigator && typeof navigator.setAppBadge === 'function') {
-                            const unreadCount = data?.filter((n: any) => !n.is_read)?.length || 0;
+                            const unreadCount = unread.length;
                             if (unreadCount > 0) navigator.setAppBadge(unreadCount);
                             else navigator.clearAppBadge();
                         }
@@ -5481,96 +5515,63 @@ export default function App() {
     // 알림 리스트 팝업
     const renderNotificationList = () => {
         if (!showNotiList) return null;
+
+        const kstBase = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+        const todaySolarMMDD = kstBase.toISOString().slice(5, 10);
+        const todayLunarMMDD = typeof getLunarTodayMMDD === 'function' ? getLunarTodayMMDD() : null;
+        const birthdayMembers = memberList.filter(m => {
+            if (!m?.birthdate) return false;
+            const bd = String(m.birthdate).slice(5, 10);
+            return m.is_birthdate_lunar ? (todayLunarMMDD && bd === todayLunarMMDD) : bd === todaySolarMMDD;
+        });
+        const virtualBirthNotis = birthdayMembers.map(m => ({
+            id: `birth-${m.id}`, type: 'birthday', actor_name: m.full_name, avatar_url: m.avatar_url, created_at: new Date().toISOString(), is_read: false
+        }));
+        const allNotis = [...virtualBirthNotis, ...[...notifications].reverse()];
+
         return (
             <>
-                {/* 배경 오버레이 (바깥 클릭 시 닫기) */}
                 <div onClick={() => setShowNotiList(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.1)', zIndex: 1999 }} />
-
                 <div style={{ position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)', width: '90%', maxWidth: '340px', background: 'white', borderRadius: '24px', boxShadow: '0 15px 50px rgba(0,0,0,0.2)', zIndex: 2000, border: '2px solid #E6A4B4', overflow: 'hidden', animation: 'slide-up 0.3s ease-out' }}>
                     <div style={{ padding: '15px', borderBottom: '1px solid #F5F5F5', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FDFCFB' }}>
                         <span style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>🔔 새 소식</span>
                         <button onClick={() => setShowNotiList(false)} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>닫기</button>
                     </div>
                     <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
-                        {notifications.length === 0 ? (
-                            <div style={{ padding: '40px 20px', textAlign: 'center', color: '#AAA', fontSize: '13px' }}>
-                                아직 도착한 소식이 없어요 🐑<br />
-                                <span style={{ fontSize: '11px', opacity: 0.6, marginTop: '5px', display: 'block' }}>은혜나눔의 댓글 알림이 여기에 표시됩니다.</span>
-                            </div>
+                        {allNotis.length === 0 ? (
+                            <div style={{ padding: '40px 20px', textAlign: 'center', color: '#AAA', fontSize: '13px' }}>아직 도착한 소식이 없어요 🐑</div>
                         ) : (
-                            [...notifications].reverse().map(n => (
+                            allNotis.map(n => (
                                 <div key={n.id} onClick={async () => {
-                                    // 읽음 처리
+                                    if (n.type === 'birthday') { setShowNotiList(false); return; }
                                     if (!n.is_read) {
                                         await fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: n.id }) });
                                         setNotifications(notifications.map(noti => noti.id === n.id ? { ...noti, is_read: true } : noti));
                                     }
-                                    // 게시판으로 이동 및 데이터 새로고침
                                     try {
                                         if (['comment', 'community_post', 'community_like'].includes(n.type)) {
                                             const res = await fetch(`/api/community?church_id=${churchId}`);
                                             const data = await res.json();
-                                            if (Array.isArray(data)) setCommunityPosts(data);
-                                            setView('community');
-                                        } else if (['thanks_comment', 'thanksgiving_like'].includes(n.type)) {
-                                            const res = await fetch(`/api/thanksgiving?church_id=${churchId}`);
-                                            const data = await res.json();
-                                            if (Array.isArray(data)) setThanksgivingDiaries(data);
-                                            setView('thanksgiving');
-                                        } else if (['counseling_req', 'counseling_reply', 'counseling_user_reply'].includes(n.type)) {
-                                            const res = await fetch(`/api/counseling?church_id=${churchId}&user_id=${user?.id}&admin=${isAdmin}`);
-                                            const data = await res.json();
-                                            if (Array.isArray(data)) setCounselingRequests(data);
-                                            setView('counseling');
-                                        } else if (n.type === 'qt') {
-                                            setView('qt');
-                                        } else {
-                                            setView('home');
-                                        }
+                                            if (Array.isArray(data)) setCommunityPosts(data); setView('community');
+                                        } else if (n.type === 'qt') { setView('qt'); } else { setView('home'); }
                                     } catch (e) { }
-
                                     setShowNotiList(false);
-                                }} style={{ padding: '15px', borderBottom: '1px solid #F9F9F9', cursor: 'pointer', background: n.is_read ? 'white' : '#FFF9F9', transition: 'background 0.2s', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                                }} style={{ padding: '15px', borderBottom: '1px solid #F9F9F9', cursor: 'pointer', background: n.is_read ? 'white' : '#FFF9F9', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: n.is_read ? 'transparent' : '#FF3D00', marginTop: '5px', flexShrink: 0 }} />
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontSize: '13px', color: '#333', lineHeight: 1.5 }}>
+                                            {n.type === 'birthday' && <>🎂 오늘은 <strong>{n.actor_name}</strong> 성도님의 생일입니다! 🎉</>}
                                             {n.type === 'comment' && <><strong>{n.actor_name}</strong>님이 은혜나눔에 댓글을 남기셨습니다.</>}
-                                            {n.type === 'community_post' && <>✨ <strong>{n.actor_name}</strong> 성도님이 새로운 은혜를 나누셨습니다.</>}
-                                            {n.type === 'community_like' && <>❤️ <strong>{n.actor_name}</strong>님이 회원님의 은혜나눔을 좋아합니다.</>}
-                                            {n.type === 'thanks_comment' && <><strong>{n.actor_name}</strong>님이 감사일기에 댓글을 남기셨습니다.</>}
-                                            {n.type === 'thanksgiving_like' && <>❤️ <strong>{n.actor_name}</strong>님이 회원님의 감사일기에 공감했습니다.</>}
-                                            {n.type === 'counseling_req' && <><strong>{n.actor_name}</strong> 성도님이 새로운 상담/기도 요청을 보내셨습니다.</>}
-                                            {n.type === 'counseling_reply' && <><strong>{n.actor_name}</strong>께서 상담/기도 요청에 답변을 남기셨습니다.</>}
-                                            {n.type === 'counseling_user_reply' && <><strong>{n.actor_name}</strong> 성도님이 목사님 답변에 추가 답글을 남기셨습니다.</>}
-                                            {n.type === 'announcement' && <>📢 새 공지사항: <strong>{n.actor_name}</strong></>}
-                                            {n.type === 'qt' && <>📖 <strong>{n.actor_name}</strong> 말씀이 업로드되었습니다.</>}
-                                            {!['comment', 'community_post', 'community_like', 'thanks_comment', 'thanksgiving_like', 'counseling_req', 'counseling_reply', 'counseling_user_reply', 'announcement', 'qt'].includes(n.type) && <><strong>{n.actor_name}</strong>님이 새로운 알림을 보내셨습니다.</>}
-                                        </div>
-                                        <div style={{ fontSize: '11px', color: '#999', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <span>🕒</span>
-                                            {new Date(n.created_at).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                            {n.type === 'community_post' && <>✨ <strong>{n.actor_name}</strong>님이 새로운 은혜를 나누셨습니다.</>}
+                                            {(!['birthday', 'comment', 'community_post'].includes(n.type)) && <><strong>{n.actor_name}</strong>님이 새로운 소식을 보내셨습니다.</>}
                                         </div>
                                     </div>
                                 </div>
                             ))
                         )}
                     </div>
-                    {notifications.length > 0 && (
+                    {(virtualBirthNotis.length > 0 || notifications.length > 0) && (
                         <div style={{ padding: '10px 15px', textAlign: 'center', background: '#FDFCFB', borderTop: '1px solid #F0F0F0', display: 'flex', gap: '10px' }}>
-                            {notifications.some(n => !n.is_read) && (
-                                <button onClick={async (e) => {
-                                    e.stopPropagation();
-                                    // 모든 알림 읽음 처리 (API)
-                                    try {
-                                        await fetch('/api/notifications', {
-                                            method: 'PATCH',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ user_id: user.id }) // 백엔드에서 action: 'read_all' 처리하도록 구현하거나, 유저ID만 보내서 전체 처리
-                                        });
-                                        setNotifications(notifications.map(n => ({ ...n, is_read: true })));
-                                    } catch (e) { console.error("전체 읽음 처리 실패:", e); }
-                                }} style={{ flex: 1, background: '#F5F5F5', border: 'none', color: '#666', fontSize: '12px', fontWeight: 600, padding: '8px', borderRadius: '10px', cursor: 'pointer' }}>모두 읽음</button>
-                            )}
                             <button onClick={() => setShowNotiList(false)} style={{ flex: 1, background: '#333', border: 'none', color: 'white', fontSize: '12px', fontWeight: 700, padding: '8px', borderRadius: '10px', cursor: 'pointer' }}>닫기</button>
                         </div>
                     )}
