@@ -6,7 +6,7 @@ import { getGraceVerse } from '@/lib/navigator-verses';
 import { getTodayCcm, CcmVideo, CCM_LIST } from "@/lib/ccm";
 import * as XLSX from 'xlsx';
 
-type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "adminGuide" | "profile" | "memberSearch" | "book";
+type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "adminGuide" | "profile" | "memberSearch" | "book" | "pastorColumn";
 
 const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://cdn.imweb.me/thumbnail/20210813/569458bf12dd0.png";
@@ -432,6 +432,8 @@ export default function App() {
         today_book_image_url: '',
         event_poster_url: '',
         event_poster_visible: false,
+        pastor_column_title: '',
+        pastor_column_content: '',
     });
     const [settingsForm, setSettingsForm] = useState<any>({
         church_name: CHURCH_NAME,
@@ -453,7 +455,10 @@ export default function App() {
         today_book_image_url: '',
         event_poster_url: '',
         event_poster_visible: false,
+        pastor_column_title: '',
+        pastor_column_content: '',
     });
+    const [isGeneratingColumn, setIsGeneratingColumn] = useState(false);
 
     // [최적화] 커스텀 CCM 목록 우선순위 결정 로직
     const activeCcmList = (churchSettings?.custom_ccm_list && Array.isArray(churchSettings.custom_ccm_list) && churchSettings.custom_ccm_list.length > 0)
@@ -1494,7 +1499,10 @@ export default function App() {
             const res = await fetch('/api/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(settingsForm),
+                body: JSON.stringify({
+                    ...settingsForm,
+                    church_id: churchId
+                }),
             });
             const data = await res.json();
             if (data.success) {
@@ -1518,6 +1526,65 @@ export default function App() {
             alert('저장 중 오류가 발생했습니다.');
         } finally {
             setSettingsSaving(false);
+        }
+    };
+
+    const handleGenerateColumn = async () => {
+        if (isGeneratingColumn) return;
+        setIsGeneratingColumn(true);
+        try {
+            const verse = getGraceVerse();
+            const prompt = `당신은 ${CHURCH_NAME}의 담임목사입니다. 오늘의 말씀 [${verse.book} ${verse.ref}: ${verse.verse}]을 바탕으로 성도들에게 위로와 도전을 주는 짧고 강렬한 '담임목사 칼럼'을 작성해주세요. 
+            형식:
+            제목: (강렬한 제목)
+            내용: (200자 내외의 따뜻한 권면의 글)
+            말투는 자애롭고 권위 있으면서도 친근한 목소리로 작성해주세요.`;
+
+            const res = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    messages: [{ role: "user", content: prompt }],
+                    stream: false
+                }),
+            });
+
+            const data = await res.json();
+            const aiResponse = data.content || "";
+
+            const titleMatch = aiResponse.match(/제목:\s*(.+)/);
+            const contentMatch = aiResponse.match(/내용:\s*([\s\S]+)/);
+
+            const newTitle = titleMatch ? titleMatch[1].trim() : "오늘의 은혜";
+            const newContent = contentMatch ? contentMatch[1].trim() : aiResponse;
+
+            // 서버에 저장 시도
+            const saveRes = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...churchSettings,
+                    church_id: churchId,
+                    pastor_column_title: newTitle,
+                    pastor_column_content: newContent
+                })
+            });
+
+            if (saveRes.ok) {
+                const updatedSettings = {
+                    ...churchSettings,
+                    pastor_column_title: newTitle,
+                    pastor_column_content: newContent
+                };
+                setChurchSettings(updatedSettings);
+                setSettingsForm(updatedSettings);
+                alert("✨ AI가 오늘의 칼럼을 정성스럽게 작성했습니다!");
+            }
+        } catch (e) {
+            console.error("칼럼 생성 실패:", e);
+            alert("칼럼 생성 중 오류가 발생했습니다.");
+        } finally {
+            setIsGeneratingColumn(false);
         }
     };
 
@@ -2142,34 +2209,88 @@ export default function App() {
                                 </div>
 
 
-                                {/* 이달의 책 추천 카드 */}
-                                <div onClick={() => setView('book')} style={{
+                                {/* 책 추천 & 담임목사 칼럼 (2열 레이아웃) */}
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '1fr 1fr',
+                                    gap: '12px',
                                     width: '100%',
-                                    maxWidth: '320px',
-                                    background: 'linear-gradient(135deg, #FFF 0%, #FAFAFA 100%)',
-                                    borderRadius: '24px',
-                                    padding: '16px 20px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '15px',
-                                    cursor: 'pointer',
-                                    boxShadow: '0 8px 25px rgba(0,0,0,0.04)',
-                                    border: '1px solid #F0ECE4',
-                                    marginTop: '5px',
-                                    animation: 'fade-in 1s ease-out',
-                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                                }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.08)'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.04)'; }}>
-                                    <div style={{ width: '50px', height: '70px', background: '#F5F5F3', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', flexShrink: 0 }}>
-                                        {churchSettings.today_book_image_url ? (
-                                            <img src={churchSettings.today_book_image_url} alt="책" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        ) : (
-                                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>📚</div>
-                                        )}
+                                    maxWidth: '340px',
+                                    marginTop: '8px',
+                                    animation: 'fade-in 1s ease-out'
+                                }}>
+                                    {/* 이달의 책 추천 카드 */}
+                                    <div onClick={() => setView('book')} style={{
+                                        background: 'linear-gradient(135deg, #FFF 0%, #FAFAFA 100%)',
+                                        borderRadius: '24px',
+                                        padding: '16px 20px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '15px',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 8px 25px rgba(0,0,0,0.04)',
+                                        border: '1px solid #F0ECE4',
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        flexDirection: 'column',
+                                        textAlign: 'center'
+                                    }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.08)'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.04)'; }}>
+                                        <div style={{ width: '40px', height: '56px', background: '#F5F5F3', borderRadius: '6px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', flexShrink: 0 }}>
+                                            {churchSettings.today_book_image_url ? (
+                                                <img src={churchSettings.today_book_image_url} alt="책" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            ) : (
+                                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📚</div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '11px', color: '#D4AF37', fontWeight: 800, marginBottom: '2px' }}>성도 추천도서</div>
+                                            <div style={{ fontSize: '13px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '120px' }}>{churchSettings.today_book_title || '추천 도서'}</div>
+                                        </div>
                                     </div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontSize: '12px', color: '#D4AF37', fontWeight: 800, marginBottom: '4px', letterSpacing: '0.5px' }}>오늘의 추천도서</div>
-                                        <div style={{ fontSize: '15px', fontWeight: 900, color: '#333', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{churchSettings.today_book_title || '이달의 추천 도서'}</div>
-                                        <div style={{ fontSize: '13px', color: '#888', fontWeight: 500 }}>지금 읽어보기 →</div>
+
+                                    {/* 담임목사 칼럼 카드 */}
+                                    <div onClick={() => setView('pastorColumn')} style={{
+                                        background: 'linear-gradient(135deg, #FFF 0%, #FDF8F0 100%)',
+                                        borderRadius: '24px',
+                                        padding: '16px 20px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '15px',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 8px 25px rgba(0,0,0,0.04)',
+                                        border: '1px solid #F0ECE4',
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        flexDirection: 'column',
+                                        textAlign: 'center',
+                                        position: 'relative'
+                                    }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.08)'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.04)'; }}>
+                                        <div style={{ width: '40px', height: '56px', background: '#FFFDF7', borderRadius: '6px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', border: '1px solid #FAF0D7' }}>✍️</div>
+                                        <div>
+                                            <div style={{ fontSize: '11px', color: '#B8924A', fontWeight: 800, marginBottom: '2px' }}>담임목사 칼럼</div>
+                                            <div style={{ fontSize: '13px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '120px' }}>{churchSettings.pastor_column_title || '오늘의 칼럼'}</div>
+                                        </div>
+                                        {!churchSettings.pastor_column_content && (
+                                            <div
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleGenerateColumn();
+                                                }}
+                                                style={{
+                                                    position: 'absolute',
+                                                    inset: 0,
+                                                    background: 'rgba(255,255,255,0.7)',
+                                                    backdropFilter: 'blur(2px)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    borderRadius: '24px',
+                                                    zIndex: 10
+                                                }}
+                                            >
+                                                <div style={{ background: '#333', color: 'white', padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 700, boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+                                                    {isGeneratingColumn ? '생성 중...' : '✨ AI 자동 생성'}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -5089,6 +5210,32 @@ export default function App() {
             );
         }
 
+        if (view === "pastorColumn") {
+            return (
+                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', ...baseFont, animation: 'fade-in 0.4s ease-out' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <button onClick={handleBack} style={{ background: '#F5F5F5', border: 'none', width: '36px', height: '36px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '18px' }}>←</button>
+                        <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>✍️ 담임목사 칼럼</h2>
+                    </div>
+
+                    <div style={{ background: 'white', borderRadius: '28px', padding: '28px', border: '1px solid #F0ECE4', boxShadow: '0 15px 35px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div style={{ textAlign: 'center' }}>
+                            <h3 style={{ fontSize: '20px', fontWeight: 900, color: '#333', marginBottom: '8px', wordBreak: 'keep-all' }}>{churchSettings.pastor_column_title || '오늘의 칼럼'}</h3>
+                            <div style={{ width: '40px', height: '3px', background: '#D4AF37', margin: '12px auto', borderRadius: '2px' }}></div>
+                        </div>
+
+                        <div style={{ width: '100%', background: '#FDF8F0', padding: '24px', borderRadius: '20px', border: '1px solid #F0ECE4' }}>
+                            <p style={{ margin: 0, fontSize: '15.5px', color: '#444', lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'keep-all', fontWeight: 500 }}>
+                                {churchSettings.pastor_column_content || '아직 등록된 칼럼이 없습니다.'}
+                            </p>
+                        </div>
+                    </div>
+
+                    <button onClick={handleBack} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '16px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', marginTop: '10px', boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }}>확인</button>
+                </div>
+            );
+        }
+
         if (view === "guide") {
             return renderGuidePage();
         }
@@ -6298,6 +6445,22 @@ export default function App() {
                                                             <span style={{ fontSize: '11px', color: '#999' }}>이미지가 선택되었습니다.</span>
                                                         </div>
                                                     )}
+                                                </div>
+                                                {/* ✅ 담임목사 칼럼 관리 섹션 추가 */}
+                                                <div style={{ marginTop: '10px', padding: '15px', background: '#FDF8F0', borderRadius: '15px', border: '1px solid #FAF0D7' }}>
+                                                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>✍️ 담임목사 칼럼 관리</div>
+                                                        <button
+                                                            disabled={isGeneratingColumn}
+                                                            onClick={(e) => { e.preventDefault(); handleGenerateColumn(); }}
+                                                            style={{ padding: '4px 10px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}>
+                                                            {isGeneratingColumn ? '생성 중...' : '✨ AI 생성'}
+                                                        </button>
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                        <input type="text" value={settingsForm.pastor_column_title || ''} onChange={e => setSettingsForm({ ...settingsForm, pastor_column_title: e.target.value })} placeholder="칼럼 제목" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
+                                                        <textarea value={settingsForm.pastor_column_content || ''} onChange={e => setSettingsForm({ ...settingsForm, pastor_column_content: e.target.value })} placeholder="칼럼 내용 (직접 입력 또는 AI 생성)" style={{ width: '100%', minHeight: '100px', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px', resize: 'none', lineHeight: 1.6 }} />
+                                                    </div>
                                                 </div>
                                             </div>
                                             {settingsForm.church_logo_url && (

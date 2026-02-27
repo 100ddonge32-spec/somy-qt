@@ -44,6 +44,18 @@ export async function GET(req: NextRequest) {
             if (match) data.event_poster_url = match[1];
         }
 
+        // 4. 담임목사 칼럼 제목
+        if (!data.pastor_column_title && planStr.includes('column_title:')) {
+            const match = planStr.match(/column_title:([^|]+)/);
+            if (match) data.pastor_column_title = decodeURIComponent(match[1]);
+        }
+
+        // 5. 담임목사 칼럼 내용
+        if (!data.pastor_column_content && planStr.includes('column_content:')) {
+            const match = planStr.match(/column_content:([^|]+)/);
+            if (match) data.pastor_column_content = decodeURIComponent(match[1]);
+        }
+
         if (data.plan) data.plan = data.plan.split('|')[0]; // 원래 plan 값만 추출
     }
 
@@ -71,7 +83,9 @@ export async function POST(req: NextRequest) {
         today_book_description,
         today_book_image_url,
         event_poster_url,
-        event_poster_visible
+        event_poster_visible,
+        pastor_column_title,
+        pastor_column_content
     } = body;
 
     // ✅ DB 컬럼이 없을 가능성을 대비해 plan 필드에 플래그를 심어 저장 (김부장 방식 확장)
@@ -79,6 +93,8 @@ export async function POST(req: NextRequest) {
     if (allow_member_edit) encodedPlan += '|member_edit_on';
     if (event_poster_visible) encodedPlan += '|poster_on';
     if (event_poster_url) encodedPlan += `|poster_url:${event_poster_url}`;
+    if (pastor_column_title) encodedPlan += `|column_title:${encodeURIComponent(pastor_column_title)}`;
+    if (pastor_column_content) encodedPlan += `|column_content:${encodeURIComponent(pastor_column_content)}`;
 
     const baseData = {
         id: 1,
