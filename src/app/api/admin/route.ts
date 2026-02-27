@@ -219,6 +219,41 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true });
         }
 
+        // [추가] 미인증 유저(업로드 전용 가계정)를 승인 대기 상태로 초기화
+        if (action === 'reset_unverified_status') {
+            const { church_id } = body;
+            const targetChurchId = church_id || 'jesus-in';
+
+            // @church.local 또는 @noemail.local인 성도들은 실제 로그인을 아직 안 한 업로드 데이터임
+            const { data: targets, error: fetchErr } = await supabaseAdmin
+                .from('profiles')
+                .select('id, full_name')
+                .eq('church_id', targetChurchId)
+                .or('email.ilike.%@church.local,email.ilike.%@noemail.local');
+
+            if (fetchErr) throw fetchErr;
+
+            if (targets && targets.length > 0) {
+                // 대표님 등 슈퍼관리자 성함은 제외하고 일괄 미승인 처리
+                const BOSS_NAMES = ['백동희', '동희'];
+                const filteredIds = targets
+                    .filter(t => !BOSS_NAMES.includes(t.full_name?.trim()))
+                    .map(t => t.id);
+
+                if (filteredIds.length > 0) {
+                    const { error: updateErr } = await supabaseAdmin
+                        .from('profiles')
+                        .update({ is_approved: false })
+                        .in('id', filteredIds);
+
+                    if (updateErr) throw updateErr;
+                }
+                return NextResponse.json({ success: true, count: filteredIds.length });
+            }
+
+            return NextResponse.json({ success: true, count: 0 });
+        }
+
         // 일괄 프라이버시 설정
         if (action === 'bulk_update_privacy') {
             const { church_id, field, value } = body;

@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
                 gender: match.gender || profileById?.gender,
                 avatar_url: profileById?.avatar_url || match.avatar_url,
                 church_id: match.church_id || profileById?.church_id || 'jesus-in',
-                is_approved: IS_BOSS || match.is_approved // 보스이거나 기존 매칭 데이터가 승인된 상태면 승인
+                is_approved: IS_BOSS || true // 매칭 성공 = 본인확인 완료이므로 승인 처리
             };
 
             if (profileById) {

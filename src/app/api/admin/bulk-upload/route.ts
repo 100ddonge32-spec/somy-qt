@@ -124,7 +124,8 @@ export async function POST(req: NextRequest) {
                 member_no: member_no || null,
                 gender: gender || null,
                 church_rank: church_rank || null,
-                church_id: church_id || 'jesus-in'
+                church_id: church_id || 'jesus-in',
+                is_approved: false
             };
 
             if (formattedRegisteredAt) {

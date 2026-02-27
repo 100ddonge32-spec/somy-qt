@@ -6126,7 +6126,31 @@ export default function App() {
                                                             }}
                                                             style={{ flex: 1, background: '#FFF5F5', color: '#C62828', border: '1px solid #FFC9C9', borderRadius: '12px', padding: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', textAlign: 'center' }}
                                                         >
-                                                            🗑️ 데이터 초기화
+                                                            🗑️ 데이터 삭제
+                                                        </button>
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (window.confirm('아직 앱에 로그인하지 않은 모든 성도님들을 [승인 대기] 상태로 전환하시겠습니까?')) {
+                                                                    try {
+                                                                        const res = await fetch('/api/admin', {
+                                                                            method: 'POST',
+                                                                            headers: { 'Content-Type': 'application/json' },
+                                                                            body: JSON.stringify({ action: 'reset_unverified_status', church_id: churchId })
+                                                                        });
+                                                                        const data = await res.json();
+                                                                        if (data.success) {
+                                                                            alert(`${data.count}명의 미인증 성도님이 승인 대기 상태로 전환되었습니다. ✅`);
+                                                                            const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                            if (r.ok) setMemberList(await r.json());
+                                                                        }
+                                                                    } catch (e) {
+                                                                        alert('상태 업데이트 중 오류가 발생했습니다.');
+                                                                    }
+                                                                }
+                                                            }}
+                                                            style={{ flex: 1, background: '#F8F9FA', color: '#666', border: '1px solid #DDD', borderRadius: '12px', padding: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', textAlign: 'center' }}
+                                                        >
+                                                            ⏳ 미인증자 승인해제
                                                         </button>
                                                     </div>
                                                 </div>
