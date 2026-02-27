@@ -1719,7 +1719,13 @@ export default function App() {
         }
     };
 
-    const baseFont = { fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif", zoom: fontScale } as any;
+    const baseFont = {
+        fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        zoom: fontScale,
+        WebkitTextSizeAdjust: '100%',
+        maxWidth: '100vw',
+        overflowX: 'hidden'
+    } as any;
 
     /* ══════════════════════════════
        STYLES
@@ -2195,7 +2201,12 @@ export default function App() {
                                     )}
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', width: '100%' }}>
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: fontScale > 1.2 ? '1fr' : 'repeat(2, 1fr)',
+                                    gap: '10px',
+                                    width: '100%'
+                                }}>
                                     <button onClick={() => setView("chat")} style={{
                                         padding: "16px 12px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f0f8f8 100%)", color: "#1A5D55",
@@ -2409,7 +2420,12 @@ export default function App() {
                                     </div>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', width: '100%' }}>
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: fontScale > 1.2 ? '1fr' : 'repeat(2, 1fr)',
+                                    gap: '10px',
+                                    width: '100%'
+                                }}>
                                     {churchSettings.sermon_url ? (
                                         <button onClick={() => {
                                             if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
@@ -8200,26 +8216,51 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
                                             </div>
                                         </div>
                                     </div>
-                                    <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '24px' }}>
                                         {isAdmin && (
-                                            <button
-                                                onClick={() => {
-                                                    setEditForm({
-                                                        full_name: selectedMember.full_name || '',
-                                                        church_rank: selectedMember.church_rank || '',
-                                                        member_no: selectedMember.member_no || '',
-                                                        phone: selectedMember.phone || '',
-                                                        birthdate: selectedMember.birthdate || '',
-                                                        address: selectedMember.address || ''
-                                                    });
-                                                    setIsEditing(true);
-                                                }}
-                                                style={{ flex: 1, padding: '16px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '16px', fontWeight: 700, cursor: 'pointer' }}
-                                            >
-                                                ✏️ 정보 수정하기
-                                            </button>
+                                            <>
+                                                <button
+                                                    onClick={() => {
+                                                        setEditForm({
+                                                            full_name: selectedMember.full_name || '',
+                                                            church_rank: selectedMember.church_rank || '',
+                                                            member_no: selectedMember.member_no || '',
+                                                            phone: selectedMember.phone || '',
+                                                            birthdate: selectedMember.birthdate || '',
+                                                            address: selectedMember.address || ''
+                                                        });
+                                                        setIsEditing(true);
+                                                    }}
+                                                    style={{ flex: 1, minWidth: '120px', padding: '16px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '16px', fontWeight: 700, cursor: 'pointer' }}
+                                                >
+                                                    ✏️ 정보 수정
+                                                </button>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (confirm(`[주의] ${selectedMember.full_name} 성도님을 정말 삭제하시겠습니까?`)) {
+                                                            setIsSaving(true);
+                                                            try {
+                                                                const res = await fetch('/api/admin', {
+                                                                    method: 'POST',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({ action: 'delete_member', user_id: selectedMember.id })
+                                                                });
+                                                                if (res.ok) {
+                                                                    alert('삭제되었습니다.');
+                                                                    setResults(results.filter(m => m.id !== selectedMember.id));
+                                                                    setSelectedMember(null);
+                                                                }
+                                                            } catch (e) { alert('삭제 중 오류 발생'); }
+                                                            finally { setIsSaving(false); }
+                                                        }
+                                                    }}
+                                                    style={{ padding: '16px', background: '#FFE5E5', color: '#D32F2F', border: 'none', borderRadius: '16px', fontWeight: 700, cursor: 'pointer' }}
+                                                >
+                                                    🗑️ 삭제
+                                                </button>
+                                            </>
                                         )}
-                                        <button onClick={() => setSelectedMember(null)} style={{ flex: 1, padding: '16px', background: '#F5F5F3', color: '#666', border: 'none', borderRadius: '16px', fontWeight: 700, cursor: 'pointer' }}>닫기</button>
+                                        <button onClick={() => setSelectedMember(null)} style={{ flex: 1, minWidth: '80px', padding: '16px', background: '#F5F5F3', color: '#666', border: 'none', borderRadius: '16px', fontWeight: 700, cursor: 'pointer' }}>닫기</button>
                                     </div>
                                 </>
                             )}
