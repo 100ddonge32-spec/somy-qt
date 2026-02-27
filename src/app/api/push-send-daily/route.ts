@@ -46,27 +46,36 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ success: true, sentCount: 0 });
         }
 
-        // 3. 알림 전송
         const results = await Promise.allSettled(
-            subscriptions.map(sub =>
-                webpush.sendNotification(
-                    sub.subscription,
-                    JSON.stringify({
-                        title: messageTitle,
-                        body: messageBody,
-                        url: '/?view=qt'
-                    })
-                )
-            )
+            subscriptions.map(async (sub, idx) => {
+                try {
+                    await webpush.sendNotification(
+                        sub.subscription,
+                        JSON.stringify({
+                            title: messageTitle,
+                            body: messageBody,
+                            url: '/?view=qt'
+                        })
+                    );
+                } catch (err: any) {
+                    console.error(`[Push Error] Index ${idx}:`, err.message);
+                    throw err; // For Promise.allSettled
+                }
+            })
         );
 
         const sentCount = results.filter(r => r.status === 'fulfilled').length;
-        const failedCount = results.filter(r => r.status === 'rejected').length;
+        const rejected = results.filter(r => r.status === 'rejected') as PromiseRejectedResult[];
+        const failedCount = rejected.length;
+
+        // 에러 상세 메시지 수집 (중복 제거)
+        const errorMessages = Array.from(new Set(rejected.map(r => r.reason?.message || 'Unknown error')));
 
         return NextResponse.json({
             success: true,
             sentCount,
             failedCount,
+            errorSamples: errorMessages.slice(0, 3), // 최대 3개까지만 샘플로 보여줌
             today
         });
 

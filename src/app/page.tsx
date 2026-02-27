@@ -4190,11 +4190,20 @@ export default function App() {
                                         const res = await fetch('/api/push-send-daily?secret=somy-push-secret-123');
                                         const data = await res.json();
                                         if (data.success) {
-                                            alert(`성공적으로 전송되었습니다! (성공: ${data.sentCount}명, 실패: ${data.failedCount}명)`);
+                                            if (data.sentCount === 0 && data.failedCount === 0) {
+                                                alert('알림을 보낼 구독자가 없습니다. 성도님들이 앱에서 알림 설정을 켰는지 확인해 주세요.');
+                                            } else {
+                                                const errorReport = (data.failedCount > 0 && data.errorSamples) ? `\n\n(참고: ${data.failedCount}명은 통신 문제나 브라우저 설정으로 전송되지 못했습니다. 사유: ${data.errorSamples.join(', ')})` : '';
+                                                if (data.sentCount > 0) {
+                                                    alert(`📢 알림 전송 완료!\n\n총 ${data.sentCount}명의 성도님께 알림을 보냈습니다.${errorReport}`);
+                                                } else {
+                                                    alert(`알림 전송에 실패했습니다.${errorReport}`);
+                                                }
+                                            }
                                         } else {
-                                            alert('전송 실패: ' + data.error);
+                                            alert('전송 중 오류가 발생했습니다: ' + (data.error || '알 수 없는 오류'));
                                         }
-                                    } catch (e) { alert('네트워크 오류가 발생했습니다.'); }
+                                    } catch (e) { alert('네트워크 연결이 원활하지 않습니다. 잠시 후 다시 시도해 주세요.'); }
                                 }
                             }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
                                 <div style={{ width: '48px', height: '48px', background: '#E8F5E9', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🔔</div>
@@ -6195,8 +6204,8 @@ export default function App() {
                                                 })()}
 
                                                 {/* ✅ 전체 선택 / 해제 컨트롤 */}
-                                                <div style={{ padding: '0 4px', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => {
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', padding: '0 4px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '6px 12px', background: '#FDFCFB', border: '1px solid #F0ECE4', borderRadius: '10px' }} onClick={() => {
                                                         const filteredList = memberList.filter(m => adminMemberSearchTerm ? m.full_name?.includes(adminMemberSearchTerm) || m.phone?.includes(adminMemberSearchTerm) || m.church_rank?.includes(adminMemberSearchTerm) : true);
                                                         if (selectedMemberIds.length === filteredList.length && filteredList.length > 0) {
                                                             setSelectedMemberIds([]);
@@ -6204,19 +6213,21 @@ export default function App() {
                                                             setSelectedMemberIds(filteredList.map(m => m.id));
                                                         }
                                                     }}>
-                                                        <div style={{ width: '20px', height: '20px', borderRadius: '6px', border: '2px solid #D4AF37', background: selectedMemberIds.length > 0 && selectedMemberIds.length === memberList.filter(m => adminMemberSearchTerm ? m.full_name?.includes(adminMemberSearchTerm) || m.phone?.includes(adminMemberSearchTerm) || m.church_rank?.includes(adminMemberSearchTerm) : true).length ? '#D4AF37' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
-                                                            {selectedMemberIds.length > 0 && selectedMemberIds.length === memberList.filter(m => adminMemberSearchTerm ? m.full_name?.includes(adminMemberSearchTerm) || m.phone?.includes(adminMemberSearchTerm) || m.church_rank?.includes(adminMemberSearchTerm) : true).length && <span style={{ color: 'white', fontSize: '12px' }}>✓</span>}
+                                                        <div style={{ width: '18px', height: '18px', borderRadius: '5px', border: '2px solid #D4AF37', background: selectedMemberIds.length > 0 && selectedMemberIds.length === memberList.filter(m => adminMemberSearchTerm ? m.full_name?.includes(adminMemberSearchTerm) || m.phone?.includes(adminMemberSearchTerm) || m.church_rank?.includes(adminMemberSearchTerm) : true).length ? '#D4AF37' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                                                            {selectedMemberIds.length > 0 && selectedMemberIds.length === memberList.filter(m => adminMemberSearchTerm ? m.full_name?.includes(adminMemberSearchTerm) || m.phone?.includes(adminMemberSearchTerm) || m.church_rank?.includes(adminMemberSearchTerm) : true).length && <span style={{ color: 'white', fontSize: '11px' }}>✓</span>}
                                                         </div>
-                                                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#333' }}>전체 선택 ({memberList.filter(m => adminMemberSearchTerm ? m.full_name?.includes(adminMemberSearchTerm) || m.phone?.includes(adminMemberSearchTerm) || m.church_rank?.includes(adminMemberSearchTerm) : true).length}명)</span>
+                                                        <span style={{ fontSize: '13px', fontWeight: 800, color: '#333' }}>전체 {memberList.filter(m => adminMemberSearchTerm ? m.full_name?.includes(adminMemberSearchTerm) || m.phone?.includes(adminMemberSearchTerm) || m.church_rank?.includes(adminMemberSearchTerm) : true).length}명</span>
                                                     </div>
                                                     {selectedMemberIds.length > 0 && (
-                                                        <span style={{ fontSize: '12px', color: '#D4AF37', fontWeight: 700 }}>{selectedMemberIds.length}명 선택됨</span>
+                                                        <div style={{ fontSize: '12px', color: '#D4AF37', fontWeight: 800, background: '#FFFDF0', padding: '4px 10px', borderRadius: '8px' }}>
+                                                            {selectedMemberIds.length}명 선택됨
+                                                        </div>
                                                     )}
                                                 </div>
 
                                                 {/* 단체 문자 발송 버튼 */}
                                                 {memberList.filter(m => adminMemberSearchTerm ? m.full_name?.includes(adminMemberSearchTerm) || m.phone?.includes(adminMemberSearchTerm) || m.church_rank?.includes(adminMemberSearchTerm) : true).length > 0 && (
-                                                    <div style={{ padding: '0 4px', marginBottom: '16px' }}>
+                                                    <div style={{ padding: '0 4px', marginBottom: '16px', display: 'flex', gap: '8px' }}>
                                                         <button onClick={() => {
                                                             const targetPhones = memberList
                                                                 .filter(m => selectedMemberIds.includes(m.id))
@@ -6229,10 +6240,8 @@ export default function App() {
                                                                 .filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
                                                             let smsUrl = '';
                                                             if (isIOS) {
-                                                                // iOS 18+ / RCS 지원을 고려한 가장 확실한 레거시 방식 (Leading Semicolon)
                                                                 smsUrl = `sms:;${uniquePhones.join(';')}`;
                                                             } else {
-                                                                // 안드로이드: 콤마(,)가 표준입니다.
                                                                 smsUrl = `sms:${uniquePhones.join(',')}`;
                                                             }
 
@@ -6241,7 +6250,7 @@ export default function App() {
                                                             document.body.appendChild(link);
                                                             link.click();
                                                             document.body.removeChild(link);
-                                                        }} style={{ flex: 4, padding: '12px', background: selectedMemberIds.length > 0 ? '#2E7D32' : '#AAA', color: 'white', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 800, cursor: selectedMemberIds.length > 0 ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: selectedMemberIds.length > 0 ? '0 4px 10px rgba(46,125,50,0.2)' : 'none' }}>
+                                                        }} style={{ flex: 4, padding: '12px', background: selectedMemberIds.length > 0 ? '#2E7D32' : '#AAA', color: 'white', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 800, cursor: selectedMemberIds.length > 0 ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: selectedMemberIds.length > 0 ? '0 4px 10px rgba(46,125,50,0.2)' : 'none', transition: 'all 0.2s' }}>
                                                             💬 단체 문자발송 ({memberList.filter(m => selectedMemberIds.includes(m.id)).filter(m => m.phone).length}명)
                                                         </button>
                                                         <button
@@ -6250,13 +6259,13 @@ export default function App() {
                                                                     .filter(m => selectedMemberIds.includes(m.id))
                                                                     .filter(m => m.phone)
                                                                     .map(m => m.phone.replace(/[^0-9]/g, ''));
-                                                                if (targetPhones.length === 0) return;
+                                                                if (targetPhones.length === 0) { alert('선택된 성도 중 전화번호가 등록된 분이 없습니다.'); return; }
                                                                 const uniquePhones = targetPhones.filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
                                                                 navigator.clipboard.writeText(uniquePhones.join(', '));
                                                                 alert('번호가 복사되었습니다! 메시지 앱의 수신인 칸에 붙여넣기 하세요.');
                                                             }}
                                                             style={{
-                                                                flex: 1, padding: '12px', background: '#F5F5F3', color: '#555', border: '1px solid #E5E5E5', borderRadius: '12px', fontSize: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'
+                                                                flex: 1.2, padding: '12px', background: '#F5F5F3', color: '#555', border: '1px solid #E5E5E5', borderRadius: '12px', fontSize: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s'
                                                             }}
                                                             title="번호 복사"
                                                         >
