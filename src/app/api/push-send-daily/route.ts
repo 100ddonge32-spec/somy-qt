@@ -37,10 +37,10 @@ export async function GET(req: NextRequest) {
         const messageTitle = '오늘의 큐티말씀이 도착했습니다 🐑';
         const messageBody = qtData ? `오늘의 본문: ${qtData.reference}` : '오늘의 말씀을 묵상하며 하루를 시작해 보세요.';
 
-        // 2. 모든 구독자 정보 가져오기
+        // 2. 모든 구독자 정보 가져오기 (user_id 포함되어야 삭제 가능)
         const { data: subscriptions } = await supabaseAdmin
             .from('push_subscriptions')
-            .select('subscription');
+            .select('user_id, subscription');
 
         if (!subscriptions || subscriptions.length === 0) {
             return NextResponse.json({ success: true, sentCount: 0 });
@@ -58,7 +58,18 @@ export async function GET(req: NextRequest) {
                         })
                     );
                 } catch (err: any) {
-                    console.error(`[Push Error] Index ${idx}:`, err.message);
+                    const statusCode = err.statusCode || (err.response && err.response.statusCode);
+
+                    // 410 (Gone) or 404 (Not Found) means the subscription has expired or is no longer valid
+                    if (statusCode === 410 || statusCode === 404) {
+                        console.log(`[Push] Deleting expired subscription for user: ${sub.user_id}`);
+                        await supabaseAdmin
+                            .from('push_subscriptions')
+                            .delete()
+                            .eq('user_id', sub.user_id);
+                    } else {
+                        console.error(`[Push Error] Index ${idx} (User: ${sub.user_id}):`, err.message);
+                    }
                     throw err; // For Promise.allSettled
                 }
             })
@@ -68,14 +79,24 @@ export async function GET(req: NextRequest) {
         const rejected = results.filter(r => r.status === 'rejected') as PromiseRejectedResult[];
         const failedCount = rejected.length;
 
-        // 에러 상세 메시지 수집 (중복 제거)
-        const errorMessages = Array.from(new Set(rejected.map(r => r.reason?.message || 'Unknown error')));
+        // 에러 상세 메시지 수집 (친절한 언어로 번역 및 중복 제거)
+        const errorMessages = Array.from(new Set(rejected.map(r => {
+            const err = r.reason;
+            const statusCode = err.statusCode || (err.response && err.response.statusCode);
+            if (statusCode === 410 || statusCode === 404) {
+                return '만료되거나 취소된 알림 설정';
+            }
+            if (err.message && err.message.includes('unexpected response code')) {
+                return '브라우저 응답 오류';
+            }
+            return err.message || '알 수 없는 오류';
+        })));
 
         return NextResponse.json({
             success: true,
             sentCount,
             failedCount,
-            errorSamples: errorMessages.slice(0, 3), // 최대 3개까지만 샘플로 보여줌
+            errorSamples: errorMessages.slice(0, 3),
             today
         });
 
