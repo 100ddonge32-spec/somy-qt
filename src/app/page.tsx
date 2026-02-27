@@ -1782,9 +1782,9 @@ export default function App() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     {isAdmin && (
                                         <button
-                                            onClick={() => { setAdminTab('settings'); setSettingsForm({ ...churchSettings }); setShowSettings(true); }}
+                                            onClick={() => setView('admin')}
                                             style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
-                                            title="교회 설정"
+                                            title="관리자 센터"
                                         >⚙️</button>
                                     )}
                                     <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontWeight: 600, fontSize: '11px', padding: 0 }}>로그아웃</button>
