@@ -5590,6 +5590,7 @@ export default function App() {
             { title: "⚖️ 관리자 기준의 데이터 동기화", desc: "성도 주소록과 관리자가 업로드한 명단은 실시간으로 연동됩니다. 데이터의 기준은 항상 '관리자 엑셀 명단'이 우선되므로, 행정적인 오류 없이 정확한 성도 관리가 이루어집니다.", icon: "⚖️" },
             { title: "👶 세대별 큐티 커스텀 (관리자)", desc: "청소년 및 0세 이하 영유아용 큐티의 질문과 해설을 관리자가 직접 수정할 수 있습니다. 각 세대의 눈높이에 맞는 맞춤형 질문으로 다음 세대 사역을 더욱 풍성하게 만들어보세요.", icon: "👶" },
             { title: "🌻 감사일기 & CCM 플레이어", desc: "하루 세 가지 감사를 기록하고, 배경음악으로 흐르는 찬양(CCM)과 함께 묵상에 잠겨보세요. 음악은 앱을 이용하는 동안 끊김 없이 유지됩니다.", icon: "🌻" },
+            { title: "🌟 소미(SOMY) 브랜드 스토리", desc: "소미는 단순한 앱을 넘어 '내 손안의 영적 동반자'를 꿈꿉니다. 최첨단 AI 기술과 개혁주의 신학이 만나 성도의 일상을 은혜로 채웁니다. AI 기반 영적 가이드, 개혁주의 가치 계승, 그리고 행정의 압도적 간소화라는 3대 가치를 직접 확인해 보세요.", icon: "🌟" },
             { title: "📱 홈 화면에 설치하기 (강력추천)", desc: "브라우저 하단의 [공유] 메뉴 → [홈 화면에 추가] 또는 크롬의 [앱 설치]를 눌러보세요. 바탕화면에 아이콘이 생겨 카카오톡처럼 빠르고 간편하게 접속할 수 있습니다.", icon: "📱" },
         ];
 
@@ -5624,6 +5625,12 @@ export default function App() {
                             </div>
                         </div>
                     ))}
+                </div>
+
+                <div style={{ marginTop: '40px', textAlign: 'center', padding: '30px 20px', background: '#F9F7F2', borderRadius: '24px', border: '1px solid #F0ECE4' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 800, color: '#B8924A', marginBottom: '10px' }}>더 자세한 브랜드 이야기가 궁금하신가요? 📖</div>
+                    <p style={{ fontSize: '13px', color: '#666', marginBottom: '20px', lineHeight: 1.5 }}>소미가 추구하는 비전과 성도/목회자를 위한<br />특별한 혜택들을 한눈에 확인하실 수 있습니다.</p>
+                    <button onClick={() => setView('brandGuide')} style={{ padding: '14px 24px', background: 'linear-gradient(135deg, #D4AF37 0%, #B8924A 100%)', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 5px 15px rgba(184,146,74,0.3)' }}>브랜드 홍보 가이드 전체보기 ✨</button>
                 </div>
 
                 <div style={{ marginTop: '40px', textAlign: 'center', padding: '30px 0', borderTop: '1px solid #EEE' }}>
@@ -5750,14 +5757,24 @@ export default function App() {
                         border-radius: 28px;
                         padding: 30px;
                         box-shadow: 0 15px 35px rgba(0,0,0,0.03);
+                        transition: transform 0.3s ease;
                     }
+                    .glass-card:hover { transform: translateY(-5px); }
                     .accent-text { color: #D4AF37; font-weight: 900; }
+                    
+                    @media (max-width: 768px) {
+                        #brand-printable-area { padding: 40px 20px !important; }
+                        .brand-hero-title { fontSize: 32px !important; }
+                        .core-values-grid { grid-template-columns: 1fr !important; }
+                        .benefits-grid { grid-template-columns: 1fr !important; gap: 30px !important; }
+                        .preview-flex { flex-direction: column !important; align-items: center !important; }
+                    }
                 `}</style>
 
                 {/* 상단 컨트롤 */}
-                <div id="no-print-brand" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '60px' }}>
-                    <button onClick={() => setView('admin')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '14px', padding: '10px 20px', fontSize: "14px", cursor: "pointer", fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>←</span> 관리자 센터로
+                <div id="no-print-brand" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '60px', gap: '10px', flexWrap: 'wrap' }}>
+                    <button onClick={() => setView(isAdmin ? 'admin' : 'guide')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '14px', padding: '10px 20px', fontSize: "14px", cursor: "pointer", fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>←</span> {isAdmin ? '관리자 센터로' : '가이드로 돌아가기'}
                     </button>
                     <button onClick={() => window.print()} style={{ background: "linear-gradient(135deg, #D4AF37 0%, #B8924A 100%)", color: 'white', border: "none", borderRadius: '14px', padding: '12px 24px', fontSize: "15px", cursor: "pointer", fontWeight: 700, boxShadow: '0 8px 20px rgba(212,175,55,0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span>📄</span> 홍보 PDF 저장/인쇄
@@ -5770,7 +5787,7 @@ export default function App() {
                         <img src={SOMY_IMG} alt="소미" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: '50%' }} />
                     </div>
                     <h4 style={{ fontSize: '14px', color: '#B8924A', fontWeight: 900, letterSpacing: '4px', marginBottom: '16px', textTransform: 'uppercase' }}>Next-Gen Spiritual Companion</h4>
-                    <h1 style={{ fontSize: '42px', fontWeight: 900, color: '#222', margin: '0 0 20px 0', lineHeight: 1.2, wordBreak: 'keep-all' }}>
+                    <h1 className="brand-hero-title" style={{ fontSize: '42px', fontWeight: 900, color: '#222', margin: '0 0 20px 0', lineHeight: 1.2, wordBreak: 'keep-all' }}>
                         내 손안의 영적 동반자, <span className="accent-text">소미(SOMY)</span>
                     </h1>
                     <p style={{ fontSize: '18px', color: '#666', lineHeight: 1.7, maxWidth: '600px', margin: '0 auto', wordBreak: 'keep-all' }}>
@@ -5779,7 +5796,7 @@ export default function App() {
                 </div>
 
                 {/* Core Values */}
-                <div className="brand-section" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '80px' }}>
+                <div className="brand-section core-values-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '80px' }}>
                     <div className="glass-card" style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '40px', marginBottom: '20px' }}>✨</div>
                         <h3 style={{ fontSize: '20px', fontWeight: 900, marginBottom: '12px' }}>AI 기반 영적 가이드</h3>
@@ -5799,7 +5816,7 @@ export default function App() {
 
                 {/* Detail Benefits */}
                 <div className="brand-section" style={{ marginBottom: '80px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
+                    <div className="benefits-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
                         <div>
                             <h2 style={{ fontSize: '24px', fontWeight: 900, color: '#333', marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <span style={{ background: '#333', color: 'white', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>👤</span>
@@ -5864,7 +5881,7 @@ export default function App() {
                 {/* Interface Preview (CSS Simulated) */}
                 <div className="brand-section" style={{ marginBottom: '100px' }}>
                     <h2 style={{ fontSize: '24px', fontWeight: 900, textAlign: 'center', marginBottom: '40px' }}>미리 만나는 소미 에코시스템</h2>
-                    <div style={{ display: 'flex', gap: '30px', justifyContent: 'center' }}>
+                    <div className="preview-flex" style={{ display: 'flex', gap: '30px', justifyContent: 'center' }}>
                         {/* 홈 화면 모형 */}
                         <div style={{ width: '240px', height: '440px', background: '#FEF0D8', border: '8px solid #333', borderRadius: '36px', overflow: 'hidden', position: 'relative', boxShadow: '0 20px 50px rgba(0,0,0,0.1)' }}>
                             <div style={{ padding: '40px 15px' }}>
