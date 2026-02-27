@@ -441,13 +441,9 @@ export async function POST(req: NextRequest) {
             const { user_id, update_data } = body;
             const safeUpdateData = { ...update_data };
 
-            // DB 스키마에 없는 컬럼 제거
-            // [수정] 이제 DB에 컬럼이 존재하므로 제거하지 않음
-            /* 
             if ('is_birthdate_lunar' in safeUpdateData) {
                 delete (safeUpdateData as any).is_birthdate_lunar;
             }
-            */
 
             // 날짜 형식 보정
             if (safeUpdateData.birthdate === "") {
