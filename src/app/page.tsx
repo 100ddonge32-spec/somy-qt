@@ -378,6 +378,7 @@ export default function App() {
     const [adminInfo, setAdminInfo] = useState<any>(null);
     const [isApproved, setIsApproved] = useState(false);
     const [profileName, setProfileName] = useState<string | null>(null);
+    const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
     const [churchId, setChurchId] = useState('jesus-in');
     const isAdmin = !!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin');
     const isSuperAdmin = adminInfo?.role === 'super_admin';
@@ -872,7 +873,7 @@ export default function App() {
             // Supabase 쿼리에 유니크한 필터를 섞어 캐시 방지 시도
             const { data, error } = await supabase
                 .from('profiles')
-                .select('is_approved, church_id, full_name')
+                .select('is_approved, church_id, full_name, avatar_url')
                 .eq('id', user.id)
                 .neq('email', `cache_bust_${cacheBuster}`) // 무의미한 필터로 캐시 무시 유도
                 .single();
@@ -902,21 +903,14 @@ export default function App() {
                     } else if (user.email && !user.email.includes('anonymous.local')) {
                         setProfileName(user.email.split('@')[0]);
                     }
+                    if (syncData.avatar_url) setProfileAvatar(syncData.avatar_url);
                     if (syncData.is_approved) subscribePush(user.id);
                 }
                 return;
             }
 
-            // 상태 업데이트
-            setIsApproved(data.is_approved);
-            if (data.church_id) setChurchId(data.church_id);
-            if (data.full_name && data.full_name !== '이름 없음' && data.full_name !== '.') {
-                setProfileName(data.full_name);
-            } else if (user.user_metadata?.full_name || user.user_metadata?.name) {
-                setProfileName(user.user_metadata.full_name || user.user_metadata.name);
-            } else if (user.email && !user.email.includes('anonymous.local')) {
-                setProfileName(user.email.split('@')[0]);
-            }
+            if (data.avatar_url) setProfileAvatar(data.avatar_url);
+            else if (user.user_metadata?.avatar_url) setProfileAvatar(user.user_metadata.avatar_url);
 
             if (data.is_approved) {
                 console.log("🎊 승인 확인됨 (서버 최신 데이터)");
@@ -2097,7 +2091,7 @@ export default function App() {
                                                 if (Array.isArray(data)) setCommunityPosts(data);
                                             } catch (e) { console.error("게시판 로드 실패:", e); }
                                         }} style={{
-                                            width: "100%", padding: "16px 44px 16px 12px",
+                                            width: "100%", padding: "16px 12px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #fff0f5 100%)", color: "#9E2A5B",
                                             fontWeight: 800, fontSize: "15px", borderRadius: "18px",
                                             border: "1px solid #f2cddb", cursor: "pointer",
@@ -2108,7 +2102,7 @@ export default function App() {
                                         }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                             <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>💌</div>
                                             <span style={{ whiteSpace: 'nowrap' }}>은혜나눔</span>
-                                            {hasNewCommunity && <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px' }}>N</div>}
+                                            {hasNewCommunity && <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px', zIndex: 1 }}>N</div>}
                                         </button>
                                         {!showWelcome && (
                                             <div onClick={(e) => { e.stopPropagation(); setShowNotiList(!showNotiList); }} style={{
@@ -2226,20 +2220,20 @@ export default function App() {
                                             setHasNewSermon(false);
                                             localStorage.setItem(`last_view_sermon_${churchId}`, Date.now().toString());
                                         }} style={{
-                                            padding: "8px 10px",
+                                            padding: "16px 12px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #fff4f2 100%)", color: "#BA2D0B",
-                                            fontWeight: 800, fontSize: "13px", borderRadius: "14px",
+                                            fontWeight: 800, fontSize: "15px", borderRadius: "18px",
                                             border: "1px solid #fcd3c8", cursor: "pointer",
                                             boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
-                                            display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px',
+                                            display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
                                             transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                                             position: 'relative', justifyContent: 'flex-start'
                                         }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                            <div style={{ width: '28px', height: '28px', background: 'white', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>
-                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="#FF0000"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" /></svg>
+                                            <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="#FF0000"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" /></svg>
                                             </div>
                                             <span style={{ whiteSpace: 'nowrap' }}>담임목사 설교</span>
-                                            {hasNewSermon && <div style={{ background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, padding: '1px 4px', borderRadius: '8px', border: '1px solid white', marginLeft: '-2px' }}>N</div>}
+                                            {hasNewSermon && <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px' }}>N</div>}
                                         </button>
                                     ) : null}
                                     <div style={{ position: 'relative' }}>
@@ -2264,22 +2258,22 @@ export default function App() {
                                                 if (Array.isArray(data)) setCounselingRequests(data);
                                             } catch (e) { console.error("상담 로드 실패", e); }
                                         }} style={{
-                                            width: "100%", padding: "8px 10px",
+                                            width: "100%", padding: "16px 12px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #f6f0ff 100%)", color: "#4A148C",
-                                            fontWeight: 800, fontSize: "13px", borderRadius: "14px",
+                                            fontWeight: 800, fontSize: "15px", borderRadius: "18px",
                                             border: "1px solid #e1bee7", cursor: "pointer",
                                             boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
-                                            display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px',
+                                            display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
                                             transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                                             position: 'relative', justifyContent: 'flex-start'
                                         }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                            <div style={{ width: '28px', height: '28px', background: 'white', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🙏</div>
+                                            <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🙏</div>
                                             <span style={{ whiteSpace: 'nowrap' }}>상담/기도 요청</span>
                                             {notifications.some(n => !n.is_read && (
                                                 isAdmin ? (n.type === 'counseling_req' || n.type === 'counseling_user_reply')
                                                     : (n.type === 'counseling_reply')
                                             )) && (
-                                                    <div style={{ background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, padding: '1px 4px', borderRadius: '8px', border: '1px solid white', marginLeft: '-2px' }}>N</div>
+                                                    <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px' }}>N</div>
                                                 )}
                                         </button>
                                     </div>
@@ -2302,16 +2296,16 @@ export default function App() {
                                             setStatsError(e.name === 'AbortError' ? "시간 초과" : "연결 실패");
                                         }
                                     }} style={{
-                                        padding: "8px 10px",
+                                        padding: "16px 12px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #faf6ec 100%)", color: "#8B6B38",
-                                        fontWeight: 800, fontSize: "13px", borderRadius: "14px",
+                                        fontWeight: 800, fontSize: "15px", borderRadius: "18px",
                                         border: "1px solid #e8dcc4", cursor: "pointer",
                                         boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
-                                        display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px',
+                                        display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                                         justifyContent: 'flex-start'
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                        <div style={{ width: '28px', height: '28px', background: 'white', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>📊</div>
+                                        <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>📊</div>
                                         <span style={{ whiteSpace: 'nowrap' }}>이달의 큐티왕</span>
                                     </button>
 
@@ -2319,30 +2313,30 @@ export default function App() {
                                         setView('history');
                                         fetchHistory();
                                     }} style={{
-                                        padding: "8px 10px",
+                                        padding: "16px 12px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f1f8f3 100%)", color: "#507558",
-                                        fontWeight: 800, fontSize: "13px", borderRadius: "14px",
+                                        fontWeight: 800, fontSize: "15px", borderRadius: "18px",
                                         border: "1px solid #cee8d8", cursor: "pointer",
                                         boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
-                                        display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px',
+                                        display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                                         justifyContent: 'flex-start'
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                        <div style={{ width: '28px', height: '28px', background: 'white', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🕰️</div>
+                                        <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🕰️</div>
                                         <span style={{ whiteSpace: 'nowrap' }}>나의 묵상 기록</span>
                                     </button>
 
                                     <button onClick={() => setView('ccm')} style={{
-                                        padding: "8px 10px",
+                                        padding: "16px 12px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f4f6fa 100%)", color: "#465293",
-                                        fontWeight: 800, fontSize: "13px", borderRadius: "14px",
+                                        fontWeight: 800, fontSize: "15px", borderRadius: "18px",
                                         border: "1px solid #cfd5f0", cursor: "pointer",
                                         boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
-                                        display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px',
+                                        display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                                         justifyContent: 'flex-start'
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                        <div style={{ width: '28px', height: '28px', background: 'white', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🎧</div>
+                                        <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🎧</div>
                                         <span style={{ whiteSpace: 'nowrap' }}>CCM 듣기</span>
                                     </button>
 
@@ -3275,7 +3269,7 @@ export default function App() {
                         body: JSON.stringify({
                             user_id: user.id,
                             user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
-                            avatar_url: user.user_metadata?.avatar_url || null,
+                            avatar_url: profileAvatar || user.user_metadata?.avatar_url || null,
                             content: communityInput, // ✅ communityInput 사용
                             church_id: churchId,
                             is_private: isPrivatePost
@@ -3355,7 +3349,7 @@ export default function App() {
                             <div style={{ background: 'white', borderRadius: '20px', padding: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#F0ECE4', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
-                                        {user?.user_metadata?.avatar_url ? <img src={user.user_metadata.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🐑'}
+                                        {profileAvatar ? <img src={profileAvatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🐑'}
                                     </div>
                                     <span style={{ fontSize: '14px', fontWeight: 700, color: '#555' }}>
                                         {profileName || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "성도님"}
@@ -3828,7 +3822,7 @@ export default function App() {
                         body: JSON.stringify({
                             user_id: user.id,
                             user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
-                            avatar_url: user.user_metadata?.avatar_url || null,
+                            avatar_url: profileAvatar || user.user_metadata?.avatar_url || null,
                             content: thanksgivingInput,
                             church_id: churchId,
                             is_private: isPrivateThanksgiving
@@ -4553,7 +4547,7 @@ export default function App() {
                                 }
 
                                 let user_name = profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도";
-                                let avatar_url = user.user_metadata?.avatar_url || '';
+                                let avatar_url = profileAvatar || user.user_metadata?.avatar_url || '';
 
                                 let combinedContent = "";
                                 if (sermonReflection.q1) combinedContent += `[질문 1] ${churchSettings.sermon_q1}\n나의 묵상: ${sermonReflection.q1}\n\n`;
@@ -5104,7 +5098,7 @@ export default function App() {
         }
 
         if (view === "profile") {
-            return <ProfileView user={user} supabase={supabase} setView={setView} baseFont={baseFont} allowMemberEdit={churchSettings?.allow_member_edit} />;
+            return <ProfileView user={user} supabase={supabase} setView={setView} baseFont={baseFont} allowMemberEdit={churchSettings?.allow_member_edit} setProfileAvatar={setProfileAvatar} />;
         }
 
         if (view === "memberSearch") {
@@ -7258,7 +7252,7 @@ export default function App() {
 // === 독립 컴포넌트 구역 (App 외부에 정의하여 불필요한 리마운트 방지) ===
 
 // 내 프로필 화면 컴포넌트
-function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any) {
+function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setProfileAvatar }: any) {
     const initialDefault = {
         full_name: user?.user_metadata?.full_name || '',
         phone: '',
@@ -7376,6 +7370,7 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit }: any
                 alert('프로필 정보가 저장되었습니다! ✨');
             }
             setInitialProfile(profileForm); // 저장 성공 후 현재 상태를 초기상태로 업데이트
+            if (profileForm.avatar_url) setProfileAvatar(profileForm.avatar_url);
         } catch (e) {
             alert('저장 실패: ' + (e as Error).message);
         } finally {
