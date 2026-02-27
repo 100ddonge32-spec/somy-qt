@@ -879,13 +879,17 @@ export default function App() {
             // Supabase 쿼리에 유니크한 필터를 섞어 캐시 방지 시도
             const { data, error } = await supabase
                 .from('profiles')
-                .select('is_approved, church_id, full_name, avatar_url, birthdate')
+                .select('is_approved, church_id, full_name, avatar_url, birthdate, phone')
                 .eq('id', user.id)
                 .neq('email', `cache_bust_${cacheBuster}`) // 무의미한 필터로 캐시 무시 유도
                 .single();
 
             if (error || !data) {
                 console.log("프로필 없음, 동기화 시도...");
+                // 메타데이터에서 가능한 경우 연락처/생일 추출
+                const metaPhone = user.user_metadata?.phone_number || user.user_metadata?.mobile || '';
+                const metaBirth = user.user_metadata?.birthdate || '';
+
                 const syncRes = await fetch(`/api/auth/sync?t=${cacheBuster}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -893,7 +897,9 @@ export default function App() {
                         user_id: user.id,
                         email: user.email,
                         name: user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.nickname,
-                        avatar_url: user.user_metadata?.avatar_url
+                        avatar_url: user.user_metadata?.avatar_url,
+                        phone: metaPhone,
+                        birthdate: metaBirth
                     })
                 });
                 if (syncRes.ok) {
@@ -901,14 +907,17 @@ export default function App() {
                     setIsApproved(!!syncData.is_approved);
                     if (syncData.church_id) setChurchId(syncData.church_id);
 
-                    if (syncData.name && syncData.name !== '이름 없음' && syncData.name !== '.') {
-                        setProfileName(syncData.name);
-                    } else if (syncData.full_name && syncData.full_name !== '이름 없음' && syncData.full_name !== '.') {
+                    if (syncData.full_name && syncData.full_name !== '이름 없음' && syncData.full_name !== '.') {
                         setProfileName(syncData.full_name);
+                    } else if (syncData.name && syncData.name !== '이름 없음' && syncData.name !== '.') {
+                        setProfileName(syncData.name);
                     } else if (user.user_metadata?.full_name || user.user_metadata?.name) {
                         setProfileName(user.user_metadata.full_name || user.user_metadata.name);
                     }
+
                     if (syncData.avatar_url) setProfileAvatar(syncData.avatar_url);
+                    else if (user.user_metadata?.avatar_url) setProfileAvatar(user.user_metadata.avatar_url);
+
                     if (syncData.birthdate) setProfileBirthdate(syncData.birthdate);
                     if (syncData.is_approved) subscribePush(user.id);
                 }
@@ -1081,7 +1090,11 @@ export default function App() {
         questions: QT_DATA.questions,
         prayer: QT_DATA.prayer,
     });
-    const [qtForm, setQtForm] = useState({ date: '', reference: '', passage: '', interpretation: '', question1: '', question2: '', question3: '', prayer: '' });
+    const [qtForm, setQtForm] = useState({
+        date: '', reference: '', passage: '', interpretation: '',
+        question1: '', question2: '', question3: '', prayer: '',
+        youthInterpretation: '', youthQuestion1: '', youthQuestion2: '', youthQuestion3: ''
+    });
     const [sermonManageForm, setSermonManageForm] = useState({ script: '', summary: '', q1: '', q2: '', q3: '', videoUrl: '', inputType: 'text' as 'text' | 'video' });
     const [aiLoading, setAiLoading] = useState(false);
     const [stats, setStats] = useState<{ today: { count: number; members: { user_name: string; avatar_url: string | null }[] }; ranking: { name: string; avatar: string | null; count: number }[]; totalCompletions: number } | null>(null);
@@ -1218,16 +1231,28 @@ export default function App() {
     const [isQtLoading, setIsQtLoading] = useState(false);
 
     const parsePassage = (raw: string) => {
-        if (!raw) return { fullPassage: '', interpretation: '' };
+        if (!raw) return { fullPassage: '', interpretation: '', youthData: null };
 
         let fullPassage = '';
         let interpretation = '';
+        let youthData: any = null;
 
         // 1. 표준 구분자 '|||' 확인 (서버에서 이 포맷으로 전달됨)
         if (raw.includes('|||')) {
             const parts = raw.split('|||');
             fullPassage = parts[0]?.trim() || '';
             interpretation = parts[1]?.trim() || '';
+            // [추가] 세 번째 파트가 있으면 청소년용 데이터로 파싱
+            if (parts[2]) {
+                try {
+                    const cleanJson = parts[2].trim();
+                    if (cleanJson.startsWith('{')) {
+                        youthData = JSON.parse(cleanJson);
+                    }
+                } catch (e) {
+                    console.error("[parsePassage] Youth data parse failed:", e);
+                }
+            }
         }
         // 2. 키워드 기반 분리 시도 (구분자가 깨졌을 경우 대비)
         else if (raw.includes('[AI 본문 해설]')) {
@@ -1241,11 +1266,9 @@ export default function App() {
         }
 
         // [최종 데이터 세정] 
-        // 본문 안에 해설 유도 태그가 남아있거나, 본문 자체가 해설처럼 보일 때의 보정
         const tags = ['[AI 본문 해설]', '본문 요약:', '묵상 포인트:', '해설:'];
         tags.forEach(tag => {
             if (fullPassage.includes(tag)) {
-                // 만약 본문 칸에 해설 태그가 들어있다면, 그 이후는 해설로 넘김
                 const parts = fullPassage.split(tag);
                 if (parts[1]) interpretation = parts[1].trim();
                 fullPassage = parts[0].trim();
@@ -1253,23 +1276,21 @@ export default function App() {
             fullPassage = fullPassage.replace(tag, '').trim();
         });
 
-        // 결과가 비정상적일 때의 보강
         if (!fullPassage && interpretation) {
             fullPassage = "본문을 불러오지 못했습니다. 잠시 후 다시 '불러오기'를 눌러주세요.";
         }
 
-        return { fullPassage, interpretation };
+        return { fullPassage, interpretation, youthData };
     };
 
     const fetchQt = async () => {
         setIsQtLoading(true);
-        setIsHistoryMode(false); // 새로운 큐티이므로 히스토리 모드 해제
+        setIsHistoryMode(false);
         try {
             const r = await fetch('/api/qt', { cache: 'no-store' });
             const { qt } = await r.json();
             if (qt) {
-                const { fullPassage, interpretation } = parsePassage(qt.passage);
-                console.log("[fetchQt] Parsed Qt:", { fullPassage: fullPassage.substring(0, 20), interpretation: interpretation?.substring(0, 20) });
+                const { fullPassage, interpretation, youthData } = parsePassage(qt.passage);
                 const initialQt = {
                     date: new Date(qt.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
                     reference: qt.reference,
@@ -1280,7 +1301,6 @@ export default function App() {
                     prayer: qt.prayer,
                 };
 
-                // [추가] 20세 이하 사용자를 위한 눈높이 교육용 큐티 변환 전용 처리
                 let userAge = 99;
                 if (profileBirthdate) {
                     const birth = new Date(profileBirthdate);
@@ -1291,42 +1311,34 @@ export default function App() {
                 }
 
                 if (userAge <= 20) {
-                    console.log(`[fetchQt] Youth user detected (Age: ${userAge}). Tailoring content...`);
-                    try {
-                        const tailRes = await fetch('/api/chat', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                messages: [{
-                                    role: 'user',
-                                    content: `당신은 다음 큐티 내용을 10대~20대 초반 청년들이 이해하기 쉽도록 '눈높이 맞춤형'으로 재구성해주는 다정한 목회자입니다.
-상황 설명과 본문 해석을 청년들의 일상 용어와 고민(학업, 진로, 친구관계 등)에 맞추어 따뜻하게 고쳐주시고, 묵상 질문 3개도 그들의 삶에 와닿는 실질적인 내용으로 바꿔주세요.
-
-[원본 내용]
-- 본문 성경구절: ${initialQt.reference}
-- 본문 해설: ${initialQt.interpretation}
-- 기존 질문: ${initialQt.questions.join(', ')}
-
-반드시 다음 JSON 형식으로만 답하세요:
-{"interpretation": "청년 눈높이 맞춤 해설", "questions": ["질문1", "질문2", "질문3"]}`
-                                }]
-                            })
-                        });
-                        if (tailRes.ok) {
-                            const tailData = await tailRes.json();
-                            const tailJson = JSON.parse(tailData.content.match(/\{[\s\S]*\}/)![0]);
-                            initialQt.interpretation = tailJson.interpretation;
-                            initialQt.questions = tailJson.questions;
-                        }
-                    } catch (err) {
-                        console.error("Tailoring failed, using original:", err);
+                    if (youthData && youthData.interpretation && youthData.questions?.length > 0) {
+                        initialQt.interpretation = youthData.interpretation;
+                        initialQt.questions = youthData.questions;
+                    } else {
+                        try {
+                            const tailRes = await fetch('/api/chat', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    messages: [{
+                                        role: 'user',
+                                        content: `당신은 다음 큐티 내용을 10대~20대 초반 청년들이 이해하기 쉽도록 '눈높이 맞춤형'으로 재구성해주는 다정한 목회자입니다.\n\n[원본 내용]\n- 본문 성경구절: ${initialQt.reference}\n- 본문 해설: ${initialQt.interpretation}\n- 기존 질문: ${initialQt.questions.join(', ')}\n\n반드시 JSON 형식으로 답하세요: {"interpretation": "...", "questions": ["...", "...", "..."]}`
+                                    }]
+                                })
+                            });
+                            if (tailRes.ok) {
+                                const tailData = await tailRes.json();
+                                const tailJson = JSON.parse(tailData.content.match(/\{[\s\S]*\}/)![0]);
+                                initialQt.interpretation = tailJson.interpretation;
+                                initialQt.questions = tailJson.questions;
+                            }
+                        } catch (err) { }
                     }
                 }
 
                 setQtData(initialQt);
                 setAnswers(new Array(initialQt.questions.length).fill(''));
             } else {
-                // 데이터가 없을 경우 기본값으로 리셋
                 setQtData({
                     date: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
                     reference: QT_DATA.reference,
@@ -2949,9 +2961,14 @@ export default function App() {
                     return;
                 }
                 try {
+                    const youthData = qtForm.youthInterpretation ? {
+                        interpretation: qtForm.youthInterpretation,
+                        questions: [qtForm.youthQuestion1, qtForm.youthQuestion2, qtForm.youthQuestion3].filter(Boolean)
+                    } : null;
+
                     const payload = {
                         ...qtForm,
-                        passage: `${qtForm.passage}|||${qtForm.interpretation}`
+                        passage: `${qtForm.passage}|||${qtForm.interpretation}${youthData ? `|||${JSON.stringify(youthData)}` : ''}`
                     };
                     const res = await fetch('/api/qt', {
                         method: 'POST',
@@ -3034,7 +3051,7 @@ export default function App() {
                                     const res = await fetch(`/api/qt?date=${qtForm.date}&force=true`, { cache: 'no-store' });
                                     const { qt } = await res.json();
                                     if (qt) {
-                                        const { fullPassage, interpretation } = parsePassage(qt.passage);
+                                        const { fullPassage, interpretation, youthData } = parsePassage(qt.passage);
                                         setQtForm({
                                             date: qt.date,
                                             reference: qt.reference,
@@ -3044,6 +3061,10 @@ export default function App() {
                                             question2: qt.question2 || '',
                                             question3: qt.question3 || '',
                                             prayer: qt.prayer || '',
+                                            youthInterpretation: youthData?.interpretation || '',
+                                            youthQuestion1: youthData?.questions?.[0] || '',
+                                            youthQuestion2: youthData?.questions?.[1] || '',
+                                            youthQuestion3: youthData?.questions?.[2] || '',
                                         });
                                     } else {
                                         alert('오늘의 자동 생성 본문을 가져올 수 없습니다. 유료 버전 설정을 확인해주세요.');
@@ -3134,6 +3155,65 @@ export default function App() {
                         <div>
                             <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>🙏 마무리 기도문</label>
                             <textarea value={qtForm.prayer} onChange={e => setQtForm(p => ({ ...p, prayer: e.target.value }))} placeholder="마무리 기도문을 입력하세요" style={{ ...inputStyle, height: '100px' }} />
+                        </div>
+
+                        {/* [추가] 청소년 눈높이 큐티 관리 섹션 */}
+                        <div style={{ marginTop: '20px', padding: '20px', background: '#F0F7FF', borderRadius: '15px', border: '1px solid #D1E3F8' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#0D47A1' }}>👦 청년/청소년 눈높이 버전</div>
+                                <button
+                                    onClick={async () => {
+                                        if (!qtForm.interpretation) { alert('먼저 일반 해설을 입력하거나 불러와주세요.'); return; }
+                                        setAiLoading(true);
+                                        try {
+                                            const res = await fetch('/api/chat', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    messages: [{
+                                                        role: 'user',
+                                                        content: `다음 큐티 내용을 청춘(10~20대)의 언어로 다정하게 바꿔주세요.\n\n해설: ${qtForm.interpretation}\n질문: ${[qtForm.question1, qtForm.question2, qtForm.question3].join(', ')}\n\n반드시 JSON 형식으로 답하세요: {"interpretation": "...", "questions": ["...", "...", "..."]}`
+                                                    }]
+                                                })
+                                            });
+                                            const data = await res.json();
+                                            const json = JSON.parse(data.content.match(/\{[\s\S]*\}/)![0]);
+                                            setQtForm(p => ({
+                                                ...p,
+                                                youthInterpretation: json.interpretation,
+                                                youthQuestion1: json.questions[0] || '',
+                                                youthQuestion2: json.questions[1] || '',
+                                                youthQuestion3: json.questions[2] || '',
+                                            }));
+                                        } catch (e) { alert('청년 버전 생성 실패'); }
+                                        finally { setAiLoading(false); }
+                                    }}
+                                    disabled={aiLoading}
+                                    style={{ padding: '6px 12px', background: '#0D47A1', color: 'white', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                    ✨ AI로 청년버전 미리 만들기
+                                </button>
+                            </div>
+
+                            <div style={{ marginBottom: '12px' }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#1565C0', display: 'block', marginBottom: '4px' }}>💡 청년층 맞춤 해설</label>
+                                <textarea
+                                    value={qtForm.youthInterpretation}
+                                    onChange={e => setQtForm(p => ({ ...p, youthInterpretation: e.target.value }))}
+                                    placeholder="공란으로 두면 AI가 실시간으로 변환하여 보여주며, 입력하면 이 내용이 우선 적용됩니다."
+                                    style={{ ...inputStyle, height: '100px', background: 'white' }}
+                                />
+                            </div>
+
+                            {(['youthQuestion1', 'youthQuestion2', 'youthQuestion3'] as const).map((key, idx) => (
+                                <div key={key} style={{ marginBottom: '8px' }}>
+                                    <label style={{ fontSize: '11px', fontWeight: 700, color: '#1565C0', display: 'block', marginBottom: '4px' }}>❓ 청년 맞춤 질문 {idx + 1}</label>
+                                    <input type="text" value={qtForm[key]} onChange={e => setQtForm(p => ({ ...p, [key]: e.target.value }))} placeholder="질문을 입력하세요" style={{ ...inputStyle, background: 'white' }} />
+                                </div>
+                            ))}
+                            <div style={{ fontSize: '10px', color: '#64B5F6', marginTop: '6px' }}>
+                                * 내용을 입력하고 저장하면, 20세 이하 유저에게는 일반 버전 대신 이 내용이 표시됩니다.
+                            </div>
                         </div>
                         <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                             <button onClick={() => setView('home')} style={{ flex: 1, padding: '14px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' }}>취소</button>

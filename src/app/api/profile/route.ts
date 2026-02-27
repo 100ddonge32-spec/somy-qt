@@ -34,12 +34,13 @@ export async function POST(req: NextRequest) {
             const cleanInputPhone = profileData.phone.replace(/[^0-9]/g, '');
             const formattedInputPhone = cleanInputPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
 
-            // 관리자가 등록한 동일한 전번의 로우가 있는지 확인
+            // 관리자가 등록한 동일한 전번의 가계정 로우가 있는지 확인
             const { data: duplicate } = await supabaseAdmin
                 .from('profiles')
                 .select('*')
                 .or(`phone.eq.${cleanInputPhone},phone.eq.${formattedInputPhone}`)
-                .is('id', null)
+                .neq('id', user_id)
+                .or('email.ilike.%@church.local,email.ilike.%@noemail.local')
                 .maybeSingle();
 
             if (duplicate) {

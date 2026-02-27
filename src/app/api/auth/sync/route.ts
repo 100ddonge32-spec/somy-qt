@@ -14,10 +14,10 @@ export async function POST(req: NextRequest) {
     if (!url || !key) return NextResponse.json({ error: 'Missing Supabase keys' }, { status: 500 });
 
     try {
-        const { user_id, email, name: rawName, avatar_url, phone: rawPhone, birthdate: rawBirth } = await req.json();
+        const { user_id, email, name: rawName, avatar_url: rawAvatar, phone: rawPhone, birthdate: rawBirth } = await req.json();
         if (!user_id) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
-        console.log(`[Sync] TargetID: ${user_id}, Name: ${rawName}, Phone: ${rawPhone}, Birth: ${rawBirth}`);
+        console.log(`[Sync] TargetID: ${user_id}, Email: ${email}, Name: ${rawName}, Phone: ${rawPhone}, Birth: ${rawBirth}`);
 
         let isAdminMember = false;
         if (email) {
@@ -25,25 +25,18 @@ export async function POST(req: NextRequest) {
             if (adminCheck) isAdminMember = true;
         }
 
-        // [추가] 이메일이 없더라도 이름이 '백동희'라면 슈퍼관리자로 인식하여 자동 승인 기초값 세팅
         const IS_BOSS = rawName?.trim() === '백동희' || rawName?.trim() === '동희';
         if (!isAdminMember && IS_BOSS) {
             isAdminMember = true;
             console.log(`[Sync] Boss detected by name: ${rawName}. Auto-approving.`);
         }
 
-        // 현재 로그인한 유저의 프로필
         const { data: profileById } = await supabaseAdmin.from('profiles').select('*').eq('id', user_id).maybeSingle();
-
-        // 이미 승인된 경우 중복 처리 방지
-        if (profileById?.is_approved) {
-            return NextResponse.json({ status: 'already_approved', name: profileById.full_name });
-        }
 
         let match = null;
 
         // 1. 이메일 매칭
-        if (email) {
+        if (email && !email.includes('anonymous.local') && !email.includes('noemail.local')) {
             const { data } = await supabaseAdmin.from('profiles')
                 .select('*')
                 .eq('email', email)
@@ -52,53 +45,45 @@ export async function POST(req: NextRequest) {
             if (data) match = data;
         }
 
-        // 2. 가상 이메일/휴대폰 매칭
-        const inputPhone = rawPhone || (profileById?.phone);
+        // 2. 휴대폰 매칭
+        const inputPhone = rawPhone || profileById?.phone;
         if (!match && inputPhone) {
             const cleanInputPhone = inputPhone.replace(/[^0-9]/g, '');
-            const fakeEmail = `${cleanInputPhone}@church.local`;
-
-            const { data: emailMatch } = await supabaseAdmin.from('profiles')
-                .select('*')
-                .eq('email', fakeEmail)
-                .neq('id', user_id)
-                .maybeSingle();
-
-            if (emailMatch) {
-                match = emailMatch;
-            } else {
-                const { data: phoneCandidates } = await supabaseAdmin.from('profiles')
+            if (cleanInputPhone.length >= 8) {
+                const fakeEmail = `${cleanInputPhone}@church.local`;
+                const { data: emailMatch } = await supabaseAdmin.from('profiles')
                     .select('*')
-                    .not('phone', 'is', null)
-                    .neq('id', user_id);
+                    .eq('email', fakeEmail)
+                    .neq('id', user_id)
+                    .maybeSingle();
 
-                if (phoneCandidates) {
-                    const phoneMatch = phoneCandidates.find(p => {
-                        const cleanP = (p.phone || '').replace(/[^0-9]/g, '');
-                        return cleanP.length >= 8 && cleanP === cleanInputPhone;
-                    });
-                    if (phoneMatch) match = phoneMatch;
+                if (emailMatch) {
+                    match = emailMatch;
+                } else {
+                    const { data: phoneCandidates } = await supabaseAdmin.from('profiles')
+                        .select('id, phone, full_name, email, is_approved, church_id')
+                        .not('phone', 'is', null)
+                        .neq('id', user_id);
+
+                    if (phoneCandidates) {
+                        const pm = phoneCandidates.find(p => {
+                            const cleanP = (p.phone || '').replace(/[^0-9]/g, '');
+                            return cleanP.length >= 8 && cleanP === cleanInputPhone;
+                        });
+                        if (pm) match = pm;
+                    }
                 }
             }
         }
 
-        // 이름 보완
+        // 3. 이름 + 추가 정보 매칭
         let nameForMatch = (rawName || '').trim();
-        if (!nameForMatch || nameForMatch === '.') {
-            try {
-                const { data: { user: authUser } } = await supabaseAdmin.auth.admin.getUserById(user_id);
-                nameForMatch = (authUser?.user_metadata?.full_name || authUser?.user_metadata?.name || '').trim();
-            } catch (authErr) {
-                console.error('[Sync] Auth fetch failed:', authErr);
-            }
-        }
+        const isSystemGeneratedName = nameForMatch.startsWith('kakao_') || nameForMatch.startsWith('user_');
 
-        // 3. 이름 + 생년월일 정밀 매칭 (Birthdate 추가)
-        if (!match && nameForMatch && nameForMatch.length >= 2 && nameForMatch !== '.') {
+        if (!match && nameForMatch && nameForMatch.length >= 2 && !isSystemGeneratedName) {
             const cleanInputName = nameForMatch.replace(/\s+/g, '').toLowerCase();
-
             const { data: nameCandidates } = await supabaseAdmin.from('profiles')
-                .select('*')
+                .select('id, full_name, birthdate, email, phone, is_approved, church_id')
                 .not('full_name', 'is', null)
                 .neq('id', user_id);
 
@@ -106,83 +91,81 @@ export async function POST(req: NextRequest) {
                 const matches = nameCandidates.filter(c => {
                     const cleanDbName = (c.full_name || '').replace(/\s+/g, '').toLowerCase();
                     const nameMatch = cleanDbName === cleanInputName;
-
-                    // 생년월일까지 넘어왔다면 그것까지 확인
-                    if (nameMatch && rawBirth) {
-                        const dbBirth = (c.birthdate || '').replace(/[^0-9]/g, '');
-                        const inBirth = rawBirth.replace(/[^0-9]/g, '');
-                        if (dbBirth && inBirth) {
-                            return dbBirth.endsWith(inBirth) || inBirth.endsWith(dbBirth);
+                    if (nameMatch) {
+                        if (rawBirth) {
+                            const dbBirth = (c.birthdate || '').replace(/[^0-9]/g, '');
+                            const inBirth = rawBirth.replace(/[^0-9]/g, '');
+                            if (dbBirth && inBirth && (dbBirth.endsWith(inBirth) || inBirth.endsWith(dbBirth))) return true;
                         }
+                        if (inputPhone) {
+                            const cleanDbPhone = (c.phone || '').replace(/[^0-9]/g, '');
+                            const cleanInPhone = inputPhone.replace(/[^0-9]/g, '');
+                            if (cleanDbPhone && cleanInPhone && cleanDbPhone === cleanInPhone) return true;
+                        }
+                        return false;
                     }
-                    return nameMatch;
+                    return false;
                 });
 
                 if (matches.length > 0) {
-                    const adminRow = matches.find(m => m.email?.includes('@church.local') || m.email?.includes('@noemail.local'));
-                    const exactMatch = matches.find(m => m.full_name?.trim() === nameForMatch);
-                    match = exactMatch || adminRow || matches[0];
+                    match = matches.find(m => m.email?.includes('@church.local') || m.email?.includes('@noemail.local')) || matches[0];
                 }
             }
         }
 
-        const isSystemGeneratedName = nameForMatch.startsWith('kakao_') || nameForMatch.startsWith('user_');
-        const finalName = (nameForMatch && nameForMatch !== '.' && !isSystemGeneratedName) ? nameForMatch : (email ? email.split('@')[0] : '성도');
-
         if (match) {
-            console.log(`[Sync] 매칭 성공: ${match.full_name} (${match.id})`);
+            console.log(`[Sync] Merging match: ${match.full_name} (${match.id}) -> ${user_id}`);
+            const finalAvatar = profileById?.avatar_url || match.avatar_url || rawAvatar;
             const updateFields: any = {
-                full_name: match.full_name || rawName || profileById?.full_name || '성도',
-                phone: match.phone || rawPhone || profileById?.phone,
-                birthdate: match.birthdate || rawBirth || profileById?.birthdate,
+                full_name: match.full_name || profileById?.full_name || rawName || '성도',
+                phone: match.phone || profileById?.phone || rawPhone,
+                birthdate: match.birthdate || profileById?.birthdate || rawBirth,
                 address: match.address || profileById?.address,
                 church_rank: match.church_rank || profileById?.church_rank,
                 member_no: match.member_no || profileById?.member_no,
                 gender: match.gender || profileById?.gender,
-                avatar_url: profileById?.avatar_url || match.avatar_url,
+                avatar_url: finalAvatar,
                 church_id: match.church_id || profileById?.church_id || 'jesus-in',
-                is_approved: IS_BOSS || true // 매칭 성공 = 본인확인 완료이므로 승인 처리
+                is_approved: match.is_approved || profileById?.is_approved || IS_BOSS || false
             };
 
             if (profileById) {
                 await supabaseAdmin.from('profiles').update(updateFields).eq('id', user_id);
-                await supabaseAdmin.from('profiles').delete().eq('id', match.id);
-                return NextResponse.json({ status: 'merged', name: updateFields.full_name, is_approved: updateFields.is_approved, church_id: updateFields.church_id });
+                if (match.id !== user_id) {
+                    await supabaseAdmin.from('profiles').delete().eq('id', match.id);
+                }
+                return NextResponse.json({ ...updateFields, status: 'merged' });
             } else {
-                const linkData: any = { ...updateFields, id: user_id, email: email || match.email };
-                await supabaseAdmin.from('profiles').update(linkData).eq('id', match.id);
-                return NextResponse.json({ status: 'linked', name: linkData.full_name, is_approved: updateFields.is_approved, church_id: updateFields.church_id });
+                const newProfile = { ...updateFields, id: user_id, email: email || match.email };
+                await supabaseAdmin.from('profiles').insert([newProfile]);
+                await supabaseAdmin.from('profiles').delete().eq('id', match.id);
+                return NextResponse.json({ ...newProfile, status: 'linked' });
             }
         }
 
-        // 매칭 실패 시 -> 신규 생성 또는 기존 정보 업데이트
+        const finalName = (nameForMatch && !isSystemGeneratedName) ? nameForMatch : (email ? email.split('@')[0] : '성도');
         const dataToSet = {
             id: user_id,
             email: email || profileById?.email || `${user_id}@noemail.local`,
-            full_name: rawName || profileById?.full_name || finalName,
-            phone: rawPhone || profileById?.phone,
-            birthdate: rawBirth || profileById?.birthdate,
-            church_id: 'jesus-in',
-            is_approved: isAdminMember // BOSS일 경우 true
+            full_name: profileById?.full_name || finalName,
+            phone: profileById?.phone || rawPhone,
+            birthdate: profileById?.birthdate || rawBirth,
+            avatar_url: profileById?.avatar_url || rawAvatar,
+            church_id: profileById?.church_id || 'jesus-in',
+            is_approved: profileById?.is_approved || isAdminMember || false
         };
 
         if (profileById) {
-            // 이미 존재함 -> 정보 업데이트 (교회 명부 매칭은 안 됐지만 자기 정보는 갱신)
             await supabaseAdmin.from('profiles').update(dataToSet).eq('id', user_id);
-            return NextResponse.json({ status: 'updated', name: dataToSet.full_name, is_approved: dataToSet.is_approved, church_id: 'jesus-in' });
+            return NextResponse.json({ ...dataToSet, status: 'updated' });
         } else {
-            // [정석 보완] 신규 생성 시, 최소한의 정보(이름/번호)가 없는 익명 유저는 DB에 넣지 않음 (성도 유령 방지)
             const isAnonymous = !email || email.includes('anonymous.local') || email.includes('noemail.local');
-            const hasRealName = rawName && rawName.trim() !== '' && rawName.trim() !== '.' && !isSystemGeneratedName && rawName.trim() !== '성도';
-            const hasPhone = rawPhone && rawPhone.trim().length > 5;
-
-            if (isAnonymous && !hasRealName && !hasPhone) {
-                console.log(`[Sync] Skipping profile creation for anonymous visitor: ${user_id}`);
-                return NextResponse.json({ status: 'visitor', is_approved: null, church_id: 'jesus-in' });
+            const hasRealInfo = (rawName && !isSystemGeneratedName) || (rawPhone && rawPhone.length > 5);
+            if (isAnonymous && !hasRealInfo) {
+                return NextResponse.json({ status: 'visitor', is_approved: false, church_id: 'jesus-in' });
             }
-
-            await supabaseAdmin.from('profiles').insert(dataToSet);
-            return NextResponse.json({ status: 'created', name: dataToSet.full_name, is_approved: dataToSet.is_approved, church_id: 'jesus-in' });
+            await supabaseAdmin.from('profiles').insert([dataToSet]);
+            return NextResponse.json({ ...dataToSet, status: 'created' });
         }
 
     } catch (err: any) {
