@@ -468,14 +468,22 @@ export async function POST(req: NextRequest) {
             const { member_data } = body;
             const safeMemberData = { ...member_data };
 
-            // [수정] 이제 DB에 컬럼이 존재하므로 제거하지 않음
-            /*
-            if ('is_birthdate_lunar' in safeMemberData) {
-                delete (safeMemberData as any).is_birthdate_lunar;
-            }
-            */
             if (safeMemberData.birthdate === "") {
                 safeMemberData.birthdate = null;
+            }
+
+            // [추가] 중복 체크 (휴대폰 번호 기준)
+            if (safeMemberData.phone) {
+                const cleanPhone = safeMemberData.phone.replace(/[^0-9]/g, '');
+                const { data: existing } = await supabaseAdmin
+                    .from('profiles')
+                    .select('id, full_name')
+                    .or(`phone.eq.${safeMemberData.phone},phone.eq.${cleanPhone}`)
+                    .maybeSingle();
+
+                if (existing) {
+                    return NextResponse.json({ error: `이미 등록된 성도(${existing.full_name})가 있습니다.` }, { status: 400 });
+                }
             }
 
             const { data, error } = await supabaseAdmin

@@ -48,7 +48,14 @@ export async function POST(req: NextRequest) {
         // 2. 휴대폰 매칭
         const inputPhone = rawPhone || profileById?.phone;
         if (!match && inputPhone) {
-            const cleanInputPhone = inputPhone.replace(/[^0-9]/g, '');
+            let cleanInputPhone = inputPhone.replace(/[^0-9]/g, '');
+            // +82 10... -> 010... 변환
+            if (cleanInputPhone.startsWith('8210')) {
+                cleanInputPhone = '0' + cleanInputPhone.substring(2);
+            } else if (cleanInputPhone.startsWith('10') && cleanInputPhone.length === 10) {
+                cleanInputPhone = '0' + cleanInputPhone;
+            }
+
             if (cleanInputPhone.length >= 8) {
                 const fakeEmail = `${cleanInputPhone}@church.local`;
                 const { data: emailMatch } = await supabaseAdmin.from('profiles')
@@ -67,7 +74,8 @@ export async function POST(req: NextRequest) {
 
                     if (phoneCandidates) {
                         const pm = phoneCandidates.find(p => {
-                            const cleanP = (p.phone || '').replace(/[^0-9]/g, '');
+                            let cleanP = (p.phone || '').replace(/[^0-9]/g, '');
+                            if (cleanP.startsWith('8210')) cleanP = '0' + cleanP.substring(2);
                             return cleanP.length >= 8 && cleanP === cleanInputPhone;
                         });
                         if (pm) match = pm;
@@ -92,16 +100,28 @@ export async function POST(req: NextRequest) {
                     const cleanDbName = (c.full_name || '').replace(/\s+/g, '').toLowerCase();
                     const nameMatch = cleanDbName === cleanInputName;
                     if (nameMatch) {
+                        // 정보가 있으면 대조
                         if (rawBirth) {
                             const dbBirth = (c.birthdate || '').replace(/[^0-9]/g, '');
                             const inBirth = rawBirth.replace(/[^0-9]/g, '');
                             if (dbBirth && inBirth && (dbBirth.endsWith(inBirth) || inBirth.endsWith(dbBirth))) return true;
                         }
                         if (inputPhone) {
-                            const cleanDbPhone = (c.phone || '').replace(/[^0-9]/g, '');
-                            const cleanInPhone = inputPhone.replace(/[^0-9]/g, '');
+                            let cleanDbPhone = (c.phone || '').replace(/[^0-9]/g, '');
+                            if (cleanDbPhone.startsWith('8210')) cleanDbPhone = '0' + cleanDbPhone.substring(2);
+
+                            let cleanInPhone = inputPhone.replace(/[^0-9]/g, '');
+                            if (cleanInPhone.startsWith('8210')) cleanInPhone = '0' + cleanInPhone.substring(2);
+
                             if (cleanDbPhone && cleanInPhone && cleanDbPhone === cleanInPhone) return true;
                         }
+
+                        // 정보가 없어도 가계정(@church.local) 이라면 이름만으로 일단 매칭 시도 (동일 이름이 여러 명이면 패스)
+                        if (!rawBirth && !inputPhone && (c.email?.includes('@church.local') || c.email?.includes('@noemail.local'))) {
+                            const sameNameCount = nameCandidates.filter(nc => (nc.full_name || '').replace(/\s+/g, '').toLowerCase() === cleanInputName).length;
+                            return sameNameCount === 1; // 이름이 유일할 때만 매칭
+                        }
+
                         return false;
                     }
                     return false;

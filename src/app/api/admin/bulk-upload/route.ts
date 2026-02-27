@@ -119,9 +119,44 @@ export async function POST(req: NextRequest) {
             const is_phone_public = findValue(['번호공개', 'PhonePublic']) !== '비공개' && findValue(['번호공개', 'PhonePublic']) !== false;
             const is_address_public = findValue(['주소공개', 'AddressPublic']) === '공개' || findValue(['주소공개', 'AddressPublic']) === true;
 
+            // 1. 기존 성도 매칭 시도 (이미 동기화된 유저가 있는지 확인)
+            let existingId = null;
+            let existingEmail = email;
+
+            // 휴대폰으로 먼저 검색
+            if (cleanPhone && cleanPhone.length >= 8) {
+                const { data: phoneMatch } = await supabaseAdmin
+                    .from('profiles')
+                    .select('id, email')
+                    .or(`phone.eq.${phone},phone.eq.${cleanPhone}`)
+                    .limit(1)
+                    .maybeSingle();
+
+                if (phoneMatch) {
+                    existingId = phoneMatch.id;
+                    existingEmail = phoneMatch.email;
+                }
+            }
+
+            // 이름+생일로 검색 (휴대폰 매칭 실패 시)
+            if (!existingId && full_name && formattedBirthdate) {
+                const { data: nameMatch } = await supabaseAdmin
+                    .from('profiles')
+                    .select('id, email')
+                    .eq('full_name', full_name)
+                    .eq('birthdate', formattedBirthdate)
+                    .limit(1)
+                    .maybeSingle();
+
+                if (nameMatch) {
+                    existingId = nameMatch.id;
+                    existingEmail = nameMatch.email;
+                }
+            }
+
             const upsertData: any = {
                 full_name,
-                email,
+                email: existingEmail || email, // 이미 존재하면 기존 이메일(카카오 등) 유지
                 phone: phone || null,
                 birthdate: formattedBirthdate,
                 is_birthdate_lunar,
@@ -134,20 +169,30 @@ export async function POST(req: NextRequest) {
                 gender: gender || null,
                 church_rank: church_rank || null,
                 church_id: church_id || 'jesus-in',
-                is_approved: true // 벌크 업로드는 관리자가 하므로 기본 승인 처리
+                is_approved: true
             };
 
             if (formattedRegisteredAt) {
                 upsertData.created_at = formattedRegisteredAt;
             }
 
-            const { error } = await supabaseAdmin
-                .from('profiles')
-                .upsert(upsertData, { onConflict: 'email' });
+            let result;
+            if (existingId) {
+                // 이미 존재하는 유저(동기화 완료된 유저 포함)라면 ID로 업데이트
+                result = await supabaseAdmin
+                    .from('profiles')
+                    .update(upsertData)
+                    .eq('id', existingId);
+            } else {
+                // 새로운 유저이거나 가계정인 경우 기존처럼 이메일 기준 upsert
+                result = await supabaseAdmin
+                    .from('profiles')
+                    .upsert(upsertData, { onConflict: 'email' });
+            }
 
-            if (error) {
-                console.error(`[Bulk Error] ${full_name} (${email}):`, error.message);
-                errors.push(`${full_name}: ${error.message}`);
+            if (result.error) {
+                console.error(`[Bulk Error] ${full_name} (${email}):`, result.error.message);
+                errors.push(`${full_name}: ${result.error.message}`);
             } else {
                 successCount++;
             }
