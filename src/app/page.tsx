@@ -3160,7 +3160,7 @@ export default function App() {
                         {/* [추가] 청소년 눈높이 큐티 관리 섹션 */}
                         <div style={{ marginTop: '20px', padding: '20px', background: '#F0F7FF', borderRadius: '15px', border: '1px solid #D1E3F8' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#0D47A1' }}>👦 청년/청소년 눈높이 버전</div>
+                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#0D47A1' }}>👦 청년/청소년 눈높이 버전 (20세 이하)</div>
                                 <button
                                     onClick={async () => {
                                         if (!qtForm.interpretation) { alert('먼저 일반 해설을 입력하거나 불러와주세요.'); return; }
@@ -3172,7 +3172,7 @@ export default function App() {
                                                 body: JSON.stringify({
                                                     messages: [{
                                                         role: 'user',
-                                                        content: `다음 큐티 내용을 청춘(10~20대)의 언어로 다정하게 바꿔주세요.\n\n해설: ${qtForm.interpretation}\n질문: ${[qtForm.question1, qtForm.question2, qtForm.question3].join(', ')}\n\n반드시 JSON 형식으로 답하세요: {"interpretation": "...", "questions": ["...", "...", "..."]}`
+                                                        content: `당신은 다음 큐티 내용을 청춘(10~20대)의 언어로 다정하게 바꿔주는 목회자입니다.\n\n해설: ${qtForm.interpretation}\n질문: ${[qtForm.question1, qtForm.question2, qtForm.question3].join(', ')}\n\n반드시 JSON 형식으로 답하세요: {"interpretation": "...", "questions": ["...", "...", "..."]}`
                                                     }]
                                                 })
                                             });
@@ -3212,7 +3212,7 @@ export default function App() {
                                 </div>
                             ))}
                             <div style={{ fontSize: '10px', color: '#64B5F6', marginTop: '6px' }}>
-                                * 내용을 입력하고 저장하면, 20세 이하 유저에게는 일반 버전 대신 이 내용이 표시됩니다.
+                                * 내용을 입력하고 저장하면, 20세 이하 유저에게는 일반 버전 대신 이 내용이 관리자가 승인한 버전으로 표시됩니다.
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
@@ -4595,10 +4595,41 @@ export default function App() {
                                 </div>
                             </button>
 
-                            <button onClick={() => {
+                            <button onClick={async () => {
                                 const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
-                                setQtForm({ date: today, reference: '', passage: '', interpretation: '', question1: '', question2: '', question3: '', prayer: '' });
-                                setView('qtManage');
+                                setQtForm({
+                                    date: today, reference: '', passage: '', interpretation: '',
+                                    question1: '', question2: '', question3: '', prayer: '',
+                                    youthInterpretation: '', youthQuestion1: '', youthQuestion2: '', youthQuestion3: ''
+                                });
+                                // 자동으로 오늘 데이터가 있는지 조회 시도
+                                setAiLoading(true);
+                                try {
+                                    const res = await fetch(`/api/qt?date=${today}`, { cache: 'no-store' });
+                                    const { qt } = await res.json();
+                                    if (qt) {
+                                        const { fullPassage, interpretation, youthData } = parsePassage(qt.passage);
+                                        setQtForm({
+                                            date: qt.date,
+                                            reference: qt.reference,
+                                            passage: fullPassage,
+                                            interpretation: interpretation,
+                                            question1: qt.question1 || '',
+                                            question2: qt.question2 || '',
+                                            question3: qt.question3 || '',
+                                            prayer: qt.prayer || '',
+                                            youthInterpretation: youthData?.interpretation || '',
+                                            youthQuestion1: youthData?.questions?.[0] || '',
+                                            youthQuestion2: youthData?.questions?.[1] || '',
+                                            youthQuestion3: youthData?.questions?.[2] || '',
+                                        });
+                                    }
+                                } catch (e) {
+                                    console.error("오늘 큐티 로드 실패:", e);
+                                } finally {
+                                    setAiLoading(false);
+                                    setView('qtManage');
+                                }
                             }} style={{ padding: '24px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
                                 <div style={{ width: '40px', height: '40px', background: '#E1F5FE', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📖</div>
                                 <div style={{ textAlign: 'center' }}>
