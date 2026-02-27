@@ -1743,9 +1743,26 @@ export default function App() {
           10%, 30%, 50%, 70%, 90% { transform: rotate(15deg); }
           20%, 40%, 60%, 80% { transform: rotate(-15deg); }
       }
-      @keyframes bounce-light {
-          from { transform: translateY(0); }
-          to { transform: translateY(-3px); }
+      @keyframes bounce-light { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+      /* 글씨 크기 조절을 위한 전역 스타일 */
+      .main-action-button span {
+          font-size: ${Math.round(15 * fontScale)}px !important;
+      }
+      
+      .sub-action-button div, .sub-action-button span {
+          font-size: ${Math.round(14 * fontScale)}px !important;
+      }
+      .sub-action-button .label {
+          font-size: ${Math.round(13 * fontScale)}px !important;
+      }
+
+      .verse-text {
+          font-size: ${Math.round(15 * fontScale)}px !important;
+      }
+
+      .quote-text {
+          font-size: ${Math.round(14.5 * fontScale)}px !important;
       }
       @keyframes slide-up {
           from { transform: translateX(-50%) translateY(20px); opacity: 0; }
@@ -2207,7 +2224,7 @@ export default function App() {
                                     gap: '10px',
                                     width: '100%'
                                 }}>
-                                    <button onClick={() => setView("chat")} style={{
+                                    <button onClick={() => setView("chat")} className="main-action-button" style={{
                                         padding: "16px 12px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f0f8f8 100%)", color: "#1A5D55",
                                         fontWeight: 800, fontSize: "15px", borderRadius: "18px",
@@ -2227,7 +2244,7 @@ export default function App() {
                                         fetchQt();
                                         setQtStep("read");
                                         setView("qt");
-                                    }} style={{
+                                    }} className="main-action-button" style={{
                                         padding: "16px 12px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #fffbea 100%)", color: "#8E754C",
                                         fontWeight: 800, fontSize: "15px", borderRadius: "18px",
@@ -2251,7 +2268,7 @@ export default function App() {
                                                 const data = await res.json();
                                                 if (Array.isArray(data)) setCommunityPosts(data);
                                             } catch (e) { console.error("게시판 로드 실패:", e); }
-                                        }} style={{
+                                        }} className="main-action-button" style={{
                                             width: "100%", padding: "16px 12px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #fff0f5 100%)", color: "#9E2A5B",
                                             fontWeight: 800, fontSize: "15px", borderRadius: "18px",
@@ -2278,7 +2295,7 @@ export default function App() {
                                                 const data = await res.json();
                                                 if (Array.isArray(data)) setThanksgivingDiaries(data);
                                             } catch (e) { console.error("감사일기 로드 실패:", e); }
-                                        }} style={{
+                                        }} className="main-action-button" style={{
                                             width: "100%", padding: "16px 12px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #fff6e5 100%)", color: "#E07A5F",
                                             fontWeight: 800, fontSize: "15px", borderRadius: "18px",
@@ -2306,7 +2323,7 @@ export default function App() {
                                     animation: 'fade-in 1s ease-out'
                                 }}>
                                     {/* 이달의 책 추천 카드 */}
-                                    <div onClick={() => setView('book')} style={{
+                                    <div onClick={() => setView('book')} className="sub-action-button" style={{
                                         background: 'linear-gradient(135deg, #FFF 0%, #FAFAFA 100%)',
                                         borderRadius: '24px',
                                         padding: '16px 20px',
@@ -2330,13 +2347,13 @@ export default function App() {
                                             )}
                                         </div>
                                         <div>
-                                            <div style={{ fontSize: '13px', color: '#D4AF37', fontWeight: 800, marginBottom: '2px', wordBreak: 'keep-all' }}>이달의 추천도서</div>
+                                            <div className="label" style={{ fontSize: '13px', color: '#D4AF37', fontWeight: 800, marginBottom: '2px', wordBreak: 'keep-all' }}>이달의 추천도서</div>
                                             <div style={{ fontSize: '14px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', width: '100%', lineHeight: 1.2 }}>{churchSettings.today_book_title || '추천 도서'}</div>
                                         </div>
                                     </div>
 
                                     {/* 담임목사 칼럼 카드 */}
-                                    <div onClick={() => setView('pastorColumn')} style={{
+                                    <div onClick={() => setView('pastorColumn')} className="sub-action-button" style={{
                                         background: 'linear-gradient(135deg, #FFF 0%, #FDF8F0 100%)',
                                         borderRadius: '24px',
                                         padding: '16px 20px',
@@ -2355,7 +2372,7 @@ export default function App() {
                                     }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.08)'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.04)'; }}>
                                         <div style={{ width: '40px', height: '56px', background: '#FFFDF7', borderRadius: '6px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', border: '1px solid #FAF0D7' }}>✍️</div>
                                         <div>
-                                            <div style={{ fontSize: '13px', color: '#B8924A', fontWeight: 800, marginBottom: '2px', wordBreak: 'keep-all' }}>담임목사 칼럼</div>
+                                            <div className="label" style={{ fontSize: '13px', color: '#B8924A', fontWeight: 800, marginBottom: '2px', wordBreak: 'keep-all' }}>담임목사 칼럼</div>
                                             <div style={{ fontSize: '14px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', width: '100%', lineHeight: 1.2 }}>{churchSettings.pastor_column_title || '오늘의 칼럼'}</div>
                                         </div>
                                         {!churchSettings.pastor_column_content && (
@@ -2396,7 +2413,7 @@ export default function App() {
                                                         <span style={{ fontSize: "15px", fontWeight: 800, color: "#9E7B31", letterSpacing: '-0.2px' }}>오늘의 말씀</span>
                                                     </div>
                                                     <div style={{ position: 'relative', padding: '0 4px' }}>
-                                                        <p style={{ position: 'relative', zIndex: 1, fontSize: "15px", color: "#444", lineHeight: 1.8, margin: "0 0 16px 0", fontWeight: 500, wordBreak: 'keep-all', textAlign: 'center' }}>"{graceVerse.verse}"</p>
+                                                        <p className="verse-text" style={{ position: 'relative', zIndex: 1, fontSize: "15px", color: "#444", lineHeight: 1.8, margin: "0 0 16px 0", fontWeight: 500, wordBreak: 'keep-all', textAlign: 'center' }}>"{graceVerse.verse}"</p>
                                                     </div>
                                                     <p style={{ fontSize: "13px", color: "#B8924A", fontWeight: 700, margin: 0, textAlign: 'right' }}>— {graceVerse.book} {graceVerse.ref} <span style={{ fontSize: '10px', color: '#CCC', fontWeight: 400 }}>(개역한글)</span></p>
 
@@ -2408,7 +2425,7 @@ export default function App() {
                                                             const quotes = ["하나님은 우리가 감당할 수 없는 시련을 주시지는 않는다. - 고린도전서 10:13 강해 중", "기도는 하나님의 팔을 움직이는 가장 조용한 힘이다. - 찰스 스펄전", "하나님께서 나의 계획을 무너뜨리시는 것은, 나의 계획이 나를 무너뜨릴 수 있기 때문이다. - 코리 텐 붐", "우리가 하나님을 온전히 신뢰할 때, 하나님은 우리의 모든 상황을 그분의 목적을 위해 사용하신다. - A.W. 토저", "고난은 하나님의 변장된 축복이다. 그것은 우리를 하나님께로 더 가까이 이끈다. - C.S. 루이스", "우리가 하나님 외에 다른 곳에서 만족을 찾으려 할 때, 우리는 결코 만족을 얻을 수 없다. - 어거스틴", "성경은 단순히 읽기 위한 책이 아니라, 우리 삶이 읽혀지기 위한 거울이다. - D.L. 무디"];
                                                             const todayIndex = new Date().getDate() % quotes.length;
                                                             return (
-                                                                <div style={{ fontSize: '14.5px', color: '#2D2D2D', lineHeight: 1.7, wordBreak: 'keep-all', fontStyle: 'normal', fontWeight: 500, background: 'rgba(212, 175, 55, 0.04)', padding: '12px 16px', borderRadius: '12px', borderLeft: '4px solid #D4AF37', letterSpacing: '-0.3px' }}>
+                                                                <div className="quote-text" style={{ fontSize: '14.5px', color: '#2D2D2D', lineHeight: 1.7, wordBreak: 'keep-all', fontStyle: 'normal', fontWeight: 500, background: 'rgba(212, 175, 55, 0.04)', padding: '12px 16px', borderRadius: '12px', borderLeft: '4px solid #D4AF37', letterSpacing: '-0.3px' }}>
                                                                     "{quotes[todayIndex]}"
                                                                 </div>
                                                             );
@@ -2435,7 +2452,7 @@ export default function App() {
                                             setView('sermon');
                                             setHasNewSermon(false);
                                             localStorage.setItem(`last_view_sermon_${churchId}`, Date.now().toString());
-                                        }} style={{
+                                        }} className="main-action-button" style={{
                                             padding: "16px 12px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #fff4f2 100%)", color: "#BA2D0B",
                                             fontWeight: 800, fontSize: "15px", borderRadius: "18px",
@@ -2473,7 +2490,7 @@ export default function App() {
                                                 const data = await res.json();
                                                 if (Array.isArray(data)) setCounselingRequests(data);
                                             } catch (e) { console.error("상담 로드 실패", e); }
-                                        }} style={{
+                                        }} className="main-action-button" style={{
                                             width: "100%", padding: "16px 12px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #f6f0ff 100%)", color: "#4A148C",
                                             fontWeight: 800, fontSize: "15px", borderRadius: "18px",
@@ -2511,7 +2528,7 @@ export default function App() {
                                         } catch (e: any) {
                                             setStatsError(e.name === 'AbortError' ? "시간 초과" : "연결 실패");
                                         }
-                                    }} style={{
+                                    }} className="main-action-button" style={{
                                         padding: "16px 12px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #faf6ec 100%)", color: "#8B6B38",
                                         fontWeight: 800, fontSize: "15px", borderRadius: "18px",
@@ -2528,7 +2545,7 @@ export default function App() {
                                     <button onClick={() => {
                                         setView('history');
                                         fetchHistory();
-                                    }} style={{
+                                    }} className="main-action-button" style={{
                                         padding: "16px 12px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f1f8f3 100%)", color: "#507558",
                                         fontWeight: 800, fontSize: "15px", borderRadius: "18px",
@@ -2542,7 +2559,7 @@ export default function App() {
                                         <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>나의 묵상 기록</span>
                                     </button>
 
-                                    <button onClick={() => setView('ccm')} style={{
+                                    <button onClick={() => setView('ccm')} className="main-action-button" style={{
                                         padding: "16px 12px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f4f6fa 100%)", color: "#465293",
                                         fontWeight: 800, fontSize: "15px", borderRadius: "18px",
@@ -2556,7 +2573,7 @@ export default function App() {
                                         <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>CCM 듣기</span>
                                     </button>
 
-                                    <button onClick={() => setView('memberSearch')} style={{
+                                    <button onClick={() => setView('memberSearch')} className="main-action-button" style={{
                                         padding: "16px 12px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f1f8f3 100%)", color: "#2E7D32",
                                         fontWeight: 800, fontSize: "15px", borderRadius: "18px",
