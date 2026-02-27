@@ -404,6 +404,9 @@ export default function App() {
     const [hasNewThanksgiving, setHasNewThanksgiving] = useState(false);
     const [hasNewSermon, setHasNewSermon] = useState(false);
 
+    // ✅ 상담 알림Derivation (실시간 알림 목록에서 계산)
+    const hasNewCounseling = notifications.some(n => !n.is_read && ['counseling_reply', 'counseling_req', 'counseling_user_reply'].includes(n.type));
+
     const [churchSettings, setChurchSettings] = useState<any>({
         church_name: CHURCH_NAME,
         church_logo_url: CHURCH_LOGO,
@@ -473,6 +476,8 @@ export default function App() {
     const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]); // ✅ 단체문자 등을 위한 선택된 성도 ID 목록
     const [isSubmittingCounseling, setIsSubmittingCounseling] = useState(false); // ✅ 상담 요청 중복 방지
     const [submittingReplyId, setSubmittingReplyId] = useState<string | null>(null); // ✅ 상담 답변 중복 방지
+    const [userCounselingReplyInput, setUserCounselingReplyInput] = useState<{ [id: string]: string }>({}); // 성도 추가 답글 입력
+    const [submittingUserReplyId, setSubmittingUserReplyId] = useState<string | null>(null);
     const [submittingCommentId, setSubmittingCommentId] = useState<any>(null); // ✅ 댓글 등록 중복 방지
     const [showVerification, setShowVerification] = useState(false); // ✅ 실명 인증 폼 노출 여부
     const [isInApp, setIsInApp] = useState(false); // ✅ 카톡 등 인앱 브라우저 여부
@@ -811,19 +816,40 @@ export default function App() {
 
     // [이과장의 배지 시스템] 새로운 글이 있는지 시간을 비교하여 N 배지를 결정합니다.
     const checkNewContent = useCallback(async () => {
+        if (!churchId) return;
+        const cId = churchId;
+        const kstOffset = 9 * 60 * 60 * 1000;
+        const today = new Date(Date.now() + kstOffset).toISOString().split('T')[0];
+
         try {
-            const { data: latestPost } = await supabase.from('community_posts').select('created_at').eq('church_id', churchId).order('created_at', { ascending: false }).limit(1).single();
-            const { data: latestThanks } = await supabase.from('thanksgiving_diaries').select('created_at').eq('church_id', churchId).order('created_at', { ascending: false }).limit(1).single();
-            const { data: latestSermon } = await supabase.from('church_settings').select('updated_at').eq('id', churchId).single();
+            // 1. 은혜나눔 (오늘 올라온 글이 있거나, 마지막으로 본 시간보다 이후 글이 있는지)
+            const { data: latestPost } = await supabase.from('community_posts').select('created_at').eq('church_id', cId).order('created_at', { ascending: false }).limit(1).single();
+            const lastCommunity = localStorage.getItem(`last_view_community_${cId}`) || '0';
+            const isLatestPostToday = latestPost && new Date(new Date(latestPost.created_at).getTime() + kstOffset).toISOString().split('T')[0] === today;
+            const isLatestPostUnseen = latestPost && new Date(latestPost.created_at).getTime() > Number(lastCommunity);
+            setHasNewCommunity(!!(isLatestPostToday || isLatestPostUnseen));
 
-            const lastCommunity = localStorage.getItem(`last_view_community_${churchId}`) || '0';
-            const lastThanks = localStorage.getItem(`last_view_thanks_${churchId}`) || '0';
-            const lastSermon = localStorage.getItem(`last_view_sermon_${churchId}`) || '0';
+            // 2. 감사일기
+            const { data: latestThanks } = await supabase.from('thanksgiving_diaries').select('created_at').eq('church_id', cId).order('created_at', { ascending: false }).limit(1).single();
+            const lastThanks = localStorage.getItem(`last_view_thanks_${cId}`) || '0';
+            const isLatestThanksToday = latestThanks && new Date(new Date(latestThanks.created_at).getTime() + kstOffset).toISOString().split('T')[0] === today;
+            const isLatestThanksUnseen = latestThanks && new Date(latestThanks.created_at).getTime() > Number(lastThanks);
+            setHasNewThanksgiving(!!(isLatestThanksToday || isLatestThanksUnseen));
 
-            if (latestPost && new Date(latestPost.created_at).getTime() > Number(lastCommunity)) setHasNewCommunity(true);
-            if (latestThanks && new Date(latestThanks.created_at).getTime() > Number(lastThanks)) setHasNewThanksgiving(true);
-            if (latestSermon && new Date(latestSermon.updated_at).getTime() > Number(lastSermon)) setHasNewSermon(true);
-        } catch (e) { }
+            // 3. 설교 업데이트
+            const r = await fetch(`/api/settings?church_id=${cId}`);
+            const { settings } = await r.json();
+            if (settings) {
+                const updatedAt = new Date(settings.updated_at || settings.created_at);
+                const updatedKST = new Date(updatedAt.getTime() + kstOffset).toISOString().split('T')[0];
+                const lastSermon = localStorage.getItem(`last_view_sermon_${cId}`) || '0';
+                const isSermonTodayValue = updatedKST === today;
+                const isSermonUnseen = updatedAt.getTime() > Number(lastSermon);
+                setHasNewSermon(!!(isSermonTodayValue || isSermonUnseen));
+            }
+        } catch (e) {
+            console.error("Badges check failed", e);
+        }
     }, [churchId]);
 
     // 승인 상태 및 교회 정보 체크 함수 (캐시 무시 및 강력한 실시간 체크)
@@ -1029,40 +1055,6 @@ export default function App() {
         };
         if (churchId) loadAnnouncements();
 
-        // ✅ 새 글 및 설교 업데이트 체크 로직
-        const checkNewContent = async () => {
-            const cId = churchId || 'jesus-in';
-            const kstOffset = 9 * 60 * 60 * 1000;
-            const today = new Date(Date.now() + kstOffset).toISOString().split('T')[0];
-
-            try {
-                // 1. 은혜나눔 새글 (오늘 올라온 글이 있는지)
-                const { count: cCount } = await supabase
-                    .from('community_posts')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('church_id', cId)
-                    .gte('created_at', today);
-                setHasNewCommunity((cCount || 0) > 0);
-
-                // 2. 감사일기 새글
-                const { count: tCount } = await supabase
-                    .from('thanksgiving_diaries')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('church_id', cId)
-                    .gte('created_at', today);
-                setHasNewThanksgiving((tCount || 0) > 0);
-
-                // 3. 설교 업데이트 (설교 URL이 있고, 설정이 오늘 수정되었는지)
-                // note: 정확한 비교를 위해 DB에 sermon_updated_at이 있으면 좋으나, 현재는 church_settings의 updated_at 활용
-                const r = await fetch(`/api/settings?church_id=${cId}`);
-                const { settings } = await r.json();
-                if (settings && settings.sermon_url) {
-                    const updatedAt = new Date(settings.updated_at || settings.created_at);
-                    const updatedKST = new Date(updatedAt.getTime() + kstOffset).toISOString().split('T')[0];
-                    setHasNewSermon(updatedKST === today);
-                }
-            } catch (e) { console.error("Badges check failed", e); }
-        };
         if (churchId) checkNewContent();
 
     }, [churchId]);
@@ -2211,25 +2203,48 @@ export default function App() {
                                             <span>담임목사 설교</span>
                                         </button>
                                     ) : null}
-                                    <button onClick={async () => {
-                                        setView('counseling');
-                                        try {
-                                            const res = await fetch(`/api/counseling?church_id=${churchId}&user_id=${user?.id}&admin=${isAdmin}`);
-                                            const data = await res.json();
-                                            if (Array.isArray(data)) setCounselingRequests(data);
-                                        } catch (e) { console.error("상담 로드 실패", e); }
-                                    }} style={{
-                                        flex: 1, padding: "14px 10px",
-                                        background: "linear-gradient(145deg, #ffffff 0%, #f6f0ff 100%)", color: "#4A148C",
-                                        fontWeight: 800, fontSize: "14px", borderRadius: "20px",
-                                        border: "1px solid #e1bee7", cursor: "pointer",
-                                        boxShadow: "0 10px 20px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(74, 20, 140, 0.08), inset 0 3px 5px rgba(255,255,255,1), inset 0 -3px 0 rgba(255,255,255,0.8)",
-                                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
-                                        transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
-                                    }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                        <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>🙏</div>
-                                        <span>상담/기도 요청</span>
-                                    </button>
+                                    <div style={{ position: 'relative', flex: 1 }}>
+                                        <button onClick={async () => {
+                                            setView('counseling');
+                                            // 상담 관련 알림 읽음 처리
+                                            const counselingNotis = notifications.filter(n => !n.is_read && (
+                                                isAdmin ? (n.type === 'counseling_req' || n.type === 'counseling_user_reply')
+                                                    : (n.type === 'counseling_reply')
+                                            ));
+                                            for (const n of counselingNotis) {
+                                                fetch('/api/notifications', { method: 'PATCH', body: JSON.stringify({ id: n.id }) });
+                                            }
+                                            if (counselingNotis.length > 0) {
+                                                setNotifications(notifications.map(n =>
+                                                    counselingNotis.some(cn => cn.id === n.id) ? { ...n, is_read: true } : n
+                                                ));
+                                            }
+
+                                            try {
+                                                const res = await fetch(`/api/counseling?church_id=${churchId}&user_id=${user?.id}&admin=${isAdmin}`);
+                                                const data = await res.json();
+                                                if (Array.isArray(data)) setCounselingRequests(data);
+                                            } catch (e) { console.error("상담 로드 실패", e); }
+                                        }} style={{
+                                            width: "100%", padding: "14px 10px",
+                                            background: "linear-gradient(145deg, #ffffff 0%, #f6f0ff 100%)", color: "#4A148C",
+                                            fontWeight: 800, fontSize: "14px", borderRadius: "20px",
+                                            border: "1px solid #e1bee7", cursor: "pointer",
+                                            boxShadow: "0 10px 20px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(74, 20, 140, 0.08), inset 0 3px 5px rgba(255,255,255,1), inset 0 -3px 0 rgba(255,255,255,0.8)",
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
+                                            transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                                            position: 'relative'
+                                        }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                                            {notifications.some(n => !n.is_read && (
+                                                isAdmin ? (n.type === 'counseling_req' || n.type === 'counseling_user_reply')
+                                                    : (n.type === 'counseling_reply')
+                                            )) && (
+                                                    <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '2px 5px', borderRadius: '8px', border: '1.5px solid white' }}>N</div>
+                                                )}
+                                            <div style={{ width: '42px', height: '42px', background: 'white', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)' }}>🙏</div>
+                                            <span>상담/기도 요청</span>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div style={{ display: 'flex', gap: '14px', width: '100%' }}>
@@ -4640,6 +4655,56 @@ export default function App() {
                                         <div style={{ background: '#F5F5F5', padding: '15px', borderRadius: '10px', marginTop: '10px' }}>
                                             <div style={{ fontWeight: 800, fontSize: '13px', color: '#1A5D55', marginBottom: '5px' }}>↳ 담임목사님 답변</div>
                                             <div style={{ fontSize: '14px', color: '#444', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{req.reply}</div>
+
+                                            {/* 성도 추가 답글 표시 */}
+                                            {req.user_reply && (
+                                                <div style={{ background: 'white', padding: '12px', borderRadius: '8px', marginTop: '10px', border: '1px solid #EEE' }}>
+                                                    <div style={{ fontWeight: 800, fontSize: '12px', color: '#333', marginBottom: '4px' }}>💬 성도님 추가 답글</div>
+                                                    <div style={{ fontSize: '13px', color: '#555', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{req.user_reply}</div>
+                                                </div>
+                                            )}
+
+                                            {/* 성도 추가 답글 입력창 (목사님 답변은 있는데 성도가 추가로 할 말이 있을 때) */}
+                                            {!isAdmin && user?.id === req.user_id && (
+                                                <div style={{ marginTop: '10px' }}>
+                                                    <textarea
+                                                        value={userCounselingReplyInput[req.id] || ''}
+                                                        onChange={e => setUserCounselingReplyInput({ ...userCounselingReplyInput, [req.id]: e.target.value })}
+                                                        placeholder="목사님 답변에 대한 답글을 남겨주세요."
+                                                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', minHeight: '60px', fontSize: '13px', marginBottom: '5px', outline: 'none' }}
+                                                    />
+                                                    <button
+                                                        disabled={submittingUserReplyId === req.id}
+                                                        onClick={async () => {
+                                                            const content = userCounselingReplyInput[req.id];
+                                                            if (!content?.trim() || submittingUserReplyId === req.id) return;
+                                                            setSubmittingUserReplyId(req.id);
+                                                            try {
+                                                                const r = await fetch('/api/counseling', {
+                                                                    method: 'PATCH',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({
+                                                                        id: req.id,
+                                                                        user_reply: content,
+                                                                        user_name: user?.user_metadata?.full_name || '성도'
+                                                                    })
+                                                                });
+                                                                if (r.ok) {
+                                                                    const updated = await r.json();
+                                                                    setCounselingRequests(counselingRequests.map(c => c.id === req.id ? updated : c));
+                                                                    alert("답글이 목사님께 전달되었습니다.");
+                                                                }
+                                                            } catch (e) {
+                                                            } finally {
+                                                                setSubmittingUserReplyId(null);
+                                                            }
+                                                        }}
+                                                        style={{ width: '100%', padding: '8px', background: submittingUserReplyId === req.id ? '#999' : '#333', color: 'white', borderRadius: '8px', border: 'none', fontWeight: 700, fontSize: '12px', cursor: submittingUserReplyId === req.id ? 'default' : 'pointer' }}
+                                                    >
+                                                        {submittingUserReplyId === req.id ? '전송 중...' : '목사님께 답글 보내기'}
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     ) : isAdmin ? (
                                         <div style={{ marginTop: '10px', background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '10px', padding: '10px' }}>
@@ -4793,7 +4858,7 @@ export default function App() {
                                             setView('community');
                                         } else if (n.type === 'thanks_comment') {
                                             setView('thanksgiving');
-                                        } else if (['counseling_req', 'counseling_reply'].includes(n.type)) {
+                                        } else if (['counseling_req', 'counseling_reply', 'counseling_user_reply'].includes(n.type)) {
                                             const res = await fetch(`/api/counseling?church_id=${churchId}&user_id=${user?.id}&admin=${isAdmin}`);
                                             const data = await res.json();
                                             if (Array.isArray(data)) setCounselingRequests(data);
@@ -4815,9 +4880,10 @@ export default function App() {
                                             {n.type === 'thanks_comment' && <><strong>{n.actor_name}</strong>님이 감사일기에 댓글을 남기셨습니다.</>}
                                             {n.type === 'counseling_req' && <><strong>{n.actor_name}</strong> 성도님이 새로운 상담/기도 요청을 보내셨습니다.</>}
                                             {n.type === 'counseling_reply' && <><strong>{n.actor_name}</strong>께서 상담/기도 요청에 답변을 남기셨습니다.</>}
+                                            {n.type === 'counseling_user_reply' && <><strong>{n.actor_name}</strong> 성도님이 목사님 답변에 추가 답글을 남기셨습니다.</>}
                                             {n.type === 'announcement' && <>📢 새 공지사항: <strong>{n.actor_name}</strong></>}
                                             {n.type === 'qt' && <>📖 <strong>{n.actor_name}</strong> 말씀이 업로드되었습니다.</>}
-                                            {!['comment', 'community_post', 'thanks_comment', 'counseling_req', 'counseling_reply', 'announcement', 'qt'].includes(n.type) && <><strong>{n.actor_name}</strong>님이 새로운 알림을 보내셨습니다.</>}
+                                            {!['comment', 'community_post', 'thanks_comment', 'counseling_req', 'counseling_reply', 'counseling_user_reply', 'announcement', 'qt'].includes(n.type) && <><strong>{n.actor_name}</strong>님이 새로운 알림을 보내셨습니다.</>}
                                         </div>
                                         <div style={{ fontSize: '11px', color: '#999', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                             <span>🕒</span>

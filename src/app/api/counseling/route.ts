@@ -96,17 +96,37 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
     try {
         const body = await req.json();
-        const { id, reply, admin_name } = body;
+        const { id, reply, user_reply, admin_name, user_name } = body;
+
+        // 기존 데이터 가져오기 (추가 답글인 경우를 위해)
+        const { data: existing, error: fetchError } = await supabaseAdmin
+            .from('counseling_requests')
+            .select('reply, user_reply')
+            .eq('id', id)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        const updateData: any = {};
+        if (reply !== undefined) {
+            // 목사님 답변이 이미 있으면 개행 후 추가
+            updateData.reply = existing.reply ? `${existing.reply}\n\n[추가 답변]\n${reply}` : reply;
+        }
+        if (user_reply !== undefined) {
+            // 성도 답글이 이미 있으면 개행 후 추가
+            updateData.user_reply = existing.user_reply ? `${existing.user_reply}\n\n[추가 답글]\n${user_reply}` : user_reply;
+        }
 
         const { data, error } = await supabaseAdmin
             .from('counseling_requests')
-            .update({ reply })
+            .update(updateData)
             .eq('id', id)
             .select()
             .single();
 
         if (error) throw error;
 
+        // 목사님이 답변을 단 경우 -> 성도에게 알림
         if (reply) {
             await supabaseAdmin.from('notifications').insert([{
                 user_id: data.user_id,
@@ -128,6 +148,41 @@ export async function PATCH(req: NextRequest) {
                         });
                         await webpush.sendNotification(sub.subscription, payload);
                     } catch (e) { }
+                }
+            }
+        }
+
+        // 성도가 추가 답글을 단 경우 -> 관리자에게 알림
+        if (user_reply) {
+            const { data: admins } = await supabaseAdmin.from('app_admins').select('email').in('role', ['church_admin', 'super_admin']).eq('church_id', data.church_id);
+            if (admins && admins.length > 0) {
+                const adminEmails = admins.map(a => a.email);
+                const { data: adminProfiles } = await supabaseAdmin.from('profiles').select('id').in('email', adminEmails);
+                if (adminProfiles) {
+                    for (const p of adminProfiles) {
+                        await supabaseAdmin.from('notifications').insert([{
+                            user_id: p.id,
+                            actor_name: user_name || '성도',
+                            type: 'counseling_user_reply',
+                            post_id: data.id,
+                            is_read: false
+                        }]);
+                        const { data: subsData } = await supabaseAdmin.from('push_subscriptions').select('subscription').eq('user_id', p.id);
+                        if (subsData && subsData.length > 0) {
+                            for (const sub of subsData) {
+                                if (!sub.subscription) continue;
+                                try {
+                                    const payload = JSON.stringify({
+                                        title: '🙏 상담/기도 추가 답글',
+                                        body: `${user_name || '성도'}님의 추가 답글이 도착했습니다.`,
+                                        url: '/?view=counseling',
+                                        userId: p.id
+                                    });
+                                    await webpush.sendNotification(sub.subscription, payload);
+                                } catch (e) { }
+                            }
+                        }
+                    }
                 }
             }
         }
