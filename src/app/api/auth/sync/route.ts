@@ -134,8 +134,10 @@ export async function POST(req: NextRequest) {
         }
 
         if (match) {
-            console.log(`[Sync] Merging match: ${match.full_name} (${match.id}) -> ${user_id}`);
+            console.log(`[Sync] Merging match: ${match.full_name} (${match.id}) -> ${user_id} (Admin priority active)`);
             const finalAvatar = profileById?.avatar_url || match.avatar_url || rawAvatar;
+
+            // [기준] 관리자가 업로드한 엑셀(match) 필드가 최우선입니다.
             const updateFields: any = {
                 full_name: match.full_name || profileById?.full_name || rawName || '성도',
                 phone: match.phone || profileById?.phone || rawPhone,
@@ -146,7 +148,7 @@ export async function POST(req: NextRequest) {
                 gender: match.gender || profileById?.gender,
                 avatar_url: finalAvatar,
                 church_id: match.church_id || profileById?.church_id || 'jesus-in',
-                is_approved: match.is_approved || profileById?.is_approved || IS_BOSS || false
+                is_approved: match.is_approved || profileById?.is_approved || IS_BOSS || true // 매칭된 계정은 승인된 걸로 간주
             };
 
             if (profileById) {

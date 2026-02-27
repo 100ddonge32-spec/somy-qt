@@ -1855,7 +1855,7 @@ export default function App() {
                         {/* 글씨 확대 버튼 (Aa) */}
                         <div
                             onClick={() => {
-                                const next = fontScale >= 1.4 ? 1 : fontScale + 0.15;
+                                const next = fontScale >= 1.6 ? 1 : fontScale + 0.2;
                                 setFontScale(next);
                                 localStorage.setItem('somyFontScale', next.toString());
                             }}
@@ -2209,7 +2209,7 @@ export default function App() {
                                         <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', overflow: 'hidden', flexShrink: 0 }}>
                                             <img src={SOMY_IMG} alt="소미" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                         </div>
-                                        <span style={{ whiteSpace: 'nowrap' }}>AI 소미 대화</span>
+                                        <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>AI 소미 대화</span>
                                     </button>
 
                                     <button onClick={() => {
@@ -2227,7 +2227,7 @@ export default function App() {
                                         justifyContent: 'flex-start'
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                         <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>📖</div>
-                                        <span style={{ whiteSpace: 'nowrap' }}>오늘의 큐티</span>
+                                        <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>오늘의 큐티</span>
                                     </button>
 
                                     <div style={{ position: 'relative' }}>
@@ -2251,7 +2251,7 @@ export default function App() {
                                             position: 'relative', justifyContent: 'flex-start'
                                         }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                             <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>💌</div>
-                                            <span style={{ whiteSpace: 'nowrap' }}>은혜나눔</span>
+                                            <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>은혜나눔</span>
                                             {hasNewCommunity && <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px', zIndex: 1 }}>N</div>}
                                         </button>
 
@@ -2278,7 +2278,7 @@ export default function App() {
                                             position: 'relative', justifyContent: 'flex-start'
                                         }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                             <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🌻</div>
-                                            <span style={{ whiteSpace: 'nowrap' }}>감사일기</span>
+                                            <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>감사일기</span>
                                             {hasNewThanksgiving && <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px' }}>N</div>}
                                         </button>
                                     </div>
@@ -2291,7 +2291,6 @@ export default function App() {
                                     gridTemplateColumns: '1fr 1fr',
                                     gap: '12px',
                                     width: '100%',
-                                    maxWidth: '340px',
                                     marginTop: '8px',
                                     animation: 'fade-in 1s ease-out'
                                 }}>
@@ -2308,7 +2307,9 @@ export default function App() {
                                         border: '1px solid #F0ECE4',
                                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                         flexDirection: 'column',
-                                        textAlign: 'center'
+                                        textAlign: 'center',
+                                        minHeight: '140px',
+                                        justifyContent: 'center'
                                     }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.08)'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.04)'; }}>
                                         <div style={{ width: '40px', height: '56px', background: '#F5F5F3', borderRadius: '6px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', flexShrink: 0 }}>
                                             {churchSettings.today_book_image_url ? (
@@ -2318,8 +2319,8 @@ export default function App() {
                                             )}
                                         </div>
                                         <div>
-                                            <div style={{ fontSize: '15px', color: '#D4AF37', fontWeight: 800, marginBottom: '2px' }}>이달의 추천도서</div>
-                                            <div style={{ fontSize: '15px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '120px' }}>{churchSettings.today_book_title || '추천 도서'}</div>
+                                            <div style={{ fontSize: '13px', color: '#D4AF37', fontWeight: 800, marginBottom: '2px', wordBreak: 'keep-all' }}>이달의 추천도서</div>
+                                            <div style={{ fontSize: '14px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', width: '100%', lineHeight: 1.2 }}>{churchSettings.today_book_title || '추천 도서'}</div>
                                         </div>
                                     </div>
 
@@ -2337,12 +2338,14 @@ export default function App() {
                                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                         flexDirection: 'column',
                                         textAlign: 'center',
-                                        position: 'relative'
+                                        position: 'relative',
+                                        minHeight: '140px',
+                                        justifyContent: 'center'
                                     }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.08)'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.04)'; }}>
                                         <div style={{ width: '40px', height: '56px', background: '#FFFDF7', borderRadius: '6px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', border: '1px solid #FAF0D7' }}>✍️</div>
                                         <div>
-                                            <div style={{ fontSize: '15px', color: '#B8924A', fontWeight: 800, marginBottom: '2px' }}>담임목사 칼럼</div>
-                                            <div style={{ fontSize: '15px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '120px' }}>{churchSettings.pastor_column_title || '오늘의 칼럼'}</div>
+                                            <div style={{ fontSize: '13px', color: '#B8924A', fontWeight: 800, marginBottom: '2px', wordBreak: 'keep-all' }}>담임목사 칼럼</div>
+                                            <div style={{ fontSize: '14px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', width: '100%', lineHeight: 1.2 }}>{churchSettings.pastor_column_title || '오늘의 칼럼'}</div>
                                         </div>
                                         {!churchSettings.pastor_column_content && (
                                             <div
@@ -2429,7 +2432,7 @@ export default function App() {
                                             <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>
                                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="#FF0000"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" /></svg>
                                             </div>
-                                            <span style={{ whiteSpace: 'nowrap' }}>담임목사 설교</span>
+                                            <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>담임목사 설교</span>
                                             {hasNewSermon && <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px' }}>N</div>}
                                         </button>
                                     ) : null}
@@ -2465,7 +2468,7 @@ export default function App() {
                                             position: 'relative', justifyContent: 'flex-start'
                                         }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                             <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🙏</div>
-                                            <span style={{ whiteSpace: 'nowrap' }}>상담/기도 요청</span>
+                                            <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>상담/기도 요청</span>
                                             {notifications.some(n => !n.is_read && (
                                                 isAdmin ? (n.type === 'counseling_req' || n.type === 'counseling_user_reply')
                                                     : (n.type === 'counseling_reply')
@@ -2503,7 +2506,7 @@ export default function App() {
                                         justifyContent: 'flex-start'
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                         <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>📊</div>
-                                        <span style={{ whiteSpace: 'nowrap' }}>이달의 큐티왕</span>
+                                        <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>이달의 큐티왕</span>
                                     </button>
 
                                     <button onClick={() => {
@@ -2520,7 +2523,7 @@ export default function App() {
                                         justifyContent: 'flex-start'
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                         <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🕰️</div>
-                                        <span style={{ whiteSpace: 'nowrap' }}>나의 묵상 기록</span>
+                                        <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>나의 묵상 기록</span>
                                     </button>
 
                                     <button onClick={() => setView('ccm')} style={{
@@ -2534,7 +2537,7 @@ export default function App() {
                                         justifyContent: 'flex-start'
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                         <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🎧</div>
-                                        <span style={{ whiteSpace: 'nowrap' }}>CCM 듣기</span>
+                                        <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>CCM 듣기</span>
                                     </button>
 
                                     <button onClick={() => setView('memberSearch')} style={{
@@ -2548,7 +2551,7 @@ export default function App() {
                                         justifyContent: 'flex-start'
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                         <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🔎</div>
-                                        <span style={{ whiteSpace: 'nowrap' }}>성도 주소록</span>
+                                        <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>성도 주소록</span>
                                     </button>
                                 </div>
 
@@ -7848,6 +7851,11 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
     const [selectedMember, setSelectedMember] = useState<any>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
+    // 수정 모드 상태
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState<any>(null);
+    const [isSaving, setIsSaving] = useState(false);
+
     useEffect(() => {
         const fetchInitial = async () => {
             setIsSearching(true);
@@ -8091,42 +8099,130 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin }: any) {
 
                 {/* 상세 정보 모달 */}
                 {selectedMember && (
-                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', zIndex: 2000, display: 'flex', alignItems: 'end', justifyContent: 'center' }} onClick={() => setSelectedMember(null)}>
-                        <div style={{ background: 'white', width: '100%', maxWidth: '600px', borderRadius: '32px 32px 0 0', padding: '40px 24px', position: 'relative' }} onClick={e => e.stopPropagation()}>
-                            <button onClick={() => setSelectedMember(null)} style={{ position: 'absolute', top: '20px', right: '20px', background: '#F5F5F3', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '18px' }}>×</button>
-                            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                                <div style={{ width: 100, height: 100, borderRadius: '50%', background: '#F5F2EA', margin: '0 auto 16px', overflow: 'hidden', border: '1px solid #F0ECE4' }}>
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', zIndex: 2000, display: 'flex', alignItems: 'end', justifyContent: 'center' }} onClick={() => { if (!isEditing) setSelectedMember(null); }}>
+                        <div style={{ background: 'white', width: '100%', maxWidth: '600px', borderRadius: '32px 32px 0 0', padding: '30px 24px 40px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+                            <button onClick={() => { setSelectedMember(null); setIsEditing(false); }} style={{ position: 'absolute', top: '20px', right: '20px', background: '#F5F5F3', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '18px' }}>×</button>
+
+                            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                                <div style={{ width: 80, height: 80, borderRadius: '50%', background: '#F5F2EA', margin: '0 auto 12px', overflow: 'hidden', border: '1px solid #F0ECE4' }}>
                                     <img alt="" src={selectedMember.avatar_url || 'https://via.placeholder.com/100'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 </div>
-                                <h3 style={{ fontSize: '24px', fontWeight: 800, color: '#333', margin: '0 0 6px' }}>{selectedMember.full_name}</h3>
-                                <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                                    {selectedMember.church_rank && <span style={{ fontSize: '14px', background: '#F5F2EA', color: '#B8924A', padding: '4px 12px', borderRadius: '10px', fontWeight: 700 }}>{selectedMember.church_rank}</span>}
-                                    {selectedMember.member_no && <span style={{ fontSize: '14px', background: '#E3F2FD', color: '#1565C0', padding: '4px 12px', borderRadius: '10px', fontWeight: 700 }}>NO. {selectedMember.member_no}</span>}
-                                </div>
+                                {!isEditing && (
+                                    <>
+                                        <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#333', margin: '0 0 6px' }}>{selectedMember.full_name}</h3>
+                                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                                            {selectedMember.church_rank && <span style={{ fontSize: '13px', background: '#F5F2EA', color: '#B8924A', padding: '3px 10px', borderRadius: '8px', fontWeight: 700 }}>{selectedMember.church_rank}</span>}
+                                            {selectedMember.member_no && <span style={{ fontSize: '13px', background: '#E3F2FD', color: '#1565C0', padding: '3px 10px', borderRadius: '8px', fontWeight: 700 }}>교적 {selectedMember.member_no}</span>}
+                                        </div>
+                                    </>
+                                )}
                             </div>
-                            <div style={{ background: '#FDFCFB', padding: '20px', borderRadius: '24px', border: '1px solid #F0ECE4' }}>
+
+                            {isEditing ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div>
-                                            <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700 }}>휴대폰 번호</div>
-                                            <div style={{ fontSize: '16px', fontWeight: 600 }}>{selectedMember.phone || '미등록'}</div>
+                                    <div>
+                                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', display: 'block', marginBottom: '4px' }}>성함</label>
+                                        <input type="text" value={editForm.full_name} onChange={e => setEditForm({ ...editForm, full_name: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #DDD', outline: 'none' }} />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <div style={{ flex: 1 }}>
+                                            <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', display: 'block', marginBottom: '4px' }}>직분</label>
+                                            <input type="text" value={editForm.church_rank} onChange={e => setEditForm({ ...editForm, church_rank: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #DDD', outline: 'none' }} />
                                         </div>
-                                        <div style={{ display: 'flex', gap: '6px' }}>
-                                            {selectedMember.phone && <a href={`tel:${selectedMember.phone}`} style={{ textDecoration: 'none', background: '#333', color: 'white', padding: '10px 16px', borderRadius: '14px', fontSize: '13px', fontWeight: 700 }}>📞 전화</a>}
-                                            {selectedMember.phone && <a href={`sms:${selectedMember.phone}`} style={{ textDecoration: 'none', background: '#F5F5F3', color: '#555', padding: '10px 16px', borderRadius: '14px', fontSize: '13px', fontWeight: 700 }}>💬 문자</a>}
+                                        <div style={{ flex: 1 }}>
+                                            <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', display: 'block', marginBottom: '4px' }}>교적번호</label>
+                                            <input type="text" value={editForm.member_no} onChange={e => setEditForm({ ...editForm, member_no: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #DDD', outline: 'none' }} />
                                         </div>
                                     </div>
-                                    <div style={{ borderTop: '1px solid #F0ECE4', paddingTop: '15px' }}>
-                                        <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700 }}>생년월일</div>
-                                        <div style={{ fontSize: '16px', fontWeight: 600 }}>{selectedMember.birthdate || '미등록'}</div>
+                                    <div>
+                                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', display: 'block', marginBottom: '4px' }}>연락처</label>
+                                        <input type="tel" value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #DDD', outline: 'none' }} />
                                     </div>
-                                    <div style={{ borderTop: '1px solid #F0ECE4', paddingTop: '15px' }}>
-                                        <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700 }}>주소</div>
-                                        <div style={{ fontSize: '16px', fontWeight: 600 }}>{selectedMember.address || '미등록'}</div>
+                                    <div>
+                                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', display: 'block', marginBottom: '4px' }}>생년월일 (YYYY-MM-DD)</label>
+                                        <input type="text" value={editForm.birthdate} onChange={e => setEditForm({ ...editForm, birthdate: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #DDD', outline: 'none' }} />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', display: 'block', marginBottom: '4px' }}>주소</label>
+                                        <input type="text" value={editForm.address} onChange={e => setEditForm({ ...editForm, address: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #DDD', outline: 'none' }} />
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                                        <button onClick={() => setIsEditing(false)} style={{ flex: 1, padding: '14px', background: '#EEE', color: '#666', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>취소</button>
+                                        <button
+                                            onClick={async () => {
+                                                setIsSaving(true);
+                                                try {
+                                                    const res = await fetch('/api/admin', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ action: 'update_member', user_id: selectedMember.id, update_data: editForm })
+                                                    });
+                                                    if (res.ok) {
+                                                        alert('성도 정보가 수정되었습니다.');
+                                                        // 로컬 상태 업데이트
+                                                        const updated = { ...selectedMember, ...editForm };
+                                                        setSelectedMember(updated);
+                                                        setResults(results.map(m => m.id === selectedMember.id ? updated : m));
+                                                        setIsEditing(false);
+                                                    }
+                                                } catch (e) { alert('수정 중 오류가 발생했습니다.'); }
+                                                finally { setIsSaving(false); }
+                                            }}
+                                            disabled={isSaving}
+                                            style={{ flex: 2, padding: '14px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}
+                                        >
+                                            {isSaving ? '저장 중...' : '확인 (수정 완료)'}
+                                        </button>
                                     </div>
                                 </div>
-                            </div>
-                            <button onClick={() => setSelectedMember(null)} style={{ width: '100%', padding: '16px', background: '#F5F5F3', color: '#666', border: 'none', borderRadius: '16px', fontWeight: 700, cursor: 'pointer', marginTop: '24px' }}>닫기</button>
+                            ) : (
+                                <>
+                                    <div style={{ background: '#FDFCFB', padding: '20px', borderRadius: '24px', border: '1px solid #F0ECE4' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div>
+                                                    <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700 }}>휴대폰 번호</div>
+                                                    <div style={{ fontSize: '16px', fontWeight: 600 }}>{selectedMember.phone || '미등록'}</div>
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '6px' }}>
+                                                    {selectedMember.phone && <a href={`tel:${selectedMember.phone}`} style={{ textDecoration: 'none', background: '#333', color: 'white', padding: '10px 16px', borderRadius: '14px', fontSize: '13px', fontWeight: 700 }}>📞 전화</a>}
+                                                    {selectedMember.phone && <a href={`sms:${selectedMember.phone}`} style={{ textDecoration: 'none', background: '#F5F5F3', color: '#555', padding: '10px 16px', borderRadius: '14px', fontSize: '13px', fontWeight: 700 }}>💬 문자</a>}
+                                                </div>
+                                            </div>
+                                            <div style={{ borderTop: '1px solid #F0ECE4', paddingTop: '15px' }}>
+                                                <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700 }}>생년월일</div>
+                                                <div style={{ fontSize: '16px', fontWeight: 600 }}>{selectedMember.birthdate || '미등록'}</div>
+                                            </div>
+                                            <div style={{ borderTop: '1px solid #F0ECE4', paddingTop: '15px' }}>
+                                                <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700 }}>주소</div>
+                                                <div style={{ fontSize: '16px', fontWeight: 600 }}>{selectedMember.address || '미등록'}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
+                                        {isAdmin && (
+                                            <button
+                                                onClick={() => {
+                                                    setEditForm({
+                                                        full_name: selectedMember.full_name || '',
+                                                        church_rank: selectedMember.church_rank || '',
+                                                        member_no: selectedMember.member_no || '',
+                                                        phone: selectedMember.phone || '',
+                                                        birthdate: selectedMember.birthdate || '',
+                                                        address: selectedMember.address || ''
+                                                    });
+                                                    setIsEditing(true);
+                                                }}
+                                                style={{ flex: 1, padding: '16px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '16px', fontWeight: 700, cursor: 'pointer' }}
+                                            >
+                                                ✏️ 정보 수정하기
+                                            </button>
+                                        )}
+                                        <button onClick={() => setSelectedMember(null)} style={{ flex: 1, padding: '16px', background: '#F5F5F3', color: '#666', border: 'none', borderRadius: '16px', fontWeight: 700, cursor: 'pointer' }}>닫기</button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 )}
