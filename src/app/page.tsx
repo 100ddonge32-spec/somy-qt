@@ -898,20 +898,26 @@ export default function App() {
                 if (syncRes.ok) {
                     const syncData = await syncRes.json();
                     setIsApproved(!!syncData.is_approved);
-                    setChurchId(syncData.church_id || 'jesus-in');
+                    if (syncData.church_id) setChurchId(syncData.church_id);
+
                     if (syncData.name && syncData.name !== '이름 없음' && syncData.name !== '.') {
                         setProfileName(syncData.name);
                     } else if (syncData.full_name && syncData.full_name !== '이름 없음' && syncData.full_name !== '.') {
                         setProfileName(syncData.full_name);
                     } else if (user.user_metadata?.full_name || user.user_metadata?.name) {
                         setProfileName(user.user_metadata.full_name || user.user_metadata.name);
-                    } else if (user.email && !user.email.includes('anonymous.local')) {
-                        setProfileName(user.email.split('@')[0]);
                     }
                     if (syncData.avatar_url) setProfileAvatar(syncData.avatar_url);
                     if (syncData.is_approved) subscribePush(user.id);
                 }
                 return;
+            }
+
+            // [수정] 프로필 정보가 있을 때 상태 업데이트 누락 수정
+            setIsApproved(!!data.is_approved);
+            if (data.church_id) setChurchId(data.church_id);
+            if (data.full_name && data.full_name !== '이름 없음' && data.full_name !== '.') {
+                setProfileName(data.full_name);
             }
 
             if (data.avatar_url) setProfileAvatar(data.avatar_url);
