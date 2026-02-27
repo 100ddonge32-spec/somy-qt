@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import webpush from 'web-push';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,6 +8,12 @@ const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
+);
+
+webpush.setVapidDetails(
+    'mailto:pastorbaek@kakao.com',
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BCpTn0SHIYSZzjST5xxL1Cv9svmlp3f9Xmvt9FSALBvo4QwLQCBlo_mu4ThoMHgINRmAk4c9sxwVwI2QtDyHr1I',
+    process.env.VAPID_PRIVATE_KEY || 'LAAS6aJenIKYBShIGZsWVKhXNOMKwkuXvpf2NLCGZAI'
 );
 
 // 관리자 권한 및 성도 목록 조회
@@ -160,26 +167,150 @@ export async function POST(req: NextRequest) {
 
         // 관리자 추가
         if (action === 'add_admin') {
+            const formattedEmail = email.toLowerCase().trim();
             const { data, error } = await supabaseAdmin
                 .from('app_admins')
-                .upsert([{ email: email.toLowerCase().trim(), church_id, role }])
+                .upsert([
+                    { email: formattedEmail, church_id, role }
+                ], { onConflict: 'email' })
                 .select();
             if (error) throw error;
+
+            // [알림] 새 관리자로 등록되었음을 해당 유저에게 알림
+            try {
+                const { data: profile } = await supabaseAdmin.from('profiles').select('id, full_name').eq('email', formattedEmail).maybeSingle();
+                if (profile) {
+                    // 1. 대상자에게 알림
+                    await supabaseAdmin.from('notifications').insert([{
+                        user_id: profile.id,
+                        actor_name: '시스템',
+                        type: 'admin_notice',
+                        title: '👑 관리자 권한 부여',
+                        content: `${church_id} 교회의 관리자로 지정되었습니다. 재로그인 후 확인해 주세요.`,
+                        is_read: false
+                    }]);
+
+                    const { data: subsData } = await supabaseAdmin.from('push_subscriptions').select('subscription').eq('user_id', profile.id);
+                    if (subsData && subsData.length > 0) {
+                        for (const sub of subsData) {
+                            if (!sub.subscription) continue;
+                            try {
+                                await webpush.sendNotification(sub.subscription, JSON.stringify({
+                                    title: '👑 관리자 권한 부여',
+                                    body: `${church_id} 교회의 관리자로 지정되었습니다. 재로그인 후 확인해 주세요.`,
+                                    url: '/?view=admin',
+                                    userId: profile.id
+                                }));
+                            } catch (e) { }
+                        }
+                    }
+
+                    // 2. 다른 슈퍼 관리자들에게도 알림 (투명성 확보)
+                    const { data: superAdmins } = await supabaseAdmin.from('app_admins').select('email').eq('role', 'super_admin');
+                    if (superAdmins && superAdmins.length > 0) {
+                        const saEmails = superAdmins.filter(sa => sa.email !== formattedEmail).map(sa => sa.email);
+                        const { data: saProfiles } = await supabaseAdmin.from('profiles').select('id').in('email', saEmails);
+                        if (saProfiles) {
+                            for (const saP of saProfiles) {
+                                await supabaseAdmin.from('notifications').insert([{
+                                    user_id: saP.id,
+                                    actor_name: '시스템',
+                                    type: 'system',
+                                    title: '📢 신규 관리자 등록 알림',
+                                    content: `${profile.full_name || formattedEmail}님이 ${church_id}의 관리자로 등록되었습니다.`,
+                                    is_read: false
+                                }]);
+                            }
+                        }
+                    }
+                }
+            } catch (notiErr) { console.error("Notification failed:", notiErr); }
+
             return NextResponse.json(data);
         }
 
         // 새 교회 및 관리자 지정 (슈퍼관리자용)
         if (action === 'create_church_admin') {
             const { target_church_id } = body;
+            const formattedEmail = email.toLowerCase().trim();
+
+            // 1. 관리자 권한 부여
             const { data, error } = await supabaseAdmin
                 .from('app_admins')
                 .upsert([{
-                    email: email.toLowerCase().trim(),
+                    email: formattedEmail,
                     church_id: target_church_id,
                     role: 'church_admin'
-                }])
+                }], { onConflict: 'email' })
                 .select();
             if (error) throw error;
+
+            // 2. 해당 교회의 기본 설정값 생성 (기존 jesus-in의 설정을 템플릿으로 사용)
+            try {
+                const { data: template } = await supabaseAdmin.from('church_settings').select('*').eq('church_id', 'jesus-in').maybeSingle();
+                const { data: existing } = await supabaseAdmin.from('church_settings').select('id').eq('church_id', target_church_id).maybeSingle();
+
+                if (!existing && template) {
+                    const { id, created_at, ...cleanTemplate } = template;
+                    await supabaseAdmin.from('church_settings').insert([{
+                        ...cleanTemplate,
+                        church_id: target_church_id,
+                        church_name: `${target_church_id} 교회`,
+                        app_subtitle: '새로운 교회 공동체에 오신 것을 환영합니다.'
+                    }]);
+                }
+            } catch (setErr) { console.error("Setting creation failed:", setErr); }
+
+            // [알림] 새 교회 관리자로 지정되었음을 알림
+            try {
+                const { data: profile } = await supabaseAdmin.from('profiles').select('id, full_name').eq('email', formattedEmail).maybeSingle();
+                if (profile) {
+                    // 1. 대상자에게 알림
+                    await supabaseAdmin.from('notifications').insert([{
+                        user_id: profile.id,
+                        actor_name: '시스템',
+                        type: 'admin_notice',
+                        title: '⛪ 새 교회 관리자 지정',
+                        content: `새로운 교회(${target_church_id})의 관리자로 지정되었습니다. 재로그인 후 확인해 주세요.`,
+                        is_read: false
+                    }]);
+
+                    const { data: subsData } = await supabaseAdmin.from('push_subscriptions').select('subscription').eq('user_id', profile.id);
+                    if (subsData && subsData.length > 0) {
+                        for (const sub of subsData) {
+                            if (!sub.subscription) continue;
+                            try {
+                                await webpush.sendNotification(sub.subscription, JSON.stringify({
+                                    title: '⛪ 새 교회 관리자 지정',
+                                    body: `새로운 교회(${target_church_id})의 관리자로 지정되었습니다.`,
+                                    url: '/?view=admin',
+                                    userId: profile.id
+                                }));
+                            } catch (e) { }
+                        }
+                    }
+
+                    // 2. 슈퍼 관리자들에게 알림
+                    const { data: superAdmins } = await supabaseAdmin.from('app_admins').select('email').eq('role', 'super_admin');
+                    if (superAdmins && superAdmins.length > 0) {
+                        const saEmails = superAdmins.filter(sa => sa.email !== formattedEmail).map(sa => sa.email);
+                        const { data: saProfiles } = await supabaseAdmin.from('profiles').select('id').in('email', saEmails);
+                        if (saProfiles) {
+                            for (const saP of saProfiles) {
+                                await supabaseAdmin.from('notifications').insert([{
+                                    user_id: saP.id,
+                                    actor_name: '시스템',
+                                    type: 'system',
+                                    title: '📢 새 교회 및 관리자 생성',
+                                    content: `${target_church_id} 교회와 관리자(${profile.full_name || formattedEmail})가 생성되었습니다.`,
+                                    is_read: false
+                                }]);
+                            }
+                        }
+                    }
+                }
+            } catch (notiErr) { console.error("Notification failed:", notiErr); }
+
             return NextResponse.json(data);
         }
 
@@ -188,12 +319,58 @@ export async function POST(req: NextRequest) {
             const { target_email } = body;
             if (!target_email) throw new Error('삭제할 관리자 이메일이 없습니다.');
 
+            // [알림용 데이터 확보]
+            let deletedProfileId = null;
+            let deletedName = target_email;
+            try {
+                const { data: p } = await supabaseAdmin.from('profiles').select('id, full_name').eq('email', target_email.toLowerCase().trim()).maybeSingle();
+                if (p) {
+                    deletedProfileId = p.id;
+                    deletedName = p.full_name || target_email;
+                }
+            } catch (e) { }
+
             const { error } = await supabaseAdmin
                 .from('app_admins')
                 .delete()
                 .eq('email', target_email.toLowerCase().trim());
 
             if (error) throw error;
+
+            // [알림 전송]
+            try {
+                // 1. 당사자에게 알림 (권한 회수 알림)
+                if (deletedProfileId) {
+                    await supabaseAdmin.from('notifications').insert([{
+                        user_id: deletedProfileId,
+                        actor_name: '시스템',
+                        type: 'system',
+                        title: '🚫 관리자 권한 회수',
+                        content: '관리자 권한이 해제되었습니다. 궁금하신 사항은 문의해 주세요.',
+                        is_read: false
+                    }]);
+                }
+
+                // 2. 다른 슈퍼 관리자들에게 알림
+                const { data: superAdmins } = await supabaseAdmin.from('app_admins').select('email').eq('role', 'super_admin');
+                if (superAdmins && superAdmins.length > 0) {
+                    const saEmails = superAdmins.filter(sa => sa.email !== target_email.toLowerCase().trim()).map(sa => sa.email);
+                    const { data: saProfiles } = await supabaseAdmin.from('profiles').select('id').in('email', saEmails);
+                    if (saProfiles) {
+                        for (const saP of saProfiles) {
+                            await supabaseAdmin.from('notifications').insert([{
+                                user_id: saP.id,
+                                actor_name: '시스템',
+                                type: 'system',
+                                title: '📢 관리자 삭제 알림',
+                                content: `${deletedName}님의 관리자 권한이 해제되었습니다.`,
+                                is_read: false
+                            }]);
+                        }
+                    }
+                }
+            } catch (notiErr) { console.error("Deletion Notification failed:", notiErr); }
+
             return NextResponse.json({ success: true });
         }
 
@@ -205,6 +382,57 @@ export async function POST(req: NextRequest) {
                 .eq('id', user_id)
                 .select();
             if (error) throw error;
+
+            // [알림] 승인되었을 경우 사용자에게 알림 전송
+            if (is_approved) {
+                try {
+                    await supabaseAdmin.from('notifications').insert([{
+                        user_id,
+                        actor_name: '시스템',
+                        type: 'system', // 'system' 또는 'admin_notice'
+                        title: '🎉 계정 승인 완료',
+                        content: '축하드립니다! 교회 앱 사용 권한이 승인되었습니다. 지금 바로 이용해 보세요!',
+                        is_read: false
+                    }]);
+
+                    const { data: subsData } = await supabaseAdmin.from('push_subscriptions').select('subscription').eq('user_id', user_id);
+                    if (subsData && subsData.length > 0) {
+                        for (const sub of subsData) {
+                            if (!sub.subscription) continue;
+                            try {
+                                await webpush.sendNotification(sub.subscription, JSON.stringify({
+                                    title: '🎉 계정 승인 완료',
+                                    body: '교회 앱 사용 권한이 승인되었습니다!',
+                                    url: '/',
+                                    userId: user_id
+                                }));
+                            } catch (e) { }
+                        }
+                    }
+
+                    // 2. 다른 슈퍼 관리자들에게도 승인 알림 전송 (통계 확인용)
+                    const { data: approvedUser } = await supabaseAdmin.from('profiles').select('full_name, church_id').eq('id', user_id).maybeSingle();
+                    const { data: superAdmins } = await supabaseAdmin.from('app_admins').select('email').eq('role', 'super_admin');
+                    if (superAdmins && superAdmins.length > 0) {
+                        const saEmails = superAdmins.map(sa => sa.email);
+                        const { data: saProfiles } = await supabaseAdmin.from('profiles').select('id').in('email', saEmails);
+                        if (saProfiles) {
+                            for (const saP of saProfiles) {
+                                if (saP.id === user_id) continue;
+                                await supabaseAdmin.from('notifications').insert([{
+                                    user_id: saP.id,
+                                    actor_name: '시스템',
+                                    type: 'system',
+                                    title: '📢 새 성도 승인 알림',
+                                    content: `${approvedUser?.full_name || '새 성도'}님이 ${approvedUser?.church_id || '교회'}에 승인되었습니다.`,
+                                    is_read: false
+                                }]);
+                            }
+                        }
+                    }
+                } catch (notiErr) { console.error("Approval notification failed:", notiErr); }
+            }
+
             return NextResponse.json(data);
         }
 
@@ -214,9 +442,12 @@ export async function POST(req: NextRequest) {
             const safeUpdateData = { ...update_data };
 
             // DB 스키마에 없는 컬럼 제거
+            // [수정] 이제 DB에 컬럼이 존재하므로 제거하지 않음
+            /* 
             if ('is_birthdate_lunar' in safeUpdateData) {
                 delete (safeUpdateData as any).is_birthdate_lunar;
             }
+            */
 
             // 날짜 형식 보정
             if (safeUpdateData.birthdate === "") {
@@ -237,9 +468,12 @@ export async function POST(req: NextRequest) {
             const { member_data } = body;
             const safeMemberData = { ...member_data };
 
+            // [수정] 이제 DB에 컬럼이 존재하므로 제거하지 않음
+            /*
             if ('is_birthdate_lunar' in safeMemberData) {
                 delete (safeMemberData as any).is_birthdate_lunar;
             }
+            */
             if (safeMemberData.birthdate === "") {
                 safeMemberData.birthdate = null;
             }

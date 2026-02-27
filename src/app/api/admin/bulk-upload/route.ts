@@ -114,18 +114,27 @@ export async function POST(req: NextRequest) {
                 continue;
             }
 
+            const is_birthdate_lunar = findValue(['음력', 'Lunar', 'IsLunar']) === '음력' || findValue(['음력', 'Lunar', 'IsLunar']) === true;
+            const is_birthdate_public = findValue(['생일공개', 'BirthPublic']) !== '비공개' && findValue(['생일공개', 'BirthPublic']) !== false;
+            const is_phone_public = findValue(['번호공개', 'PhonePublic']) !== '비공개' && findValue(['번호공개', 'PhonePublic']) !== false;
+            const is_address_public = findValue(['주소공개', 'AddressPublic']) === '공개' || findValue(['주소공개', 'AddressPublic']) === true;
+
             const upsertData: any = {
                 full_name,
                 email,
                 phone: phone || null,
                 birthdate: formattedBirthdate,
+                is_birthdate_lunar,
+                is_birthdate_public,
+                is_phone_public,
+                is_address_public,
                 address: address || null,
                 avatar_url: avatar_url,
                 member_no: member_no || null,
                 gender: gender || null,
                 church_rank: church_rank || null,
                 church_id: church_id || 'jesus-in',
-                is_approved: false
+                is_approved: true // 벌크 업로드는 관리자가 하므로 기본 승인 처리
             };
 
             if (formattedRegisteredAt) {

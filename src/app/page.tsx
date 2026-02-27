@@ -2052,7 +2052,7 @@ export default function App() {
 
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', width: '100%' }}>
                                     <button onClick={() => setView("chat")} style={{
-                                        padding: "11px 5px",
+                                        padding: "10px 5px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f0f8f8 100%)", color: "#1A5D55",
                                         fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                         border: "1px solid #cbe4e1", cursor: "pointer",
@@ -2071,7 +2071,7 @@ export default function App() {
                                         setQtStep("read");
                                         setView("qt");
                                     }} style={{
-                                        padding: "18px 5px",
+                                        padding: "14px 5px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #fffbea 100%)", color: "#8E754C",
                                         fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                         border: "1px solid #f2e29e", cursor: "pointer",
@@ -2094,7 +2094,7 @@ export default function App() {
                                                 if (Array.isArray(data)) setCommunityPosts(data);
                                             } catch (e) { console.error("게시판 로드 실패:", e); }
                                         }} style={{
-                                            width: "100%", padding: "18px 5px",
+                                            width: "100%", padding: "14px 5px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #fff0f5 100%)", color: "#9E2A5B",
                                             fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                             border: "1px solid #f2cddb", cursor: "pointer",
@@ -2127,7 +2127,7 @@ export default function App() {
                                                 if (Array.isArray(data)) setThanksgivingDiaries(data);
                                             } catch (e) { console.error("감사일기 로드 실패:", e); }
                                         }} style={{
-                                            width: "100%", padding: "18px 5px",
+                                            width: "100%", padding: "14px 5px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #fff6e5 100%)", color: "#E07A5F",
                                             fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                             border: "1px solid #fae1cd", cursor: "pointer",
@@ -2221,7 +2221,7 @@ export default function App() {
                                             setHasNewSermon(false);
                                             localStorage.setItem(`last_view_sermon_${churchId}`, Date.now().toString());
                                         }} style={{
-                                            padding: "18px 5px",
+                                            padding: "14px 5px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #fff4f2 100%)", color: "#BA2D0B",
                                             fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                             border: "1px solid #fcd3c8", cursor: "pointer",
@@ -2259,7 +2259,7 @@ export default function App() {
                                                 if (Array.isArray(data)) setCounselingRequests(data);
                                             } catch (e) { console.error("상담 로드 실패", e); }
                                         }} style={{
-                                            width: "100%", padding: "18px 5px",
+                                            width: "100%", padding: "14px 5px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #f6f0ff 100%)", color: "#4A148C",
                                             fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                             border: "1px solid #e1bee7", cursor: "pointer",
@@ -2297,7 +2297,7 @@ export default function App() {
                                             setStatsError(e.name === 'AbortError' ? "시간 초과" : "연결 실패");
                                         }
                                     }} style={{
-                                        padding: "11px 5px",
+                                        padding: "10px 5px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #faf6ec 100%)", color: "#8B6B38",
                                         fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                         border: "1px solid #e8dcc4", cursor: "pointer",
@@ -2313,7 +2313,7 @@ export default function App() {
                                         setView('history');
                                         fetchHistory();
                                     }} style={{
-                                        padding: "18px 5px",
+                                        padding: "14px 5px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f1f8f3 100%)", color: "#507558",
                                         fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                         border: "1px solid #cee8d8", cursor: "pointer",
@@ -2326,7 +2326,7 @@ export default function App() {
                                     </button>
 
                                     <button onClick={() => setView('ccm')} style={{
-                                        padding: "18px 5px",
+                                        padding: "14px 5px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f4f6fa 100%)", color: "#465293",
                                         fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                         border: "1px solid #cfd5f0", cursor: "pointer",
@@ -2339,7 +2339,7 @@ export default function App() {
                                     </button>
 
                                     <button onClick={() => setView('memberSearch')} style={{
-                                        padding: "18px 5px",
+                                        padding: "14px 5px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f1f8f3 100%)", color: "#2E7D32",
                                         fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                         border: "1px solid #C8E6C9", cursor: "pointer",
@@ -3089,6 +3089,34 @@ export default function App() {
            COMMUNITY PAGE
         ══════════════════════════════ */
         if (view === "community") {
+            const handleReaction = async (postId: string, type: 'community' | 'thanksgiving') => {
+                if (!user) {
+                    alert("로그인이 필요합니다.");
+                    return;
+                }
+                try {
+                    const res = await fetch('/api/community/reaction', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ post_id: postId, user_id: user.id, type })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        if (type === 'community') {
+                            setCommunityPosts(prev => prev.map(post => post.id === postId ? { ...post, liker_ids: data.liker_ids } : post));
+                        } else {
+                            setThanksgivingDiaries(prev => prev.map(diary => diary.id === postId ? { ...diary, liker_ids: data.liker_ids } : diary));
+                        }
+                    } else {
+                        if (data.error?.includes('column "liker_ids"') || data.details?.includes('column "liker_ids"')) {
+                            alert("기능 활성화를 위해 DB 설정이 필요합니다. 관리자에게 'liker_ids 컬럼(TEXT[]) 추가'를 요청해 주세요.");
+                        }
+                    }
+                } catch (e) {
+                    console.error("좋아요 오류:", e);
+                }
+            };
+
             const handleAddComment = async (postId: any) => {
                 const commentText = commentInputs[postId];
                 const isPrivate = commentPrivateStates[postId] || false;
@@ -3454,9 +3482,38 @@ export default function App() {
                                             </div>
                                         )}
 
+                                        {/* Reactions & Comments Count row */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '12px', borderTop: '1px solid #F8F8F8', paddingTop: '12px' }}>
+                                            <div
+                                                onClick={() => handleReaction(post.id, 'community')}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '6px',
+                                                    cursor: 'pointer',
+                                                    padding: '6px 12px',
+                                                    borderRadius: '20px',
+                                                    background: post.liker_ids?.includes(user?.id) ? '#FFF0F0' : '#F8F8F8',
+                                                    color: post.liker_ids?.includes(user?.id) ? '#E03131' : '#666',
+                                                    fontSize: '13px',
+                                                    fontWeight: 700,
+                                                    transition: 'all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                                    border: post.liker_ids?.includes(user?.id) ? '1px solid #FFC1C1' : '1px solid transparent'
+                                                }}
+                                            >
+                                                <span style={{ fontSize: '16px', transform: post.liker_ids?.includes(user?.id) ? 'scale(1.2)' : 'none', transition: 'transform 0.2s' }}>
+                                                    {post.liker_ids?.includes(user?.id) ? '❤️' : '🤍'}
+                                                </span>
+                                                <span>좋아요 {post.liker_ids?.length || 0}</span>
+                                            </div>
+                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                <span>💬</span> 댓글 {post.comments?.length || 0}개
+                                            </div>
+                                        </div>
+
                                         {/* Comments Section */}
                                         <div style={{ borderTop: '1px solid #F5F5F5', paddingTop: '15px' }}>
-                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', marginBottom: '10px' }}>댓글 {post.comments?.length || 0}개</div>
+                                            <div style={{ display: 'none' }}>댓글 {post.comments?.length || 0}개</div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
                                                 {post.comments && Array.isArray(post.comments) && post.comments.map((comment: any) => {
                                                     const isCommentVisible = !comment.is_private || isAdmin || user?.id === comment.user_id || user?.id === post.user_id;
@@ -3594,6 +3651,34 @@ export default function App() {
            THANKSGIVING DIARY PAGE
         ══════════════════════════════ */
         if (view === "thanksgiving") {
+            const handleReaction = async (postId: string, type: 'community' | 'thanksgiving') => {
+                if (!user) {
+                    alert("로그인이 필요합니다.");
+                    return;
+                }
+                try {
+                    const res = await fetch('/api/community/reaction', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ post_id: postId, user_id: user.id, type })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        if (type === 'community') {
+                            setCommunityPosts(prev => prev.map(post => post.id === postId ? { ...post, liker_ids: data.liker_ids } : post));
+                        } else {
+                            setThanksgivingDiaries(prev => prev.map(diary => diary.id === postId ? { ...diary, liker_ids: data.liker_ids } : diary));
+                        }
+                    } else {
+                        if (data.error?.includes('column "liker_ids"') || data.details?.includes('column "liker_ids"')) {
+                            alert("기능 활성화를 위해 DB 설정이 필요합니다. 관리자에게 'liker_ids 컬럼(TEXT[]) 추가'를 요청해 주세요.");
+                        }
+                    }
+                } catch (e) {
+                    console.error("좋아요 오류:", e);
+                }
+            };
+
             const handleAddThanksgivingComment = async (diaryId: any) => {
                 const commentText = commentInputs[diaryId];
                 const isPrivate = commentPrivateStates[diaryId] || false;
@@ -3876,8 +3961,37 @@ export default function App() {
                                             </div>
                                         )}
 
+                                        {/* Reactions & Comments Count row */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '12px', borderTop: '1px solid #FFF1E6', paddingTop: '12px' }}>
+                                            <div
+                                                onClick={() => handleReaction(diary.id, 'thanksgiving')}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '6px',
+                                                    cursor: 'pointer',
+                                                    padding: '6px 12px',
+                                                    borderRadius: '20px',
+                                                    background: diary.liker_ids?.includes(user?.id) ? '#FFF0F0' : '#FFFDFB',
+                                                    color: diary.liker_ids?.includes(user?.id) ? '#E03131' : '#666',
+                                                    fontSize: '13px',
+                                                    fontWeight: 700,
+                                                    transition: 'all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                                    border: diary.liker_ids?.includes(user?.id) ? '1px solid #FFC1C1' : '1px solid #FAE1CD'
+                                                }}
+                                            >
+                                                <span style={{ fontSize: '16px', transform: diary.liker_ids?.includes(user?.id) ? 'scale(1.2)' : 'none', transition: 'transform 0.2s' }}>
+                                                    {diary.liker_ids?.includes(user?.id) ? '❤️' : '🤍'}
+                                                </span>
+                                                <span>좋아요 {diary.liker_ids?.length || 0}</span>
+                                            </div>
+                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#E07A5F', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                <span>💬</span> 댓글 {diary.comments?.length || 0}개
+                                            </div>
+                                        </div>
+
                                         <div style={{ borderTop: '1px solid #FFF1E6', paddingTop: '15px' }}>
-                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#E07A5F', marginBottom: '10px' }}>댓글 {diary.comments?.length || 0}개</div>
+                                            <div style={{ display: 'none' }}>댓글 {diary.comments?.length || 0}개</div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
                                                 {(diary.comments || []).map((comment: any) => {
                                                     const isCommentVisible = !comment.is_private || isAdmin || user?.id === comment.user_id || user?.id === diary.user_id;
@@ -5478,13 +5592,33 @@ export default function App() {
                             <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>전화번호</label>
                             <input id="add-phone" placeholder="010-0000-0000" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                         </div>
-                        <div>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>생년월일</label>
-                            <input id="add-birth" type="date" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <div style={{ flex: 1 }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>생년월일</label>
+                                <input id="add-birth" type="date" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '10px', color: '#888', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                                    <input type="checkbox" id="add-lunar" /> 음력
+                                </label>
+                                <label style={{ fontSize: '10px', color: '#888', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                                    <input type="checkbox" id="add-birth-pub" defaultChecked /> 공개
+                                </label>
+                            </div>
                         </div>
-                        <div>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>주소</label>
-                            <input id="add-addr" placeholder="주소를 입력하세요" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <div style={{ flex: 1 }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>주소</label>
+                                <input id="add-addr" placeholder="주소를 입력하세요" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                            </div>
+                            <label style={{ fontSize: '10px', color: '#888', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginTop: '16px' }}>
+                                <input type="checkbox" id="add-addr-pub" /> 공개
+                            </label>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <label style={{ fontSize: '10px', color: '#888', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                                <input type="checkbox" id="add-phone-pub" defaultChecked /> 전화번호 공개
+                            </label>
                         </div>
                         <div>
                             <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>등록일</label>
@@ -5510,6 +5644,10 @@ export default function App() {
                                     phone: phone,
                                     birthdate: (document.getElementById('add-birth') as any)?.value || null,
                                     address: (document.getElementById('add-addr') as any)?.value || '',
+                                    is_birthdate_lunar: (document.getElementById('add-lunar') as HTMLInputElement)?.checked || false,
+                                    is_birthdate_public: (document.getElementById('add-birth-pub') as HTMLInputElement)?.checked || false,
+                                    is_phone_public: (document.getElementById('add-phone-pub') as HTMLInputElement)?.checked || false,
+                                    is_address_public: (document.getElementById('add-addr-pub') as HTMLInputElement)?.checked || false,
                                     church_id: churchId || 'jesus-in',
                                     created_at: (document.getElementById('add-registered-at') as any)?.value || new Date().toISOString(),
                                     is_approved: true
@@ -6929,23 +7067,32 @@ export default function App() {
                                                         <option value="super_admin">슈퍼 관리자 (전체 권한)</option>
                                                     </select>
                                                     <button onClick={async () => {
-                                                        const email = (document.getElementById('add-admin-email') as HTMLInputElement).value;
-                                                        const cid = (document.getElementById('add-admin-church') as HTMLInputElement).value;
-                                                        const role = (document.getElementById('add-admin-role') as HTMLSelectElement).value;
+                                                        const emailEl = document.getElementById('add-admin-email') as HTMLInputElement;
+                                                        const cidEl = document.getElementById('add-admin-church') as HTMLInputElement;
+                                                        const roleEl = document.getElementById('add-admin-role') as HTMLSelectElement;
+
+                                                        const email = emailEl?.value;
+                                                        const cid = cidEl?.value;
+                                                        const role = roleEl?.value;
+
                                                         if (!email || !cid) { alert('이메일과 교회 ID를 입력해주세요.'); return; }
 
-                                                        const res = await fetch('/api/admin', {
-                                                            method: 'POST',
-                                                            headers: { 'Content-Type': 'application/json' },
-                                                            body: JSON.stringify({ action: 'add_admin', email, church_id: cid, role })
-                                                        });
-                                                        if (res.ok) {
-                                                            alert('성공적으로 관리자 권한을 부여했습니다!');
-                                                            (document.getElementById('add-admin-email') as HTMLInputElement).value = '';
-                                                            fetchAllAdmins();
-                                                        } else {
-                                                            const info = await res.json();
-                                                            alert('에러: ' + info.error);
+                                                        try {
+                                                            const res = await fetch('/api/admin', {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ action: 'add_admin', email, church_id: cid, role })
+                                                            });
+                                                            if (res.ok) {
+                                                                alert('성공적으로 관리자 권한을 부여했습니다!');
+                                                                if (emailEl) emailEl.value = '';
+                                                                fetchAllAdmins();
+                                                            } else {
+                                                                const info = await res.json();
+                                                                alert('에러: ' + (info.error || '알 수 없는 오류'));
+                                                            }
+                                                        } catch (err) {
+                                                            alert('서버 통신 중 오류가 발생했습니다.');
                                                         }
                                                     }} style={{ padding: '12px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', marginTop: '4px' }}>
                                                         관리자로 등록하기 ✅
@@ -6964,18 +7111,35 @@ export default function App() {
                                                     <input id="new-admin-email" placeholder="관리자로 지정할 사용자 이메일 (예: admin@example.com)" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: '#FAFAFA' }} />
                                                     <input id="new-admin-church" placeholder="새로 생성할 교회 영문 ID (예: my-church)" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: '#FAFAFA' }} />
                                                     <button onClick={async () => {
-                                                        const email = (document.getElementById('new-admin-email') as HTMLInputElement).value;
-                                                        const cid = (document.getElementById('new-admin-church') as HTMLInputElement).value;
-                                                        if (!email || !cid) return;
+                                                        const emailEl = document.getElementById('new-admin-email') as HTMLInputElement;
+                                                        const cidEl = document.getElementById('new-admin-church') as HTMLInputElement;
 
-                                                        const res = await fetch('/api/admin', {
-                                                            method: 'POST',
-                                                            headers: { 'Content-Type': 'application/json' },
-                                                            body: JSON.stringify({ action: 'create_church_admin', email, target_church_id: cid })
-                                                        });
-                                                        const info = await res.json();
-                                                        if (res.ok) alert('성공적으로 생성되고 권한이 부여되었습니다!');
-                                                        else alert('에러: ' + info.error);
+                                                        const email = emailEl?.value;
+                                                        const cid = cidEl?.value;
+
+                                                        if (!email || !cid) {
+                                                            alert('이메일과 생성할 교회 ID를 모두 입력해주세요.');
+                                                            return;
+                                                        }
+
+                                                        try {
+                                                            const res = await fetch('/api/admin', {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ action: 'create_church_admin', email, target_church_id: cid })
+                                                            });
+                                                            const info = await res.json();
+                                                            if (res.ok) {
+                                                                alert('성공적으로 생성되고 권한이 부여되었습니다!');
+                                                                if (emailEl) emailEl.value = '';
+                                                                if (cidEl) cidEl.value = '';
+                                                                fetchAllAdmins();
+                                                            } else {
+                                                                alert('에러: ' + info.error);
+                                                            }
+                                                        } catch (err) {
+                                                            alert('서버 통신 중 오류가 발생했습니다.');
+                                                        }
                                                     }} style={{ padding: '12px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', marginTop: '4px' }}>
                                                         교회 생성 및 관리자 지정 🚀
                                                     </button>

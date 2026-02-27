@@ -49,9 +49,12 @@ export async function POST(req: NextRequest) {
 
                 // 관리자 로우를 내 ID로 업데이트 (데이터 정제)
                 const safeMergedData = { ...profileData, id: user_id };
+                // [수정] 성도 정보 연동 시 음력 여부 보존
+                /*
                 if ('is_birthdate_lunar' in safeMergedData) {
                     delete (safeMergedData as any).is_birthdate_lunar;
                 }
+                */
                 if (safeMergedData.birthdate === "") {
                     safeMergedData.birthdate = null;
                 }
@@ -69,9 +72,12 @@ export async function POST(req: NextRequest) {
         // 2. 일반 업데이트 (데이터 정제: DB에 없는 컬럼 제외)
         const safeData = { ...profileData };
         // 현재 DB에 is_birthdate_lunar 컬럼이 없는 경우 에러 방지를 위해 제거
+        // [수정] 이제 DB에 컬럼이 존재하므로 제거하지 않음
+        /*
         if ('is_birthdate_lunar' in safeData) {
             delete (safeData as any).is_birthdate_lunar;
         }
+        */
 
         // 빈 문자열로 날짜가 들어오면 null로 치환 (DB 에러 방지)
         if (safeData.birthdate === "") {
