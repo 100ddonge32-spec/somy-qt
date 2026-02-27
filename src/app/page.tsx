@@ -6,7 +6,7 @@ import { getGraceVerse } from '@/lib/navigator-verses';
 import { getTodayCcm, CcmVideo, CCM_LIST } from "@/lib/ccm";
 import * as XLSX from 'xlsx';
 
-type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "adminGuide" | "profile" | "memberSearch" | "book" | "pastorColumn";
+type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "adminGuide" | "brandGuide" | "profile" | "memberSearch" | "book" | "pastorColumn";
 
 const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://cdn.imweb.me/thumbnail/20210813/569458bf12dd0.png";
@@ -4737,10 +4737,18 @@ export default function App() {
                             </button>
 
                             <button onClick={() => setView('adminGuide')} style={{ padding: '16px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                                <div style={{ width: '40px', height: '40px', background: '#F5F5F3', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📄</div>
+                                <div style={{ width: '40px', height: '40px', background: '#F5F5F3', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📘</div>
                                 <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#333', marginBottom: '2px', wordBreak: 'keep-all' }}>가이드</div>
-                                    <div style={{ fontSize: '9px', color: '#999', wordBreak: 'keep-all' }}>관리자 매뉴얼</div>
+                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#333', marginBottom: '2px', wordBreak: 'keep-all' }}>사용 가이드</div>
+                                    <div style={{ fontSize: '9px', color: '#999', wordBreak: 'keep-all' }}>시스템 매뉴얼</div>
+                                </div>
+                            </button>
+
+                            <button onClick={() => setView('brandGuide')} style={{ padding: '16px 8px', background: 'linear-gradient(135deg, #FFF9C4 0%, #FFF176 100%)', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(212,175,55,0.15)' }}>
+                                <div style={{ width: '40px', height: '40px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>✨</div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginBottom: '2px', wordBreak: 'keep-all' }}>브랜드 홍보</div>
+                                    <div style={{ fontSize: '9px', color: '#B8924A', wordBreak: 'keep-all' }}>PDF 홍보 책자</div>
                                 </div>
                             </button>
 
@@ -5455,6 +5463,10 @@ export default function App() {
             return renderAdminGuide();
         }
 
+        if (view === "brandGuide") {
+            return renderBrandGuide();
+        }
+
         if (view === "profile") {
             return <ProfileView user={user} supabase={supabase} setView={setView} baseFont={baseFont} allowMemberEdit={churchSettings?.allow_member_edit} setProfileAvatar={setProfileAvatar} />;
         }
@@ -5718,6 +5730,189 @@ export default function App() {
             </div>
         );
     };
+
+    // 소미 브랜드 홍보 가이드 (PDF화 가능)
+    const renderBrandGuide = () => {
+        return (
+            <div id="brand-printable-area" style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "900px", margin: "0 auto", padding: "60px 40px", ...baseFont, color: '#333' }}>
+                <style>{`
+                    @media print {
+                        #no-print-brand { display: none !important; }
+                        #brand-printable-area { padding: 0 !important; width: 100% !important; max-width: 100% !important; background: white !important; }
+                        .brand-section { break-inside: avoid; margin-bottom: 40px !important; }
+                        .glass-card { border: 1px solid #EEE !important; background: white !important; box-shadow: none !important; }
+                    }
+                    .glass-card {
+                        background: rgba(255, 255, 255, 0.7);
+                        backdrop-filter: blur(10px);
+                        border: 1px solid rgba(212, 175, 55, 0.2);
+                        border-radius: 28px;
+                        padding: 30px;
+                        box-shadow: 0 15px 35px rgba(0,0,0,0.03);
+                    }
+                    .accent-text { color: #D4AF37; font-weight: 900; }
+                `}</style>
+
+                {/* 상단 컨트롤 */}
+                <div id="no-print-brand" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '60px' }}>
+                    <button onClick={() => setView('admin')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '14px', padding: '10px 20px', fontSize: "14px", cursor: "pointer", fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>←</span> 관리자 센터로
+                    </button>
+                    <button onClick={() => window.print()} style={{ background: "linear-gradient(135deg, #D4AF37 0%, #B8924A 100%)", color: 'white', border: "none", borderRadius: '14px', padding: '12px 24px', fontSize: "15px", cursor: "pointer", fontWeight: 700, boxShadow: '0 8px 20px rgba(212,175,55,0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>📄</span> 홍보 PDF 저장/인쇄
+                    </button>
+                </div>
+
+                {/* Hero Section */}
+                <div className="brand-section" style={{ textAlign: 'center', marginBottom: '80px' }}>
+                    <div style={{ display: 'inline-block', width: '100px', height: '100px', background: 'white', borderRadius: '50%', padding: '6px', marginBottom: '24px', boxShadow: '0 15px 40px rgba(212,175,55,0.2)', border: '4px solid #FDFCFB' }}>
+                        <img src={SOMY_IMG} alt="소미" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: '50%' }} />
+                    </div>
+                    <h4 style={{ fontSize: '14px', color: '#B8924A', fontWeight: 900, letterSpacing: '4px', marginBottom: '16px', textTransform: 'uppercase' }}>Next-Gen Spiritual Companion</h4>
+                    <h1 style={{ fontSize: '42px', fontWeight: 900, color: '#222', margin: '0 0 20px 0', lineHeight: 1.2, wordBreak: 'keep-all' }}>
+                        내 손안의 영적 동반자, <span className="accent-text">소미(SOMY)</span>
+                    </h1>
+                    <p style={{ fontSize: '18px', color: '#666', lineHeight: 1.7, maxWidth: '600px', margin: '0 auto', wordBreak: 'keep-all' }}>
+                        단순한 큐티 앱을 넘어, 최첨단 <span className="accent-text">AI 기술</span>과 <span className="accent-text">개혁주의 신학</span>이 만나 성도의 일상을 은혜로 채우는 스마트 사역 솔루션입니다.
+                    </p>
+                </div>
+
+                {/* Core Values */}
+                <div className="brand-section" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '80px' }}>
+                    <div className="glass-card" style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '40px', marginBottom: '20px' }}>✨</div>
+                        <h3 style={{ fontSize: '20px', fontWeight: 900, marginBottom: '12px' }}>AI 기반 영적 가이드</h3>
+                        <p style={{ fontSize: '14px', color: '#777', lineHeight: 1.6, margin: 0 }}>성경의 깊은 맥락을 AI가 분석하여 개개인의 상황에 맞는 통찰을 제공합니다.</p>
+                    </div>
+                    <div className="glass-card" style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '40px', marginBottom: '20px' }}>📖</div>
+                        <h3 style={{ fontSize: '20px', fontWeight: 900, marginBottom: '12px' }}>개혁주의 가치 계승</h3>
+                        <p style={{ fontSize: '14px', color: '#777', lineHeight: 1.6, margin: 0 }}>검증된 신학적 토대 위에서 흔들리지 않는 말씀의 진수를 성도들에게 전달합니다.</p>
+                    </div>
+                    <div className="glass-card" style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '40px', marginBottom: '20px' }}>⚙️</div>
+                        <h3 style={{ fontSize: '20px', fontWeight: 900, marginBottom: '12px' }}>행정의 압도적 간소화</h3>
+                        <p style={{ fontSize: '14px', color: '#777', lineHeight: 1.6, margin: 0 }}>번거로운 교적 관리와 공지 전달을 자동화하여 사역의 본질에 집중하게 합니다.</p>
+                    </div>
+                </div>
+
+                {/* Detail Benefits */}
+                <div className="brand-section" style={{ marginBottom: '80px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
+                        <div>
+                            <h2 style={{ fontSize: '24px', fontWeight: 900, color: '#333', marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <span style={{ background: '#333', color: 'white', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>👤</span>
+                                성도를 위한 <span className="accent-text">축복</span>
+                            </h2>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                <div style={{ display: 'flex', gap: '15px' }}>
+                                    <div style={{ fontSize: '20px' }}>✅</div>
+                                    <div>
+                                        <div style={{ fontSize: '16px', fontWeight: 800, marginBottom: '4px' }}>나만을 위한 AI 대화형 상담</div>
+                                        <p style={{ fontSize: '14px', color: '#666', lineHeight: 1.5, margin: 0 }}>말씀에 근거한 소미의 답변은 성도의 고민을 신앙적으로 해석하도록 돕습니다.</p>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '15px' }}>
+                                    <div style={{ fontSize: '20px' }}>✅</div>
+                                    <div>
+                                        <div style={{ fontSize: '16px', fontWeight: 800, marginBottom: '4px' }}>매일의 영적 성과 추적</div>
+                                        <p style={{ fontSize: '14px', color: '#666', lineHeight: 1.5, margin: 0 }}>큐티왕 통계와 감사일기 기록을 통해 스스로의 영적 성장을 가시적으로 확인합니다.</p>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '15px' }}>
+                                    <div style={{ fontSize: '20px' }}>✅</div>
+                                    <div>
+                                        <div style={{ fontSize: '16px', fontWeight: 800, marginBottom: '4px' }}>풍성한 공동체 나눔</div>
+                                        <p style={{ fontSize: '14px', color: '#666', lineHeight: 1.5, margin: 0 }}>묵상 글이 자동으로 게시판에 공유되어 성도 간의 깊은 영적 교류가 일어납니다.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h2 style={{ fontSize: '24px', fontWeight: 900, color: '#333', marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <span style={{ background: '#D4AF37', color: 'white', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>⛪</span>
+                                목회자를 위한 <span className="accent-text">은혜</span>
+                            </h2>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                <div style={{ display: 'flex', gap: '15px' }}>
+                                    <div style={{ fontSize: '20px' }}>✅</div>
+                                    <div>
+                                        <div style={{ fontSize: '16px', fontWeight: 800, marginBottom: '4px' }}>AI 설교 보조 및 큐티 생성</div>
+                                        <p style={{ fontSize: '14px', color: '#666', lineHeight: 1.5, margin: 0 }}>설교 본문만 넣으면 성도들의 눈높이에 맞는 큐티와 나눔 질문이 자동 생성됩니다.</p>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '15px' }}>
+                                    <div style={{ fontSize: '20px' }}>✅</div>
+                                    <div>
+                                        <div style={{ fontSize: '16px', fontWeight: 800, marginBottom: '4px' }}>실시간 영적 상태 모니터링</div>
+                                        <p style={{ fontSize: '14px', color: '#666', lineHeight: 1.5, margin: 0 }}>성도들의 은혜 나눔 내용을 통해 교회의 전반적인 영적 분위기를 파악하고 심방에 활용합니다.</p>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '15px' }}>
+                                    <div style={{ fontSize: '20px' }}>✅</div>
+                                    <div>
+                                        <div style={{ fontSize: '16px', fontWeight: 800, marginBottom: '4px' }}>스마트 비대면 행정</div>
+                                        <p style={{ fontSize: '14px', color: '#666', lineHeight: 1.5, margin: 0 }}>주소록 관리, 공지 푸시 알림, 상담 예약을 하나의 앱으로 완벽하게 제어합니다.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Interface Preview (CSS Simulated) */}
+                <div className="brand-section" style={{ marginBottom: '100px' }}>
+                    <h2 style={{ fontSize: '24px', fontWeight: 900, textAlign: 'center', marginBottom: '40px' }}>미리 만나는 소미 에코시스템</h2>
+                    <div style={{ display: 'flex', gap: '30px', justifyContent: 'center' }}>
+                        {/* 홈 화면 모형 */}
+                        <div style={{ width: '240px', height: '440px', background: '#FEF0D8', border: '8px solid #333', borderRadius: '36px', overflow: 'hidden', position: 'relative', boxShadow: '0 20px 50px rgba(0,0,0,0.1)' }}>
+                            <div style={{ padding: '40px 15px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                    {[1, 2, 3, 4].map(i => <div key={i} style={{ aspectRatio: '1', background: 'white', borderRadius: '12px', border: '1px solid #EEE' }} />)}
+                                </div>
+                                <div style={{ marginTop: '20px', height: '100px', background: 'rgba(255,255,255,0.7)', borderRadius: '16px' }} />
+                            </div>
+                            <div style={{ position: 'absolute', bottom: '15px', left: '50%', transform: 'translateX(-50%)', width: '40px', height: '4px', background: '#333', borderRadius: '2px' }} />
+                        </div>
+                        {/* 큐티 화면 모형 */}
+                        <div style={{ width: '240px', height: '440px', background: 'white', border: '8px solid #333', borderRadius: '36px', overflow: 'hidden', position: 'relative', boxShadow: '0 20px 50px rgba(0,0,0,0.1)' }}>
+                            <div style={{ padding: '20px' }}>
+                                <div style={{ fontSize: '12px', fontWeight: 900, marginBottom: '10px' }}>📖 오늘의 말씀</div>
+                                <div style={{ height: '2px', background: '#D4AF37', width: '30px', marginBottom: '15px' }} />
+                                <div style={{ fontSize: '10px', lineHeight: 1.6, color: '#666' }}>
+                                    하나님이 세상을 이처럼 사랑하사 독생자를 주셨으니...<br />
+                                    [AI 해석: 이 구절은 개혁주의 신학의 핵심인...]
+                                </div>
+                                <div style={{ marginTop: '30px', background: '#F9F9F9', padding: '10px', borderRadius: '8px', fontSize: '10px' }}>
+                                    🙋 성도님, 오늘 말씀에서 어떤 은혜를 느끼셨나요?
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Closing */}
+                <div style={{ textAlign: 'center', padding: '60px 0', borderTop: '1px solid #EEE' }}>
+                    <h2 style={{ fontSize: '28px', fontWeight: 900, marginBottom: '15px' }}>사역의 새로운 기준, 지금 소미와 시작하세요.</h2>
+                    <p style={{ fontSize: '15px', color: '#888', marginBottom: '40px' }}>SOMY는 교회의 거룩한 질서를 기술로 완성합니다.</p>
+                    <div style={{ padding: '24px', background: '#F8F9FA', borderRadius: '20px', display: 'inline-block', textAlign: 'left', border: '1px solid #EEE' }}>
+                        <p style={{ fontSize: '13px', color: '#666', margin: 0, lineHeight: 1.8 }}>
+                            <strong>💡 참고사항</strong><br />
+                            • 본 앱은 교회 관리자의 승인이 필요한 폐쇄형 서비스입니다.<br />
+                            • <span style={{ color: '#D32F2F', fontWeight: 700 }}>추후 AI 실시간 상담 및 고도화 기능들은 유료 서비스로 전환될 수 있습니다.</span><br />
+                            • 개혁주의 신학 자문: SOMY 신학 연구팀
+                        </p>
+                    </div>
+                </div>
+
+                <div style={{ marginTop: '60px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '12px', color: '#BBB', fontWeight: 500 }}>© 2024 SOMY INTERACTIVE. FOR THE GLORY OF GOD.</div>
+                </div>
+            </div>
+        );
+    };
+
+    // [성도 관련 컴포넌트는 파일 하단 독립 컴포넌트 구역으로 이동되었습니다]
 
     // [성도 관련 컴포넌트는 파일 하단 독립 컴포넌트 구역으로 이동되었습니다]
 
