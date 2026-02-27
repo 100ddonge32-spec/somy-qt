@@ -118,6 +118,34 @@ export async function GET(req: NextRequest) {
             return NextResponse.json(stats);
         }
 
+        if (action === 'list_all_admins') {
+            // app_admins와 profiles를 join하여 이름 정보를 함께 가져옴
+            const { data, error } = await supabaseAdmin
+                .from('app_admins')
+                .select(`
+                    email,
+                    role,
+                    church_id,
+                    created_at,
+                    profiles:profiles!email (
+                        full_name,
+                        avatar_url
+                    )
+                `)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            // 데이터 가공 (profiles 배열의 첫번째 요소를 평탄화)
+            const formattedData = data.map((admin: any) => ({
+                ...admin,
+                name: admin.profiles?.[0]?.full_name || admin.profiles?.full_name || '이름 없음',
+                avatar_url: admin.profiles?.[0]?.avatar_url || admin.profiles?.avatar_url || null
+            }));
+
+            return NextResponse.json(formattedData);
+        }
+
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
@@ -153,6 +181,20 @@ export async function POST(req: NextRequest) {
                 .select();
             if (error) throw error;
             return NextResponse.json(data);
+        }
+
+        // 관리자 삭제 (슈퍼관리자용)
+        if (action === 'delete_admin') {
+            const { target_email } = body;
+            if (!target_email) throw new Error('삭제할 관리자 이메일이 없습니다.');
+
+            const { error } = await supabaseAdmin
+                .from('app_admins')
+                .delete()
+                .eq('email', target_email.toLowerCase().trim());
+
+            if (error) throw error;
+            return NextResponse.json({ success: true });
         }
 
         // 성도 승인 처리

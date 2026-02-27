@@ -482,6 +482,7 @@ export default function App() {
     const [userCounselingReplyInput, setUserCounselingReplyInput] = useState<{ [id: string]: string }>({}); // 성도 추가 답글 입력
     const [submittingUserReplyId, setSubmittingUserReplyId] = useState<string | null>(null);
     const [submittingCommentId, setSubmittingCommentId] = useState<any>(null); // ✅ 댓글 등록 중복 방지
+    const [allAdminList, setAllAdminList] = useState<any[]>([]); // ✅ 전체 관리자 목록 (슈퍼관리자용)
     const [showVerification, setShowVerification] = useState(false); // ✅ 실명 인증 폼 노출 여부
     const [isInApp, setIsInApp] = useState(false); // ✅ 카톡 등 인앱 브라우저 여부
     const [vName, setVName] = useState(""); // ✅ 인증용 성함
@@ -1097,6 +1098,39 @@ export default function App() {
         } else {
             // iOS나 기타 환경에서는 안내 모달 표시
             setShowInstallGuide(true);
+        }
+    };
+
+    const fetchAllAdmins = async () => {
+        if (!isSuperAdmin) return;
+        try {
+            const res = await fetch('/api/admin?action=list_all_admins');
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                setAllAdminList(data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch admins:", err);
+        }
+    };
+
+    const handleDeleteAdmin = async (email: string) => {
+        if (!confirm(`${email} 관리자를 삭제하시겠습니까?`)) return;
+        try {
+            const res = await fetch('/api/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete_admin', target_email: email })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert('삭제되었습니다.');
+                fetchAllAdmins();
+            } else {
+                alert('에러: ' + data.error);
+            }
+        } catch (err) {
+            alert('삭제 실패');
         }
     };
     const [history, setHistory] = useState<any[]>([]);
@@ -2037,7 +2071,7 @@ export default function App() {
                                         setQtStep("read");
                                         setView("qt");
                                     }} style={{
-                                        padding: "11px 5px",
+                                        padding: "18px 5px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #fffbea 100%)", color: "#8E754C",
                                         fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                         border: "1px solid #f2e29e", cursor: "pointer",
@@ -2060,7 +2094,7 @@ export default function App() {
                                                 if (Array.isArray(data)) setCommunityPosts(data);
                                             } catch (e) { console.error("게시판 로드 실패:", e); }
                                         }} style={{
-                                            width: "100%", padding: "11px 5px",
+                                            width: "100%", padding: "18px 5px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #fff0f5 100%)", color: "#9E2A5B",
                                             fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                             border: "1px solid #f2cddb", cursor: "pointer",
@@ -2093,7 +2127,7 @@ export default function App() {
                                                 if (Array.isArray(data)) setThanksgivingDiaries(data);
                                             } catch (e) { console.error("감사일기 로드 실패:", e); }
                                         }} style={{
-                                            width: "100%", padding: "11px 5px",
+                                            width: "100%", padding: "18px 5px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #fff6e5 100%)", color: "#E07A5F",
                                             fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                             border: "1px solid #fae1cd", cursor: "pointer",
@@ -2187,7 +2221,7 @@ export default function App() {
                                             setHasNewSermon(false);
                                             localStorage.setItem(`last_view_sermon_${churchId}`, Date.now().toString());
                                         }} style={{
-                                            padding: "11px 5px",
+                                            padding: "18px 5px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #fff4f2 100%)", color: "#BA2D0B",
                                             fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                             border: "1px solid #fcd3c8", cursor: "pointer",
@@ -2225,7 +2259,7 @@ export default function App() {
                                                 if (Array.isArray(data)) setCounselingRequests(data);
                                             } catch (e) { console.error("상담 로드 실패", e); }
                                         }} style={{
-                                            width: "100%", padding: "11px 5px",
+                                            width: "100%", padding: "18px 5px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #f6f0ff 100%)", color: "#4A148C",
                                             fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                             border: "1px solid #e1bee7", cursor: "pointer",
@@ -2279,7 +2313,7 @@ export default function App() {
                                         setView('history');
                                         fetchHistory();
                                     }} style={{
-                                        padding: "11px 5px",
+                                        padding: "18px 5px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f1f8f3 100%)", color: "#507558",
                                         fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                         border: "1px solid #cee8d8", cursor: "pointer",
@@ -2292,7 +2326,7 @@ export default function App() {
                                     </button>
 
                                     <button onClick={() => setView('ccm')} style={{
-                                        padding: "11px 5px",
+                                        padding: "18px 5px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f4f6fa 100%)", color: "#465293",
                                         fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                         border: "1px solid #cfd5f0", cursor: "pointer",
@@ -2305,7 +2339,7 @@ export default function App() {
                                     </button>
 
                                     <button onClick={() => setView('memberSearch')} style={{
-                                        padding: "11px 5px",
+                                        padding: "18px 5px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f1f8f3 100%)", color: "#2E7D32",
                                         fontWeight: 800, fontSize: "13px", borderRadius: "16px",
                                         border: "1px solid #C8E6C9", cursor: "pointer",
@@ -4155,12 +4189,29 @@ export default function App() {
                             <button onClick={handleLogout} style={{ padding: '8px 20px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>시스템 로그아웃</button>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            <button onClick={() => { setAdminTab('settings'); setSettingsForm({ ...churchSettings }); setShowSettings(true); }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
-                                <div style={{ width: '48px', height: '48px', background: '#FFF9C4', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>⛪</div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '2px' }}>교회 정보 및 환경 설정</div>
-                                    <div style={{ fontSize: '12px', color: '#999' }}>로고, 이름, 홈페이지, 요금제 등을 관리합니다.</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', width: '100%' }}>
+                            <button onClick={() => { setAdminTab('settings'); setSettingsForm({ ...churchSettings }); setShowSettings(true); }} style={{ padding: '24px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <div style={{ width: '40px', height: '40px', background: '#FFF9C4', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>⛪</div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#333', marginBottom: '2px', wordBreak: 'keep-all' }}>교회 설정</div>
+                                    <div style={{ fontSize: '9px', color: '#999', wordBreak: 'keep-all' }}>로고/이름 관리</div>
+                                </div>
+                            </button>
+
+                            <button onClick={async () => {
+                                setAdminTab('members');
+                                setIsManagingMembers(true);
+                                setShowSettings(true);
+                                try {
+                                    const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                    const data = await r.json();
+                                    if (Array.isArray(data)) setMemberList(data);
+                                } finally { setIsManagingMembers(false); }
+                            }} style={{ padding: '24px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <div style={{ width: '40px', height: '40px', background: '#E3F2FD', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>👥</div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#333', marginBottom: '2px', wordBreak: 'keep-all' }}>성도 관리</div>
+                                    <div style={{ fontSize: '9px', color: '#999', wordBreak: 'keep-all' }}>명단/승인 관리</div>
                                 </div>
                             </button>
 
@@ -4168,11 +4219,11 @@ export default function App() {
                                 const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
                                 setQtForm({ date: today, reference: '', passage: '', interpretation: '', question1: '', question2: '', question3: '', prayer: '' });
                                 setView('qtManage');
-                            }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
-                                <div style={{ width: '48px', height: '48px', background: '#E3F2FD', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📖</div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '2px' }}>오늘의 큐티 말씀 관리</div>
-                                    <div style={{ fontSize: '12px', color: '#999' }}>매일의 묵상 본문과 질문을 수정하고 등록합니다.</div>
+                            }} style={{ padding: '24px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <div style={{ width: '40px', height: '40px', background: '#E1F5FE', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📖</div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#333', marginBottom: '2px', wordBreak: 'keep-all' }}>말씀 관리</div>
+                                    <div style={{ fontSize: '9px', color: '#999', wordBreak: 'keep-all' }}>큐티 등록/수정</div>
                                 </div>
                             </button>
 
@@ -4187,13 +4238,14 @@ export default function App() {
                                     inputType: churchSettings.manual_sermon_url ? 'video' : 'text'
                                 });
                                 setView('sermonManage');
-                            }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
-                                <div style={{ width: '48px', height: '48px', background: '#FCE4EC', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🎙️</div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '2px' }}>설교 및 나눔질문 생성</div>
-                                    <div style={{ fontSize: '12px', color: '#999' }}>설교 원고를 입력하여 AI로 자동 요약하고 묵상 질문을 만듭니다.</div>
+                            }} style={{ padding: '24px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <div style={{ width: '40px', height: '40px', background: '#FCE4EC', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🎙️</div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#333', marginBottom: '2px', wordBreak: 'keep-all' }}>설교 요약</div>
+                                    <div style={{ fontSize: '9px', color: '#999', wordBreak: 'keep-all' }}>AI 자동 생성</div>
                                 </div>
                             </button>
+
                             <button onClick={async () => {
                                 if (confirm('모든 성도님들께 오늘의 큐티 알림을 전송하시겠습니까?')) {
                                     try {
@@ -4204,48 +4256,58 @@ export default function App() {
                                                 alert('알림을 보낼 성도님이 없습니다. 먼저 성도 관리에서 승인을 해주세요.');
                                             } else {
                                                 let msg = `📢 알림 발송 완료!\n\n✅ 성공: ${data.sentCount}명\n❌ 실패: ${data.failedCount}명`;
-
-                                                if (data.failedCount > 0 && data.errorSamples) {
-                                                    const koreanErrors = data.errorSamples.map((err: string) => {
-                                                        if (err.includes('expired')) return '만료된 알림 설정';
-                                                        if (err.includes('Permission')) return '권한 거부';
-                                                        if (err.includes('Not Found')) return '구독 정보 없음';
-                                                        return err;
-                                                    });
-                                                    msg += `\n(주요 사유: ${koreanErrors.join(', ')})`;
-                                                }
-
-                                                if (data.totalApprovedCount !== undefined) {
-                                                    const unsubscribedCount = data.totalApprovedCount - (data.sentCount + data.failedCount);
-                                                    msg += `\n\n[상세 현황]\n- 승인된 성도: 총 ${data.totalApprovedCount}명\n- 알림 수신 동의: ${data.sentCount + data.failedCount}명\n- 미동의/미설정: ${unsubscribedCount}명`;
-
-                                                    if (unsubscribedCount > 0) {
-                                                        msg += `\n\n※ 알림이 안 가는 분들은 하단의 '알림 켜기' 버튼을 누르셨는지 확인이 필요합니다.`;
-                                                    }
-                                                }
                                                 alert(msg);
                                             }
                                         } else {
                                             alert('⚠️ 발송 실패: ' + (data.error || '알 수 없는 오류'));
                                         }
-                                    } catch (e) { alert('네트워크 연결이 원활하지 않습니다. 잠시 후 다시 시도해 주세요.'); }
+                                    } catch (e) { alert('연결이 원활하지 않습니다.'); }
                                 }
-                            }} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
-                                <div style={{ width: '48px', height: '48px', background: '#E8F5E9', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🔔</div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '2px' }}>큐티 시작 알림 전송</div>
-                                    <div style={{ fontSize: '12px', color: '#999' }}>모든 성도님께 오늘의 말씀 페이지로 연결되는 푸시 알림을 보냅니다.</div>
+                            }} style={{ padding: '24px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <div style={{ width: '40px', height: '40px', background: '#E8F5E9', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🔔</div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#333', marginBottom: '2px', wordBreak: 'keep-all' }}>알림 발송</div>
+                                    <div style={{ fontSize: '9px', color: '#999', wordBreak: 'keep-all' }}>푸시 알림 보내기</div>
                                 </div>
                             </button>
 
-                            <button onClick={() => setView('adminGuide')} style={{ width: '100%', padding: '24px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
-                                <div style={{ width: '48px', height: '48px', background: '#F5F5F5', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📄</div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#333', marginBottom: '2px' }}>관리자 활용 가이드 (PDF 가능)</div>
-                                    <div style={{ fontSize: '12px', color: '#999' }}>초기 설정부터 200% 활용 방안을 담은 완벽 가이드입니다.</div>
+                            <button onClick={async () => {
+                                setAdminTab('stats');
+                                setShowSettings(true);
+                                if (memberList.length === 0) {
+                                    try {
+                                        const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                        const data = await r.json();
+                                        if (Array.isArray(data)) setMemberList(data);
+                                    } catch (e) { }
+                                }
+                            }} style={{ padding: '24px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <div style={{ width: '40px', height: '40px', background: '#FFF3E0', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📊</div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#333', marginBottom: '2px', wordBreak: 'keep-all' }}>성도 통계</div>
+                                    <div style={{ fontSize: '9px', color: '#999', wordBreak: 'keep-all' }}>출석/완주 랭킹</div>
                                 </div>
                             </button>
+
+                            <button onClick={() => setView('adminGuide')} style={{ padding: '16px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <div style={{ width: '40px', height: '40px', background: '#F5F5F3', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📄</div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#333', marginBottom: '2px', wordBreak: 'keep-all' }}>가이드</div>
+                                    <div style={{ fontSize: '9px', color: '#999', wordBreak: 'keep-all' }}>관리자 매뉴얼</div>
+                                </div>
+                            </button>
+
+                            {isSuperAdmin && (
+                                <button onClick={() => { setAdminTab('master'); fetchAllAdmins(); setShowSettings(true); }} style={{ padding: '16px 8px', background: '#FFFDE7', border: '1px solid #FFF176', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                    <div style={{ width: '40px', height: '40px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>👑</div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '12px', fontWeight: 800, color: '#856404', marginBottom: '2px', wordBreak: 'keep-all' }}>마스터</div>
+                                        <div style={{ fontSize: '9px', color: '#B8924A', wordBreak: 'keep-all' }}>시스템 관리</div>
+                                    </div>
+                                </button>
+                            )}
                         </div>
+
 
                         <button onClick={() => setView('home')} style={{ marginTop: '32px', width: '100%', padding: '16px', background: '#F5F5F5', color: '#333', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 돌아가기</button>
                     </>
@@ -5617,6 +5679,8 @@ export default function App() {
         );
     };
 
+
+
     const handleExcelExport = () => {
         if (!memberList || memberList.length === 0) {
             alert('다운로드할 성도 데이터가 없습니다.');
@@ -5841,7 +5905,7 @@ export default function App() {
                                         }
                                     }} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'stats' ? 'white' : 'transparent', boxShadow: adminTab === 'stats' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'stats' ? '#333' : '#777' }}>📊 통계</button>
                                     {isSuperAdmin && (
-                                        <button onClick={() => setAdminTab('master')} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'master' ? 'white' : 'transparent', boxShadow: adminTab === 'master' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'master' ? '#333' : '#777' }}>👑 마스터</button>
+                                        <button onClick={() => { setAdminTab('master'); fetchAllAdmins(); }} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'master' ? 'white' : 'transparent', boxShadow: adminTab === 'master' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'master' ? '#333' : '#777' }}>👑 마스터</button>
                                     )}
                                 </div>
                             </div>
@@ -6784,7 +6848,7 @@ export default function App() {
                                             </div>
                                         </div>
                                     </>
-                                ) : (
+                                ) : adminTab === 'master' ? (
                                     <>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                                             <div style={{ fontSize: '13px', color: '#666', background: '#F5F5F3', padding: '14px', borderRadius: '12px', lineHeight: 1.5 }}>
@@ -6813,6 +6877,79 @@ export default function App() {
                                                     ) : (
                                                         <div style={{ fontSize: '12px', color: '#999', textAlign: 'center', padding: '10px' }}>'새로고침'을 눌러 통계를 확인하세요.</div>
                                                     )}
+                                                </div>
+                                            </div>
+
+                                            {/* ✅ 관리자 목록 관리 섹션 (이름 표시 버전) */}
+                                            <div style={{ background: 'white', padding: '16px', borderRadius: '15px', border: '1px solid #EEE' }}>
+                                                <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <span>👥 전체 관리자 명단 ({allAdminList.length})</span>
+                                                    <button onClick={fetchAllAdmins} style={{ background: '#F5F5F5', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>새로고침</button>
+                                                </div>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                    {allAdminList.length > 0 ? (
+                                                        allAdminList.map((admin: any) => (
+                                                            <div key={admin.email} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px 12px', borderRadius: '10px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                                                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', minWidth: 0, flex: 1 }}>
+                                                                    <div style={{ width: '32px', height: '32px', background: '#F5F5F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', overflow: 'hidden', flexShrink: 0 }}>
+                                                                        {admin.avatar_url ? <img src={admin.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
+                                                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                            {admin.name || '이름 없음'}
+                                                                            <span style={{ fontSize: '10px', background: admin.role === 'super_admin' ? '#E3F2FD' : '#F5F5F3', color: admin.role === 'super_admin' ? '#1565C0' : '#888', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>{admin.role === 'super_admin' ? '슈퍼' : '일반'}</span>
+                                                                        </div>
+                                                                        <div style={{ fontSize: '11px', color: '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{admin.email} | 📍 {admin.church_id || '전체'}</div>
+                                                                    </div>
+                                                                </div>
+                                                                {admin.email !== user?.email && (
+                                                                    <button
+                                                                        onClick={() => handleDeleteAdmin(admin.email)}
+                                                                        style={{ background: '#FFF5F5', color: '#C62828', border: '1px solid #FFE3E3', borderRadius: '8px', padding: '6px 10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
+                                                                    >
+                                                                        삭제
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <div style={{ fontSize: '12px', color: '#999', textAlign: 'center', padding: '20px' }}>불러온 관리자 명단이 없습니다.</div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* ✅ 관리자 추가 등록 섹션 */}
+                                            <div style={{ background: '#edf7ed', padding: '16px', borderRadius: '15px', border: '1px solid #c8e6c9' }}>
+                                                <div style={{ fontSize: '13px', fontWeight: 800, color: '#2e7d32', marginBottom: '12px' }}>➕ 신규 관리자 권한 부여</div>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                    <input id="add-admin-email" placeholder="권한을 줄 사용자 이메일 (또는 ID)" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: 'white' }} />
+                                                    <input id="add-admin-church" placeholder="소속 교회 ID (예: jesus-in)" defaultValue={churchId} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: 'white' }} />
+                                                    <select id="add-admin-role" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: 'white', appearance: 'none', cursor: 'pointer' }}>
+                                                        <option value="church_admin">일반 관리자</option>
+                                                        <option value="super_admin">슈퍼 관리자 (전체 권한)</option>
+                                                    </select>
+                                                    <button onClick={async () => {
+                                                        const email = (document.getElementById('add-admin-email') as HTMLInputElement).value;
+                                                        const cid = (document.getElementById('add-admin-church') as HTMLInputElement).value;
+                                                        const role = (document.getElementById('add-admin-role') as HTMLSelectElement).value;
+                                                        if (!email || !cid) { alert('이메일과 교회 ID를 입력해주세요.'); return; }
+
+                                                        const res = await fetch('/api/admin', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({ action: 'add_admin', email, church_id: cid, role })
+                                                        });
+                                                        if (res.ok) {
+                                                            alert('성공적으로 관리자 권한을 부여했습니다!');
+                                                            (document.getElementById('add-admin-email') as HTMLInputElement).value = '';
+                                                            fetchAllAdmins();
+                                                        } else {
+                                                            const info = await res.json();
+                                                            alert('에러: ' + info.error);
+                                                        }
+                                                    }} style={{ padding: '12px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', marginTop: '4px' }}>
+                                                        관리자로 등록하기 ✅
+                                                    </button>
                                                 </div>
                                             </div>
 
@@ -6858,7 +6995,11 @@ export default function App() {
                                             </div>
                                         </div>
                                     </>
-                                )}
+                                ) : adminTab === 'stats' ? (
+                                    <>
+                                        <StatsView memberList={memberList} />
+                                    </>
+                                ) : null}
                             </div>
 
                             {/* 하단 고정 닫기 버튼 */}
