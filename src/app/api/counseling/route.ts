@@ -96,25 +96,37 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
     try {
         const body = await req.json();
-        const { id, reply, user_reply, admin_name, user_name } = body;
+        const { id, reply, user_reply, content, admin_name, user_name, overwrite } = body;
 
         // 기존 데이터 가져오기 (추가 답글인 경우를 위해)
         const { data: existing, error: fetchError } = await supabaseAdmin
             .from('counseling_requests')
-            .select('reply, user_reply')
+            .select('content, reply, user_reply')
             .eq('id', id)
             .single();
 
         if (fetchError) throw fetchError;
 
         const updateData: any = {};
+        if (content !== undefined) {
+            updateData.content = content;
+        }
+
         if (reply !== undefined) {
-            // 목사님 답변이 이미 있으면 개행 후 추가
-            updateData.reply = existing.reply ? `${existing.reply}\n\n[추가 답변]\n${reply}` : reply;
+            if (overwrite) {
+                updateData.reply = reply;
+            } else {
+                // 목사님 답변이 이미 있으면 개행 후 추가
+                updateData.reply = existing.reply ? `${existing.reply}\n\n[추가 답변]\n${reply}` : reply;
+            }
         }
         if (user_reply !== undefined) {
-            // 성도 답글이 이미 있으면 개행 후 추가
-            updateData.user_reply = existing.user_reply ? `${existing.user_reply}\n\n[추가 답글]\n${user_reply}` : user_reply;
+            if (overwrite) {
+                updateData.user_reply = user_reply;
+            } else {
+                // 성도 답글이 이미 있으면 개행 후 추가
+                updateData.user_reply = existing.user_reply ? `${existing.user_reply}\n\n[추가 답글]\n${user_reply}` : user_reply;
+            }
         }
 
         const { data, error } = await supabaseAdmin
