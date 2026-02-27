@@ -378,6 +378,7 @@ export default function App() {
     const [adminInfo, setAdminInfo] = useState<any>(null);
     const [isApproved, setIsApproved] = useState(false);
     const [profileName, setProfileName] = useState<string | null>(null);
+    const [profileBirthdate, setProfileBirthdate] = useState<string | null>(null);
     const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
     const [churchId, setChurchId] = useState('jesus-in');
     const isAdmin = !!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin');
@@ -878,7 +879,7 @@ export default function App() {
             // Supabase 쿼리에 유니크한 필터를 섞어 캐시 방지 시도
             const { data, error } = await supabase
                 .from('profiles')
-                .select('is_approved, church_id, full_name, avatar_url')
+                .select('is_approved, church_id, full_name, avatar_url, birthdate')
                 .eq('id', user.id)
                 .neq('email', `cache_bust_${cacheBuster}`) // 무의미한 필터로 캐시 무시 유도
                 .single();
@@ -908,6 +909,7 @@ export default function App() {
                         setProfileName(user.user_metadata.full_name || user.user_metadata.name);
                     }
                     if (syncData.avatar_url) setProfileAvatar(syncData.avatar_url);
+                    if (syncData.birthdate) setProfileBirthdate(syncData.birthdate);
                     if (syncData.is_approved) subscribePush(user.id);
                 }
                 return;
@@ -922,6 +924,8 @@ export default function App() {
 
             if (data.avatar_url) setProfileAvatar(data.avatar_url);
             else if (user.user_metadata?.avatar_url) setProfileAvatar(user.user_metadata.avatar_url);
+
+            if (data.birthdate) setProfileBirthdate(data.birthdate);
 
             if (data.is_approved) {
                 console.log("🎊 승인 확인됨 (서버 최신 데이터)");
@@ -1266,7 +1270,7 @@ export default function App() {
             if (qt) {
                 const { fullPassage, interpretation } = parsePassage(qt.passage);
                 console.log("[fetchQt] Parsed Qt:", { fullPassage: fullPassage.substring(0, 20), interpretation: interpretation?.substring(0, 20) });
-                setQtData({
+                const initialQt = {
                     date: new Date(qt.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
                     reference: qt.reference,
                     fullPassage,
@@ -1274,8 +1278,53 @@ export default function App() {
                     verse: fullPassage.split('\n')[0],
                     questions: [qt.question1, qt.question2, qt.question3].filter(Boolean),
                     prayer: qt.prayer,
-                });
-                setAnswers(new Array([qt.question1, qt.question2, qt.question3].filter(Boolean).length).fill(''));
+                };
+
+                // [추가] 20세 이하 사용자를 위한 눈높이 교육용 큐티 변환 전용 처리
+                let userAge = 99;
+                if (profileBirthdate) {
+                    const birth = new Date(profileBirthdate);
+                    const today = new Date();
+                    userAge = today.getFullYear() - birth.getFullYear();
+                    const m = today.getMonth() - birth.getMonth();
+                    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) userAge--;
+                }
+
+                if (userAge <= 20) {
+                    console.log(`[fetchQt] Youth user detected (Age: ${userAge}). Tailoring content...`);
+                    try {
+                        const tailRes = await fetch('/api/chat', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                messages: [{
+                                    role: 'user',
+                                    content: `당신은 다음 큐티 내용을 10대~20대 초반 청년들이 이해하기 쉽도록 '눈높이 맞춤형'으로 재구성해주는 다정한 목회자입니다.
+상황 설명과 본문 해석을 청년들의 일상 용어와 고민(학업, 진로, 친구관계 등)에 맞추어 따뜻하게 고쳐주시고, 묵상 질문 3개도 그들의 삶에 와닿는 실질적인 내용으로 바꿔주세요.
+
+[원본 내용]
+- 본문 성경구절: ${initialQt.reference}
+- 본문 해설: ${initialQt.interpretation}
+- 기존 질문: ${initialQt.questions.join(', ')}
+
+반드시 다음 JSON 형식으로만 답하세요:
+{"interpretation": "청년 눈높이 맞춤 해설", "questions": ["질문1", "질문2", "질문3"]}`
+                                }]
+                            })
+                        });
+                        if (tailRes.ok) {
+                            const tailData = await tailRes.json();
+                            const tailJson = JSON.parse(tailData.content.match(/\{[\s\S]*\}/)![0]);
+                            initialQt.interpretation = tailJson.interpretation;
+                            initialQt.questions = tailJson.questions;
+                        }
+                    } catch (err) {
+                        console.error("Tailoring failed, using original:", err);
+                    }
+                }
+
+                setQtData(initialQt);
+                setAnswers(new Array(initialQt.questions.length).fill(''));
             } else {
                 // 데이터가 없을 경우 기본값으로 리셋
                 setQtData({
