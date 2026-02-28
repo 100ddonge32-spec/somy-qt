@@ -7140,14 +7140,14 @@ export default function App() {
                                                     </div>
                                                 </div>
 
-                                                {/* 2. 메인 관리 섹션 (폰트 크기 상향 조정) */}
+                                                {/* 2. 메인 관리 섹션 (파스텔톤 테마) */}
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                    {/* Row 1: 주요 액션 (다크 테마, 폰트 14px) */}
+                                                    {/* Row 1: 주요 액션 (Pastel Blue) */}
                                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                                                        <button onClick={() => setShowAddMemberModal(true)} style={{ height: '44px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                                        <button onClick={() => setShowAddMemberModal(true)} style={{ height: '44px', background: '#E3F2FD', color: '#1565C0', border: '1px solid #BBDEFB', borderRadius: '12px', fontSize: '14px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                                                             <span>+</span> 개별 추가
                                                         </button>
-                                                        <button onClick={handleExcelExport} style={{ height: '44px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                                        <button onClick={handleExcelExport} style={{ height: '44px', background: '#E3F2FD', color: '#1565C0', border: '1px solid #BBDEFB', borderRadius: '12px', fontSize: '14px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                                                             📥 엑셀 받기
                                                         </button>
                                                         <button
@@ -7155,27 +7155,27 @@ export default function App() {
                                                                 const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
                                                                 if (r.ok) setMemberList(await r.json());
                                                             }}
-                                                            style={{ height: '44px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                                                            style={{ height: '44px', background: '#E3F2FD', color: '#1565C0', border: '1px solid #BBDEFB', borderRadius: '12px', fontSize: '14px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
                                                         >
                                                             🔄 새로고침
                                                         </button>
                                                     </div>
 
-                                                    {/* Row 2: 통계 현황 (폰트 상세화) */}
+                                                    {/* Row 2: 통계 현황 (Pastel Green) */}
                                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                                                         {[
                                                             { label: '전체', value: memberList.length },
                                                             { label: '승인', value: memberList.filter(m => m.is_approved).length },
                                                             { label: '대기', value: memberList.filter(m => !m.is_approved).length }
                                                         ].map((item, idx) => (
-                                                            <div key={idx} style={{ height: '44px', background: '#F8F9FA', padding: '0 10px', borderRadius: '12px', border: '1px solid #EEE', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                                                                <span style={{ fontSize: '13px', color: '#666', fontWeight: 700 }}>{item.label}</span>
-                                                                <span style={{ fontSize: '18px', fontWeight: 900, color: '#333' }}>{item.value}</span>
+                                                            <div key={idx} style={{ height: '44px', background: '#F1F8E9', padding: '0 10px', borderRadius: '12px', border: '1px solid #DCEDC8', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                                                <span style={{ fontSize: '13px', color: '#558B2F', fontWeight: 700 }}>{item.label}</span>
+                                                                <span style={{ fontSize: '18px', fontWeight: 900, color: '#33691E' }}>{item.value}</span>
                                                             </div>
                                                         ))}
                                                     </div>
 
-                                                    {/* Row 3: 하단 특수 액션 (폰트 14px) */}
+                                                    {/* Row 3: 하단 특수 액션 (Pastel Rose) */}
                                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                                                         <button
                                                             onClick={async () => {
@@ -7184,7 +7184,7 @@ export default function App() {
                                                                     if (res.ok) { setMemberList([]); alert('삭제 완료'); }
                                                                 }
                                                             }}
-                                                            style={{ height: '46px', background: '#F1F3F5', color: '#444', border: '1px solid #DEE2E6', borderRadius: '12px', fontSize: '14px', fontWeight: 800, cursor: 'pointer' }}
+                                                            style={{ height: '46px', background: '#FCE4EC', color: '#C2185B', border: '1px solid #F8BBD0', borderRadius: '12px', fontSize: '14px', fontWeight: 800, cursor: 'pointer' }}
                                                         >🗑️ 데이터 일괄 삭제</button>
                                                         <button
                                                             onClick={async () => {
@@ -7200,7 +7200,7 @@ export default function App() {
                                                                     } catch (e) { alert('오류 발생'); }
                                                                 }
                                                             }}
-                                                            style={{ height: '46px', background: '#F1F3F5', color: '#444', border: '1px solid #DEE2E6', borderRadius: '12px', fontSize: '14px', fontWeight: 800, cursor: 'pointer' }}
+                                                            style={{ height: '46px', background: '#FCE4EC', color: '#C2185B', border: '1px solid #F8BBD0', borderRadius: '12px', fontSize: '14px', fontWeight: 800, cursor: 'pointer' }}
                                                         >⏳ 미인증자 승인해제</button>
                                                     </div>
                                                 </div>
