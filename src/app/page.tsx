@@ -7507,7 +7507,7 @@ export default function App() {
                                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', flex: 1, minWidth: '100px' }}>
                                                                                     <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                                                         {(member.full_name && member.full_name !== '.' && member.full_name !== '이름 없음') ? member.full_name : (member.email ? member.email.split('@')[0] : '성도')}
-                                                                                        {allAdminList.some(a => a.email === member.email) && (
+                                                                                        {allAdminList.some(a => member.email && a.email?.toLowerCase().trim() === member.email?.toLowerCase().trim()) && (
                                                                                             <span style={{ fontSize: '9px', background: '#333', color: 'white', padding: '1px 4px', borderRadius: '4px', fontWeight: 700 }}>ADMIN</span>
                                                                                         )}
                                                                                     </div>
@@ -7521,11 +7521,11 @@ export default function App() {
                                                                                 </div>
 
                                                                                 <div style={{ display: 'flex', gap: '4px', flexShrink: 0, marginLeft: 'auto', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                                                                                    {isSuperAdmin && member.email && (
+                                                                                    {isSuperAdmin && (
                                                                                         isAdminsLoading ? (
                                                                                             <span style={{ fontSize: '10px', color: '#999', padding: '4px 8px' }}>...</span>
                                                                                         ) : (
-                                                                                            allAdminList.some(a => a.email === member.email) ? (
+                                                                                            allAdminList.some(a => member.email && a.email?.toLowerCase().trim() === member.email?.toLowerCase().trim()) ? (
                                                                                                 <button
                                                                                                     onClick={() => handleRevokeFromList(member)}
                                                                                                     style={{ background: '#FFEBEE', color: '#C62828', border: '1px solid #FFCDD2', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}
@@ -7535,7 +7535,12 @@ export default function App() {
                                                                                                 </button>
                                                                                             ) : (
                                                                                                 <button
-                                                                                                    onClick={() => handleNominateFromList(member)}
+                                                                                                    onClick={() => {
+                                                                                                        if (!member.email) {
+                                                                                                            member.email = `${member.id}@church.local`;
+                                                                                                        }
+                                                                                                        handleNominateFromList(member);
+                                                                                                    }}
                                                                                                     style={{ background: '#E3F2FD', color: '#1565C0', border: '1px solid #BBDEFB', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}
                                                                                                     title="관리자로 임명"
                                                                                                 >
