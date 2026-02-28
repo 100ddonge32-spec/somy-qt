@@ -7131,74 +7131,67 @@ export default function App() {
                                             </div>
 
                                             {/* 성도 관리 컨트롤러 */}
-                                            <div style={{ background: 'white', padding: '20px', borderRadius: '20px', border: '1px solid #EEE', display: 'flex', flexDirection: 'column', gap: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+                                            <div style={{ background: 'white', padding: '16px 20px', borderRadius: '20px', border: '1px solid #EEE', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+                                                {/* 상단 라인: 타이틀 + 주요 액션 */}
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <div style={{ fontSize: '16px', fontWeight: 900, color: '#333' }}>👤 성도 명단 관리</div>
-                                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                                        <button onClick={() => setShowAddMemberModal(true)} style={{ padding: '8px 14px', background: '#333', color: 'white', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>+ 개별 추가</button>
-                                                        <button onClick={handleExcelExport} style={{ padding: '8px 14px', background: '#E8F5E9', color: '#2E7D32', border: '1px solid #C8E6C9', borderRadius: '10px', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>📥 엑셀 받기</button>
-                                                    </div>
-                                                </div>
-
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                                                    <div style={{ background: '#F8F9FA', padding: '12px', borderRadius: '12px', border: '1px solid #F1F3F5', position: 'relative' }}>
-                                                        <div style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>전체 성도</div>
-                                                        <div style={{ fontSize: '18px', fontWeight: 900, color: '#333' }}>{memberList.length}명</div>
+                                                    <div style={{ fontSize: '15px', fontWeight: 900, color: '#333', display: 'flex', alignItems: 'center', gap: '6px' }}>👤 성도 명단 관리 <span style={{ fontSize: '12px', color: '#888', fontWeight: 500 }}>{memberList.length}명</span></div>
+                                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                                        <button onClick={() => setShowAddMemberModal(true)} style={{ padding: '6px 12px', background: '#333', color: 'white', border: 'none', borderRadius: '10px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}>+ 개별 추가</button>
+                                                        <button onClick={handleExcelExport} style={{ padding: '6px 12px', background: '#E8F5E9', color: '#2E7D32', border: '1px solid #C8E6C9', borderRadius: '10px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}>📥 엑셀 받기</button>
                                                         <button
                                                             onClick={async () => {
                                                                 const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
                                                                 if (r.ok) setMemberList(await r.json());
                                                             }}
-                                                            style={{ position: 'absolute', right: '10px', top: '10px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}
-                                                            title="목록 새로고침"
-                                                        >
-                                                            🔄
-                                                        </button>
+                                                            style={{ padding: '6px', background: '#F5F5F5', border: '1px solid #DDD', borderRadius: '8px', cursor: 'pointer' }}
+                                                            title="새로고침"
+                                                        >🔄</button>
                                                     </div>
-                                                    <div style={{ background: '#E8F5E9', padding: '12px', borderRadius: '12px', border: '1px solid #C8E6C9' }}>
-                                                        <div style={{ fontSize: '11px', color: '#2E7D32', marginBottom: '4px' }}>승인 완료</div>
-                                                        <div style={{ fontSize: '18px', fontWeight: 900, color: '#2E7D32' }}>{memberList.filter(m => m.is_approved).length}명</div>
+                                                </div>
+
+                                                {/* 통계 및 관리 액션 한 줄 배치 */}
+                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', overflowX: 'auto', paddingBottom: '4px' }}>
+                                                    <div style={{ display: 'flex', flex: 1, gap: '6px' }}>
+                                                        <div style={{ flex: 1, background: '#F8F9FA', padding: '8px', borderRadius: '10px', textAlign: 'center', border: '1px solid #F1F3F5' }}>
+                                                            <div style={{ fontSize: '9px', color: '#888' }}>전체</div>
+                                                            <div style={{ fontSize: '14px', fontWeight: 900 }}>{memberList.length}</div>
+                                                        </div>
+                                                        <div style={{ flex: 1, background: '#E8F5E9', padding: '8px', borderRadius: '10px', textAlign: 'center', border: '1px solid #C8E6C9' }}>
+                                                            <div style={{ fontSize: '9px', color: '#2E7D32' }}>승인</div>
+                                                            <div style={{ fontSize: '14px', fontWeight: 900, color: '#2E7D32' }}>{memberList.filter(m => m.is_approved).length}</div>
+                                                        </div>
+                                                        <div style={{ flex: 1, background: '#FFF5F5', padding: '8px', borderRadius: '10px', textAlign: 'center', border: '1px solid #FFE3E3' }}>
+                                                            <div style={{ fontSize: '9px', color: '#E03131' }}>대기</div>
+                                                            <div style={{ fontSize: '14px', fontWeight: 900, color: '#E03131' }}>{memberList.filter(m => !m.is_approved).length}</div>
+                                                        </div>
                                                     </div>
-                                                    <div style={{ background: '#FFF5F5', padding: '12px', borderRadius: '12px', border: '1px solid #FFE3E3' }}>
-                                                        <div style={{ fontSize: '11px', color: '#E03131', marginBottom: '4px' }}>승인 대기</div>
-                                                        <div style={{ fontSize: '18px', fontWeight: 900, color: '#E03131' }}>{memberList.filter(m => !m.is_approved).length}명</div>
-                                                    </div>
-                                                    <div style={{ gridColumn: 'span 2', display: 'flex', gap: '8px', marginTop: '4px' }}>
+
+                                                    <div style={{ display: 'flex', gap: '4px' }}>
                                                         <button
                                                             onClick={async () => {
-                                                                if (window.confirm('정말 모든 성도 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                                                                if (window.confirm('모든 성도 데이터를 삭제하시겠습니까?')) {
                                                                     const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_all_members', church_id: churchId }) });
-                                                                    if (res.ok) { setMemberList([]); alert('모든 성도 데이터가 성공적으로 삭제되었습니다.'); }
+                                                                    if (res.ok) { setMemberList([]); alert('삭제 완료'); }
                                                                 }
                                                             }}
-                                                            style={{ flex: 1, background: '#FFF5F5', color: '#C62828', border: '1px solid #FFC9C9', borderRadius: '12px', padding: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', textAlign: 'center' }}
-                                                        >
-                                                            🗑️ 데이터 삭제
-                                                        </button>
+                                                            style={{ padding: '8px 10px', background: '#FFF5F5', color: '#C62828', border: '1px solid #FFC9C9', borderRadius: '10px', fontSize: '10px', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                        >🗑️ 전체삭제</button>
                                                         <button
                                                             onClick={async () => {
-                                                                if (window.confirm('아직 앱에 로그인하지 않은 모든 성도님들을 [승인 대기] 상태로 전환하시겠습니까?')) {
+                                                                if (window.confirm('미인증 성도를 승인 대기로 전환할까요?')) {
                                                                     try {
-                                                                        const res = await fetch('/api/admin', {
-                                                                            method: 'POST',
-                                                                            headers: { 'Content-Type': 'application/json' },
-                                                                            body: JSON.stringify({ action: 'reset_unverified_status', church_id: churchId })
-                                                                        });
+                                                                        const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reset_unverified_status', church_id: churchId }) });
                                                                         const data = await res.json();
                                                                         if (data.success) {
-                                                                            alert(`${data.count}명의 미인증 성도님이 승인 대기 상태로 전환되었습니다. ✅`);
+                                                                            alert(`${data.count}명 전환 완료`);
                                                                             const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
                                                                             if (r.ok) setMemberList(await r.json());
                                                                         }
-                                                                    } catch (e) {
-                                                                        alert('상태 업데이트 중 오류가 발생했습니다.');
-                                                                    }
+                                                                    } catch (e) { alert('오류 발생'); }
                                                                 }
                                                             }}
-                                                            style={{ flex: 1, background: '#F8F9FA', color: '#666', border: '1px solid #DDD', borderRadius: '12px', padding: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', textAlign: 'center' }}
-                                                        >
-                                                            ⏳ 미인증자 승인해제
-                                                        </button>
+                                                            style={{ padding: '8px 10px', background: '#F8F9FA', color: '#666', border: '1px solid #DDD', borderRadius: '10px', fontSize: '10px', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                        >⏳ 승인해제</button>
                                                     </div>
                                                 </div>
 
