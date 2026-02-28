@@ -190,7 +190,35 @@ export async function POST(req: NextRequest) {
 
         // 관리자 추가
         if (action === 'add_admin') {
-            const formattedEmail = email.toLowerCase().trim();
+            let targetEmail = email;
+            let targetUserId = user_id;
+
+            // [개편] 이름, 전화번호, 생년월일로 유저 찾기 (이메일이 없는 경우 대비)
+            if (!email && body.name && body.phone && body.birthdate) {
+                const { data: matchedUsers, error: searchError } = await supabaseAdmin
+                    .from('profiles')
+                    .select('id, email, full_name')
+                    .eq('full_name', body.name.trim())
+                    .eq('phone', body.phone.trim())
+                    .eq('birthdate', body.birthdate.trim());
+
+                if (searchError) throw searchError;
+                if (!matchedUsers || matchedUsers.length === 0) {
+                    return NextResponse.json({ error: '일치하는 성도 정보를 찾을 수 없습니다. 이름, 번호, 생년월일을 정확히 확인해주세요.' }, { status: 404 });
+                }
+                if (matchedUsers.length > 1) {
+                    return NextResponse.json({ error: '동일한 정보를 가진 성도가 여러 명입니다. 시스템 관리자에게 문의하세요.' }, { status: 400 });
+                }
+
+                targetUserId = matchedUsers[0].id;
+                targetEmail = matchedUsers[0].email || `${targetUserId}@church.local`;
+            }
+
+            if (!targetEmail) {
+                return NextResponse.json({ error: '대상자의 이메일 또는 식별 정보가 부족합니다.' }, { status: 400 });
+            }
+
+            const formattedEmail = targetEmail.toLowerCase().trim();
             const adminPayload: any = { email: formattedEmail, role };
             if (church_id) adminPayload.church_id = church_id;
 
@@ -205,7 +233,6 @@ export async function POST(req: NextRequest) {
 
             if (error) {
                 console.warn("[Admin API] Failed to add admin with church_id, retrying without it...", error.message);
-                // 2차 시도: church_id 제외하고 저장 (컬럼이 없을 경우 대비)
                 delete adminPayload.church_id;
                 const retryResult: any = await supabaseAdmin
                     .from('app_admins')
@@ -216,12 +243,12 @@ export async function POST(req: NextRequest) {
                 data = retryResult.data;
             }
 
-            // [추가] user_id가 있으면 해당 프로필의 이메일도 업데이트 (동기화)
-            if (user_id) {
+            // 프로필 이메일 동기화 (가상 이메일 생성 포함)
+            if (targetUserId) {
                 await supabaseAdmin
                     .from('profiles')
                     .update({ email: formattedEmail })
-                    .eq('id', user_id);
+                    .eq('id', targetUserId);
             }
 
             // [알림] 새 관리자로 등록되었음을 해당 유저에게 알림
@@ -280,7 +307,32 @@ export async function POST(req: NextRequest) {
         // 새 교회 및 관리자 지정 (슈퍼관리자용)
         if (action === 'create_church_admin') {
             const { target_church_id } = body;
-            const formattedEmail = email.toLowerCase().trim();
+            let targetEmail = email;
+
+            // [개편] 이름, 전화번호, 생년월일로 유저 찾기
+            if (!email && body.name && body.phone && body.birthdate) {
+                const { data: matchedUsers, error: searchError } = await supabaseAdmin
+                    .from('profiles')
+                    .select('id, email, full_name')
+                    .eq('full_name', body.name.trim())
+                    .eq('phone', body.phone.trim())
+                    .eq('birthdate', body.birthdate.trim());
+
+                if (searchError) throw searchError;
+                if (!matchedUsers || matchedUsers.length === 0) {
+                    return NextResponse.json({ error: '일치하는 성도 정보를 찾을 수 없습니다. 이름, 번호, 생년월일을 정확히 확인해주세요.' }, { status: 404 });
+                }
+                if (matchedUsers.length > 1) {
+                    return NextResponse.json({ error: '동일한 정보를 가진 성도가 여러 명입니다. 시스템 관리자에게 문의하세요.' }, { status: 400 });
+                }
+                targetEmail = matchedUsers[0].email || `${matchedUsers[0].id}@church.local`;
+            }
+
+            if (!targetEmail) {
+                return NextResponse.json({ error: '대상자의 이메일 또는 식별 정보가 부족합니다.' }, { status: 400 });
+            }
+
+            const formattedEmail = targetEmail.toLowerCase().trim();
 
             // 1. 관리자 권한 부여
             const adminPayload: any = { email: formattedEmail, role: 'church_admin' };
