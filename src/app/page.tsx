@@ -3810,7 +3810,7 @@ export default function App() {
                                                         return <span key={i}>{line}<br /></span>;
                                                     })}
                                                 </div>
-                                                {post.content.split('\n').length > 4 && (
+                                                {(post.content.split('\n').length > 4 || post.content.length > 150) && (
                                                     <button onClick={() => setExpandedPosts({ ...expandedPosts, [post.id]: !expandedPosts[post.id] })} style={{ background: 'none', border: 'none', color: '#999', fontSize: '13px', padding: '8px 0 0 0', cursor: 'pointer', fontWeight: 600 }}>
                                                         {expandedPosts[post.id] ? '접기 ▲' : '더보기 ▼'}
                                                     </button>
@@ -4289,7 +4289,7 @@ export default function App() {
                                                 <div style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', wordBreak: 'break-word', whiteSpace: 'pre-wrap', display: '-webkit-box', WebkitLineClamp: expandedPosts[diary.id] ? 'unset' : 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                                                     {diary.content}
                                                 </div>
-                                                {diary.content.split('\n').length > 4 && (
+                                                {(diary.content.split('\n').length > 4 || diary.content.length > 150) && (
                                                     <button onClick={() => setExpandedPosts(prev => ({ ...prev, [diary.id]: !prev[diary.id] }))} style={{ background: 'none', border: 'none', color: '#E07A5F', fontSize: '13px', padding: '8px 0 0 0', cursor: 'pointer', fontWeight: 600 }}>
                                                         {expandedPosts[diary.id] ? '접기 ▲' : '더보기 ▼'}
                                                     </button>
