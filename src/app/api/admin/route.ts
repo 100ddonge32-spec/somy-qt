@@ -581,21 +581,35 @@ export async function POST(req: NextRequest) {
             const { user_id, update_data } = body;
             const safeUpdateData = { ...update_data };
 
+            // 1. DB에 없는 필드 제거
             if ('is_birthdate_lunar' in safeUpdateData) {
                 delete (safeUpdateData as any).is_birthdate_lunar;
             }
 
-            // 날짜 형식 보정
-            if (safeUpdateData.birthdate === "") {
-                safeUpdateData.birthdate = null;
-            }
+            // [추가] id 필드가 포함된 경우 업데이트 시 오류 방지
+            if ('id' in safeUpdateData) delete (safeUpdateData as any).id;
+
+            // 2. 날짜 형식 보정 (빈 문자열은 null로)
+            const dateFields = ['birthdate', 'created_at'];
+            dateFields.forEach(field => {
+                if (safeUpdateData[field] === "") {
+                    safeUpdateData[field] = null;
+                }
+            });
+
+            // 3. 성별 등 공백 문자열 처리
+            if (safeUpdateData.gender === "") safeUpdateData.gender = null;
 
             const { data, error } = await supabaseAdmin
                 .from('profiles')
                 .update(safeUpdateData)
                 .eq('id', user_id)
                 .select();
-            if (error) throw error;
+
+            if (error) {
+                console.error("[UpdateMember Error]:", error);
+                throw error;
+            }
             return NextResponse.json(data);
         }
 

@@ -6197,22 +6197,27 @@ export default function App() {
                         <button onClick={() => { setSelectedMemberForEdit(null); setMemberEditForm(null); }} style={{ flex: 1, padding: '14px', background: '#F5F5F5', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', color: '#666' }}>취소</button>
                         <button
                             onClick={async () => {
-                                const updateData = {
-                                    church_id: churchId || 'jesus-in',
-                                    ...memberEditForm
-                                };
-                                const res = await fetch('/api/admin', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ action: 'update_member', user_id: m.id, update_data: updateData })
-                                });
-                                if (res.ok) {
-                                    setMemberList((prev: any[]) => prev.map((item: any) => item.id === m.id ? { ...item, ...updateData } : item));
-                                    setSelectedMemberForEdit(null);
-                                    setMemberEditForm(null);
-                                    alert('정보가 성공적으로 수정되었습니다! ✨');
-                                } else {
-                                    alert('수정 중 오류가 발생했습니다.');
+                                try {
+                                    const updateData = {
+                                        church_id: churchId || 'jesus-in',
+                                        ...memberEditForm
+                                    };
+                                    const res = await fetch('/api/admin', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ action: 'update_member', user_id: m.id, update_data: updateData })
+                                    });
+                                    if (res.ok) {
+                                        setMemberList((prev: any[]) => prev.map((item: any) => item.id === m.id ? { ...item, ...updateData } : item));
+                                        setSelectedMemberForEdit(null);
+                                        setMemberEditForm(null);
+                                        alert('정보가 성공적으로 수정되었습니다! ✨');
+                                    } else {
+                                        const errData = await res.json();
+                                        alert(`수정 중 오류가 발생했습니다: ${errData.error || '알 수 없는 오류'}`);
+                                    }
+                                } catch (err: any) {
+                                    alert(`서버 통신 중 오류가 발생했습니다: ${err.message}`);
                                 }
                             }}
                             disabled={!isDirty}
@@ -8746,8 +8751,11 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                                                         setSelectedMember(updated);
                                                         setResults(results.map(m => m.id === selectedMember.id ? updated : m));
                                                         setIsEditing(false);
+                                                    } else {
+                                                        const errData = await res.json();
+                                                        alert(`수정 실패: ${errData.error || '알 수 없는 오류'}`);
                                                     }
-                                                } catch (e) { alert('수정 중 오류가 발생했습니다.'); }
+                                                } catch (e: any) { alert(`수정 중 오류가 발생했습니다: ${e.message}`); }
                                                 finally { setIsSaving(false); }
                                             }}
                                             disabled={isSaving}
