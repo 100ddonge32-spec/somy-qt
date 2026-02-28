@@ -7147,8 +7147,8 @@ export default function App() {
                                                         <button onClick={() => setShowAddMemberModal(true)} style={{ height: '42px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontSize: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                                                             <span>+</span> 개별 추가
                                                         </button>
-                                                        <div style={{ background: '#F8F9FA', padding: '10px', borderRadius: '12px', textAlign: 'center', border: '1px solid #F1F3F5', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                                                            <span style={{ fontSize: '11px', color: '#888', fontWeight: 700 }}>전체</span>
+                                                        <div style={{ height: '42px', background: '#F8F9FA', padding: '0 10px', borderRadius: '12px', border: '1px solid #EEE', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                                                            <span style={{ fontSize: '11px', color: '#666', fontWeight: 700 }}>전체</span>
                                                             <span style={{ fontSize: '15px', fontWeight: 900, color: '#333' }}>{memberList.length}</span>
                                                         </div>
                                                     </div>
@@ -7158,7 +7158,7 @@ export default function App() {
                                                         <button onClick={handleExcelExport} style={{ height: '42px', background: '#E8F5E9', color: '#2E7D32', border: '1px solid #C8E6C9', borderRadius: '12px', fontSize: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                                                             📥 엑셀 받기
                                                         </button>
-                                                        <div style={{ background: '#E8F5E9', padding: '10px', borderRadius: '12px', textAlign: 'center', border: '1px solid #C8E6C9', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                                                        <div style={{ height: '42px', background: '#E8F5E9', padding: '0 10px', borderRadius: '12px', border: '1px solid #C8E6C9', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                                                             <span style={{ fontSize: '11px', color: '#2E7D32', fontWeight: 700 }}>승인</span>
                                                             <span style={{ fontSize: '15px', fontWeight: 900, color: '#2E7D32' }}>{memberList.filter(m => m.is_approved).length}</span>
                                                         </div>
@@ -7175,7 +7175,7 @@ export default function App() {
                                                         >
                                                             🔄 새로고침
                                                         </button>
-                                                        <div style={{ background: '#FFF5F5', padding: '10px', borderRadius: '12px', textAlign: 'center', border: '1px solid #FFE3E3', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                                                        <div style={{ height: '42px', background: '#FFF5F5', padding: '0 10px', borderRadius: '12px', border: '1px solid #FFE3E3', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                                                             <span style={{ fontSize: '11px', color: '#E03131', fontWeight: 700 }}>대기</span>
                                                             <span style={{ fontSize: '15px', fontWeight: 900, color: '#E03131' }}>{memberList.filter(m => !m.is_approved).length}</span>
                                                         </div>
@@ -7183,7 +7183,7 @@ export default function App() {
                                                 </div>
 
                                                 {/* 3. 하단 특수 액션 */}
-                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '4px' }}>
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '8px', marginTop: '4px' }}>
                                                     <button
                                                         onClick={async () => {
                                                             if (window.confirm('정말 모든 성도 데이터를 삭제하시겠습니까?')) {
@@ -7191,7 +7191,7 @@ export default function App() {
                                                                 if (res.ok) { setMemberList([]); alert('삭제 완료'); }
                                                             }
                                                         }}
-                                                        style={{ height: '38px', background: '#FFF5F5', color: '#C62828', border: '1px solid #FFC9C9', borderRadius: '10px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}
+                                                        style={{ height: '44px', background: '#FFF5F5', color: '#E03131', border: '1px solid #FFE3E3', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}
                                                     >🗑️ 데이터 일괄 삭제</button>
                                                     <button
                                                         onClick={async () => {
@@ -7207,7 +7207,7 @@ export default function App() {
                                                                 } catch (e) { alert('오류 발생'); }
                                                             }
                                                         }}
-                                                        style={{ height: '38px', background: '#F8F9FA', color: '#666', border: '1px solid #DDD', borderRadius: '10px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}
+                                                        style={{ height: '44px', background: '#F8F9FA', color: '#666', border: '1px solid #EEE', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}
                                                     >⏳ 미인증자 승인해제</button>
                                                 </div>
 
