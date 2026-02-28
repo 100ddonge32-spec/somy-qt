@@ -85,8 +85,9 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const date = searchParams.get('date') || getKoreaDateString();
     const force = searchParams.get('force') === 'true';
+    const churchId = searchParams.get('church_id') || 'jesus-in';
 
-    console.log(`[QT API] Request for date: ${date}, force: ${force}`);
+    console.log(`[QT API] Request for date: ${date}, force: ${force}, church: ${churchId}`);
 
     try {
         // 1. force가 아닐 때만 기존 데이터 조회
@@ -104,11 +105,20 @@ export async function GET(req: NextRequest) {
         }
 
         // 2. 큐티 데이터가 없거나 force인 경우, 교회 설정을 확인
-        const { data: settings, error: settingsError } = await supabaseAdmin
+        let { data: settings, error: settingsError } = await supabaseAdmin
             .from('church_settings')
             .select('plan')
-            .eq('id', 1)
-            .single();
+            .eq('church_id', churchId)
+            .maybeSingle();
+
+        if (!settings) {
+            const { data: fallback } = await supabaseAdmin
+                .from('church_settings')
+                .select('plan')
+                .eq('id', 1)
+                .single();
+            settings = fallback;
+        }
 
         if (settingsError) {
             console.log(`[QT API] Settings not found or error: ${settingsError.message}`);

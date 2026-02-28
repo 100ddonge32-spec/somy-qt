@@ -1375,7 +1375,7 @@ export default function App() {
         setIsQtLoading(true);
         setIsHistoryMode(false);
         try {
-            const r = await fetch('/api/qt', { cache: 'no-store' });
+            const r = await fetch(`/api/qt?church_id=${churchId || 'jesus-in'}`, { cache: 'no-store' });
             const { qt } = await r.json();
             if (qt) {
                 const { fullPassage, interpretation, youthData } = parsePassage(qt.passage);
@@ -3222,7 +3222,7 @@ export default function App() {
                             <button onClick={async () => {
                                 setAiLoading(true);
                                 try {
-                                    const res = await fetch(`/api/qt?date=${qtForm.date}&force=true`, { cache: 'no-store' });
+                                    const res = await fetch(`/api/qt?date=${qtForm.date}&force=true&church_id=${churchId || 'jesus-in'}`, { cache: 'no-store' });
                                     const { qt } = await res.json();
                                     if (qt) {
                                         const { fullPassage, interpretation, youthData } = parsePassage(qt.passage);
@@ -4778,7 +4778,7 @@ export default function App() {
                                 // 자동으로 오늘 데이터가 있는지 조회 시도
                                 setAiLoading(true);
                                 try {
-                                    const res = await fetch(`/api/qt?date=${today}`, { cache: 'no-store' });
+                                    const res = await fetch(`/api/qt?date=${today}&church_id=${churchId || 'jesus-in'}`, { cache: 'no-store' });
                                     const { qt } = await res.json();
                                     if (qt) {
                                         const { fullPassage, interpretation, youthData } = parsePassage(qt.passage);

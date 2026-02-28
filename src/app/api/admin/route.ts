@@ -396,7 +396,19 @@ export async function POST(req: NextRequest) {
                         ...cleanTemplate,
                         church_id: finalChurchId,
                         church_name: `${finalChurchId} 교회`,
-                        app_subtitle: '새로운 교회 공동체에 오신 것을 환영합니다.'
+                        app_subtitle: '새로운 교회 공동체에 오신 것을 환영합니다.',
+                        // 예수인교회 전용 데이터는 초기화하여 '정보가 그대로 넘어가는 문제' 해결
+                        church_logo_url: '',
+                        sermon_url: '',
+                        manual_sermon_url: '',
+                        sermon_summary: '',
+                        sermon_q1: '',
+                        sermon_q2: '',
+                        sermon_q3: '',
+                        pastor_column_title: '',
+                        pastor_column_content: '',
+                        event_poster_url: '',
+                        event_poster_visible: false
                     };
 
                     await supabaseAdmin

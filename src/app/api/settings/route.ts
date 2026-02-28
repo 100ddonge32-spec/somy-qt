@@ -13,13 +13,23 @@ export async function GET(req: NextRequest) {
 
     console.log(`[API Settings] Requesting settings. Fallback strategy active.`);
 
-    // ✅ DB에 church_id 컬럼이 없으므로, 무조건 id: 1을 가져오거나 
-    // 나중에 컬럼이 추가될 것을 대비해 에러가 나면 1번을 가져오도록 처리
+    const targetChurchId = churchId || 'jesus-in';
+
+    // 1순위: church_id로 검색, 2순위: id: 1(기본값)로 검색
     let { data, error } = await supabaseAdmin
         .from('church_settings')
         .select('*')
-        .eq('id', 1)
-        .single();
+        .eq('church_id', targetChurchId)
+        .maybeSingle();
+
+    if (!data) {
+        let { data: fallback } = await supabaseAdmin
+            .from('church_settings')
+            .select('*')
+            .eq('id', 1)
+            .single();
+        data = fallback;
+    }
 
     if (data) {
         // ✅ DB 컬럼이 없을 경우를 대비해 plan 필드에 저장된 정보를 읽어와 매핑하는 '김부장의 신의 한 수'
@@ -100,8 +110,11 @@ export async function POST(req: NextRequest) {
         event_poster_url,
         event_poster_visible,
         pastor_column_title,
-        pastor_column_content
+        pastor_column_content,
+        church_id: body_church_id
     } = body;
+
+    const targetChurchId = body_church_id || 'jesus-in';
 
     // ✅ DB 컬럼이 없을 가능성을 대비해 plan 필드에 플래그를 심어 저장 (김부장 방식 확장)
     let encodedPlan = (plan || 'free').split('|')[0];
@@ -118,8 +131,8 @@ export async function POST(req: NextRequest) {
     if (sermon_q2) encodedPlan += `|s_q2:${encodeURIComponent(sermon_q2)}`;
     if (sermon_q3) encodedPlan += `|s_q3:${encodeURIComponent(sermon_q3)}`;
 
-    const baseData = {
-        id: 1, // ✅ 현재 DB 구조에 church_id 컬럼이 없으므로 무조건 1번 레코드를 사용
+    const baseData: any = {
+        church_id: targetChurchId,
         church_name,
         church_logo_url,
         church_url,
@@ -132,6 +145,11 @@ export async function POST(req: NextRequest) {
         today_book_description,
         today_book_image_url
     };
+
+    // jesus-in(id:1)인 경우 기존 호환성을 위해 id:1 명시
+    if (targetChurchId === 'jesus-in') {
+        baseData.id = 1;
+    }
 
     // 1차 시도: 모든 컬럼 포함하여 저장
     const { error: firstError } = await supabaseAdmin
@@ -147,7 +165,7 @@ export async function POST(req: NextRequest) {
             event_poster_visible: event_poster_visible ?? false,
             pastor_column_title,
             pastor_column_content
-        });
+        }, { onConflict: 'church_id' });
 
     if (firstError) {
         console.warn("[Settings POST] First attempt failed, retrying without new columns...", firstError.message);
@@ -155,7 +173,7 @@ export async function POST(req: NextRequest) {
         // 2차 시도: 새 컬럼을 제외하고 plan 필드의 인코딩에 의존하여 저장 (이것이 진정한 신의 한 수)
         const { error: secondError } = await supabaseAdmin
             .from('church_settings')
-            .upsert(baseData);
+            .upsert(baseData, { onConflict: 'church_id' });
 
         if (secondError) {
             console.error("[Settings POST Error]", secondError);
