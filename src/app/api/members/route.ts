@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     try {
         let supabaseQuery = supabaseAdmin
             .from('profiles')
-            .select('id, full_name, avatar_url, church_rank, member_no, gender, is_phone_public, is_birthdate_public, is_address_public, phone, birthdate, address, email')
+            .select('id, full_name, avatar_url, church_rank, member_no, gender, is_phone_public, is_birthdate_public, is_address_public, phone, birthdate, address, email, created_at, is_approved')
             .eq('church_id', churchId);
 
         if (query) {
@@ -45,7 +45,10 @@ export async function GET(req: NextRequest) {
             gender: member.gender,
             is_phone_public: member.is_phone_public,
             is_birthdate_public: member.is_birthdate_public,
-            is_address_public: member.is_address_public
+            is_address_public: member.is_address_public,
+            // [추가] 관리자용 필수 필드
+            created_at: isAdminQuery ? member.created_at : null,
+            is_approved: isAdminQuery ? member.is_approved : null
         }));
 
         return NextResponse.json(filteredData);

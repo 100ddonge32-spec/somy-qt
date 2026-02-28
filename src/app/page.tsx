@@ -966,9 +966,16 @@ export default function App() {
             fetch(`/api/admin?action=check_admin&email=${user.email}&user_id=${user.id}`)
                 .then(r => r.ok ? r.json() : null)
                 .then(data => {
-                    if (data) {
+                    if (data && (data.role === 'church_admin' || data.role === 'super_admin')) {
                         setAdminInfo(data);
-                        console.log("관리자 정보:", data);
+                        console.log("관리자 정보 확인됨, 상세 성도 명단 로딩...");
+                        // 관리자인 경우 즉시 상세 정보를 포함한 전체 명단을 가져와서 '등록일', '승인상태' 누락 방지
+                        fetch(`/api/admin?action=list_members&church_id=${data.church_id || 'jesus-in'}`)
+                            .then(r => r.ok ? r.json() : [])
+                            .then(members => { if (Array.isArray(members)) setMemberList(members); })
+                            .catch(e => console.error("관리자용 명단 로딩 실패:", e));
+                    } else if (data) {
+                        setAdminInfo(data);
                     }
                 })
                 .catch(err => console.log("관리자 체크 실패 (조용히 넘어감):", err));
@@ -7194,7 +7201,7 @@ export default function App() {
                                                                         const data = await res.json();
                                                                         if (data.success) {
                                                                             alert(`${data.count}명 전환 완료`);
-                                                                            const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-id'}`);
+                                                                            const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
                                                                             if (r.ok) setMemberList(await r.json());
                                                                         }
                                                                     } catch (e) { alert('오류 발생'); }
@@ -7424,7 +7431,10 @@ export default function App() {
                                                             if (memberSortBy === 'name') return (a.full_name || '').localeCompare(b.full_name || '');
                                                             if (memberSortBy === 'email') return (a.email || '').localeCompare(b.email || '');
                                                             if (memberSortBy === 'rank') return (a.church_rank || '').localeCompare(b.church_rank || '');
-                                                            return 0;
+                                                            // 기본적으로 최신 등록순 (created_at DESC)으로 정렬하여 목록이 바뀌어 보이는 현상 방지
+                                                            const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                                                            const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                                                            return dateB - dateA;
                                                         })
                                                         .map(member => {
                                                             const isDuplicate = memberList.some(m => m.id !== member.id && (m.full_name || '').trim().replace(/\s/g, '').toLowerCase() === (member.full_name || '').trim().replace(/\s/g, '').toLowerCase());
@@ -7479,7 +7489,9 @@ export default function App() {
                                                                             {!member.is_approved && <span style={{ fontSize: '11px', color: '#E03131', background: '#FFF5F5', padding: '3px 8px', borderRadius: '8px', border: '1px solid #FFE3E3', fontWeight: 800 }}>❗ 승인대기</span>}
                                                                             <div style={{ fontSize: '12px', color: '#999', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                                                 <span>📅 등록일:</span>
-                                                                                <span style={{ fontWeight: 600 }}>{member.created_at ? new Date(member.created_at).toLocaleDateString() : '정보 없음'}</span>
+                                                                                <span style={{ fontSize: '13px', color: '#666', fontWeight: 600 }}>
+                                                                                    {member.created_at ? (String(member.created_at).includes('T') ? String(member.created_at).split('T')[0] : String(member.created_at).split(' ')[0]) : '정보 없음'}
+                                                                                </span>
                                                                             </div>
                                                                         </div>
 
