@@ -309,6 +309,7 @@ export async function POST(req: NextRequest) {
         if (action === 'create_church_admin') {
             const { target_church_id } = body;
             let targetEmail = email;
+            let matchedUserId = null;
 
             // [개편] 이름, 전화번호, 생년월일로 유저 찾기
             if (!email && body.name && body.phone && body.birthdate) {
@@ -339,6 +340,7 @@ export async function POST(req: NextRequest) {
                     return NextResponse.json({ error: '동일한 정보를 가진 성도가 여러 명입니다. 시스템 관리자에게 문의하세요.' }, { status: 400 });
                 }
                 targetEmail = matchedUsers[0].email || `${matchedUsers[0].id}@church.local`;
+                matchedUserId = matchedUsers[0].id;
             }
 
             if (!targetEmail) {
@@ -346,10 +348,19 @@ export async function POST(req: NextRequest) {
             }
 
             const formattedEmail = targetEmail.toLowerCase().trim();
+            const finalChurchId = (target_church_id || 'jesus-in').trim();
+
+            // 0. 프로필 정보의 교회 식별자 업데이트 (매우 중요: 재로그인 시 이 정보를 기준으로 교회 앱이 세팅됨)
+            if (matchedUserId) {
+                await supabaseAdmin.from('profiles').update({ church_id: finalChurchId }).eq('id', matchedUserId);
+                console.log(`[Admin API] Updated profile(${matchedUserId}) church_id to: ${finalChurchId}`);
+            } else {
+                // 이메일만 있는 경우 이메일로 프로필 찾아서 업데이트
+                await supabaseAdmin.from('profiles').update({ church_id: finalChurchId }).eq('email', formattedEmail);
+            }
 
             // 1. 관리자 권한 부여
-            const adminPayload: any = { email: formattedEmail, role: 'church_admin' };
-            if (target_church_id) adminPayload.church_id = target_church_id.trim();
+            const adminPayload: any = { email: formattedEmail, role: 'church_admin', church_id: finalChurchId };
 
             let result: any = await supabaseAdmin
                 .from('app_admins')
@@ -361,10 +372,10 @@ export async function POST(req: NextRequest) {
 
             if (error) {
                 console.warn("[Admin API] Failed to create church admin with church_id, retrying without it...", error.message);
-                delete adminPayload.church_id;
+                const fallbackPayload = { email: formattedEmail, role: 'church_admin' };
                 const retryResult: any = await supabaseAdmin
                     .from('app_admins')
-                    .upsert([adminPayload], { onConflict: 'email' })
+                    .upsert([fallbackPayload], { onConflict: 'email' })
                     .select();
                 if (retryResult.error) throw retryResult.error;
                 data = retryResult.data;
@@ -372,7 +383,6 @@ export async function POST(req: NextRequest) {
 
             // 2. 해당 교회의 기본 설정값 생성
             try {
-                // church_id 컬럼이 없을 경우를 대비해 id: 1을 템플릿으로 사용
                 const { data: template } = await supabaseAdmin
                     .from('church_settings')
                     .select('*')
@@ -380,24 +390,18 @@ export async function POST(req: NextRequest) {
                     .limit(1)
                     .maybeSingle();
 
-                if (template) {
+                if (template && finalChurchId !== 'jesus-in') {
                     const { id, created_at, ...cleanTemplate } = template;
                     const newSetting: any = {
                         ...cleanTemplate,
-                        church_name: `${target_church_id} 교회`,
+                        church_id: finalChurchId,
+                        church_name: `${finalChurchId} 교회`,
                         app_subtitle: '새로운 교회 공동체에 오신 것을 환영합니다.'
                     };
 
-                    // church_id 컬럼이 있을 경우에만 필드 추가
-                    try {
-                        const { error: setErr } = await supabaseAdmin.from('church_settings').insert([{
-                            ...newSetting,
-                            church_id: target_church_id
-                        }]);
-                        // 컬럼이 없어서 에러나면 church_id 없이 시도하지 않음 (어차피 id:1 하나만 쓰는 구조라면 새로 만들 수 없음)
-                    } catch (e) {
-                        console.warn("[Admin API] Could not create separate church settings row. Single church mode?");
-                    }
+                    await supabaseAdmin
+                        .from('church_settings')
+                        .upsert([newSetting], { onConflict: 'church_id' });
                 }
             } catch (setErr) { console.error("Setting creation failed:", setErr); }
 
