@@ -321,6 +321,9 @@ const StatsView = ({ memberList }: { memberList: any[] }) => {
 
 export default function App() {
     const [view, setView] = useState<View>("home");
+    const [memberList, setMemberList] = useState<any[]>([]); // ✅ 성도 목록
+    const [showBirthdayPopup, setShowBirthdayPopup] = useState(false); // ✅ 생일 팝업 노출 여부
+    const [todayBirthdayMembers, setTodayBirthdayMembers] = useState<any[]>([]); // ✅ 오늘 생일인 성도 목록
     const [messages, setMessages] = useState([
         { role: "assistant", content: "안녕하세요! 저는 예수인교회의 큐티 동반자 소미예요 😊\n오늘 어떤 말씀을 함께 나눠볼까요?" }
     ]);
@@ -942,6 +945,14 @@ export default function App() {
                 console.log("🎊 승인 확인됨 (서버 최신 데이터)");
                 subscribePush(user.id);
                 checkNewContent();
+
+                // [추가] 성도 정보가 승인되었을 때 메인 화면에서도 생일 체크를 위해 멤버 목록 가져오기
+                if (memberList.length === 0) {
+                    fetch(`/api/members?church_id=${data.church_id || 'jesus-in'}`)
+                        .then(r => r.ok ? r.json() : [])
+                        .then(members => { if (Array.isArray(members)) setMemberList(members); })
+                        .catch(err => console.error("멤버 목록 로딩 실패:", err));
+                }
             }
         } catch (e) {
             console.error("승인 체크 에러:", e);
@@ -973,13 +984,14 @@ export default function App() {
                 if (kstToday !== birthdayPopupRef.current) {
                     const todaySolarMMDD = kstToday.slice(5, 10);
                     const todayLunarMMDD = typeof getLunarTodayMMDD === 'function' ? getLunarTodayMMDD() : null;
-                    const birthdayMembers = memberList.filter(m => {
+                    const bMembers = memberList.filter(m => {
                         if (!m?.birthdate) return false;
                         const bd = String(m.birthdate).slice(5, 10);
                         return m.is_birthdate_lunar ? (todayLunarMMDD && bd === todayLunarMMDD) : bd === todaySolarMMDD;
                     });
-                    if (birthdayMembers.length > 0) {
-                        setShowNotiList(true);
+                    if (bMembers.length > 0) {
+                        setTodayBirthdayMembers(bMembers);
+                        setShowBirthdayPopup(true);
                         birthdayPopupRef.current = kstToday;
                     }
                 }
@@ -1205,7 +1217,6 @@ export default function App() {
     };
     const [settingsSaving, setSettingsSaving] = useState(false);
     const [adminTab, setAdminTab] = useState<"settings" | "members" | "master" | "stats">("settings");
-    const [memberList, setMemberList] = useState<any[]>([]);
     const [isManagingMembers, setIsManagingMembers] = useState(false);
     const [isHistoryMode, setIsHistoryMode] = useState(false);
     const [churchStats, setChurchStats] = useState<{ [key: string]: number }>({});
@@ -1984,6 +1995,46 @@ export default function App() {
                     )}
 
                     {/* 배경 음악 오디오 플레이어 (숨김) - 여기서 제거하고 하단 공통 영역으로 이동 */}
+
+                    {/* 생일 축하 팝업 모달 */}
+                    {showBirthdayPopup && todayBirthdayMembers.length > 0 && (
+                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+                            <div style={{
+                                background: 'white', width: '100%', maxWidth: '340px', borderRadius: '32px', padding: '30px 24px', textAlign: 'center',
+                                boxShadow: '0 20px 60px rgba(0,0,0,0.3)', position: 'relative', overflow: 'hidden', animation: 'scale-up 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}>
+                                {/* 배경 장식 */}
+                                <div style={{ position: 'absolute', top: '-20px', right: '-20px', fontSize: '60px', opacity: 0.1 }}>🎈</div>
+                                <div style={{ position: 'absolute', bottom: '-20px', left: '-20px', fontSize: '60px', opacity: 0.1 }}>🎁</div>
+
+                                <div style={{ fontSize: '50px', marginBottom: '20px', animation: 'bounce 2s infinite' }}>🎂</div>
+                                <h2 style={{ fontSize: '22px', fontWeight: 900, color: '#333', marginBottom: '10px' }}>생일을 축하합니다!</h2>
+                                <p style={{ fontSize: '15px', color: '#666', lineHeight: 1.6, marginBottom: '24px' }}>
+                                    오늘 우리 교회에 <br />
+                                    <span style={{ color: '#D4AF37', fontWeight: 900 }}>{todayBirthdayMembers.map(m => m.full_name).join(', ')}</span> 성도님의 <br />
+                                    기쁜 생일이 찾아왔어요! ✨
+                                </p>
+
+                                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '30px', flexWrap: 'wrap' }}>
+                                    {todayBirthdayMembers.map(m => (
+                                        <div key={m.id} style={{ width: '56px', height: '56px', borderRadius: '50%', border: '2px solid #D4AF37', padding: '2px', background: 'white' }}>
+                                            <img src={m.avatar_url || SOMY_IMG} alt={m.full_name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <button
+                                    onClick={() => setShowBirthdayPopup(false)}
+                                    style={{
+                                        width: '100%', padding: '16px', background: 'linear-gradient(135deg, #333 0%, #000 100%)',
+                                        color: 'white', border: 'none', borderRadius: '18px', fontSize: '16px', fontWeight: 800,
+                                        cursor: 'pointer', boxShadow: '0 8px 15px rgba(0,0,0,0.2)'
+                                    }}>
+                                    축하하며 닫기
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Church Logo Header */}
                     <a href={churchSettings.church_url} target="_blank" rel="noopener noreferrer" style={{
