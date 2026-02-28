@@ -8352,6 +8352,10 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
     }, [churchId, isAdmin, isSuperAdmin, allAdminList]);
 
     const handleSearch = async () => {
+        if (!searchTerm.trim()) {
+            fetchInitial();
+            return;
+        }
         setIsSearching(true);
         const isAdminQuery = isAdmin || isSuperAdmin;
         const apiUrl = `/api/members?church_id=${churchId}&query=${encodeURIComponent(searchTerm)}${isAdminQuery ? '&admin=true' : ''}`;
@@ -8364,6 +8368,11 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
             }
         } catch (e) { console.error("검색 실패:", e); }
         finally { setIsSearching(false); }
+    };
+
+    const handleClearSearch = () => {
+        setSearchTerm("");
+        fetchInitial();
     };
 
 
@@ -8401,9 +8410,32 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                     <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
                     <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0 }}>교회 성도 검색</h2>
                 </div>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                    <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch()} placeholder="성함을 입력하세요 (예: 홍길동)" style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '14px', outline: 'none', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }} />
-                    <button onClick={handleSearch} style={{ padding: '0 20px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>검색</button>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', alignItems: 'center' }}>
+                    <div style={{ flex: 1, position: 'relative' }}>
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={e => {
+                                setSearchTerm(e.target.value);
+                                if (!e.target.value) fetchInitial();
+                            }}
+                            onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                            placeholder="성함을 입력하세요 (예: 홍길동)"
+                            style={{ width: '100%', padding: '12px 40px 12px 16px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '14px', outline: 'none', boxShadow: '0 2px 6px rgba(0,0,0,0.02)', boxSizing: 'border-box' }}
+                        />
+                        {searchTerm && (
+                            <button
+                                onClick={handleClearSearch}
+                                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: '#F5F5F5', border: 'none', borderRadius: '50%', width: '20px', height: '20px', fontSize: '10px', color: '#999', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            >
+                                ✕
+                            </button>
+                        )}
+                    </div>
+                    <button onClick={handleSearch} style={{ padding: '0 18px', height: '44px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>검색</button>
+                    {results.length < (isAdmin ? 5 : 2) && searchTerm && (
+                        <button onClick={handleClearSearch} style={{ padding: '0 18px', height: '44px', background: '#F5F5F3', color: '#666', border: '1px solid #EEE', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', fontSize: '13px' }}>전체보기</button>
+                    )}
                 </div>
 
                 {isSuperAdmin && (
