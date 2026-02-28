@@ -496,6 +496,7 @@ export default function App() {
     const [submittingUserReplyId, setSubmittingUserReplyId] = useState<string | null>(null);
     const [submittingCommentId, setSubmittingCommentId] = useState<any>(null); // ✅ 댓글 등록 중복 방지
     const [allAdminList, setAllAdminList] = useState<any[]>([]); // ✅ 전체 관리자 목록 (슈퍼관리자용)
+    const [isAdminsLoading, setIsAdminsLoading] = useState(false); // ✅ 관리자 목록 로딩 상태
     const [showVerification, setShowVerification] = useState(false); // ✅ 실명 인증 폼 노출 여부
     const [isInApp, setIsInApp] = useState(false); // ✅ 카톡 등 인앱 브라우저 여부
     const [vName, setVName] = useState(""); // ✅ 인증용 성함
@@ -1172,22 +1173,27 @@ export default function App() {
 
     const fetchAllAdmins = async () => {
         if (!isSuperAdmin) return;
+        setIsAdminsLoading(true);
+        console.log("Fetching all admins...");
         try {
             const res = await fetch('/api/admin?action=list_all_admins');
             const data = await res.json();
             if (Array.isArray(data)) {
                 setAllAdminList(data);
+                console.log("Admins fetched:", data.length);
             }
         } catch (err) {
             console.error("Failed to fetch admins:", err);
+        } finally {
+            setIsAdminsLoading(false);
         }
     };
 
     useEffect(() => {
-        if (showSettings && isSuperAdmin) {
+        if (isSuperAdmin && allAdminList.length === 0) {
             fetchAllAdmins();
         }
-    }, [showSettings, isSuperAdmin]);
+    }, [isSuperAdmin]);
 
     const handleDeleteAdmin = async (email: string) => {
         if (!confirm(`${email} 관리자를 삭제하시겠습니까?`)) return;
@@ -1229,7 +1235,7 @@ export default function App() {
             });
             if (res.ok) {
                 alert('성공적으로 관리자 권한을 부여했습니다! ✨');
-                fetchAllAdmins();
+                await fetchAllAdmins();
                 // 멤버 목록 새로고침 (필요 시)
                 const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
                 if (r.ok) setMemberList(await r.json());
@@ -1252,7 +1258,7 @@ export default function App() {
             });
             if (res.ok) {
                 alert('관리자 권한을 해제했습니다.');
-                fetchAllAdmins();
+                await fetchAllAdmins();
                 const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
                 if (r.ok) setMemberList(await r.json());
             } else {
@@ -5627,7 +5633,7 @@ export default function App() {
         }
 
         if (view === "memberSearch") {
-            return <MemberSearchView churchId={churchId} setView={setView} baseFont={baseFont} isAdmin={isAdmin} isSuperAdmin={isSuperAdmin} user={user} />;
+            return <MemberSearchView churchId={churchId} setView={setView} baseFont={baseFont} isAdmin={isAdmin} isSuperAdmin={isSuperAdmin} user={user} allAdminList={allAdminList} onRefreshAdmins={fetchAllAdmins} isAdminsLoading={isAdminsLoading} />;
         }
 
         return null; // 모든 뷰에 해당하지 않을 때
@@ -7516,22 +7522,26 @@ export default function App() {
 
                                                                                 <div style={{ display: 'flex', gap: '4px', flexShrink: 0, marginLeft: 'auto', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                                                                                     {isSuperAdmin && member.email && (
-                                                                                        allAdminList.some(a => a.email === member.email) ? (
-                                                                                            <button
-                                                                                                onClick={() => handleRevokeFromList(member)}
-                                                                                                style={{ background: '#FFEBEE', color: '#C62828', border: '1px solid #FFCDD2', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}
-                                                                                                title="관리자 권한 해제"
-                                                                                            >
-                                                                                                🚫 해제
-                                                                                            </button>
+                                                                                        isAdminsLoading ? (
+                                                                                            <span style={{ fontSize: '10px', color: '#999', padding: '4px 8px' }}>...</span>
                                                                                         ) : (
-                                                                                            <button
-                                                                                                onClick={() => handleNominateFromList(member)}
-                                                                                                style={{ background: '#E3F2FD', color: '#1565C0', border: '1px solid #BBDEFB', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}
-                                                                                                title="관리자로 임명"
-                                                                                            >
-                                                                                                🛡️ 임명
-                                                                                            </button>
+                                                                                            allAdminList.some(a => a.email === member.email) ? (
+                                                                                                <button
+                                                                                                    onClick={() => handleRevokeFromList(member)}
+                                                                                                    style={{ background: '#FFEBEE', color: '#C62828', border: '1px solid #FFCDD2', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}
+                                                                                                    title="관리자 권한 해제"
+                                                                                                >
+                                                                                                    🚫 해제
+                                                                                                </button>
+                                                                                            ) : (
+                                                                                                <button
+                                                                                                    onClick={() => handleNominateFromList(member)}
+                                                                                                    style={{ background: '#E3F2FD', color: '#1565C0', border: '1px solid #BBDEFB', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}
+                                                                                                    title="관리자로 임명"
+                                                                                                >
+                                                                                                    🛡️ 임명
+                                                                                                </button>
+                                                                                            )
                                                                                         )
                                                                                     )}
                                                                                     {!member.is_approved && (
@@ -8335,7 +8345,7 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
 }
 
 // 성도 검색/주소록 컴포넌트
-function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, user }: any) {
+function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, user, allAdminList, onRefreshAdmins, isAdminsLoading }: any) {
     const [searchTerm, setSearchTerm] = useState("");
     const [results, setResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -8353,19 +8363,8 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
         try {
             const res = await fetch(`/api/members?church_id=${churchId}${isAdmin ? '&admin=true' : ''}`, { cache: 'no-store' });
             const data = await res.json();
-
-            let adminList: any[] = [];
-            if (isSuperAdmin) {
-                const aRes = await fetch('/api/admin?action=list_all_admins');
-                adminList = await aRes.json();
-            }
-
             if (Array.isArray(data)) {
-                const enhancedData = data.map(m => ({
-                    ...m,
-                    is_system_admin: adminList.some((a: any) => a.email === m.email)
-                }));
-                setResults(enhancedData);
+                setResults(data);
             }
         } catch (e) { console.error("멤버 로딩 실패:", e); }
         finally { setIsSearching(false); }
@@ -8373,6 +8372,9 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
 
     useEffect(() => {
         fetchInitial();
+        if (isSuperAdmin && onRefreshAdmins && (!allAdminList || allAdminList.length === 0)) {
+            onRefreshAdmins();
+        }
     }, [churchId, isAdmin, isSuperAdmin]);
 
     const handleSearch = async () => {
@@ -8380,19 +8382,8 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
         try {
             const res = await fetch(`/api/members?church_id=${churchId}&query=${encodeURIComponent(searchTerm)}${isAdmin ? '&admin=true' : ''}`, { cache: 'no-store' });
             const data = await res.json();
-
-            let adminList: any[] = [];
-            if (isSuperAdmin) {
-                const aRes = await fetch('/api/admin?action=list_all_admins');
-                adminList = await aRes.json();
-            }
-
             if (Array.isArray(data)) {
-                const enhancedData = data.map(m => ({
-                    ...m,
-                    is_system_admin: adminList.some((a: any) => a.email === m.email)
-                }));
-                setResults(enhancedData);
+                setResults(data);
             }
         } catch (e) { console.error("검색 실패:", e); }
         finally { setIsSearching(false); }
@@ -8418,6 +8409,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
             });
             if (res.ok) {
                 alert('성공적으로 관리자 권한을 부여했습니다! ✨');
+                if (onRefreshAdmins) onRefreshAdmins();
                 fetchInitial();
             } else {
                 const err = await res.json();
@@ -8441,6 +8433,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
             });
             if (res.ok) {
                 alert('관리자 권한이 해제되었습니다.');
+                if (onRefreshAdmins) onRefreshAdmins();
                 fetchInitial();
             } else {
                 const err = await res.json();
@@ -8449,7 +8442,10 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
         } catch (e) { alert('통신 중 오류가 발생했습니다.'); }
     };
 
-    const filteredResults = results.filter(m => {
+    const filteredResults = results.map(m => ({
+        ...m,
+        is_system_admin: (allAdminList || []).some((a: any) => a.email?.toLowerCase().trim() === m.email?.toLowerCase().trim())
+    })).filter(m => {
         if (adminFilter === "all") return true;
         if (adminFilter === "admin") return m.is_system_admin;
         if (adminFilter === "user") return !m.is_system_admin;
@@ -8689,12 +8685,24 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                                         📞 {member.phone || (member.is_phone_public ? '미등록' : '비공개')}
                                     </div>
                                 </div>
-                                {member.phone && (
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button onClick={(e) => { e.stopPropagation(); window.location.href = `sms:${member.phone.replace(/[^0-9]/g, '')}`; }} style={{ background: '#E3F2FD', border: 'none', padding: '10px', borderRadius: '50%', cursor: 'pointer' }}>💬</button>
-                                        <button onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${member.phone}`; }} style={{ background: '#E8F5E9', border: 'none', padding: '10px', borderRadius: '50%', cursor: 'pointer' }}>📞</button>
-                                    </div>
-                                )}
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    {isSuperAdmin && member.email && !isAdminsLoading && (
+                                        member.is_system_admin ? (
+                                            <button onClick={(e) => { e.stopPropagation(); handleRevokeAdmin(member); }} style={{ background: '#FFEBEE', color: '#C62828', border: '1px solid #FFCDD2', padding: '8px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}>🚫 해제</button>
+                                        ) : (
+                                            <button onClick={(e) => { e.stopPropagation(); handleNominateAdmin(member); }} style={{ background: '#E3F2FD', color: '#1565C0', border: '1px solid #BBDEFB', padding: '8px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}>🛡️ 임명</button>
+                                        )
+                                    )}
+                                    {isSuperAdmin && member.email && isAdminsLoading && (
+                                        <div style={{ fontSize: '10px', color: '#999', padding: '8px' }}>...</div>
+                                    )}
+                                    {member.phone && (
+                                        <>
+                                            <button onClick={(e) => { e.stopPropagation(); window.location.href = `sms:${member.phone.replace(/[^0-9]/g, '')}`; }} style={{ background: '#E3F2FD', border: 'none', padding: '10px', borderRadius: '50%', cursor: 'pointer' }}>💬</button>
+                                            <button onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${member.phone}`; }} style={{ background: '#E8F5E9', border: 'none', padding: '10px', borderRadius: '50%', cursor: 'pointer' }}>📞</button>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         ))
                     )}
@@ -8723,6 +8731,11 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                                     </>
                                 )}
                             </div>
+
+                            {/* [추가] 로딩 중에는 권한 버튼 숨기기 */}
+                            {isSuperAdmin && selectedMember.email && isAdminsLoading && !isEditing && (
+                                <div style={{ textAlign: 'center', margin: '20px 0', color: '#999', fontSize: '12px' }}>관리자 정보를 확인 중입니다...</div>
+                            )}
 
                             {isEditing ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -8808,7 +8821,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                                         </div>
                                     </div>
 
-                                    {isSuperAdmin && (
+                                    {isSuperAdmin && !isAdminsLoading && (
                                         <div style={{ marginTop: '16px', padding: '16px', background: '#F5F5F5', borderRadius: '20px', border: '1px solid #EEE' }}>
                                             <div style={{ fontSize: '12px', fontWeight: 800, color: '#666', marginBottom: '10px' }}>🛡️ 시스템 권한 관리</div>
                                             {selectedMember.is_system_admin ? (
