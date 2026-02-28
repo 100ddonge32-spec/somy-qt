@@ -195,12 +195,25 @@ export async function POST(req: NextRequest) {
 
             // [개편] 이름, 전화번호, 생년월일로 유저 찾기 (이메일이 없는 경우 대비)
             if (!email && body.name && body.phone && body.birthdate) {
+                const nameStr = body.name.trim();
+                const phoneStr = body.phone.trim();
+                const birthStr = body.birthdate.trim();
+
+                // 입력값 정규화
+                const cleanPhone = phoneStr.replace(/[^0-9]/g, '');
+                const formattedPhone = cleanPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+
+                let isoBirthdate = birthStr;
+                if (birthStr.length === 8 && /^\d+$/.test(birthStr)) {
+                    isoBirthdate = birthStr.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
+                }
+
                 const { data: matchedUsers, error: searchError } = await supabaseAdmin
                     .from('profiles')
                     .select('id, email, full_name')
-                    .eq('full_name', body.name.trim())
-                    .eq('phone', body.phone.trim())
-                    .eq('birthdate', body.birthdate.trim());
+                    .eq('full_name', nameStr)
+                    .or(`phone.eq.${cleanPhone},phone.eq.${formattedPhone}`)
+                    .or(`birthdate.eq.${birthStr},birthdate.eq.${isoBirthdate}`);
 
                 if (searchError) throw searchError;
                 if (!matchedUsers || matchedUsers.length === 0) {
@@ -311,12 +324,24 @@ export async function POST(req: NextRequest) {
 
             // [개편] 이름, 전화번호, 생년월일로 유저 찾기
             if (!email && body.name && body.phone && body.birthdate) {
+                const nameStr = body.name.trim();
+                const phoneStr = body.phone.trim();
+                const birthStr = body.birthdate.trim();
+
+                const cleanPhone = phoneStr.replace(/[^0-9]/g, '');
+                const formattedPhone = cleanPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+
+                let isoBirthdate = birthStr;
+                if (birthStr.length === 8 && /^\d+$/.test(birthStr)) {
+                    isoBirthdate = birthStr.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
+                }
+
                 const { data: matchedUsers, error: searchError } = await supabaseAdmin
                     .from('profiles')
                     .select('id, email, full_name')
-                    .eq('full_name', body.name.trim())
-                    .eq('phone', body.phone.trim())
-                    .eq('birthdate', body.birthdate.trim());
+                    .eq('full_name', nameStr)
+                    .or(`phone.eq.${cleanPhone},phone.eq.${formattedPhone}`)
+                    .or(`birthdate.eq.${birthStr},birthdate.eq.${isoBirthdate}`);
 
                 if (searchError) throw searchError;
                 if (!matchedUsers || matchedUsers.length === 0) {
