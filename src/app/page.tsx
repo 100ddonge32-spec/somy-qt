@@ -1759,11 +1759,13 @@ export default function App() {
         setAnswers(newAnswers);
     };
 
-    const handlePassageAsk = async () => {
-        if (!passageInput.trim() || isPassageLoading) return;
-        const userMsg = { role: "user", content: passageInput };
+    const handlePassageAsk = async (directInput?: string) => {
+        const query = directInput || passageInput;
+        if (!query.trim() || isPassageLoading) return;
+
+        const userMsg = { role: "user", content: query };
         setPassageChat(prev => [...prev, userMsg]);
-        setPassageInput("");
+        if (!directInput) setPassageInput("");
         setIsPassageLoading(true);
 
         try {
@@ -1772,7 +1774,7 @@ export default function App() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     messages: [
-                        { role: "system", content: `당신은 성경 말씀을 알기 쉽게 설명해주는 큐티 조력자 소미입니다. 다음 성경 본문에 대해 질문하는 사용자에게 친절하고 영성 있게 답해주세요.\n본문: ${QT_DATA.fullPassage}` },
+                        { role: "system", content: `당신은 성경 말씀을 알기 쉽게 설명해주는 큐티 조력자 소미입니다. 다음 성경 본문에 대해 질문하는 사용자에게 친절하고 영성 있게 답해주세요.\n본문: ${qtData.fullPassage}` },
                         ...passageChat,
                         userMsg
                     ]
@@ -2904,14 +2906,29 @@ export default function App() {
                                                         <span style={{ color: '#D4AF37', fontSize: '13px', fontWeight: 800, minWidth: '24px', textAlign: 'right', paddingTop: '4px', fontStyle: 'italic' }}>
                                                             {label}
                                                         </span>
-                                                        <span style={{ fontSize: '16px', lineHeight: 1.8, color: '#333', flex: 1, wordBreak: 'keep-all', fontWeight: 500 }}>
+                                                        <span
+                                                            onClick={() => {
+                                                                setQtStep('interpret');
+                                                                handlePassageAsk(`[${label}절] "${content}" 이 구절에 대해 깊이 있는 신학적 해설과 묵상 가이드를 알려줘.`);
+                                                            }}
+                                                            style={{ fontSize: '16px', lineHeight: 1.8, color: '#333', flex: 1, wordBreak: 'keep-all', fontWeight: 500, cursor: 'pointer' }}
+                                                            title="AI 소미에게 물어보기"
+                                                        >
                                                             {content}
                                                         </span>
                                                     </div>
                                                 );
                                             }
                                             return (
-                                                <p key={idx} style={{ margin: 0, fontSize: '16px', lineHeight: 1.8, color: '#333', wordBreak: 'keep-all', fontWeight: 500, paddingLeft: '30px' }}>
+                                                <p
+                                                    key={idx}
+                                                    onClick={() => {
+                                                        setQtStep('interpret');
+                                                        handlePassageAsk(`"${line}" 이 내용에 대해 깊이 있는 신학적 해설과 묵상 가이드를 알려줘.`);
+                                                    }}
+                                                    style={{ margin: 0, fontSize: '16px', lineHeight: 1.8, color: '#333', wordBreak: 'keep-all', fontWeight: 500, paddingLeft: '30px', cursor: 'pointer' }}
+                                                    title="AI 소미에게 물어보기"
+                                                >
                                                     {line}
                                                 </p>
                                             );
