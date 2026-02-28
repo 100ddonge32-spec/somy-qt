@@ -3875,7 +3875,7 @@ export default function App() {
                                             </div>
                                         ) : (
                                             <div style={{ margin: '0 0 15px 0' }}>
-                                                <div style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', wordBreak: 'break-word', display: '-webkit-box', WebkitLineClamp: expandedPosts[post.id] ? 'unset' : 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                <div style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', wordBreak: 'break-word', display: '-webkit-box', WebkitLineClamp: !expandedPosts[post.id] && (post.content.split('\n').length > 4 || post.content.length > 120) ? 4 : 'unset', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                                                     {post.content.split('\n').map((line: string, i: number) => {
                                                         const trimmed = line.trim();
                                                         if (trimmed === '[말씀묵상]') {
@@ -3897,8 +3897,8 @@ export default function App() {
                                                         return <span key={i}>{line}<br /></span>;
                                                     })}
                                                 </div>
-                                                {(post.content.split('\n').length > 4 || post.content.length > 150) && (
-                                                    <button onClick={() => setExpandedPosts({ ...expandedPosts, [post.id]: !expandedPosts[post.id] })} style={{ background: 'none', border: 'none', color: '#999', fontSize: '13px', padding: '8px 0 0 0', cursor: 'pointer', fontWeight: 600 }}>
+                                                {(post.content.split('\n').length > 4 || post.content.length > 120) && (
+                                                    <button onClick={() => setExpandedPosts({ ...expandedPosts, [post.id]: !expandedPosts[post.id] })} style={{ background: 'none', border: 'none', color: '#B8924A', fontSize: '13px', padding: '8px 0 0 0', cursor: 'pointer', fontWeight: 600 }}>
                                                         {expandedPosts[post.id] ? '접기 ▲' : '더보기 ▼'}
                                                     </button>
                                                 )}
@@ -4373,10 +4373,10 @@ export default function App() {
                                             </div>
                                         ) : (
                                             <div style={{ margin: '0 0 15px 0' }}>
-                                                <div style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', wordBreak: 'break-word', whiteSpace: 'pre-wrap', display: '-webkit-box', WebkitLineClamp: expandedPosts[diary.id] ? 'unset' : 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                <div style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', wordBreak: 'break-word', whiteSpace: 'pre-wrap', display: '-webkit-box', WebkitLineClamp: !expandedPosts[diary.id] && (diary.content.split('\n').length > 4 || diary.content.length > 120) ? 4 : 'unset', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                                                     {diary.content}
                                                 </div>
-                                                {(diary.content.split('\n').length > 4 || diary.content.length > 150) && (
+                                                {(diary.content.split('\n').length > 4 || diary.content.length > 120) && (
                                                     <button onClick={() => setExpandedPosts(prev => ({ ...prev, [diary.id]: !prev[diary.id] }))} style={{ background: 'none', border: 'none', color: '#E07A5F', fontSize: '13px', padding: '8px 0 0 0', cursor: 'pointer', fontWeight: 600 }}>
                                                         {expandedPosts[diary.id] ? '접기 ▲' : '더보기 ▼'}
                                                     </button>
