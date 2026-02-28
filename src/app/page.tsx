@@ -7131,68 +7131,77 @@ export default function App() {
                                             </div>
 
                                             {/* 성도 관리 컨트롤러 */}
-                                            <div style={{ background: 'white', padding: '16px 20px', borderRadius: '20px', border: '1px solid #EEE', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-                                                {/* 상단 라인: 타이틀 + 주요 액션 */}
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <div style={{ fontSize: '15px', fontWeight: 900, color: '#333', display: 'flex', alignItems: 'center', gap: '6px' }}>👤 성도 명단 관리 <span style={{ fontSize: '12px', color: '#888', fontWeight: 500 }}>{memberList.length}명</span></div>
-                                                    <div style={{ display: 'flex', gap: '6px' }}>
-                                                        <button onClick={() => setShowAddMemberModal(true)} style={{ padding: '6px 12px', background: '#333', color: 'white', border: 'none', borderRadius: '10px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}>+ 개별 추가</button>
-                                                        <button onClick={handleExcelExport} style={{ padding: '6px 12px', background: '#E8F5E9', color: '#2E7D32', border: '1px solid #C8E6C9', borderRadius: '10px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}>📥 엑셀 받기</button>
-                                                        <button
-                                                            onClick={async () => {
-                                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
-                                                                if (r.ok) setMemberList(await r.json());
-                                                            }}
-                                                            style={{ padding: '6px', background: '#F5F5F5', border: '1px solid #DDD', borderRadius: '8px', cursor: 'pointer' }}
-                                                            title="새로고침"
-                                                        >🔄</button>
+                                            <div style={{ background: 'white', padding: '20px', borderRadius: '24px', border: '1px solid #EEE', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
+                                                {/* 1. 타이틀 (독립 배치) */}
+                                                <div style={{ paddingBottom: '4px', borderBottom: '2px solid #F8F9FA' }}>
+                                                    <div style={{ fontSize: '18px', fontWeight: 900, color: '#222', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        👤 성도 명단 관리
+                                                        <span style={{ fontSize: '13px', color: '#B8924A', background: '#FDFCF0', padding: '2px 8px', borderRadius: '20px', fontWeight: 600 }}>{memberList.length}명</span>
                                                     </div>
                                                 </div>
 
-                                                {/* 통계 및 관리 액션 한 줄 배치 */}
-                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', overflowX: 'auto', paddingBottom: '4px' }}>
-                                                    <div style={{ display: 'flex', flex: 1, gap: '6px' }}>
-                                                        <div style={{ flex: 1, background: '#F8F9FA', padding: '8px', borderRadius: '10px', textAlign: 'center', border: '1px solid #F1F3F5' }}>
-                                                            <div style={{ fontSize: '9px', color: '#888' }}>전체</div>
-                                                            <div style={{ fontSize: '14px', fontWeight: 900 }}>{memberList.length}</div>
-                                                        </div>
-                                                        <div style={{ flex: 1, background: '#E8F5E9', padding: '8px', borderRadius: '10px', textAlign: 'center', border: '1px solid #C8E6C9' }}>
-                                                            <div style={{ fontSize: '9px', color: '#2E7D32' }}>승인</div>
-                                                            <div style={{ fontSize: '14px', fontWeight: 900, color: '#2E7D32' }}>{memberList.filter(m => m.is_approved).length}</div>
-                                                        </div>
-                                                        <div style={{ flex: 1, background: '#FFF5F5', padding: '8px', borderRadius: '10px', textAlign: 'center', border: '1px solid #FFE3E3' }}>
-                                                            <div style={{ fontSize: '9px', color: '#E03131' }}>대기</div>
-                                                            <div style={{ fontSize: '14px', fontWeight: 900, color: '#E03131' }}>{memberList.filter(m => !m.is_approved).length}</div>
-                                                        </div>
-                                                    </div>
+                                                {/* 2. 관리 버튼 (3열 그리드) */}
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                                                    <button onClick={() => setShowAddMemberModal(true)} style={{ height: '42px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontSize: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                                        <span>+</span> 개별 추가
+                                                    </button>
+                                                    <button onClick={handleExcelExport} style={{ height: '42px', background: '#E8F5E9', color: '#2E7D32', border: '1px solid #C8E6C9', borderRadius: '12px', fontSize: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                                        📥 엑셀 받기
+                                                    </button>
+                                                    <button
+                                                        onClick={async () => {
+                                                            const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                            if (r.ok) setMemberList(await r.json());
+                                                        }}
+                                                        style={{ height: '42px', background: '#F8F9FA', color: '#666', border: '1px solid #EEE', borderRadius: '12px', fontSize: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                                                    >
+                                                        🔄 새로고침
+                                                    </button>
+                                                </div>
 
-                                                    <div style={{ display: 'flex', gap: '4px' }}>
-                                                        <button
-                                                            onClick={async () => {
-                                                                if (window.confirm('모든 성도 데이터를 삭제하시겠습니까?')) {
-                                                                    const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_all_members', church_id: churchId }) });
-                                                                    if (res.ok) { setMemberList([]); alert('삭제 완료'); }
-                                                                }
-                                                            }}
-                                                            style={{ padding: '8px 10px', background: '#FFF5F5', color: '#C62828', border: '1px solid #FFC9C9', borderRadius: '10px', fontSize: '10px', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}
-                                                        >🗑️ 전체삭제</button>
-                                                        <button
-                                                            onClick={async () => {
-                                                                if (window.confirm('미인증 성도를 승인 대기로 전환할까요?')) {
-                                                                    try {
-                                                                        const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reset_unverified_status', church_id: churchId }) });
-                                                                        const data = await res.json();
-                                                                        if (data.success) {
-                                                                            alert(`${data.count}명 전환 완료`);
-                                                                            const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
-                                                                            if (r.ok) setMemberList(await r.json());
-                                                                        }
-                                                                    } catch (e) { alert('오류 발생'); }
-                                                                }
-                                                            }}
-                                                            style={{ padding: '8px 10px', background: '#F8F9FA', color: '#666', border: '1px solid #DDD', borderRadius: '10px', fontSize: '10px', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}
-                                                        >⏳ 승인해제</button>
+                                                {/* 3. 통계 현황 (3열 그리드) */}
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                                                    <div style={{ background: '#F8F9FA', padding: '10px', borderRadius: '12px', textAlign: 'center', border: '1px solid #F1F3F5' }}>
+                                                        <div style={{ fontSize: '10px', color: '#888', marginBottom: '2px' }}>전체</div>
+                                                        <div style={{ fontSize: '16px', fontWeight: 900, color: '#333' }}>{memberList.length}</div>
                                                     </div>
+                                                    <div style={{ background: '#E8F5E9', padding: '10px', borderRadius: '12px', textAlign: 'center', border: '1px solid #C8E6C9' }}>
+                                                        <div style={{ fontSize: '10px', color: '#2E7D32', marginBottom: '2px' }}>승인</div>
+                                                        <div style={{ fontSize: '16px', fontWeight: 900, color: '#2E7D32' }}>{memberList.filter(m => m.is_approved).length}</div>
+                                                    </div>
+                                                    <div style={{ background: '#FFF5F5', padding: '10px', borderRadius: '12px', textAlign: 'center', border: '1px solid #FFE3E3' }}>
+                                                        <div style={{ fontSize: '10px', color: '#E03131', marginBottom: '2px' }}>대기</div>
+                                                        <div style={{ fontSize: '16px', fontWeight: 900, color: '#E03131' }}>{memberList.filter(m => !m.is_approved).length}</div>
+                                                    </div>
+                                                </div>
+
+                                                {/* 4. 특수 액션 (2열 배치) */}
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (window.confirm('정말 모든 성도 데이터를 삭제하시겠습니까?')) {
+                                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_all_members', church_id: churchId }) });
+                                                                if (res.ok) { setMemberList([]); alert('삭제 완료'); }
+                                                            }
+                                                        }}
+                                                        style={{ height: '36px', background: '#FFF5F5', color: '#C62828', border: '1px solid #FFC9C9', borderRadius: '10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                                                    >🗑️ 데이터 일괄 삭제</button>
+                                                    <button
+                                                        onClick={async () => {
+                                                            if (window.confirm('모든 미인증 성도를 승인 대기로 전환할까요?')) {
+                                                                try {
+                                                                    const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reset_unverified_status', church_id: churchId }) });
+                                                                    const data = await res.json();
+                                                                    if (data.success) {
+                                                                        alert(`${data.count}명 전환 완료`);
+                                                                        const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                        if (r.ok) setMemberList(await r.json());
+                                                                    }
+                                                                } catch (e) { alert('오류 발생'); }
+                                                            }
+                                                        }}
+                                                        style={{ height: '36px', background: '#F8F9FA', color: '#666', border: '1px solid #DDD', borderRadius: '10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                                                    >⏳ 미인증자 승인해제</button>
                                                 </div>
 
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#F5F5F3', padding: '6px 12px', borderRadius: '10px' }}>
