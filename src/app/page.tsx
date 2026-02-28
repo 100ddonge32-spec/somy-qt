@@ -5241,7 +5241,8 @@ export default function App() {
                                         if (!counselingInput.trim() || isSubmittingCounseling) return;
                                         setIsSubmittingCounseling(true);
                                         try {
-                                            const r = await fetch('/api/counseling', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: user?.id, user_name: user?.user_metadata?.full_name || '성도', church_id: churchId, content: counselingInput }) });
+                                            const finalName = profileName || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "익명의 성도";
+                                            const r = await fetch('/api/counseling', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: user?.id, user_name: finalName, church_id: churchId, content: counselingInput }) });
                                             if (r.ok) {
                                                 const newReq = await r.json();
                                                 setCounselingRequests([newReq, ...counselingRequests]);
@@ -5433,7 +5434,7 @@ export default function App() {
                                                                     body: JSON.stringify({
                                                                         id: req.id,
                                                                         user_reply: content,
-                                                                        user_name: user?.user_metadata?.full_name || '성도'
+                                                                        user_name: profileName || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '익명의 성도'
                                                                     })
                                                                 });
                                                                 if (r.ok) {
