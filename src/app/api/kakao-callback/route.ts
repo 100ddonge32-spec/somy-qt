@@ -131,7 +131,7 @@ export async function GET(req: NextRequest) {
                         ...match,
                         id: supabaseUser.id,
                         email: syntheticEmail,
-                        avatar_url: profileImage || match.avatar_url,
+                        avatar_url: match.avatar_url || profileImage, // 기존 사진 우선
                         is_approved: true // 매칭된 계정은 즉시 승인 처리 (관리자가 이미 신뢰한 데이터)
                     });
 
@@ -143,11 +143,10 @@ export async function GET(req: NextRequest) {
                 }
             } else {
                 // [핵심] 일치하는 성도가 없고, 이름도 '성도'처럼 너무 일반적이면 유령 계정 생성을 건너뜀
-                // 이렇게 하면 프론트엔드에서 '본인 인증(이름/번호)' 화면을 띄워 정확한 매칭을 유도할 수 있음
                 if (isGenericName) {
-                    console.log('[Kakao Callback] 유의미한 정보가 없어 프로필 생성을 스킵합니다. 프론트엔드에서 추가 인증을 유도합니다.');
+                    console.log('[Kakao Callback] 유의미한 정보가 없어 프로필 생성을 스킵합니다.');
                 } else {
-                    // 이름이 명확하면 신규 생성 (교회 ID 기본값 jesus-in)
+                    // 이름이 명확하면 신규 생성
                     await supabaseAdmin.from('profiles').insert({
                         id: supabaseUser.id,
                         full_name: nickname,
@@ -159,12 +158,24 @@ export async function GET(req: NextRequest) {
                 }
             }
         } else {
-            // 이미 프로필이 있음 -> 정보만 최신화 (이름이 '성도'인 경우만 업데이트)
-            const updateData: any = { avatar_url: profileImage || profileById.avatar_url };
+            // 이미 프로필이 있음 -> 정보 최신화 (사진이 이미 있으면 덮어쓰지 않음: 김부장의 센스)
+            const updateData: any = {};
+
+            // 기존 사진이 없거나 카카오 기본 이미지가 아닌 경우만 업데이트 고려 (사용자가 직접 올린 건 'supabase.co' 포함됨)
+            const currentAvatar = profileById.avatar_url || '';
+            const isManualUpload = currentAvatar.includes('supabase.co');
+
+            if (!isManualUpload && profileImage) {
+                updateData.avatar_url = profileImage;
+            }
+
             if (profileById.full_name === '성도' && !isGenericName) {
                 updateData.full_name = nickname;
             }
-            await supabaseAdmin.from('profiles').update(updateData).eq('id', supabaseUser.id);
+
+            if (Object.keys(updateData).length > 0) {
+                await supabaseAdmin.from('profiles').update(updateData).eq('id', supabaseUser.id);
+            }
         }
     }
 
