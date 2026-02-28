@@ -1216,7 +1216,7 @@ export default function App() {
         finally { setIsHistoryLoading(false); }
     };
     const [settingsSaving, setSettingsSaving] = useState(false);
-    const [adminTab, setAdminTab] = useState<"settings" | "members" | "master" | "stats">("settings");
+    const [adminTab, setAdminTab] = useState<"settings" | "members" | "master" | "stats" | "reset">("settings");
     const [isManagingMembers, setIsManagingMembers] = useState(false);
     const [isHistoryMode, setIsHistoryMode] = useState(false);
     const [churchStats, setChurchStats] = useState<{ [key: string]: number }>({});
