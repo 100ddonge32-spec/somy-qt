@@ -1176,7 +1176,7 @@ export default function App() {
         setIsAdminsLoading(true);
         console.log("Fetching all admins...");
         try {
-            const res = await fetch('/api/admin?action=list_all_admins');
+            const res = await fetch(`/api/admin?action=list_all_admins&t=${Date.now()}`, { cache: 'no-store' });
             const data = await res.json();
             if (Array.isArray(data)) {
                 setAllAdminList(data);

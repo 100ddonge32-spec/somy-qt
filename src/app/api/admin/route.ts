@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
                     role,
                     church_id,
                     created_at,
-                    profiles:profiles!email (
+                    profiles:profiles (
                         full_name,
                         avatar_url
                     )
@@ -236,7 +236,7 @@ export async function POST(req: NextRequest) {
 
             const formattedEmail = targetEmail.toLowerCase().trim();
             const adminPayload: any = { email: formattedEmail, role };
-            if (church_id) adminPayload.church_id = church_id;
+            if (church_id) adminPayload.church_id = church_id.trim();
 
             // 1차 시도: church_id 포함하여 저장
             let result: any = await supabaseAdmin
@@ -364,7 +364,7 @@ export async function POST(req: NextRequest) {
 
             // 1. 관리자 권한 부여
             const adminPayload: any = { email: formattedEmail, role: 'church_admin' };
-            if (target_church_id) adminPayload.church_id = target_church_id;
+            if (target_church_id) adminPayload.church_id = target_church_id.trim();
 
             let result: any = await supabaseAdmin
                 .from('app_admins')
