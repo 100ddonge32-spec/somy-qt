@@ -5107,7 +5107,8 @@ export default function App() {
                     alert("설교 요약과 질문이 성공적으로 저장되었습니다!");
                     setView('admin');
                 } else {
-                    alert("저장에 실패했습니다.");
+                    const errorResponse = await res.json().catch(() => ({}));
+                    alert(`저장에 실패했습니다. 😅\n이유: ${errorResponse.error || '네트워크 또는 서버 응답에 문제가 있습니다.'}`);
                 }
             };
 

@@ -128,7 +128,6 @@ export async function POST(req: NextRequest) {
     if (sermon_q3) encodedPlan += `|s_q3:${encodeURIComponent(sermon_q3)}`;
 
     const baseData = {
-        id: id || 1,
         church_id: church_id || 'jesus-in',
         church_name,
         church_logo_url,
@@ -157,7 +156,7 @@ export async function POST(req: NextRequest) {
             event_poster_visible: event_poster_visible ?? false,
             pastor_column_title,
             pastor_column_content
-        });
+        }, { onConflict: 'church_id' }); // ✅ ID가 아닌 church_id를 기준으로 업데이트!
 
     if (firstError) {
         console.warn("[Settings POST] First attempt failed, retrying without new columns...", firstError.message);
@@ -165,7 +164,7 @@ export async function POST(req: NextRequest) {
         // 2차 시도: 새 컬럼을 제외하고 plan 필드의 인코딩에 의존하여 저장 (이것이 진정한 신의 한 수)
         const { error: secondError } = await supabaseAdmin
             .from('church_settings')
-            .upsert(baseData);
+            .upsert(baseData, { onConflict: 'church_id' });
 
         if (secondError) {
             console.error("[Settings POST Error]", secondError);
