@@ -3856,7 +3856,7 @@ export default function App() {
                                                     <button onClick={() => { setEditingPostId(post.id); setEditContent(post.content); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#B8924A', fontWeight: 600 }}>수정</button>
                                                 )}
                                                 {(isAdmin || user?.id === post.user_id) && (
-                                                    <button onClick={() => handleDeletePost(post.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#999' }}>🗑️</button>
+                                                    <button onClick={() => handleDeletePost(post.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#999', fontWeight: 600 }}>삭제</button>
                                                 )}
                                             </div>
                                         </div>
@@ -4358,7 +4358,7 @@ export default function App() {
                                                     <button onClick={() => { setEditingPostId(diary.id); setEditContent(diary.content); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#E07A5F', fontWeight: 600 }}>수정</button>
                                                 )}
                                                 {(isAdmin || user?.id === diary.user_id) && (
-                                                    <button onClick={() => handleDeleteThanksgiving(diary.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#999' }}>🗑️</button>
+                                                    <button onClick={() => handleDeleteThanksgiving(diary.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#999', fontWeight: 600 }}>삭제</button>
                                                 )}
                                             </div>
                                         </div>
@@ -5284,7 +5284,7 @@ export default function App() {
                                                                 if (r.ok) setCounselingRequests(counselingRequests.filter(c => c.id !== req.id));
                                                             } catch (e) { }
                                                         }
-                                                    }} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', padding: 0, fontSize: '14px' }}>🗑️</button>
+                                                    }} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', padding: 0, fontSize: '12px', fontWeight: 700 }}>삭제</button>
                                                 </div>
                                             )}
                                         </div>
