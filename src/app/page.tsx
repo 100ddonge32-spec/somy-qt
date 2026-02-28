@@ -925,6 +925,9 @@ export default function App() {
                     else if (user.user_metadata?.avatar_url) setProfileAvatar(user.user_metadata.avatar_url);
 
                     if (syncData.birthdate) setProfileBirthdate(syncData.birthdate);
+                    if (syncData.status === 'visitor') {
+                        setShowVerification(true);
+                    }
                     if (syncData.is_approved) subscribePush(user.id);
                 }
                 return;

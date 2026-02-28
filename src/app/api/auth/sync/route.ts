@@ -188,9 +188,13 @@ export async function POST(req: NextRequest) {
             await supabaseAdmin.from('profiles').update(dataToSet).eq('id', user_id);
             return NextResponse.json({ ...dataToSet, status: 'updated' });
         } else {
-            const isAnonymous = !email || email.includes('anonymous.local') || email.includes('noemail.local');
+            const isAnonymous = !email ||
+                email.includes('anonymous.local') ||
+                email.includes('noemail.local') ||
+                email.includes('kakao.somy-qt.local');
             const hasRealInfo = (rawName && !isSystemGeneratedName) || (rawPhone && rawPhone.length > 5);
             if (isAnonymous && !hasRealInfo) {
+                console.log(`[Sync] Skipping profile creation for generic/anonymous user: ${email}`);
                 return NextResponse.json({ status: 'visitor', is_approved: false, church_id: 'jesus-in' });
             }
             await supabaseAdmin.from('profiles').insert([dataToSet]);
