@@ -166,12 +166,15 @@ export async function GET(req: NextRequest) {
 
             if (!data) return NextResponse.json([]);
 
-            // 데이터 가공 (profiles 배열의 첫번째 요소를 평탄화)
-            const formattedData = data.map((admin: any) => ({
-                ...admin,
-                name: admin.profiles?.[0]?.full_name || admin.profiles?.full_name || '이름 없음',
-                avatar_url: admin.profiles?.[0]?.avatar_url || admin.profiles?.avatar_url || null
-            }));
+            // 데이터 가공 (profiles가 객체일 수도 있고 배열일 수도 있는 환경 대응)
+            const formattedData = data.map((admin: any) => {
+                const profile = Array.isArray(admin.profiles) ? admin.profiles[0] : admin.profiles;
+                return {
+                    ...admin,
+                    name: profile?.full_name || '이름 없음',
+                    avatar_url: profile?.avatar_url || null
+                };
+            });
 
             return NextResponse.json(formattedData);
         }

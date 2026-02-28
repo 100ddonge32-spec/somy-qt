@@ -7772,12 +7772,12 @@ export default function App() {
                                                 {/* 🏷️ 내 교회 및 소속 관리자 */}
                                                 <div style={{ background: 'white', padding: '16px', borderRadius: '15px', border: '1px solid #c8e6c9' }}>
                                                     <div style={{ fontSize: '13px', fontWeight: 800, color: '#2e7d32', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <span>⛪ 내 교회 소속 관리자 ({allAdminList.filter(a => !a.church_id || a.church_id === (churchId || 'jesus-in')).length})</span>
+                                                        <span>⛪ 내 교회 소속 관리자 ({allAdminList.filter(a => !a.church_id || a.church_id.toLowerCase() === (churchId || 'jesus-in').toLowerCase()).length})</span>
                                                         <button onClick={fetchAllAdmins} style={{ background: '#F5F5F5', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>새로고침</button>
                                                     </div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                        {allAdminList.filter(a => !a.church_id || a.church_id === (churchId || 'jesus-in')).length > 0 ? (
-                                                            allAdminList.filter(a => !a.church_id || a.church_id === (churchId || 'jesus-in')).map((admin: any) => (
+                                                        {allAdminList.filter(a => !a.church_id || a.church_id.toLowerCase() === (churchId || 'jesus-in').toLowerCase()).length > 0 ? (
+                                                            allAdminList.filter(a => !a.church_id || a.church_id.toLowerCase() === (churchId || 'jesus-in').toLowerCase()).map((admin: any) => (
                                                                 <div key={admin.email} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px 12px', borderRadius: '10px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                                                                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center', minWidth: 0, flex: 1 }}>
                                                                         <div style={{ width: '32px', height: '32px', background: '#F5F5F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', overflow: 'hidden', flexShrink: 0 }}>
@@ -7804,10 +7804,10 @@ export default function App() {
 
                                                 {/* 🏷️ 타 교회 및 전체 관리자 */}
                                                 <div style={{ background: '#FDFCFB', padding: '16px', borderRadius: '15px', border: '1px solid #DDD' }}>
-                                                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '12px' }}>🌐 타 교회 및 통합 관리자 ({allAdminList.filter(a => a.church_id && a.church_id !== (churchId || 'jesus-in')).length})</div>
+                                                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '12px' }}>🌐 타 교회 및 통합 관리자 ({allAdminList.filter(a => a.church_id && a.church_id.toLowerCase() !== (churchId || 'jesus-in').toLowerCase()).length})</div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                        {allAdminList.filter(a => a.church_id && a.church_id !== (churchId || 'jesus-in')).length > 0 ? (
-                                                            allAdminList.filter(a => a.church_id && a.church_id !== (churchId || 'jesus-in')).map((admin: any) => (
+                                                        {allAdminList.filter(a => a.church_id && a.church_id.toLowerCase() !== (churchId || 'jesus-in').toLowerCase()).length > 0 ? (
+                                                            allAdminList.filter(a => a.church_id && a.church_id.toLowerCase() !== (churchId || 'jesus-in').toLowerCase()).map((admin: any) => (
                                                                 <div key={admin.email} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px 12px', borderRadius: '10px', border: '1px solid #F0F0F0', opacity: 0.8 }}>
                                                                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center', minWidth: 0, flex: 1 }}>
                                                                         <div style={{ width: '30px', height: '30px', background: '#F5F5F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>'🏢'</div>
