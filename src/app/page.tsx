@@ -1759,8 +1759,8 @@ export default function App() {
         setAnswers(newAnswers);
     };
 
-    const handlePassageAsk = async (directInput?: string) => {
-        const query = directInput || passageInput;
+    const handlePassageAsk = async (directInput?: any) => {
+        const query = typeof directInput === 'string' ? directInput : passageInput;
         if (!query.trim() || isPassageLoading) return;
 
         const userMsg = { role: "user", content: query };
@@ -2963,7 +2963,7 @@ export default function App() {
                                         </div>
                                         <div style={{ display: 'flex', gap: '8px' }}>
                                             <input type="text" value={passageInput} onChange={(e) => setPassageInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handlePassageAsk()} placeholder="예: '푸른 풀밭'은 어떤 의미인가요?" style={{ flex: 1, padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }} />
-                                            <button onClick={handlePassageAsk} disabled={isPassageLoading} style={{ padding: '0 15px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', opacity: isPassageLoading ? 0.6 : 1 }}>묻기</button>
+                                            <button onClick={() => handlePassageAsk()} disabled={isPassageLoading} style={{ padding: '0 15px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', opacity: isPassageLoading ? 0.6 : 1 }}>묻기</button>
                                         </div>
                                     </div>
                                 </div>
