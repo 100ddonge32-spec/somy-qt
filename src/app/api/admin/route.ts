@@ -126,49 +126,33 @@ export async function GET(req: NextRequest) {
         }
 
         if (action === 'list_all_admins') {
-            // 1차 시도: church_id 포함하여 조회
-            let result: any = await supabaseAdmin
+            // Step 1: app_admins 전체 조회 (join 없이 안정적으로)
+            const { data: admins, error: adminsError } = await supabaseAdmin
                 .from('app_admins')
-                .select(`
-                    email,
-                    role,
-                    church_id,
-                    created_at,
-                    profiles:profiles (
-                        full_name,
-                        avatar_url
-                    )
-                `)
+                .select('email, role, church_id, created_at')
                 .order('created_at', { ascending: false });
 
-            let data = result.data;
-            let error = result.error;
-
-            if (error) {
-                console.warn("[Admin API] Failed to list admins with church_id, retrying without it...", error.message);
-                // 2차 시도: church_id 제외하고 조회
-                const retryResult: any = await supabaseAdmin
-                    .from('app_admins')
-                    .select(`
-                        email,
-                        role,
-                        created_at,
-                        profiles:profiles!email (
-                            full_name,
-                            avatar_url
-                        )
-                    `)
-                    .order('created_at', { ascending: false });
-
-                if (retryResult.error) throw retryResult.error;
-                data = retryResult.data;
+            if (adminsError) {
+                console.error('[list_all_admins] Failed to fetch admins:', adminsError.message);
+                throw adminsError;
             }
+            if (!admins || admins.length === 0) return NextResponse.json([]);
 
-            if (!data) return NextResponse.json([]);
+            // Step 2: 등록된 이메일 목록으로 profiles 별도 조회
+            const emails = admins.map((a: any) => a.email);
+            const { data: profiles } = await supabaseAdmin
+                .from('profiles')
+                .select('email, full_name, avatar_url')
+                .in('email', emails);
 
-            // 데이터 가공 (profiles가 객체일 수도 있고 배열일 수도 있는 환경 대응)
-            const formattedData = data.map((admin: any) => {
-                const profile = Array.isArray(admin.profiles) ? admin.profiles[0] : admin.profiles;
+            // Step 3: 수동으로 merge
+            const profileMap: Record<string, any> = {};
+            (profiles || []).forEach((p: any) => {
+                if (p.email) profileMap[p.email.toLowerCase()] = p;
+            });
+
+            const formattedData = admins.map((admin: any) => {
+                const profile = profileMap[admin.email?.toLowerCase()] || null;
                 return {
                     ...admin,
                     name: profile?.full_name || '이름 없음',
@@ -176,6 +160,7 @@ export async function GET(req: NextRequest) {
                 };
             });
 
+            console.log('[list_all_admins] Returning', formattedData.length, 'admins');
             return NextResponse.json(formattedData);
         }
 
