@@ -7450,19 +7450,17 @@ export default function App() {
                                                                     marginBottom: '16px',
                                                                     boxShadow: '0 8px 32px rgba(0,0,0,0.03)',
                                                                     transition: 'all 0.3s ease',
-                                                                    position: 'relative',
-                                                                    overflowX: 'auto'
+                                                                    position: 'relative'
                                                                 }}>
                                                                     <div style={{
-                                                                        display: 'grid',
-                                                                        gridTemplateColumns: 'minmax(300px, 1.5fr) 1px 140px 1px 180px 1px minmax(240px, 1.2fr)',
+                                                                        display: 'flex',
+                                                                        flexWrap: 'wrap',
                                                                         alignItems: 'center',
                                                                         width: '100%',
-                                                                        minWidth: '850px',
-                                                                        gap: '0'
+                                                                        gap: '24px'
                                                                     }}>
-                                                                        {/* 1열: 프로필 마스터 (사진 + 2행 정보) */}
-                                                                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', paddingRight: '20px' }}>
+                                                                        {/* [1] 프로필 상단 (성명, 직분, 성별, 상태) */}
+                                                                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flex: '0 0 auto', minWidth: '240px' }}>
                                                                             <div
                                                                                 onClick={() => {
                                                                                     if (selectedMemberIds.includes(member.id)) {
@@ -7487,15 +7485,13 @@ export default function App() {
                                                                                 {isAdmin && <div style={{ position: 'absolute', bottom: '-4px', right: '-4px', background: '#333', color: 'white', fontSize: '8px', padding: '2px 5px', borderRadius: '6px', fontWeight: 900, border: '1px solid white' }}>ADMIN</div>}
                                                                             </div>
 
-                                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
-                                                                                {/* 상단행: 상태 + 이름 + 직분 */}
+                                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                                                     {!member.is_approved && <span style={{ fontSize: '9px', background: '#FFF5F5', color: '#E03131', padding: '2px 6px', borderRadius: '4px', fontWeight: 800, border: '1px solid #FFE3E3' }}>대기</span>}
                                                                                     <span style={{ fontSize: '18px', fontWeight: 800, color: '#1A1A1A', letterSpacing: '-0.5px' }}>{displayName}</span>
                                                                                     {member.church_rank && <span style={{ fontSize: '10px', background: '#FFF9E6', color: '#B08C3E', padding: '1px 6px', borderRadius: '5px', fontWeight: 700, border: '1px solid #F5E6C4' }}>{member.church_rank}</span>}
                                                                                 </div>
-                                                                                {/* 하단행: 성별 */}
-                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                                                                                <div style={{ display: 'flex', gap: '6px' }}>
                                                                                     <span style={{
                                                                                         background: member.gender === '남' ? '#E7F5FF' : member.gender === '여' ? '#FFF0F6' : '#F1F3F5',
                                                                                         color: member.gender === '남' ? '#1971C2' : member.gender === '여' ? '#D6336C' : '#868E96',
@@ -7506,60 +7502,45 @@ export default function App() {
                                                                         </div>
 
                                                                         {/* 수직 구분선 */}
-                                                                        <div style={{ width: '1px', height: '48px', background: 'linear-gradient(to bottom, transparent, #EEE, transparent)' }} />
+                                                                        <div style={{ width: '1px', height: '48px', background: '#EEE', flexShrink: 0 }} />
 
-                                                                        {/* 2열: 정교한 상태 섹션 */}
-                                                                        <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0 }}>
-                                                                            {!member.is_approved ? (
-                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                                                                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#E03131' }} />
-                                                                                    <span style={{ fontSize: '10px', color: '#E03131', fontWeight: 900 }}>승인 대기중</span>
+                                                                        {/* [2] 권장 양식 핵심 정보 블록 (휴대폰, 생년월일, 등록일, 주소) */}
+                                                                        <div style={{ flex: '1 1 350px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px 20px' }}>
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                                <span style={{ fontSize: '16px' }}>📞</span>
+                                                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                                    <span style={{ fontSize: '9px', color: '#AAA', fontWeight: 800, letterSpacing: '0.4px' }}>휴대폰 (성명)</span>
+                                                                                    <span style={{ fontSize: '14px', color: '#222', fontWeight: 700 }}>{member.phone || '미등록'}</span>
                                                                                 </div>
-                                                                            ) : (
-                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                                                                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#2F9E44' }} />
-                                                                                    <span style={{ fontSize: '10px', color: '#2F9E44', fontWeight: 900 }}>정상 승인</span>
+                                                                            </div>
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                                <span style={{ fontSize: '16px' }}>🎂</span>
+                                                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                                    <span style={{ fontSize: '9px', color: '#AAA', fontWeight: 800, letterSpacing: '0.4px' }}>생년월일 (성별)</span>
+                                                                                    <span style={{ fontSize: '14px', color: '#444', fontWeight: 700 }}>{member.birthdate || '미등록'}</span>
                                                                                 </div>
-                                                                            )}
-                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                            </div>
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                                                 <span style={{ fontSize: '16px' }}>📅</span>
-                                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-                                                                                    <span style={{ fontSize: '9px', color: '#AAA', fontWeight: 800, letterSpacing: '0.5px', lineHeight: 1 }}>JOINED</span>
-                                                                                    <span style={{ fontSize: '13px', color: '#444', fontWeight: 700 }}>{member.created_at ? (String(member.created_at).split(/[T\s]/)[0]) : '-'}</span>
+                                                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                                    <span style={{ fontSize: '9px', color: '#AAA', fontWeight: 800, letterSpacing: '0.4px' }}>등록일</span>
+                                                                                    <span style={{ fontSize: '14px', color: '#444', fontWeight: 700 }}>{member.created_at ? (String(member.created_at).split(/[T\s]/)[0]) : '-'}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                                <span style={{ fontSize: '16px' }}>🏠</span>
+                                                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                                    <span style={{ fontSize: '9px', color: '#AAA', fontWeight: 800, letterSpacing: '0.4px' }}>주소</span>
+                                                                                    <span style={{ fontSize: '13px', color: '#666', fontWeight: 600, maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.address || '주소 없음'}</span>
                                                                                 </div>
                                                                             </div>
                                                                         </div>
 
                                                                         {/* 수직 구분선 */}
-                                                                        <div style={{ width: '1px', height: '48px', background: 'linear-gradient(to bottom, transparent, #EEE, transparent)' }} />
+                                                                        <div style={{ width: '1px', height: '48px', background: '#EEE', flexShrink: 0 }} />
 
-                                                                        {/* 3열: 정돈된 연락처 섹션 */}
-                                                                        <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
-                                                                            {/* 연락처 */}
-                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                                <span style={{ fontSize: '14px' }}>📞</span>
-                                                                                <span style={{ fontSize: '14px', color: '#222', fontWeight: 800, flex: 1 }}>{member.phone || '미등록'}</span>
-                                                                                <span style={{ fontSize: '9px', background: member.is_phone_public ? '#E7F5FF' : '#F1F3F5', color: member.is_phone_public ? '#1971C2' : '#868E96', padding: '1px 5px', borderRadius: '4px', fontWeight: 800, border: '1px solid currentColor' }}>{member.is_phone_public ? '공개' : '비공'}</span>
-                                                                            </div>
-                                                                            {/* 생일 */}
-                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                                <span style={{ fontSize: '14px' }}>🎂</span>
-                                                                                <span style={{ fontSize: '14px', color: '#444', fontWeight: 700, flex: 1 }}>{member.birthdate || '미등록'}</span>
-                                                                                <span style={{ fontSize: '9px', background: member.is_birthdate_public ? '#E7F5FF' : '#F1F3F5', color: member.is_birthdate_public ? '#1971C2' : '#868E96', padding: '1px 5px', borderRadius: '4px', fontWeight: 800, border: '1px solid currentColor' }}>{member.is_birthdate_public ? '공개' : '비공'}</span>
-                                                                            </div>
-                                                                            {/* 주소 */}
-                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                                <span style={{ fontSize: '14px' }}>🏠</span>
-                                                                                <span style={{ fontSize: '14px', color: '#666', fontWeight: 600, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.address || '주소 없음'}</span>
-                                                                                <span style={{ fontSize: '9px', background: member.is_address_public ? '#E7F5FF' : '#F1F3F5', color: member.is_address_public ? '#1971C2' : '#868E96', padding: '1px 5px', borderRadius: '4px', fontWeight: 800, border: '1px solid currentColor' }}>{member.is_address_public ? '공개' : '비공'}</span>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {/* 수직 구분선 */}
-                                                                        <div style={{ width: '1px', height: '48px', background: 'linear-gradient(to bottom, transparent, #EEE, transparent)' }} />
-
-                                                                        {/* 4열: 조작 버튼 마스터 섹션 */}
-                                                                        <div style={{ paddingLeft: '24px', display: 'flex', gap: '6px', flexWrap: 'wrap', minWidth: 0 }}>
+                                                                        {/* [3] 조작 버튼 버튼 */}
+                                                                        <div style={{ flex: '0 0 auto', display: 'flex', gap: '6px', flexWrap: 'wrap', minWidth: '180px', justifyContent: 'flex-end' }}>
                                                                             {!member.is_approved && (
                                                                                 <button
                                                                                     onClick={async () => {
