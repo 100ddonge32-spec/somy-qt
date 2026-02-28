@@ -7443,10 +7443,10 @@ export default function App() {
 
                                                             return (
                                                                 <div key={member.id} style={{ background: 'white', padding: '16px', borderRadius: '20px', border: selectedMemberIds.includes(member.id) ? '2px solid #D4AF37' : '1px solid #EEE', marginBottom: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0', width: '100%', minHeight: '90px' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', width: '100%', minHeight: '100px', gap: '4px' }}>
 
-                                                                        {/* 1열: 프로필 (사진 + 이름/직분 등) */}
-                                                                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flex: '3', minWidth: 0, paddingRight: '16px' }}>
+                                                                        {/* 1열: 프로필 (사진 + 이름/직분 등) - flex: 3 -> flex: 3.5 */}
+                                                                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flex: '3.5', minWidth: '180px', paddingRight: '12px' }}>
                                                                             {/* 체크박스 */}
                                                                             <div
                                                                                 onClick={() => {
@@ -7457,12 +7457,12 @@ export default function App() {
                                                                                     }
                                                                                 }}
                                                                                 style={{
-                                                                                    width: '22px', height: '22px', borderRadius: '7px', border: '2px solid #D4AF37',
+                                                                                    width: '20px', height: '20px', borderRadius: '6px', border: '2px solid #D4AF37',
                                                                                     background: selectedMemberIds.includes(member.id) ? '#D4AF37' : 'white',
                                                                                     display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
                                                                                 }}
                                                                             >
-                                                                                {selectedMemberIds.includes(member.id) && <span style={{ color: 'white', fontSize: '12px' }}>✓</span>}
+                                                                                {selectedMemberIds.includes(member.id) && <span style={{ color: 'white', fontSize: '11px' }}>✓</span>}
                                                                             </div>
 
                                                                             {/* 사진 */}
@@ -7472,55 +7472,55 @@ export default function App() {
 
                                                                             {/* 사진 오른쪽 정보 (2줄) */}
                                                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, minWidth: 0 }}>
-                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                                                                                     <span style={{ fontSize: '16px', fontWeight: 900, color: '#222' }}>{displayName}</span>
-                                                                                    {member.church_rank && <span style={{ fontSize: '12px', background: '#FDFCF0', color: '#B8924A', padding: '1px 6px', borderRadius: '6px', fontWeight: 700, border: '1px solid #F1E9D2' }}>{member.church_rank}</span>}
+                                                                                    {member.church_rank && <span style={{ fontSize: '11px', background: '#FDFCF0', color: '#B8924A', padding: '1px 5px', borderRadius: '5px', fontWeight: 700, border: '1px solid #F1E9D2' }}>{member.church_rank}</span>}
                                                                                     {isAdmin && <span style={{ fontSize: '9px', background: '#333', color: 'white', padding: '1px 4px', borderRadius: '4px', fontWeight: 800 }}>ADMIN</span>}
                                                                                 </div>
-                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#666' }}>
-                                                                                    <span style={{ background: '#F5F5F5', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>{member.gender || '성별 미지정'}</span>
-                                                                                    <span>🎂 {member.birthdate || '생일 정보 없음'}</span>
+                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#666', whiteSpace: 'nowrap' }}>
+                                                                                    <span style={{ background: '#F5F5F5', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>{member.gender || '성별 미지정'}</span>
+                                                                                    <span>🎂 {member.birthdate ? member.birthdate : '생일 미등록'}</span>
                                                                                 </div>
                                                                             </div>
                                                                         </div>
 
                                                                         {/* 세로 구분선 1 */}
-                                                                        <div style={{ width: '1px', height: '50px', background: '#F0F0F0', flexShrink: 0 }} />
+                                                                        <div style={{ width: '1px', height: '40px', background: '#EEE', flexShrink: 0 }} />
 
-                                                                        {/* 2열: 승인상태 및 등록일 */}
-                                                                        <div style={{ flex: '2', padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+                                                                        {/* 2열: 승인상태 및 등록일 - flex: 2 -> flex: 2.2 */}
+                                                                        <div style={{ flex: '2.2', padding: '0 12px', display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px' }}>
                                                                             {!member.is_approved && (
-                                                                                <div style={{ alignSelf: 'flex-start' }}>
-                                                                                    <span style={{ fontSize: '11px', color: '#E03131', background: '#FFF5F5', padding: '3px 8px', borderRadius: '8px', border: '1px solid #FFE3E3', fontWeight: 800 }}>❗ 승인대기</span>
+                                                                                <div style={{ display: 'inline-flex' }}>
+                                                                                    <span style={{ fontSize: '10px', color: '#E03131', background: '#FFF5F5', padding: '2px 6px', borderRadius: '6px', border: '1px solid #FFE3E3', fontWeight: 800, whiteSpace: 'nowrap' }}>❗ 승인대기</span>
                                                                                 </div>
                                                                             )}
-                                                                            <div style={{ fontSize: '12px', color: '#999', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                            <div style={{ fontSize: '11px', color: '#999', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
                                                                                 <span>📅 등록일:</span>
-                                                                                <span style={{ fontSize: '13px', color: '#666', fontWeight: 600 }}>
-                                                                                    {member.created_at ? (String(member.created_at).includes('T') ? String(member.created_at).split('T')[0] : String(member.created_at).split(' ')[0]) : '정보 없음'}
+                                                                                <span style={{ fontSize: '12px', color: '#666', fontWeight: 600 }}>
+                                                                                    {member.created_at ? (String(member.created_at).includes('T') ? String(member.created_at).split('T')[0] : String(member.created_at).split(' ')[0]) : '미등록'}
                                                                                 </span>
                                                                             </div>
                                                                         </div>
 
                                                                         {/* 세로 구분선 2 */}
-                                                                        <div style={{ width: '1px', height: '50px', background: '#F0F0F0', flexShrink: 0 }} />
+                                                                        <div style={{ width: '1px', height: '40px', background: '#EEE', flexShrink: 0 }} />
 
-                                                                        {/* 3열: 연락처 */}
-                                                                        <div style={{ flex: '2.5', padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
-                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '15px', color: '#444', fontWeight: 800 }}>
+                                                                        {/* 3열: 연락처 - flex: 2.5 -> flex: 2.8 */}
+                                                                        <div style={{ flex: '2.8', padding: '0 12px', display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '14px', color: '#444', fontWeight: 800, whiteSpace: 'nowrap' }}>
                                                                                 <span>📞</span>
                                                                                 <span>{member.phone || '번호 없음'}</span>
                                                                             </div>
-                                                                            <div style={{ alignSelf: 'flex-start' }}>
-                                                                                <span style={{ fontSize: '10px', background: member.is_phone_public ? '#E8F5E9' : '#F5F5F5', color: member.is_phone_public ? '#2E7D32' : '#999', padding: '2px 8px', borderRadius: '6px', fontWeight: 700, border: member.is_phone_public ? '1px solid #C8E6C9' : '1px solid #EEE' }}>{member.is_phone_public ? '공개' : '🔒 비공개'}</span>
+                                                                            <div style={{ display: 'inline-flex' }}>
+                                                                                <span style={{ fontSize: '9px', background: member.is_phone_public ? '#E8F5E9' : '#F5F5F5', color: member.is_phone_public ? '#2E7D32' : '#999', padding: '2px 6px', borderRadius: '5px', fontWeight: 700, border: member.is_phone_public ? '1px solid #C8E6C9' : '1px solid #EEE' }}>{member.is_phone_public ? '공개' : '🔒 비공개'}</span>
                                                                             </div>
                                                                         </div>
 
                                                                         {/* 세로 구분선 3 */}
-                                                                        <div style={{ width: '1px', height: '50px', background: '#F0F0F0', flexShrink: 0 }} />
+                                                                        <div style={{ width: '1px', height: '40px', background: '#EEE', flexShrink: 0 }} />
 
-                                                                        {/* 4열: 조작 버튼 */}
-                                                                        <div style={{ flex: '3', paddingLeft: '16px', display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
+                                                                        {/* 4열: 조작 버튼 - flex: 3 -> flex: 3.5 */}
+                                                                        <div style={{ flex: '3.5', paddingLeft: '12px', display: 'flex', gap: '5px', flexWrap: 'wrap', justifyContent: 'flex-start', minWidth: '180px' }}>
                                                                             {!member.is_approved && (
                                                                                 <button
                                                                                     onClick={async () => {
@@ -7532,7 +7532,7 @@ export default function App() {
                                                                                             }
                                                                                         }
                                                                                     }}
-                                                                                    style={{ background: '#D4AF37', color: 'white', border: 'none', padding: '8px 14px', borderRadius: '10px', fontSize: '12px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 2px 4px rgba(212,175,55,0.2)' }}
+                                                                                    style={{ background: '#D4AF37', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 2px 4px rgba(212,175,55,0.15)', whiteSpace: 'nowrap' }}
                                                                                 >
                                                                                     승인하기
                                                                                 </button>
@@ -7544,15 +7544,15 @@ export default function App() {
                                                                                 };
                                                                                 setMemberEditForm(form);
                                                                                 setInitialMemberEditForm(form);
-                                                                            }} style={{ background: 'white', border: '1px solid #EEE', color: '#555', padding: '8px 14px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>관리</button>
+                                                                            }} style={{ background: 'white', border: '1px solid #EEE', color: '#555', padding: '6px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>관리</button>
                                                                             <button
                                                                                 onClick={() => { setMergeTarget(member); setMergeSearchKeyword(member.full_name || ''); setShowMergeModal(true); }}
                                                                                 style={{
-                                                                                    background: isDuplicate ? '#FFF9C4' : 'white', border: isDuplicate ? '1px solid #FBC02D' : '1px solid #EEE', padding: '8px 14px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', color: isDuplicate ? '#856404' : '#555', position: 'relative'
+                                                                                    background: isDuplicate ? '#FFF9C4' : 'white', border: isDuplicate ? '1px solid #FBC02D' : '1px solid #EEE', padding: '6px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', color: isDuplicate ? '#856404' : '#555', position: 'relative', whiteSpace: 'nowrap'
                                                                                 }}
                                                                             >
                                                                                 통합
-                                                                                {isDuplicate && <span style={{ position: 'absolute', top: '-6px', right: '-6px', width: '10px', height: '10px', background: '#FF5252', borderRadius: '50%', border: '2px solid white' }}></span>}
+                                                                                {isDuplicate && <span style={{ position: 'absolute', top: '-4px', right: '-4px', width: '8px', height: '8px', background: '#FF5252', borderRadius: '50%', border: '2px solid white' }}></span>}
                                                                             </button>
                                                                             <button
                                                                                 onClick={async () => {
@@ -7561,7 +7561,7 @@ export default function App() {
                                                                                         if (res.ok) setMemberList(prev => prev.filter(m => m.id !== member.id));
                                                                                     }
                                                                                 }}
-                                                                                style={{ background: '#FFF5F5', border: '1px solid #FFE3E3', padding: '8px 14px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', color: '#E03131' }}
+                                                                                style={{ background: '#FFF5F5', border: '1px solid #FFE3E3', padding: '6px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', color: '#E03131', whiteSpace: 'nowrap' }}
                                                                             >
                                                                                 삭제
                                                                             </button>
