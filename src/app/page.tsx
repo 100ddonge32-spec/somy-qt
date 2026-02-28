@@ -7494,11 +7494,13 @@ export default function App() {
                                                                                     <span style={{ fontSize: '18px', fontWeight: 800, color: '#1A1A1A', letterSpacing: '-0.5px' }}>{displayName}</span>
                                                                                     {member.church_rank && <span style={{ fontSize: '10px', background: '#FFF9E6', color: '#B08C3E', padding: '1px 6px', borderRadius: '5px', fontWeight: 700, border: '1px solid #F5E6C4' }}>{member.church_rank}</span>}
                                                                                 </div>
-                                                                                {/* 하단행: 성별 + 생일 */}
-                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#777' }}>
-                                                                                    <span style={{ color: member.gender === '남' ? '#4A90E2' : member.gender === '여' ? '#E24A90' : '#777', fontWeight: 700 }}>{member.gender || '미설정'}</span>
-                                                                                    <span style={{ width: '1px', height: '10px', background: '#DDD' }} />
-                                                                                    <span style={{ whiteSpace: 'nowrap' }}>🎂 {member.birthdate || '미등록'}</span>
+                                                                                {/* 하단행: 성별 */}
+                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                                                                                    <span style={{
+                                                                                        background: member.gender === '남' ? '#E7F5FF' : member.gender === '여' ? '#FFF0F6' : '#F1F3F5',
+                                                                                        color: member.gender === '남' ? '#1971C2' : member.gender === '여' ? '#D6336C' : '#868E96',
+                                                                                        padding: '1px 8px', borderRadius: '6px', fontWeight: 800, fontSize: '11px'
+                                                                                    }}>{member.gender || '성별 미설정'}</span>
                                                                                 </div>
                                                                             </div>
                                                                         </div>
@@ -7519,9 +7521,12 @@ export default function App() {
                                                                                     <span style={{ fontSize: '10px', color: '#2F9E44', fontWeight: 900 }}>정상 승인</span>
                                                                                 </div>
                                                                             )}
-                                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                                                                                <span style={{ fontSize: '10px', color: '#AAA', fontWeight: 700, letterSpacing: '0.5px' }}>JOINED</span>
-                                                                                <span style={{ fontSize: '13px', color: '#444', fontWeight: 700 }}>{member.created_at ? (String(member.created_at).split(/[T\s]/)[0]) : '-'}</span>
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                                <span style={{ fontSize: '16px' }}>📅</span>
+                                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                                                                                    <span style={{ fontSize: '9px', color: '#AAA', fontWeight: 800, letterSpacing: '0.5px', lineHeight: 1 }}>JOINED</span>
+                                                                                    <span style={{ fontSize: '13px', color: '#444', fontWeight: 700 }}>{member.created_at ? (String(member.created_at).split(/[T\s]/)[0]) : '-'}</span>
+                                                                                </div>
                                                                             </div>
                                                                         </div>
 
@@ -7529,13 +7534,24 @@ export default function App() {
                                                                         <div style={{ width: '1px', height: '48px', background: 'linear-gradient(to bottom, transparent, #EEE, transparent)' }} />
 
                                                                         {/* 3열: 정돈된 연락처 섹션 */}
-                                                                        <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0 }}>
+                                                                        <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+                                                                            {/* 연락처 */}
                                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#F8F9FA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', border: '1px solid #E9ECEF' }}>📞</div>
-                                                                                <span style={{ fontSize: '15px', color: '#222', fontWeight: 800, letterSpacing: '0.2px' }}>{member.phone || '미등록'}</span>
+                                                                                <span style={{ fontSize: '14px' }}>📞</span>
+                                                                                <span style={{ fontSize: '14px', color: '#222', fontWeight: 800, flex: 1 }}>{member.phone || '미등록'}</span>
+                                                                                <span style={{ fontSize: '9px', background: member.is_phone_public ? '#E7F5FF' : '#F1F3F5', color: member.is_phone_public ? '#1971C2' : '#868E96', padding: '1px 5px', borderRadius: '4px', fontWeight: 800, border: '1px solid currentColor' }}>{member.is_phone_public ? '공개' : '비공'}</span>
                                                                             </div>
-                                                                            <div style={{ paddingLeft: '36px' }}>
-                                                                                <span style={{ fontSize: '10px', background: member.is_phone_public ? '#E7F5FF' : '#F1F3F5', color: member.is_phone_public ? '#1971C2' : '#868E96', padding: '3px 8px', borderRadius: '6px', fontWeight: 800, border: '1px solid currentColor' }}>{member.is_phone_public ? 'PUBLIC' : 'PRIVATE'}</span>
+                                                                            {/* 생일 */}
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                                <span style={{ fontSize: '14px' }}>🎂</span>
+                                                                                <span style={{ fontSize: '14px', color: '#444', fontWeight: 700, flex: 1 }}>{member.birthdate || '미등록'}</span>
+                                                                                <span style={{ fontSize: '9px', background: member.is_birthdate_public ? '#E7F5FF' : '#F1F3F5', color: member.is_birthdate_public ? '#1971C2' : '#868E96', padding: '1px 5px', borderRadius: '4px', fontWeight: 800, border: '1px solid currentColor' }}>{member.is_birthdate_public ? '공개' : '비공'}</span>
+                                                                            </div>
+                                                                            {/* 주소 */}
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                                <span style={{ fontSize: '14px' }}>🏠</span>
+                                                                                <span style={{ fontSize: '14px', color: '#666', fontWeight: 600, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.address || '주소 없음'}</span>
+                                                                                <span style={{ fontSize: '9px', background: member.is_address_public ? '#E7F5FF' : '#F1F3F5', color: member.is_address_public ? '#1971C2' : '#868E96', padding: '1px 5px', borderRadius: '4px', fontWeight: 800, border: '1px solid currentColor' }}>{member.is_address_public ? '공개' : '비공'}</span>
                                                                             </div>
                                                                         </div>
 
