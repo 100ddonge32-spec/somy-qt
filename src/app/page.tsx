@@ -1498,7 +1498,7 @@ export default function App() {
 
     const handleDirectLogin = async () => {
         if (!loginName.trim() || !loginPhoneTail.trim()) {
-            alert("성함과 전화번호 뒷자리를 입력해 주세요.");
+            alert("성함과 전화번호를 입력해 주세요.");
             return;
         }
 
@@ -2099,104 +2099,68 @@ export default function App() {
                     {/* Action Buttons을 최상단으로 옮김 */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%", maxWidth: "340px", animation: "fade-in 1.4s ease-out", paddingBottom: "20px" }}>
                         {!user ? (
-                            <div style={{ background: 'white', padding: '24px', borderRadius: '28px', boxShadow: '0 10px 40px rgba(0,0,0,0.08)', border: '1px solid #F0ECE4', textAlign: 'center' }}>
-                                <div style={{ fontSize: '18px', fontWeight: 900, color: '#333', marginBottom: '8px' }}>안녕하세요! 반갑습니다 ✨</div>
-                                <div style={{ fontSize: '13px', color: '#888', marginBottom: '24px' }}>성도 정보를 입력하여 시작하세요.</div>
+                            <div style={{ background: 'white', padding: '30px', borderRadius: '32px', boxShadow: '0 15px 50px rgba(0,0,0,0.1)', border: '1px solid #F0ECE4', textAlign: 'center' }}>
+                                <div style={{ fontSize: '20px', fontWeight: 900, color: '#333', marginBottom: '8px' }}>우리 교회 성도 로그인 ✨</div>
+                                <div style={{ fontSize: '13px', color: '#888', marginBottom: '28px', lineHeight: 1.5 }}>관리자가 등록한 정보를 입력하시면<br />별도의 승인 없이 바로 시작됩니다.</div>
 
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                     <div style={{ textAlign: 'left' }}>
-                                        <label style={{ fontSize: '11px', fontWeight: 800, color: '#AAA', marginLeft: '4px', marginBottom: '4px', display: 'block' }}>성함</label>
+                                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>성함</label>
                                         <input
                                             type="text"
                                             placeholder="실명을 입력하세요 (예: 홍길동)"
                                             value={loginName}
                                             onChange={(e) => setLoginName(e.target.value)}
-                                            style={{ width: '100%', padding: '14px', borderRadius: '14px', border: '1px solid #EEE', fontSize: '14px', outline: 'none', background: '#FAFAFA' }}
+                                            style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '15px', outline: 'none', background: '#FAFAFA', boxSizing: 'border-box' }}
                                         />
                                     </div>
                                     <div style={{ textAlign: 'left' }}>
-                                        <label style={{ fontSize: '11px', fontWeight: 800, color: '#AAA', marginLeft: '4px', marginBottom: '4px', display: 'block' }}>전화번호 뒷자리 (4자리)</label>
+                                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>전화번호 (010-0000-0000)</label>
                                         <input
                                             type="tel"
-                                            maxLength={4}
-                                            placeholder="1234"
+                                            placeholder="숫자만 입력해 주세요"
                                             value={loginPhoneTail}
                                             onChange={(e) => setLoginPhoneTail(e.target.value.replace(/[^0-9]/g, ''))}
-                                            style={{ width: '100%', padding: '14px', borderRadius: '14px', border: '1px solid #EEE', fontSize: '14px', outline: 'none', background: '#FAFAFA' }}
+                                            style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '15px', outline: 'none', background: '#FAFAFA', boxSizing: 'border-box' }}
                                         />
                                     </div>
                                     <div style={{ textAlign: 'left' }}>
-                                        <label style={{ fontSize: '11px', fontWeight: 800, color: '#AAA', marginLeft: '4px', marginBottom: '4px', display: 'block' }}>생년월일 (선택 - 정확한 매칭용)</label>
+                                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>생년월일 (8자리: 19900101)</label>
                                         <input
                                             type="tel"
                                             maxLength={8}
                                             placeholder="19900101"
                                             value={loginBirthdate}
                                             onChange={(e) => setLoginBirthdate(e.target.value.replace(/[^0-9]/g, ''))}
-                                            style={{ width: '100%', padding: '14px', borderRadius: '14px', border: '1px solid #EEE', fontSize: '14px', outline: 'none', background: '#FAFAFA' }}
+                                            style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '15px', outline: 'none', background: '#FAFAFA', boxSizing: 'border-box' }}
                                         />
                                     </div>
-
-                                    {isInApp && (
-                                        <div style={{ padding: '12px', background: '#FFF4E5', borderRadius: '12px', border: '1px solid #FFD599', marginBottom: '10px', animation: 'pulse-soft 2s infinite' }}>
-                                            <div style={{ fontSize: '13px', fontWeight: 800, color: '#E67E22', marginBottom: '4px' }}>⚠️ 브라우저를 먼저 변경해 주세요</div>
-                                            <div style={{ fontSize: '11px', color: '#B3541E', textAlign: 'left', lineHeight: 1.4 }}>
-                                                현재 <b>카카오톡 화면</b>에서는 홈 화면 추가 시 로그인이 풀릴 수 있습니다. 우측 상단 <b>점 3개(...)</b>를 눌러 <b>'다른 브라우저로 열기'</b>(크롬/사파리)를 먼저 선택해 주세요!
-                                            </div>
-                                        </div>
-                                    )}
 
                                     <button
                                         onClick={handleDirectLogin}
                                         disabled={isDirectLoggingIn}
                                         style={{
-                                            marginTop: '8px',
+                                            marginTop: '10px',
                                             width: '100%',
-                                            padding: '16px',
-                                            background: (loginName && loginPhoneTail.length === 4) ? '#333' : '#AAA',
+                                            padding: '18px',
+                                            background: (loginName && loginPhoneTail.length >= 4) ? '#333' : '#AAA',
                                             color: 'white',
                                             border: 'none',
-                                            borderRadius: '16px',
-                                            fontSize: '15px',
+                                            borderRadius: '18px',
+                                            fontSize: '16px',
                                             fontWeight: 800,
-                                            cursor: (loginName && loginPhoneTail.length === 4) ? 'pointer' : 'default',
-                                            boxShadow: (loginName && loginPhoneTail.length === 4) ? '0 8px 16px rgba(0,0,0,0.1)' : 'none',
+                                            cursor: (loginName && loginPhoneTail.length >= 4) ? 'pointer' : 'default',
+                                            boxShadow: (loginName && loginPhoneTail.length >= 4) ? '0 10px 20px rgba(0,0,0,0.15)' : 'none',
                                             transition: 'all 0.3s'
                                         }}
                                     >
-                                        {isDirectLoggingIn ? '처리 중...' : '가입하기'}
+                                        {isDirectLoggingIn ? '정보 확인 중...' : '교인 정보로 바로 시작하기'}
                                     </button>
 
-                                    <div style={{ marginTop: '16px', fontSize: '11px', color: '#BBB', lineHeight: 1.5 }}>
-                                        * 최초 1회만 입력하면 이후 자동으로 로그인됩니다.<br />
-                                        * 교회에 등록되지 않은 경우 승인 대기로 전환됩니다.
+                                    <div style={{ marginTop: '16px', fontSize: '12px', color: '#B8924A', lineHeight: 1.6, background: '#FDF7E7', padding: '12px', borderRadius: '12px', border: '1px solid #F5E0BB' }}>
+                                        ✅ 한번 로그인하면 계속 유지됩니다.<br />
+                                        정보가 틀릴 경우 관리자 승인 대기 상태로 되오니 정확하게 입력해 주세요!
                                     </div>
-
-                                    <div style={{ margin: '20px 0', height: '1px', background: '#EEE', position: 'relative' }}>
-                                        <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'white', padding: '0 10px', fontSize: '11px', color: '#CCC' }}>또는</span>
-                                    </div>
-
-                                    <button
-                                        onClick={() => handleLogin('kakao')}
-                                        style={{
-                                            width: '100%',
-                                            padding: '16px',
-                                            background: '#FEE500',
-                                            color: '#3C1E1E',
-                                            border: 'none',
-                                            borderRadius: '16px',
-                                            fontSize: '15px',
-                                            fontWeight: 700,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: '8px',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        <span style={{ fontSize: '20px' }}>💬</span> 카카오로 로그인 (모든 기기 연동)
-                                    </button>
-                                    <div style={{ marginTop: '8px', fontSize: '10px', color: '#AAA' }}>아이패드, PC 등 다른 기기에서도 정보를 유지하려면<br />카카오 로그인을 추천합니다.</div>
                                 </div>
                             </div>
                         ) : !isApproved && !isAdmin ? (
