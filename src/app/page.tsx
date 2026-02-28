@@ -7767,47 +7767,69 @@ export default function App() {
                                             </div>
 
 
-                                            {/* ✅ 관리자 목록 관리 섹션 (이름 표시 버전) */}
-                                            <div style={{ background: 'white', padding: '16px', borderRadius: '15px', border: '1px solid #EEE' }}>
-                                                <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <span>👥 전체 관리자 명단 ({allAdminList.length})</span>
-                                                    <button onClick={fetchAllAdmins} style={{ background: '#F5F5F5', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>새로고침</button>
-                                                </div>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                    {allAdminList.length > 0 ? (
-                                                        allAdminList.map((admin: any) => (
-                                                            <div key={admin.email} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px 12px', borderRadius: '10px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                                                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', minWidth: 0, flex: 1 }}>
-                                                                    <div style={{ width: '32px', height: '32px', background: '#F5F5F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', overflow: 'hidden', flexShrink: 0 }}>
-                                                                        {admin.avatar_url ? <img src={admin.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
-                                                                    </div>
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
-                                                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                            {admin.name || '이름 없음'}
-                                                                            <span style={{ fontSize: '10px', background: admin.role === 'super_admin' ? '#E3F2FD' : '#F5F5F3', color: admin.role === 'super_admin' ? '#1565C0' : '#888', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>{admin.role === 'super_admin' ? '슈퍼' : '일반'}</span>
+                                            {/* ✅ 관리자 목록 관리 섹션 (교회별 구분) */}
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                                {/* 🏷️ 내 교회 및 소속 관리자 */}
+                                                <div style={{ background: 'white', padding: '16px', borderRadius: '15px', border: '1px solid #c8e6c9' }}>
+                                                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#2e7d32', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <span>⛪ 내 교회 소속 관리자 ({allAdminList.filter(a => !a.church_id || a.church_id === (churchId || 'jesus-in')).length})</span>
+                                                        <button onClick={fetchAllAdmins} style={{ background: '#F5F5F5', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>새로고침</button>
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                        {allAdminList.filter(a => !a.church_id || a.church_id === (churchId || 'jesus-in')).length > 0 ? (
+                                                            allAdminList.filter(a => !a.church_id || a.church_id === (churchId || 'jesus-in')).map((admin: any) => (
+                                                                <div key={admin.email} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px 12px', borderRadius: '10px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                                                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', minWidth: 0, flex: 1 }}>
+                                                                        <div style={{ width: '32px', height: '32px', background: '#F5F5F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', overflow: 'hidden', flexShrink: 0 }}>
+                                                                            {admin.avatar_url ? <img src={admin.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
                                                                         </div>
-                                                                        <div style={{ fontSize: '11px', color: '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{admin.email} | 📍 {admin.church_id || '전체'}</div>
+                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
+                                                                            <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                                {admin.name || '이름 없음'}
+                                                                                <span style={{ fontSize: '10px', background: admin.role === 'super_admin' ? '#E3F2FD' : '#F5F5F3', color: admin.role === 'super_admin' ? '#1565C0' : '#888', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>{admin.role === 'super_admin' ? '슈퍼' : '일반'}</span>
+                                                                            </div>
+                                                                            <div style={{ fontSize: '11px', color: '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{admin.email} | 📍 {admin.church_id || '전체'}</div>
+                                                                        </div>
                                                                     </div>
+                                                                    {admin.email !== user?.email && (
+                                                                        <button onClick={() => handleDeleteAdmin(admin.email)} style={{ background: '#FFF5F5', color: '#C62828', border: '1px solid #FFE3E3', borderRadius: '8px', padding: '6px 10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>삭제</button>
+                                                                    )}
                                                                 </div>
-                                                                {admin.email !== user?.email && (
-                                                                    <button
-                                                                        onClick={() => handleDeleteAdmin(admin.email)}
-                                                                        style={{ background: '#FFF5F5', color: '#C62828', border: '1px solid #FFE3E3', borderRadius: '8px', padding: '6px 10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
-                                                                    >
-                                                                        삭제
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        ))
-                                                    ) : (
-                                                        <div style={{ fontSize: '12px', color: '#999', textAlign: 'center', padding: '20px' }}>불러온 관리자 명단이 없습니다.</div>
-                                                    )}
+                                                            ))
+                                                        ) : (
+                                                            <div style={{ fontSize: '12px', color: '#999', textAlign: 'center', padding: '10px' }}>현재 소속된 관리자가 없습니다.</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* 🏷️ 타 교회 및 전체 관리자 */}
+                                                <div style={{ background: '#FDFCFB', padding: '16px', borderRadius: '15px', border: '1px solid #DDD' }}>
+                                                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '12px' }}>🌐 타 교회 및 통합 관리자 ({allAdminList.filter(a => a.church_id && a.church_id !== (churchId || 'jesus-in')).length})</div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                        {allAdminList.filter(a => a.church_id && a.church_id !== (churchId || 'jesus-in')).length > 0 ? (
+                                                            allAdminList.filter(a => a.church_id && a.church_id !== (churchId || 'jesus-in')).map((admin: any) => (
+                                                                <div key={admin.email} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px 12px', borderRadius: '10px', border: '1px solid #F0F0F0', opacity: 0.8 }}>
+                                                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', minWidth: 0, flex: 1 }}>
+                                                                        <div style={{ width: '30px', height: '30px', background: '#F5F5F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>'🏢'</div>
+                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
+                                                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#444' }}>{admin.name || '이름 없음'} <span style={{ fontSize: '9px', color: '#999' }}>({admin.role === 'super_admin' ? '슈퍼' : '일반'})</span></div>
+                                                                            <div style={{ fontSize: '10px', color: '#AAA' }}>⛪ {admin.church_id} 소속</div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <button onClick={() => handleDeleteAdmin(admin.email)} style={{ background: '#F5F5F5', color: '#999', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '10px', cursor: 'pointer' }}>해제</button>
+                                                                </div>
+                                                            ))
+                                                        ) : (
+                                                            <div style={{ fontSize: '12px', color: '#BBB', textAlign: 'center', padding: '10px' }}>다른 연동된 교회 관리자가 없습니다.</div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            {/* ✅ 관리자 추가 등록 섹션 (개편: 이름/전화번호/생일 기준) */}
+
+                                            {/* ✅ 관리자 추가 등록 섹션 (교회 연동 명확화) */}
                                             <div style={{ background: '#edf7ed', padding: '16px', borderRadius: '15px', border: '1px solid #c8e6c9' }}>
-                                                <div style={{ fontSize: '13px', fontWeight: 800, color: '#2e7d32', marginBottom: '12px' }}>➕ 신규 관리자 권한 부여</div>
+                                                <div style={{ fontSize: '13px', fontWeight: 800, color: '#2e7d32', marginBottom: '12px' }}>➕ [내 교회] 관리자 권한 부여</div>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                     <div style={{ fontSize: '11px', color: '#666', marginBottom: '4px' }}>성도 명단과 정확히 일치하는 정보를 입력하세요.</div>
                                                     <input id="add-admin-name" placeholder="성도 이름" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: 'white' }} />
@@ -7858,9 +7880,9 @@ export default function App() {
                                                 </div>
                                             </div>
 
-                                            {/* 다른 교회 권한 위임 */}
+                                            {/* 타교회 권한 위임 (타교회용) */}
                                             <div style={{ background: 'white', padding: '16px', borderRadius: '15px', border: '1px solid #EEE' }}>
-                                                <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', marginBottom: '12px' }}>👑 새 교회 및 관리자 지정</div>
+                                                <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', marginBottom: '12px' }}>👑 [타 교회] 신규 생성 및 관리자 지정</div>
                                                 <div style={{ fontSize: '11px', color: '#888', marginBottom: '12px', lineHeight: 1.5 }}>
                                                     - 특정 앱 사용자의 계정과 연동할 교회를 새로 생성합니다.<br />
                                                     - 입력하신 정보를 가진 사용자가 해당 교회의 '최고 관리자'가 됩니다.
