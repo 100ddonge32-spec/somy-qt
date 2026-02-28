@@ -31,8 +31,8 @@ export async function GET(req: NextRequest) {
         // 2. 행사 포스터 노출 여부
         data.event_poster_visible = data.event_poster_visible || planStr.includes('poster_on');
 
-        // 3. 행사 포스터 URL
-        if (!data.event_poster_url && planStr.includes('poster_url:')) {
+        // 3. 행사 포스터 URL (plan 필드 인코딩 데이터가 컬럼 데이터보다 최신일 수 있으므로 우선순위 부여)
+        if (planStr.includes('poster_url:')) {
             const match = planStr.match(/poster_url:([^|]+)/);
             if (match) data.event_poster_url = match[1];
         }

@@ -6662,7 +6662,12 @@ export default function App() {
             </div>
             {renderContent()}
 
-            {showEventPopup && churchSettings.event_poster_url && churchSettings.event_poster_visible && <EventPosterPopup imageUrl={churchSettings.event_poster_url} onClose={() => setShowEventPopup(false)} />}
+            {showEventPopup && churchSettings.event_poster_url && churchSettings.event_poster_visible && (
+                <EventPosterPopup
+                    imageUrl={`${churchSettings.event_poster_url}${churchSettings.event_poster_url.includes('?') ? '&' : '?'}t=${Date.now()}`}
+                    onClose={() => setShowEventPopup(false)}
+                />
+            )}
 
             {/* 전역으로 분리한 설정 모달 */}
             {
