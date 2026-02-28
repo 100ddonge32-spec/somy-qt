@@ -6657,7 +6657,7 @@ export default function App() {
                             {/* 고정되는 헤더 영역 */}
                             <div style={{ padding: '28px 28px 15px 28px', flexShrink: 0, borderBottom: '1px solid #F0F0F0', zIndex: 10 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>⚙️ {adminTab === 'settings' ? '교회 설정' : adminTab === 'members' ? '성도 관리' : '슈퍼 관리'}</h2>
+                                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>⚙️ {adminTab === 'settings' ? '교회 설정' : adminTab === 'members' ? '성도 관리' : adminTab === 'reset' ? '데이터 초기화' : '슈퍼 관리'}</h2>
                                     <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
                                 </div>
 
@@ -6683,6 +6683,7 @@ export default function App() {
                                             } catch (e) { }
                                         }
                                     }} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'stats' ? 'white' : 'transparent', boxShadow: adminTab === 'stats' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'stats' ? '#333' : '#777' }}>📊 통계</button>
+                                    <button onClick={() => setAdminTab('reset')} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'reset' ? 'white' : 'transparent', boxShadow: adminTab === 'reset' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'reset' ? '#333' : '#777' }}>🗑️ 초기화</button>
                                     {isSuperAdmin && (
                                         <button onClick={() => { setAdminTab('master'); fetchAllAdmins(); }} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'master' ? 'white' : 'transparent', boxShadow: adminTab === 'master' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'master' ? '#333' : '#777' }}>👑 마스터</button>
                                     )}
@@ -7643,6 +7644,83 @@ export default function App() {
                                             </div>
                                         </div>
                                     </>
+                                ) : adminTab === 'reset' ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                        <div style={{ padding: '20px', background: '#FFF5F5', borderRadius: '20px', border: '1px solid #FFC9C9' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+                                                <div style={{ fontSize: '24px' }}>⚠️</div>
+                                                <div>
+                                                    <div style={{ fontSize: '15px', fontWeight: 900, color: '#C62828' }}>주의하세요!</div>
+                                                    <div style={{ fontSize: '12px', color: '#666' }}>초기화된 데이터는 복구할 수 없습니다.</div>
+                                                </div>
+                                            </div>
+
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                {/* 감사일기 리셋 */}
+                                                <div style={{ background: 'white', padding: '16px', borderRadius: '15px', border: '1px solid #FFC9C9' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#333' }}>📔 감사일기 초기화</div>
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (confirm('모든 감사일기 기록과 댓글을 삭제하시겠습니까?\n이 작업은 복구할 수 없습니다.')) {
+                                                                    const res = await fetch('/api/admin', {
+                                                                        method: 'POST',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({ action: 'reset_thanksgiving', church_id: churchId })
+                                                                    });
+                                                                    if (res.ok) alert('감사일기가 초기화되었습니다.');
+                                                                }
+                                                            }}
+                                                            style={{ padding: '6px 12px', background: '#FFEEF0', color: '#E53935', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                                                        >리셋 실행</button>
+                                                    </div>
+                                                    <div style={{ fontSize: '11px', color: '#999' }}>성도들이 작성한 모든 감사일기 및 댓글 데이터를 삭제합니다.</div>
+                                                </div>
+
+                                                {/* 은혜나눔 리셋 */}
+                                                <div style={{ background: 'white', padding: '16px', borderRadius: '15px', border: '1px solid #FFC9C9' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#333' }}>💬 은혜나눔(게시판) 초기화</div>
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (confirm('모든 은혜나눔 게시글과 댓글을 삭제하시겠습니까?\n이 작업은 복구할 수 없습니다.')) {
+                                                                    const res = await fetch('/api/admin', {
+                                                                        method: 'POST',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({ action: 'reset_community', church_id: churchId })
+                                                                    });
+                                                                    if (res.ok) alert('은혜나눔 게시판이 초기화되었습니다.');
+                                                                }
+                                                            }}
+                                                            style={{ padding: '6px 12px', background: '#FFEEF0', color: '#E53935', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                                                        >리셋 실행</button>
+                                                    </div>
+                                                    <div style={{ fontSize: '11px', color: '#999' }}>게시판에 등록된 모든 글과 댓글을 영구 삭제합니다.</div>
+                                                </div>
+
+                                                {/* 큐티왕 리셋 */}
+                                                <div style={{ background: 'white', padding: '16px', borderRadius: '15px', border: '1px solid #FFC9C9' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#333' }}>👑 이달의 큐티왕(통계) 초기화</div>
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (confirm('성도들의 큐티 참여(완주) 데이터를 모두 초기화하시겠습니까?\n새로운 달이 시작될 때 사용하세요.')) {
+                                                                    const res = await fetch('/api/admin', {
+                                                                        method: 'POST',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({ action: 'reset_qt_stats', church_id: churchId })
+                                                                    });
+                                                                    if (res.ok) alert('큐티 참여 데이터가 초기화되었습니다.');
+                                                                }
+                                                            }}
+                                                            style={{ padding: '6px 12px', background: '#FFEEF0', color: '#E53935', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                                                        >리셋 실행</button>
+                                                    </div>
+                                                    <div style={{ fontSize: '11px', color: '#999' }}>성도들의 큐티 완료 기록(통계)을 모두 삭제합니다.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 ) : adminTab === 'master' ? (
                                     <>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>

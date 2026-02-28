@@ -577,6 +577,50 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true, targetChurchId });
         }
 
+        // [추가] 은혜나눔(커뮤니티) 초기화
+        if (action === 'reset_community') {
+            const { church_id } = body;
+            if (!church_id) throw new Error('교회 식별자가 없습니다.');
+
+            // 댓글 먼저 삭제 후 포스트 삭제
+            const { data: posts } = await supabaseAdmin.from('community_posts').select('id').eq('church_id', church_id);
+            if (posts && posts.length > 0) {
+                const postIds = posts.map(p => p.id);
+                // @ts-ignore
+                await supabaseAdmin.from('community_comments').delete().in('post_id', postIds);
+            }
+            const { error } = await supabaseAdmin.from('community_posts').delete().eq('church_id', church_id);
+            if (error) throw error;
+            return NextResponse.json({ success: true });
+        }
+
+        // [추가] 감사일기 초기화
+        if (action === 'reset_thanksgiving') {
+            const { church_id } = body;
+            if (!church_id) throw new Error('교회 식별자가 없습니다.');
+
+            // 댓글 먼저 삭제 후 일기 삭제
+            const { data: diaries } = await supabaseAdmin.from('thanksgiving_diaries').select('id').eq('church_id', church_id);
+            if (diaries && diaries.length > 0) {
+                const diaryIds = diaries.map(d => d.id);
+                // @ts-ignore
+                await supabaseAdmin.from('thanksgiving_comments').delete().in('diary_id', diaryIds);
+            }
+            const { error } = await supabaseAdmin.from('thanksgiving_diaries').delete().eq('church_id', church_id);
+            if (error) throw error;
+            return NextResponse.json({ success: true });
+        }
+
+        // [추가] 큐티 통계(큐티왕) 초기화
+        if (action === 'reset_qt_stats') {
+            const { church_id } = body;
+            if (!church_id) throw new Error('교회 식별자가 없습니다.');
+
+            const { error } = await supabaseAdmin.from('qt_completions').delete().eq('church_id', church_id);
+            if (error) throw error;
+            return NextResponse.json({ success: true });
+        }
+
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
