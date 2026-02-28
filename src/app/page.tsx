@@ -8364,11 +8364,15 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
 
     const fetchInitial = async () => {
         setIsSearching(true);
+        const isAdminQuery = isAdmin || isSuperAdmin;
+        const apiUrl = `/api/members?church_id=${churchId}${isAdminQuery ? '&admin=true' : ''}`;
+        console.log(`[MemberSearch] Loading members from: ${apiUrl} (isAdmin: ${isAdmin}, isSuperAdmin: ${isSuperAdmin})`);
         try {
-            const res = await fetch(`/api/members?church_id=${churchId}${isAdmin ? '&admin=true' : ''}`, { cache: 'no-store' });
+            const res = await fetch(apiUrl, { cache: 'no-store' });
             const data = await res.json();
             if (Array.isArray(data)) {
                 setResults(data);
+                console.log(`[MemberSearch] Loaded ${data.length} members. First member email: ${data[0]?.email}`);
             }
         } catch (e) { console.error("멤버 로딩 실패:", e); }
         finally { setIsSearching(false); }
@@ -8386,8 +8390,11 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
 
     const handleSearch = async () => {
         setIsSearching(true);
+        const isAdminQuery = isAdmin || isSuperAdmin;
+        const apiUrl = `/api/members?church_id=${churchId}&query=${encodeURIComponent(searchTerm)}${isAdminQuery ? '&admin=true' : ''}`;
+        console.log(`[MemberSearch] Searching members from: ${apiUrl}`);
         try {
-            const res = await fetch(`/api/members?church_id=${churchId}&query=${encodeURIComponent(searchTerm)}${isAdmin ? '&admin=true' : ''}`, { cache: 'no-store' });
+            const res = await fetch(apiUrl, { cache: 'no-store' });
             const data = await res.json();
             if (Array.isArray(data)) {
                 setResults(data);
@@ -8463,7 +8470,11 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
             ...m,
             is_system_admin: isAdminFound
         };
-    }).filter(m => {
+    });
+
+    console.log(`[MemberSearch] Filtered results count: ${filteredResults.length}, Admin count: ${filteredResults.filter(m => m.is_system_admin).length}`);
+
+    const finalResults = filteredResults.filter(m => {
         if (adminFilter === "all") return true;
         if (adminFilter === "admin") return m.is_system_admin;
         if (adminFilter === "user") return !m.is_system_admin;
@@ -8704,11 +8715,15 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                    {isSuperAdmin && member.email && !isAdminsLoading && (
-                                        member.is_system_admin ? (
-                                            <button onClick={(e) => { e.stopPropagation(); handleRevokeAdmin(member); }} style={{ background: '#FFEBEE', color: '#C62828', border: '1px solid #FFCDD2', padding: '8px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}>🚫 해제</button>
+                                    {isSuperAdmin && !isAdminsLoading && (
+                                        member.email ? (
+                                            member.is_system_admin ? (
+                                                <button onClick={(e) => { e.stopPropagation(); handleRevokeAdmin(member); }} style={{ background: '#FFEBEE', color: '#C62828', border: '1px solid #FFCDD2', padding: '8px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}>🚫 해제</button>
+                                            ) : (
+                                                <button onClick={(e) => { e.stopPropagation(); handleNominateAdmin(member); }} style={{ background: '#E3F2FD', color: '#1565C0', border: '1px solid #BBDEFB', padding: '8px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}>🛡️ 임명</button>
+                                            )
                                         ) : (
-                                            <button onClick={(e) => { e.stopPropagation(); handleNominateAdmin(member); }} style={{ background: '#E3F2FD', color: '#1565C0', border: '1px solid #BBDEFB', padding: '8px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}>🛡️ 임명</button>
+                                            <div style={{ fontSize: '10px', color: '#AAA', padding: '8px' }}>[이메일 없음]</div>
                                         )
                                     )}
                                     {isSuperAdmin && member.email && isAdminsLoading && (

@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
         const filteredData = data.map(member => ({
             id: member.id,
             full_name: member.full_name,
+            // [수정] 관리자 쿼리인 경우에만 이메일 포함 (보안 유지)
             email: isAdminQuery ? member.email : null,
             avatar_url: member.avatar_url,
             church_rank: member.church_rank,
