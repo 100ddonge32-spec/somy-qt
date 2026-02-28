@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
 
         if (error) throw error;
 
-        // ✅ 알림 전송 로직 개선 (김부장의 스마트 알림)
+        // ✅ 알림 전송 로직 개선 (김부장의 스마트 알림 - OR 쿼리 수정)
         // 1. 관리자 정보 조회 (해당 교회의 관리자 + 모든 슈퍼관리자)
         const { data: admins } = await supabaseAdmin.from('app_admins')
             .select('email, role, church_id')
@@ -65,9 +65,16 @@ export async function POST(req: NextRequest) {
             .map(a => a.email.toLowerCase().trim());
 
         // 2. 관리자 프로필 및 '보스' 계정(백동희/동희) 추가 조회
+        // [수정] targetAdminsEmails가 비어있을 때 PostgREST 에러 방지
+        const orClauses = [];
+        if (targetAdminsEmails.length > 0) {
+            orClauses.push(`email.in.(${targetAdminsEmails.join(',')})`);
+        }
+        orClauses.push('full_name.ilike.%백동희%', 'full_name.ilike.%동희%'); // 이름 매칭을 좀 더 유연하게 (ilike)
+
         const { data: adminProfiles } = await supabaseAdmin.from('profiles')
             .select('id, email, full_name')
-            .or(`email.in.(${targetAdminsEmails.join(',')}),full_name.eq.백동희,full_name.eq.동희`);
+            .or(orClauses.join(','));
 
         if (adminProfiles && adminProfiles.length > 0) {
             // 중복 알림 방지를 위한 id Set
@@ -77,7 +84,7 @@ export async function POST(req: NextRequest) {
                 if (notifiedIds.has(p.id)) continue;
                 notifiedIds.add(p.id);
 
-                // 내부 알림함 저장
+                // 내부 알림함 저장 (여기가 채워져야 'N' 표기가 나타남)
                 await supabaseAdmin.from('notifications').insert([{
                     user_id: p.id,
                     actor_name: user_name,
@@ -194,9 +201,16 @@ export async function PATCH(req: NextRequest) {
                 .filter(a => a.role === 'super_admin' || a.church_id === (data.church_id))
                 .map(a => a.email.toLowerCase().trim());
 
+            // [수정] targetAdminsEmails가 비어있을 때 PostgREST 에러 방지
+            const orClauses = [];
+            if (targetAdminsEmails.length > 0) {
+                orClauses.push(`email.in.(${targetAdminsEmails.join(',')})`);
+            }
+            orClauses.push('full_name.ilike.%백동희%', 'full_name.ilike.%동희%');
+
             const { data: adminProfiles } = await supabaseAdmin.from('profiles')
                 .select('id, email, full_name')
-                .or(`email.in.(${targetAdminsEmails.join(',')}),full_name.eq.백동희,full_name.eq.동희`);
+                .or(orClauses.join(','));
 
             if (adminProfiles && adminProfiles.length > 0) {
                 const notifiedIds = new Set<string>();
@@ -205,6 +219,7 @@ export async function PATCH(req: NextRequest) {
                     if (notifiedIds.has(p.id)) continue;
                     notifiedIds.add(p.id);
 
+                    // 내부 알림함 저장 (N 표기 발생 지점)
                     await supabaseAdmin.from('notifications').insert([{
                         user_id: p.id,
                         actor_name: user_name || '성도',
