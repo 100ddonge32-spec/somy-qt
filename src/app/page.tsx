@@ -3842,8 +3842,8 @@ export default function App() {
                                                     style={{ width: '100%', minHeight: '100px', border: '1px solid #DDD', borderRadius: '12px', padding: '12px', boxSizing: 'border-box', marginBottom: '8px', fontSize: '14px', fontFamily: 'inherit' }}
                                                 />
                                                 <div style={{ display: 'flex', gap: '8px' }}>
-                                                    <button onClick={handleUpdatePost} style={{ padding: '8px 16px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>저장</button>
-                                                    <button onClick={() => setEditingPostId(null)} style={{ padding: '8px 16px', background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>취소</button>
+                                                    <button onClick={handleUpdatePost} style={{ padding: '8px 16px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>저장</button>
+                                                    <button onClick={() => setEditingPostId(null)} style={{ padding: '8px 16px', background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>취소</button>
                                                 </div>
                                             </div>
                                         ) : (
@@ -5088,6 +5088,7 @@ export default function App() {
             const handleSaveSermonManage = async () => {
                 const newSettings = {
                     ...churchSettings,
+                    church_id: churchId, // ✅ 교회 식별자 누락 방지
                     manual_sermon_url: sermonManageForm.videoUrl, // 수동 지정 주소로 저장
                     sermon_summary: sermonManageForm.summary,
                     sermon_q1: sermonManageForm.q1,
