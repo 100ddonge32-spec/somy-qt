@@ -911,8 +911,8 @@ export default function App() {
             if (error || !data) {
                 console.log("프로필 없음, 동기화 시도...");
                 // 메타데이터에서 가능한 경우 연락처/생일 추출
-                const metaPhone = user.user_metadata?.phone_number || user.user_metadata?.mobile || '';
-                const metaBirth = user.user_metadata?.birthdate || '';
+                const metaPhone = user.phone || user.user_metadata?.phone || user.user_metadata?.phone_number || user.user_metadata?.mobile || '';
+                const metaBirth = user.user_metadata?.birth || user.user_metadata?.birthdate || '';
 
                 const syncRes = await fetch(`/api/auth/sync?t=${cacheBuster}`, {
                     method: 'POST',
@@ -920,7 +920,7 @@ export default function App() {
                     body: JSON.stringify({
                         user_id: user.id,
                         email: user.email,
-                        name: user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.nickname,
+                        name: user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.nickname || user.user_metadata?.display_name || user.user_metadata?.user_name || '',
                         avatar_url: user.user_metadata?.avatar_url,
                         phone: metaPhone,
                         birthdate: metaBirth
@@ -7484,7 +7484,9 @@ export default function App() {
                                                         .map(member => {
                                                             const isDuplicate = memberList.some(m => m.id !== member.id && (m.full_name || '').trim().replace(/\s/g, '').toLowerCase() === (member.full_name || '').trim().replace(/\s/g, '').toLowerCase());
                                                             const isAdmin = allAdminList.some(a => member.email && a.email?.toLowerCase().trim() === member.email?.toLowerCase().trim());
-                                                            const displayName = (member.full_name && member.full_name !== '.' && member.full_name !== '이름 없음') ? member.full_name : (member.email ? member.email.split('@')[0] : '성도');
+                                                            const genericNames = ['성도', '이름 없음', '이름미입력', '사용자', '큐티', 'somy', '.', ''];
+                                                            const isNameGeneric = !member.full_name || genericNames.includes(member.full_name.trim());
+                                                            const displayName = !isNameGeneric ? member.full_name : (member.email ? member.email.split('@')[0] : '성도');
 
                                                             return (
                                                                 <div key={member.id} style={{

@@ -173,10 +173,14 @@ export async function POST(req: NextRequest) {
         }
 
         const finalName = (nameForMatch && !isSystemGeneratedName) ? nameForMatch : (email ? email.split('@')[0] : '성도');
+        const currentName = profileById?.full_name;
+        const isCurrentNameGeneric = !currentName || genericNames.includes(currentName) || currentName === '.';
+        const isNewNameBetter = finalName && !genericNames.includes(finalName) && finalName !== '.';
+
         const dataToSet = {
             id: user_id,
             email: email || profileById?.email || `${user_id}@noemail.local`,
-            full_name: profileById?.full_name || finalName,
+            full_name: (isCurrentNameGeneric && isNewNameBetter) ? finalName : (currentName || finalName),
             phone: profileById?.phone || rawPhone,
             birthdate: profileById?.birthdate || rawBirth,
             avatar_url: profileById?.avatar_url || rawAvatar,
