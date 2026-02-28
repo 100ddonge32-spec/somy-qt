@@ -127,7 +127,7 @@ export async function GET(req: NextRequest) {
 
         if (action === 'list_all_admins') {
             // 1차 시도: church_id 포함하여 조회
-            let { data, error } = await supabaseAdmin
+            let result: any = await supabaseAdmin
                 .from('app_admins')
                 .select(`
                     email,
@@ -141,10 +141,13 @@ export async function GET(req: NextRequest) {
                 `)
                 .order('created_at', { ascending: false });
 
+            let data = result.data;
+            let error = result.error;
+
             if (error) {
                 console.warn("[Admin API] Failed to list admins with church_id, retrying without it...", error.message);
                 // 2차 시도: church_id 제외하고 조회
-                const { data: retryData, error: retryError } = await supabaseAdmin
+                const retryResult: any = await supabaseAdmin
                     .from('app_admins')
                     .select(`
                         email,
@@ -157,8 +160,8 @@ export async function GET(req: NextRequest) {
                     `)
                     .order('created_at', { ascending: false });
 
-                if (retryError) throw retryError;
-                data = retryData;
+                if (retryResult.error) throw retryResult.error;
+                data = retryResult.data;
             }
 
             if (!data) return NextResponse.json([]);
@@ -192,22 +195,25 @@ export async function POST(req: NextRequest) {
             if (church_id) adminPayload.church_id = church_id;
 
             // 1차 시도: church_id 포함하여 저장
-            let { data, error } = await supabaseAdmin
+            let result: any = await supabaseAdmin
                 .from('app_admins')
                 .upsert([adminPayload], { onConflict: 'email' })
                 .select();
+
+            let data = result.data;
+            let error = result.error;
 
             if (error) {
                 console.warn("[Admin API] Failed to add admin with church_id, retrying without it...", error.message);
                 // 2차 시도: church_id 제외하고 저장 (컬럼이 없을 경우 대비)
                 delete adminPayload.church_id;
-                const { data: retryData, error: retryError } = await supabaseAdmin
+                const retryResult: any = await supabaseAdmin
                     .from('app_admins')
                     .upsert([adminPayload], { onConflict: 'email' })
                     .select();
 
-                if (retryError) throw retryError;
-                data = retryData;
+                if (retryResult.error) throw retryResult.error;
+                data = retryResult.data;
             }
 
             // [알림] 새 관리자로 등록되었음을 해당 유저에게 알림
@@ -272,20 +278,23 @@ export async function POST(req: NextRequest) {
             const adminPayload: any = { email: formattedEmail, role: 'church_admin' };
             if (target_church_id) adminPayload.church_id = target_church_id;
 
-            let { data, error } = await supabaseAdmin
+            let result: any = await supabaseAdmin
                 .from('app_admins')
                 .upsert([adminPayload], { onConflict: 'email' })
                 .select();
 
+            let data = result.data;
+            let error = result.error;
+
             if (error) {
                 console.warn("[Admin API] Failed to create church admin with church_id, retrying without it...", error.message);
                 delete adminPayload.church_id;
-                const { data: retryData, error: retryError } = await supabaseAdmin
+                const retryResult: any = await supabaseAdmin
                     .from('app_admins')
                     .upsert([adminPayload], { onConflict: 'email' })
                     .select();
-                if (retryError) throw retryError;
-                data = retryData;
+                if (retryResult.error) throw retryResult.error;
+                data = retryResult.data;
             }
 
             // 2. 해당 교회의 기본 설정값 생성
