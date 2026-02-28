@@ -8353,6 +8353,10 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [adminFilter, setAdminFilter] = useState<"all" | "admin" | "user">("all");
 
+    useEffect(() => {
+        console.log(`[MemberSearchView] Render - churchId: ${churchId}, isAdmin: ${isAdmin}, isSuperAdmin: ${isSuperAdmin}`);
+    }, [churchId, isAdmin, isSuperAdmin]);
+
     // 수정 모드 상태
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState<any>(null);
@@ -8375,7 +8379,10 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
         if (isSuperAdmin && onRefreshAdmins && (!allAdminList || allAdminList.length === 0)) {
             onRefreshAdmins();
         }
-    }, [churchId, isAdmin, isSuperAdmin]);
+        if (allAdminList && allAdminList.length > 0) {
+            console.log("MemberSearchView - allAdminList sample:", allAdminList[0]);
+        }
+    }, [churchId, isAdmin, isSuperAdmin, allAdminList]);
 
     const handleSearch = async () => {
         setIsSearching(true);
@@ -8409,8 +8416,8 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
             });
             if (res.ok) {
                 alert('성공적으로 관리자 권한을 부여했습니다! ✨');
-                if (onRefreshAdmins) onRefreshAdmins();
-                fetchInitial();
+                if (onRefreshAdmins) await onRefreshAdmins();
+                await fetchInitial();
             } else {
                 const err = await res.json();
                 alert('에러: ' + err.error);
@@ -8433,8 +8440,8 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
             });
             if (res.ok) {
                 alert('관리자 권한이 해제되었습니다.');
-                if (onRefreshAdmins) onRefreshAdmins();
-                fetchInitial();
+                if (onRefreshAdmins) await onRefreshAdmins();
+                await fetchInitial();
             } else {
                 const err = await res.json();
                 alert('에러: ' + err.error);
@@ -8442,10 +8449,21 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
         } catch (e) { alert('통신 중 오류가 발생했습니다.'); }
     };
 
-    const filteredResults = results.map(m => ({
-        ...m,
-        is_system_admin: (allAdminList || []).some((a: any) => a.email?.toLowerCase().trim() === m.email?.toLowerCase().trim())
-    })).filter(m => {
+    const filteredResults = results.map(m => {
+        const mEmail = (m.email || "").toLowerCase().trim();
+        const isAdminFound = (allAdminList || []).some((a: any) => {
+            const aEmail = (a.email || "").toLowerCase().trim();
+            if (mEmail && aEmail && mEmail === aEmail) {
+                console.log(`[AdminMatch] YES: ${m.full_name} (${mEmail})`);
+                return true;
+            }
+            return false;
+        });
+        return {
+            ...m,
+            is_system_admin: isAdminFound
+        };
+    }).filter(m => {
         if (adminFilter === "all") return true;
         if (adminFilter === "admin") return m.is_system_admin;
         if (adminFilter === "user") return !m.is_system_admin;
