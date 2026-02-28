@@ -639,17 +639,18 @@ export async function POST(req: NextRequest) {
             }
 
             // [추가] 중복 체크 (휴대폰 번호 기준)
-            if (safeMemberData.phone) {
-                const cleanPhone = safeMemberData.phone.replace(/[^0-9]/g, '');
-                const { data: existing } = await supabaseAdmin
-                    .from('profiles')
-                    .select('id, full_name')
-                    .or(`phone.eq.${safeMemberData.phone},phone.eq.${cleanPhone}`)
-                    .maybeSingle();
+            const cleanPhone = safeMemberData.phone.replace(/[^0-9]/g, '');
+            const formattedPhone = cleanPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
 
-                if (existing) {
-                    return NextResponse.json({ error: `이미 등록된 성도(${existing.full_name})가 있습니다.` }, { status: 400 });
-                }
+            const { data: existing } = await supabaseAdmin
+                .from('profiles')
+                .select('id, full_name')
+                .eq('church_id', safeMemberData.church_id)
+                .or(`phone.eq.${cleanPhone},phone.eq.${formattedPhone},phone.eq.${safeMemberData.phone}`)
+                .maybeSingle();
+
+            if (existing) {
+                return NextResponse.json({ error: `이미 등록된 성도(${existing.full_name})가 있습니다.` }, { status: 400 });
             }
 
             const { data, error } = await supabaseAdmin
