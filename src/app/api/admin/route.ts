@@ -216,6 +216,14 @@ export async function POST(req: NextRequest) {
                 data = retryResult.data;
             }
 
+            // [추가] user_id가 있으면 해당 프로필의 이메일도 업데이트 (동기화)
+            if (user_id) {
+                await supabaseAdmin
+                    .from('profiles')
+                    .update({ email: formattedEmail })
+                    .eq('id', user_id);
+            }
+
             // [알림] 새 관리자로 등록되었음을 해당 유저에게 알림
             try {
                 const { data: profile } = await supabaseAdmin.from('profiles').select('id, full_name').eq('email', formattedEmail).maybeSingle();

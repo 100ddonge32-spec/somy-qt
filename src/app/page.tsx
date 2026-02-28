@@ -1216,11 +1216,9 @@ export default function App() {
     };
 
     const handleNominateFromList = async (member: any) => {
-        if (!member.email) {
-            alert('이메일 정보가 없는 성도는 관리자로 등록할 수 없습니다.');
-            return;
-        }
-        if (!confirm(`${member.full_name} 성도님께 관리자 권한을 부여하시겠습니까?`)) return;
+        const targetEmail = member.email || `${member.id}@church.local`;
+        if (!member.email && !confirm(`${member.full_name} 성도님은 등록된 이메일이 없습니다. 시스템 관리용 이메일(${targetEmail})을 임시로 생성하여 권한을 부여하시겠습니까?`)) return;
+        if (member.email && !confirm(`${member.full_name} 성도님께 관리자 권한을 부여하시겠습니까?`)) return;
 
         try {
             const res = await fetch('/api/admin', {
@@ -1228,7 +1226,8 @@ export default function App() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'add_admin',
-                    email: member.email,
+                    email: targetEmail,
+                    user_id: member.id,
                     church_id: member.church_id || churchId,
                     role: 'church_admin'
                 })
@@ -8409,11 +8408,9 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
     };
 
     const handleNominateAdmin = async (member: any) => {
-        if (!member.email) {
-            alert('이메일 정보가 없는 성도는 관리자로 등록할 수 없습니다.');
-            return;
-        }
-        if (!confirm(`${member.full_name} 성도님께 관리자 권한을 부여하시겠습니까?`)) return;
+        const targetEmail = member.email || `${member.id}@church.local`;
+        if (!member.email && !confirm(`${member.full_name} 성도님은 등록된 이메일이 없습니다. 시스템 관리용 이메일(${targetEmail})을 임시로 생성하여 권한을 부여하시겠습니까?`)) return;
+        if (member.email && !confirm(`${member.full_name} 성도님께 관리자 권한을 부여하시겠습니까?`)) return;
 
         try {
             const res = await fetch('/api/admin', {
@@ -8421,7 +8418,8 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'add_admin',
-                    email: member.email,
+                    email: targetEmail,
+                    user_id: member.id,
                     church_id: member.church_id || churchId,
                     role: 'church_admin'
                 })
