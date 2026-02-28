@@ -7443,10 +7443,10 @@ export default function App() {
 
                                                             return (
                                                                 <div key={member.id} style={{ background: 'white', padding: '16px', borderRadius: '20px', border: selectedMemberIds.includes(member.id) ? '2px solid #D4AF37' : '1px solid #EEE', marginBottom: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0', width: '100%', minHeight: '90px' }}>
 
-                                                                        {/* 1열: 프로필 (사진 + 기본정보 2줄) */}
-                                                                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                                                        {/* 1열: 프로필 (사진 + 이름/직분 등) */}
+                                                                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flex: '3', minWidth: 0, paddingRight: '16px' }}>
                                                                             {/* 체크박스 */}
                                                                             <div
                                                                                 onClick={() => {
@@ -7484,9 +7484,16 @@ export default function App() {
                                                                             </div>
                                                                         </div>
 
-                                                                        {/* 2열: 승인대기 및 등록일 */}
-                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: '34px' }}>
-                                                                            {!member.is_approved && <span style={{ fontSize: '11px', color: '#E03131', background: '#FFF5F5', padding: '3px 8px', borderRadius: '8px', border: '1px solid #FFE3E3', fontWeight: 800 }}>❗ 승인대기</span>}
+                                                                        {/* 세로 구분선 1 */}
+                                                                        <div style={{ width: '1px', height: '50px', background: '#F0F0F0', flexShrink: 0 }} />
+
+                                                                        {/* 2열: 승인상태 및 등록일 */}
+                                                                        <div style={{ flex: '2', padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+                                                                            {!member.is_approved && (
+                                                                                <div style={{ alignSelf: 'flex-start' }}>
+                                                                                    <span style={{ fontSize: '11px', color: '#E03131', background: '#FFF5F5', padding: '3px 8px', borderRadius: '8px', border: '1px solid #FFE3E3', fontWeight: 800 }}>❗ 승인대기</span>
+                                                                                </div>
+                                                                            )}
                                                                             <div style={{ fontSize: '12px', color: '#999', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                                                 <span>📅 등록일:</span>
                                                                                 <span style={{ fontSize: '13px', color: '#666', fontWeight: 600 }}>
@@ -7495,17 +7502,25 @@ export default function App() {
                                                                             </div>
                                                                         </div>
 
-                                                                        {/* 3열: 전화번호 */}
-                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '34px' }}>
-                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: '#444', fontWeight: 700 }}>
+                                                                        {/* 세로 구분선 2 */}
+                                                                        <div style={{ width: '1px', height: '50px', background: '#F0F0F0', flexShrink: 0 }} />
+
+                                                                        {/* 3열: 연락처 */}
+                                                                        <div style={{ flex: '2.5', padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '15px', color: '#444', fontWeight: 800 }}>
                                                                                 <span>📞</span>
                                                                                 <span>{member.phone || '번호 없음'}</span>
                                                                             </div>
-                                                                            <span style={{ fontSize: '10px', background: member.is_phone_public ? '#E8F5E9' : '#F5F5F5', color: member.is_phone_public ? '#2E7D32' : '#999', padding: '2px 6px', borderRadius: '6px', fontWeight: 700, border: member.is_phone_public ? '1px solid #C8E6C9' : '1px solid #EEE' }}>{member.is_phone_public ? '공개' : '🔒 비공개'}</span>
+                                                                            <div style={{ alignSelf: 'flex-start' }}>
+                                                                                <span style={{ fontSize: '10px', background: member.is_phone_public ? '#E8F5E9' : '#F5F5F5', color: member.is_phone_public ? '#2E7D32' : '#999', padding: '2px 8px', borderRadius: '6px', fontWeight: 700, border: member.is_phone_public ? '1px solid #C8E6C9' : '1px solid #EEE' }}>{member.is_phone_public ? '공개' : '🔒 비공개'}</span>
+                                                                            </div>
                                                                         </div>
 
-                                                                        {/* 4열: 액션 버튼 그룹 */}
-                                                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', paddingLeft: '34px', marginTop: '4px' }}>
+                                                                        {/* 세로 구분선 3 */}
+                                                                        <div style={{ width: '1px', height: '50px', background: '#F0F0F0', flexShrink: 0 }} />
+
+                                                                        {/* 4열: 조작 버튼 */}
+                                                                        <div style={{ flex: '3', paddingLeft: '16px', display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
                                                                             {!member.is_approved && (
                                                                                 <button
                                                                                     onClick={async () => {
@@ -7517,7 +7532,7 @@ export default function App() {
                                                                                             }
                                                                                         }
                                                                                     }}
-                                                                                    style={{ background: '#D4AF37', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 900, cursor: 'pointer' }}
+                                                                                    style={{ background: '#D4AF37', color: 'white', border: 'none', padding: '8px 14px', borderRadius: '10px', fontSize: '12px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 2px 4px rgba(212,175,55,0.2)' }}
                                                                                 >
                                                                                     승인하기
                                                                                 </button>
@@ -7529,11 +7544,11 @@ export default function App() {
                                                                                 };
                                                                                 setMemberEditForm(form);
                                                                                 setInitialMemberEditForm(form);
-                                                                            }} style={{ background: '#F8F9FA', border: '1px solid #EEE', color: '#555', padding: '6px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>관리</button>
+                                                                            }} style={{ background: 'white', border: '1px solid #EEE', color: '#555', padding: '8px 14px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>관리</button>
                                                                             <button
                                                                                 onClick={() => { setMergeTarget(member); setMergeSearchKeyword(member.full_name || ''); setShowMergeModal(true); }}
                                                                                 style={{
-                                                                                    background: isDuplicate ? '#FFF9C4' : '#F8F9FA', border: isDuplicate ? '1px solid #FBC02D' : '1px solid #EEE', padding: '6px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', color: isDuplicate ? '#856404' : '#555', position: 'relative'
+                                                                                    background: isDuplicate ? '#FFF9C4' : 'white', border: isDuplicate ? '1px solid #FBC02D' : '1px solid #EEE', padding: '8px 14px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', color: isDuplicate ? '#856404' : '#555', position: 'relative'
                                                                                 }}
                                                                             >
                                                                                 통합
@@ -7546,7 +7561,7 @@ export default function App() {
                                                                                         if (res.ok) setMemberList(prev => prev.filter(m => m.id !== member.id));
                                                                                     }
                                                                                 }}
-                                                                                style={{ background: '#FFF5F5', border: '1px solid #FFE3E3', padding: '6px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', color: '#E03131' }}
+                                                                                style={{ background: '#FFF5F5', border: '1px solid #FFE3E3', padding: '8px 14px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', color: '#E03131' }}
                                                                             >
                                                                                 삭제
                                                                             </button>
