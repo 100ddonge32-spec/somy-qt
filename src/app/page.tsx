@@ -8464,28 +8464,28 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
 
             <div style={{ marginTop: '10px' }}>
                 {/* 단체 문자 발송 섹션 (관리자 전용) */}
-                {isAdmin && filteredResults.length > 0 && (
+                {isAdmin && finalResults.length > 0 && (
                     <div style={{ marginBottom: '16px', background: 'white', padding: '16px', borderRadius: '20px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                             <div
                                 style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
                                 onClick={() => {
-                                    if (selectedIds.length === filteredResults.length) {
+                                    if (selectedIds.length === finalResults.length) {
                                         setSelectedIds([]);
                                     } else {
-                                        setSelectedIds(filteredResults.map(m => m.id));
+                                        setSelectedIds(finalResults.map(m => m.id));
                                     }
                                 }}
                             >
                                 <div style={{
                                     width: '20px', height: '20px', borderRadius: '6px', border: '2px solid #333',
-                                    background: selectedIds.length > 0 && selectedIds.length === filteredResults.length ? '#333' : 'white',
+                                    background: selectedIds.length > 0 && selectedIds.length === finalResults.length ? '#333' : 'white',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s'
                                 }}>
-                                    {selectedIds.length > 0 && selectedIds.length === filteredResults.length && <span style={{ color: 'white', fontSize: '12px' }}>✓</span>}
+                                    {selectedIds.length > 0 && selectedIds.length === finalResults.length && <span style={{ color: 'white', fontSize: '12px' }}>✓</span>}
                                 </div>
                                 <span style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>
-                                    전체 선택 ({filteredResults.length}명)
+                                    전체 선택 ({finalResults.length}명)
                                 </span>
                             </div>
                             {selectedIds.length > 0 && (
@@ -8498,7 +8498,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                         <div style={{ display: 'flex', gap: '8px' }}>
                             <button
                                 onClick={() => {
-                                    const targetMembers = selectedIds.length > 0 ? filteredResults.filter(m => selectedIds.includes(m.id)) : filteredResults;
+                                    const targetMembers = selectedIds.length > 0 ? finalResults.filter(m => selectedIds.includes(m.id)) : finalResults;
                                     const phones = targetMembers.filter(m => m.phone).map(m => m.phone.replace(/[^0-9]/g, ''));
                                     if (phones.length === 0) {
                                         alert('선택된 성도 중 전화번호가 등록된 분이 없습니다.');
@@ -8537,7 +8537,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    const targetMembers = selectedIds.length > 0 ? filteredResults.filter(m => selectedIds.includes(m.id)) : filteredResults;
+                                    const targetMembers = selectedIds.length > 0 ? finalResults.filter(m => selectedIds.includes(m.id)) : finalResults;
                                     const phones = targetMembers.filter(m => m.phone).map(m => m.phone.replace(/[^0-9]/g, ''));
                                     if (phones.length === 0) return;
                                     const uniquePhones = phones.filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
@@ -8585,7 +8585,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                     const kstBase = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
                     const todaySolarMMDD = kstBase.toISOString().slice(5, 10);
                     const todayLunarMMDD = getLunarTodayMMDD();
-                    const birthdayMembers = (filteredResults || []).filter(m => {
+                    const birthdayMembers = (finalResults || []).filter(m => {
                         if (!m?.birthdate) return false;
                         const bd = String(m.birthdate).slice(5, 10);
                         return m.is_birthdate_lunar ? (todayLunarMMDD && bd === todayLunarMMDD) : bd === todaySolarMMDD;
@@ -8610,10 +8610,10 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
                     {isSearching ? (
                         <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>성도 정보를 불러오는 중...</div>
-                    ) : filteredResults.length === 0 ? (
+                    ) : finalResults.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>결과가 없습니다.</div>
                     ) : (
-                        filteredResults.map(member => (
+                        finalResults.map(member => (
                             <div
                                 key={member.id}
                                 onClick={() => setSelectedMember(member)}
