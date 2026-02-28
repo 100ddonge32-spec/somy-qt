@@ -7431,7 +7431,7 @@ export default function App() {
                                                                         const res = await fetch('/api/admin', {
                                                                             method: 'POST',
                                                                             headers: { 'Content-Type': 'application/json' },
-                                                                            body: JSON.stringify({ action: 'bulk_approve_users', ids: pendingIds })
+                                                                            body: JSON.stringify({ action: 'bulk_approve_users', ids: pendingIds, approve: true })
                                                                         });
                                                                         if (res.ok) {
                                                                             alert('선택한 성도가 모두 승인되었습니다! 🎉');
@@ -7448,10 +7448,43 @@ export default function App() {
                                                                 }
                                                             }}
                                                             style={{
-                                                                flex: 1, padding: '12px', background: '#E8F5E9', color: '#2E7D32', border: '1px solid #C8E6C9', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s'
+                                                                flex: 1, padding: '12px 0', background: '#E8F5E9', color: '#2E7D32', border: '1px solid #C8E6C9', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s'
                                                             }}
                                                         >
                                                             ✅ 승인
+                                                        </button>
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (selectedMemberIds.length === 0) { alert('해제할 성도를 먼저 선택해주세요.'); return; }
+                                                                const approvedIds = memberList.filter(m => selectedMemberIds.includes(m.id) && m.is_approved).map(m => m.id);
+                                                                if (approvedIds.length === 0) { alert('선택한 성도 중 이미 승인된 분이 없습니다.'); return; }
+
+                                                                if (window.confirm(`선택한 ${approvedIds.length}명의 승인을 취소하고 대기 상태로 전환하시겠습니까?`)) {
+                                                                    try {
+                                                                        const res = await fetch('/api/admin', {
+                                                                            method: 'POST',
+                                                                            headers: { 'Content-Type': 'application/json' },
+                                                                            body: JSON.stringify({ action: 'bulk_approve_users', ids: approvedIds, approve: false })
+                                                                        });
+                                                                        if (res.ok) {
+                                                                            alert('승인이 해제되었습니다.');
+                                                                            setSelectedMemberIds([]);
+                                                                            const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                            if (r.ok) setMemberList(await r.json());
+                                                                        } else {
+                                                                            const err = await res.json();
+                                                                            alert('해제 실패: ' + err.error);
+                                                                        }
+                                                                    } catch (e) {
+                                                                        alert('처리 중 오류가 발생했습니다.');
+                                                                    }
+                                                                }
+                                                            }}
+                                                            style={{
+                                                                flex: 1, padding: '12px 0', background: '#FFF4E5', color: '#B45309', border: '1px solid #FFD8A8', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s'
+                                                            }}
+                                                        >
+                                                            🔓 해제
                                                         </button>
                                                         <button
                                                             onClick={async () => {
@@ -7478,7 +7511,7 @@ export default function App() {
                                                                 }
                                                             }}
                                                             style={{
-                                                                flex: 1, padding: '12px', background: '#FFF5F5', color: '#C62828', border: '1px solid #FFC9C9', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s'
+                                                                flex: 1, padding: '12px 0', background: '#FFF5F5', color: '#C62828', border: '1px solid #FFC9C9', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s'
                                                             }}
                                                         >
                                                             🗑️ 삭제

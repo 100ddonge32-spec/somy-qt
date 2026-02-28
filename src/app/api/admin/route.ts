@@ -592,31 +592,33 @@ export async function POST(req: NextRequest) {
             return NextResponse.json(data);
         }
 
-        // 선택 성도 일괄 승인
+        // 선택 성도 일괄 승인/해제
         if (action === 'bulk_approve_users') {
-            const { ids } = body;
-            if (!ids || !Array.isArray(ids)) throw new Error('승인할 ID 목록이 없습니다.');
+            const { ids, approve = true } = body;
+            if (!ids || !Array.isArray(ids)) throw new Error('처리할 ID 목록이 없습니다.');
 
             const { data, error } = await supabaseAdmin
                 .from('profiles')
-                .update({ is_approved: true })
+                .update({ is_approved: approve })
                 .in('id', ids)
                 .select();
 
             if (error) throw error;
 
-            // 알림 처리 (일괄 처리이므로 노티만 짧게 전송)
-            try {
-                const notis = ids.map(id => ({
-                    user_id: id,
-                    actor_name: '시스템',
-                    type: 'system',
-                    title: '🎉 계정 승인 완료',
-                    content: '축하드립니다! 교회 앱 사용 권한이 승인되었습니다.',
-                    is_read: false
-                }));
-                await supabaseAdmin.from('notifications').insert(notis);
-            } catch (e) { console.error("Bulk approval notification failed:", e); }
+            // 알림 처리
+            if (approve) {
+                try {
+                    const notis = ids.map(id => ({
+                        user_id: id,
+                        actor_name: '시스템',
+                        type: 'system',
+                        title: '🎉 계정 승인 완료',
+                        content: '축하드립니다! 교회 앱 사용 권한이 승인되었습니다.',
+                        is_read: false
+                    }));
+                    await supabaseAdmin.from('notifications').insert(notis);
+                } catch (e) { console.error("Bulk approval notification failed:", e); }
+            }
 
             return NextResponse.json({ success: true, count: data?.length });
         }
