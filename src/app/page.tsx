@@ -7420,6 +7420,41 @@ export default function App() {
                                                         </button>
                                                         <button
                                                             onClick={async () => {
+                                                                if (selectedMemberIds.length === 0) { alert('승인할 성도를 먼저 선택해주세요.'); return; }
+                                                                // 현재 선택된 사람 중 대기자(is_approved가 false인 사람)만 필터링
+                                                                const pendingIds = memberList.filter(m => selectedMemberIds.includes(m.id) && !m.is_approved).map(m => m.id);
+
+                                                                if (pendingIds.length === 0) { alert('선택한 성도 중 승인 대기자가 없습니다.'); return; }
+
+                                                                if (window.confirm(`선택한 ${pendingIds.length}명의 성도를 일괄 승인하시겠습니까?`)) {
+                                                                    try {
+                                                                        const res = await fetch('/api/admin', {
+                                                                            method: 'POST',
+                                                                            headers: { 'Content-Type': 'application/json' },
+                                                                            body: JSON.stringify({ action: 'bulk_approve_users', ids: pendingIds })
+                                                                        });
+                                                                        if (res.ok) {
+                                                                            alert('선택한 성도가 모두 승인되었습니다! 🎉');
+                                                                            setSelectedMemberIds([]);
+                                                                            const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                            if (r.ok) setMemberList(await r.json());
+                                                                        } else {
+                                                                            const err = await res.json();
+                                                                            alert('승인 실패: ' + err.error);
+                                                                        }
+                                                                    } catch (e) {
+                                                                        alert('승인 중 오류가 발생했습니다.');
+                                                                    }
+                                                                }
+                                                            }}
+                                                            style={{
+                                                                flex: 1, padding: '12px', background: '#E8F5E9', color: '#2E7D32', border: '1px solid #C8E6C9', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s'
+                                                            }}
+                                                        >
+                                                            ✅ 승인
+                                                        </button>
+                                                        <button
+                                                            onClick={async () => {
                                                                 if (selectedMemberIds.length === 0) { alert('삭제할 성도를 먼저 선택해주세요.'); return; }
                                                                 if (window.confirm(`선택한 ${selectedMemberIds.length}명의 성도 정보를 영구적으로 삭제하시겠습니까?`)) {
                                                                     try {
