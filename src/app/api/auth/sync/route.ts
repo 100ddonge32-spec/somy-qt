@@ -86,9 +86,13 @@ export async function POST(req: NextRequest) {
 
         // 3. 이름 + 추가 정보 매칭
         let nameForMatch = (rawName || '').trim();
-        const isSystemGeneratedName = nameForMatch.startsWith('kakao_') || nameForMatch.startsWith('user_');
+        const genericNames = ['성도', '이름 없음', '이름미입력', '사용자', '큐티', 'somy'];
+        const isSystemGeneratedName = nameForMatch.startsWith('kakao_') ||
+            nameForMatch.startsWith('user_') ||
+            genericNames.includes(nameForMatch) ||
+            nameForMatch.length < 2;
 
-        if (!match && nameForMatch && nameForMatch.length >= 2 && !isSystemGeneratedName) {
+        if (!match && nameForMatch && !isSystemGeneratedName) {
             const cleanInputName = nameForMatch.replace(/\s+/g, '').toLowerCase();
             const { data: nameCandidates } = await supabaseAdmin.from('profiles')
                 .select('id, full_name, birthdate, email, phone, is_approved, church_id')
@@ -100,24 +104,27 @@ export async function POST(req: NextRequest) {
                     const cleanDbName = (c.full_name || '').replace(/\s+/g, '').toLowerCase();
                     const nameMatch = cleanDbName === cleanInputName;
                     if (nameMatch) {
-                        // 정보가 있으면 대조
-                        if (rawBirth) {
-                            const dbBirth = (c.birthdate || '').replace(/[^0-9]/g, '');
+                        // 1) 생일이나 전화번호가 있으면 대조
+                        let points = 0;
+                        if (rawBirth && c.birthdate) {
+                            const dbBirth = c.birthdate.replace(/[^0-9]/g, '');
                             const inBirth = rawBirth.replace(/[^0-9]/g, '');
-                            if (dbBirth && inBirth && (dbBirth.endsWith(inBirth) || inBirth.endsWith(dbBirth))) return true;
+                            if (dbBirth && inBirth && (dbBirth.endsWith(inBirth) || inBirth.endsWith(dbBirth))) points++;
                         }
-                        if (inputPhone) {
-                            let cleanDbPhone = (c.phone || '').replace(/[^0-9]/g, '');
+                        if (inputPhone && c.phone) {
+                            let cleanDbPhone = c.phone.replace(/[^0-9]/g, '');
                             if (cleanDbPhone.startsWith('8210')) cleanDbPhone = '0' + cleanDbPhone.substring(2);
-
                             let cleanInPhone = inputPhone.replace(/[^0-9]/g, '');
                             if (cleanInPhone.startsWith('8210')) cleanInPhone = '0' + cleanInPhone.substring(2);
-
-                            if (cleanDbPhone && cleanInPhone && cleanDbPhone === cleanInPhone) return true;
+                            if (cleanDbPhone && cleanInPhone && cleanDbPhone === cleanInPhone) points++;
                         }
 
-                        // 정보가 없어도 가계정(@church.local) 이라면 이름만으로 일단 매칭 시도 (동일 이름이 여러 명이면 패스)
-                        if (!rawBirth && !inputPhone && (c.email?.includes('@church.local') || c.email?.includes('@noemail.local'))) {
+                        // 포인트가 있거나 (정보 일치), 
+                        if (points > 0) return true;
+
+                        // 2) 정보가 아예 없거나 가계정(@church.local) 이라면 이름만으로 일단 매칭 시도 (동일 이름이 여러 명이면 패스)
+                        const isFakeOrNoEmail = !c.email || c.email.includes('@church.local') || c.email.includes('@noemail.local');
+                        if (!rawBirth && !inputPhone && isFakeOrNoEmail) {
                             const sameNameCount = nameCandidates.filter(nc => (nc.full_name || '').replace(/\s+/g, '').toLowerCase() === cleanInputName).length;
                             return sameNameCount === 1; // 이름이 유일할 때만 매칭
                         }
@@ -128,7 +135,7 @@ export async function POST(req: NextRequest) {
                 });
 
                 if (matches.length > 0) {
-                    match = matches.find(m => m.email?.includes('@church.local') || m.email?.includes('@noemail.local')) || matches[0];
+                    match = matches.find(m => m.email?.includes('@church.local') || !m.email) || matches[0];
                 }
             }
         }

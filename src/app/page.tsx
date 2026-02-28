@@ -909,12 +909,12 @@ export default function App() {
                     setIsApproved(!!syncData.is_approved);
                     if (syncData.church_id) setChurchId(syncData.church_id);
 
-                    if (syncData.full_name && syncData.full_name !== '이름 없음' && syncData.full_name !== '.') {
-                        setProfileName(syncData.full_name);
-                    } else if (syncData.name && syncData.name !== '이름 없음' && syncData.name !== '.') {
-                        setProfileName(syncData.name);
+                    const sName = syncData.full_name || syncData.name;
+                    if (sName && sName !== '성도' && sName !== '이름 없음' && sName !== '.') {
+                        setProfileName(sName);
                     } else if (user.user_metadata?.full_name || user.user_metadata?.name) {
-                        setProfileName(user.user_metadata.full_name || user.user_metadata.name);
+                        const mName = user.user_metadata.full_name || user.user_metadata.name;
+                        if (mName !== '성도') setProfileName(mName);
                     }
 
                     if (syncData.avatar_url) setProfileAvatar(syncData.avatar_url);

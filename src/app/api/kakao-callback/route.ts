@@ -59,7 +59,9 @@ export async function GET(req: NextRequest) {
     }
 
     const kakaoId = String(kakaoUser.id);
-    const nickname: string = kakaoUser.kakao_account?.profile?.nickname ?? '성도';
+    const nickname: string | null = (kakaoUser.kakao_account?.profile?.nickname && kakaoUser.kakao_account.profile.nickname !== '성도')
+        ? kakaoUser.kakao_account.profile.nickname
+        : null;
     const profileImage: string | null = kakaoUser.kakao_account?.profile?.profile_image_url ?? null;
     const syntheticEmail = `kakao_${kakaoId}@kakao.somy-qt.local`;
 
@@ -90,19 +92,51 @@ export async function GET(req: NextRequest) {
             user_metadata: { full_name: nickname, name: nickname, avatar_url: profileImage },
         });
 
-        // ✅ STEP 4-1: profiles 테이블에 행 자동 생성
-        // 없으면 insert (is_approved: false로 시작), 있으면 이름/사진만 업데이트
-        const { data: existingProfile } = await supabaseAdmin
-            .from('profiles')
-            .select('id, is_approved')
-            .eq('id', supabaseUser.id)
-            .single();
+        // ✅ 프로필 매칭 및 병합 로직 (성도 중복 방지)
+        const { data: profileById } = await supabaseAdmin.from('profiles').select('*').eq('id', supabaseUser.id).maybeSingle();
 
-        if (!existingProfile) {
-            // 신규 사용자 → profiles 행 생성 (승인 대기)
-            const { error: insertErr } = await supabaseAdmin
-                .from('profiles')
-                .insert({
+        if (!profileById) {
+            // 1. 기존에 등록된 성도가 있는지 확인 (이메일 또는 이름 매칭)
+            let match = null;
+
+            // 이름으로 매칭 시도 (기본 닉네임이 '성도'가 아닐 때만)
+            if (nickname && nickname !== '성도' && nickname.length >= 2) {
+                const cleanNickname = nickname.replace(/\s+/g, '').toLowerCase();
+                const { data: nameCandidates } = await supabaseAdmin.from('profiles')
+                    .select('*')
+                    .not('full_name', 'is', null);
+
+                if (nameCandidates) {
+                    const matches = nameCandidates.filter(c => {
+                        const cleanDbName = (c.full_name || '').replace(/\s+/g, '').toLowerCase();
+                        return cleanDbName === cleanNickname;
+                    });
+
+                    // 이름이 유일할 때만 자동 매칭
+                    if (matches.length === 1) {
+                        match = matches[0];
+                    }
+                }
+            }
+
+            if (match) {
+                console.log(`[Kakao Callback] 매칭 발견: ${match.full_name}. 기존 데이터를 신규 계정(${supabaseUser.id})으로 병합합니다.`);
+                // 기존 가계정 데이터를 신규 계정 ID로 업데이트
+                const { error: updateErr } = await supabaseAdmin.from('profiles')
+                    .update({
+                        id: supabaseUser.id,
+                        email: syntheticEmail,
+                        avatar_url: profileImage || match.avatar_url,
+                        // 이미 승인된 계정이었거나, 이름 매칭이 확실하면 승인 처리 고려 (여기서는 원래 상태 유지)
+                    })
+                    .eq('id', match.id);
+
+                if (updateErr) {
+                    console.error('[Kakao Callback] 프로필 병합 실패:', updateErr.message);
+                }
+            } else {
+                // 매칭이 없으면 신규 생성
+                await supabaseAdmin.from('profiles').insert({
                     id: supabaseUser.id,
                     full_name: nickname,
                     avatar_url: profileImage,
@@ -110,17 +144,13 @@ export async function GET(req: NextRequest) {
                     church_id: 'jesus-in',
                     is_approved: false,
                 });
-            if (insertErr) {
-                console.error('[Kakao Callback] profiles insert 실패:', insertErr.message);
-            } else {
-                console.log('[Kakao Callback] 신규 성도 profiles 행 생성 완료');
             }
         } else {
-            // 기존 사용자 → 이름/사진만 업데이트 (is_approved 건드리지 않음)
-            await supabaseAdmin
-                .from('profiles')
-                .update({ full_name: nickname, avatar_url: profileImage })
-                .eq('id', supabaseUser.id);
+            // 이미 프로필이 있음 -> 정보만 최신화
+            await supabaseAdmin.from('profiles').update({
+                full_name: profileById.full_name === '성도' ? nickname : profileById.full_name,
+                avatar_url: profileImage || profileById.avatar_url
+            }).eq('id', supabaseUser.id);
         }
     }
 
