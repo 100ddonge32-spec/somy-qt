@@ -174,7 +174,8 @@ const EventPosterPopup = ({ imageUrl, onClose }: { imageUrl: string, onClose: ()
                     <img src={imageUrl} alt="행사 포스터" style={{ width: '100%', height: 'auto', display: 'block' }} />
                     <div style={{ padding: '12px', background: '#333', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <button onClick={() => {
-                            const hideKey = `somy_hide_poster_${btoa(imageUrl).substring(0, 16)}`;
+                            const urlId = imageUrl.split('/').pop() || 'default';
+                            const hideKey = `somy_hide_poster_${urlId}`;
                             localStorage.setItem(hideKey, new Date().toDateString());
                             onClose();
                         }} style={{ background: 'none', border: 'none', color: '#BBB', fontSize: '13px', cursor: 'pointer' }}>오늘 하루 안보기</button>
@@ -1112,8 +1113,9 @@ export default function App() {
 
                     // ✅ 행사 포스터 팝업 노출 로직 (오늘 하루 안보기 체크)
                     if (saneSettings.event_poster_url && saneSettings.event_poster_visible) {
-                        const hideKey = `somy_hide_poster_${btoa(saneSettings.event_poster_url).substring(0, 16)}`;
-                        const hideDate = localStorage.getItem(hideKey) || localStorage.getItem('somy_hide_poster');
+                        const urlId = saneSettings.event_poster_url.split('/').pop() || 'default';
+                        const hideKey = `somy_hide_poster_${urlId}`;
+                        const hideDate = localStorage.getItem(hideKey);
                         if (hideDate !== new Date().toDateString()) {
                             setShowEventPopup(true);
                         }
@@ -1657,7 +1659,8 @@ export default function App() {
 
                 // ✅ 저장 후 즉시 포스터 팝업 체크
                 if (settingsForm.event_poster_url && settingsForm.event_poster_visible) {
-                    const hideKey = `somy_hide_poster_${btoa(settingsForm.event_poster_url).substring(0, 16)}`;
+                    const urlId = settingsForm.event_poster_url.split('/').pop() || 'default';
+                    const hideKey = `somy_hide_poster_${urlId}`;
                     if (localStorage.getItem(hideKey) !== new Date().toDateString()) {
                         setShowEventPopup(true);
                     }
