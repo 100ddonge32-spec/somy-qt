@@ -11,22 +11,15 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const churchId = searchParams.get('church_id');
 
-    console.log(`[API Settings] Requesting for church_id: ${churchId}`);
+    console.log(`[API Settings] Requesting settings. Fallback strategy active.`);
 
+    // ✅ DB에 church_id 컬럼이 없으므로, 무조건 id: 1을 가져오거나 
+    // 나중에 컬럼이 추가될 것을 대비해 에러가 나면 1번을 가져오도록 처리
     let { data, error } = await supabaseAdmin
         .from('church_settings')
         .select('*')
-        .eq('church_id', churchId || 'jesus-in')
-        .maybeSingle();
-
-    if (!data) {
-        const { data: defaultData } = await supabaseAdmin
-            .from('church_settings')
-            .select('*')
-            .eq('id', 1)
-            .single();
-        data = defaultData;
-    }
+        .eq('id', 1)
+        .single();
 
     if (data) {
         // ✅ DB 컬럼이 없을 경우를 대비해 plan 필드에 저장된 정보를 읽어와 매핑하는 '김부장의 신의 한 수'
@@ -87,8 +80,6 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
-        id,
-        church_id,
         church_name,
         church_logo_url,
         church_url,
@@ -128,7 +119,7 @@ export async function POST(req: NextRequest) {
     if (sermon_q3) encodedPlan += `|s_q3:${encodeURIComponent(sermon_q3)}`;
 
     const baseData = {
-        church_id: church_id || 'jesus-in',
+        id: 1, // ✅ 현재 DB 구조에 church_id 컬럼이 없으므로 무조건 1번 레코드를 사용
         church_name,
         church_logo_url,
         church_url,
@@ -156,7 +147,7 @@ export async function POST(req: NextRequest) {
             event_poster_visible: event_poster_visible ?? false,
             pastor_column_title,
             pastor_column_content
-        }, { onConflict: 'church_id' }); // ✅ ID가 아닌 church_id를 기준으로 업데이트!
+        });
 
     if (firstError) {
         console.warn("[Settings POST] First attempt failed, retrying without new columns...", firstError.message);
@@ -164,7 +155,7 @@ export async function POST(req: NextRequest) {
         // 2차 시도: 새 컬럼을 제외하고 plan 필드의 인코딩에 의존하여 저장 (이것이 진정한 신의 한 수)
         const { error: secondError } = await supabaseAdmin
             .from('church_settings')
-            .upsert(baseData, { onConflict: 'church_id' });
+            .upsert(baseData);
 
         if (secondError) {
             console.error("[Settings POST Error]", secondError);
