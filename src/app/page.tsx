@@ -385,8 +385,9 @@ export default function App() {
     const [profileBirthdate, setProfileBirthdate] = useState<string | null>(null);
     const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
     const [churchId, setChurchId] = useState('jesus-in');
-    const isAdmin = !!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin');
+    const isAdmin = !!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin' || adminInfo.role === 'sub_admin');
     const isSuperAdmin = adminInfo?.role === 'super_admin';
+    const isMainAdmin = !!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin');
     const [editingPostId, setEditingPostId] = useState<any>(null);
     const [editContent, setEditContent] = useState("");
     const [editingCommentId, setEditingCommentId] = useState<any>(null);
@@ -834,6 +835,22 @@ export default function App() {
     };
 
     // [이과장의 배지 시스템] 새로운 글이 있는지 시간을 비교하여 N 배지를 결정합니다.
+    const fetchCounseling = useCallback(async () => {
+        if (!churchId) return;
+        try {
+            const url = `/api/counseling?church_id=${churchId}${isMainAdmin ? '&admin=true' : (user ? `&user_id=${user.id}` : '')}`;
+            const r = await fetch(url, { cache: 'no-store' });
+            const data = await r.json();
+            if (Array.isArray(data)) setCounselingRequests(data);
+        } catch (e) {
+            console.error("상담 목록 로딩 실패:", e);
+        }
+    }, [churchId, adminInfo, user]);
+
+    useEffect(() => {
+        if (view === 'counseling') fetchCounseling();
+    }, [view, fetchCounseling]);
+
     const checkNewContent = useCallback(async () => {
         if (!churchId) return;
         const cId = churchId;
@@ -2594,7 +2611,7 @@ export default function App() {
                                         <button onClick={async () => {
                                             setView('counseling');
                                             const counselingNotis = notifications.filter(n => !n.is_read && (
-                                                isAdmin ? (n.type === 'counseling_req' || n.type === 'counseling_user_reply')
+                                                isMainAdmin ? (n.type === 'counseling_req' || n.type === 'counseling_user_reply')
                                                     : (n.type === 'counseling_reply')
                                             ));
                                             for (const n of counselingNotis) {
@@ -2607,7 +2624,7 @@ export default function App() {
                                             }
 
                                             try {
-                                                const res = await fetch(`/api/counseling?church_id=${churchId}&user_id=${user?.id}&admin=${isAdmin}`);
+                                                const res = await fetch(`/api/counseling?church_id=${churchId}&user_id=${user?.id}&admin=${isMainAdmin}`);
                                                 const data = await res.json();
                                                 if (Array.isArray(data)) setCounselingRequests(data);
                                             } catch (e) { console.error("상담 로드 실패", e); }
@@ -2624,7 +2641,7 @@ export default function App() {
                                             <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🙏</div>
                                             <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>상담/기도 요청</span>
                                             {notifications.some(n => !n.is_read && (
-                                                isAdmin ? (n.type === 'counseling_req' || n.type === 'counseling_user_reply')
+                                                isMainAdmin ? (n.type === 'counseling_req' || n.type === 'counseling_user_reply')
                                                     : (n.type === 'counseling_reply')
                                             )) && (
                                                     <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px' }}>N</div>
@@ -5230,8 +5247,8 @@ export default function App() {
                     </div>
 
                     <div style={{ padding: '20px', flex: 1, overflowY: 'auto' }}>
-                        {/* 작성 폼 (관리자 아닐 때만) */}
-                        {!isAdmin && (
+                        {/* 작성 폼 (메인 관리자 아닐 때만 - 부관리자 포함) */}
+                        {!isMainAdmin && (
                             <div style={{ marginBottom: '30px', background: 'white', padding: '20px', borderRadius: '15px', border: '1px solid #EEE', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
                                 <h3 style={{ fontSize: '15px', marginTop: 0, color: '#333' }}>새 요청 작성하기 <span style={{ fontSize: '12px', color: '#999', fontWeight: 400 }}>(목사님만 볼 수 있습니다)</span></h3>
                                 <textarea value={counselingInput} onChange={e => setCounselingInput(e.target.value)} placeholder="담임목사님께 나누고 싶은 고민이나 기도 제목을 적어주세요. 목사님께서 확인 후 직접 답변해주시며 실시간 알림이 발송됩니다." style={{ width: '100%', padding: '15px', borderRadius: '10px', border: '1px solid #DDD', minHeight: '120px', resize: 'vertical', fontSize: '14px', marginBottom: '10px', outline: 'none' }} />
@@ -5269,9 +5286,9 @@ export default function App() {
                                         <strong>{req.user_name} 성도</strong>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <span>{new Date(req.created_at).toLocaleDateString()}</span>
-                                            {(isAdmin || user?.id === req.user_id) && (
+                                            {(isMainAdmin || user?.id === req.user_id) && (
                                                 <div style={{ display: 'flex', gap: '10px' }}>
-                                                    {!isAdmin && user?.id === req.user_id && (
+                                                    {!isMainAdmin && user?.id === req.user_id && (
                                                         <button onClick={() => {
                                                             setEditingCounselingId(req.id);
                                                             setEditingCounselingField('content');
@@ -5329,7 +5346,7 @@ export default function App() {
                                         <div style={{ background: '#F5F5F5', padding: '15px', borderRadius: '10px', marginTop: '10px' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
                                                 <div style={{ fontWeight: 800, fontSize: '13px', color: '#1A5D55' }}>↳ 담임목사님 답변</div>
-                                                {isAdmin && (
+                                                {isMainAdmin && (
                                                     <button onClick={() => {
                                                         setEditingCounselingId(req.id);
                                                         setEditingCounselingField('reply');
@@ -5372,7 +5389,7 @@ export default function App() {
                                                 <div style={{ background: 'white', padding: '12px', borderRadius: '8px', marginTop: '10px', border: '1px solid #EEE' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                                                         <div style={{ fontWeight: 800, fontSize: '12px', color: '#333' }}>💬 성도님 추가 답글</div>
-                                                        {!isAdmin && user?.id === req.user_id && (
+                                                        {!isMainAdmin && user?.id === req.user_id && (
                                                             <button onClick={() => {
                                                                 setEditingCounselingId(req.id);
                                                                 setEditingCounselingField('user_reply');
@@ -5413,7 +5430,7 @@ export default function App() {
                                             )}
 
                                             {/* 성도 추가 답글 입력창 (목사님 답변은 있는데 성도가 추가로 할 말이 있을 때) */}
-                                            {!isAdmin && user?.id === req.user_id && (
+                                            {!isMainAdmin && user?.id === req.user_id && (
                                                 <div style={{ marginTop: '10px' }}>
                                                     <textarea
                                                         value={userCounselingReplyInput[req.id] || ''}
@@ -5455,7 +5472,7 @@ export default function App() {
                                                 </div>
                                             )}
                                         </div>
-                                    ) : isAdmin ? (
+                                    ) : isMainAdmin ? (
                                         <div style={{ marginTop: '10px', background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '10px', padding: '10px' }}>
                                             <div style={{ fontSize: '12px', fontWeight: 700, color: '#999', marginBottom: '8px' }}>답변을 등록하면 성도에게 푸시 알림이 즉시 전송됩니다.</div>
                                             <textarea value={counselingReplyInput[req.id] || ''} onChange={e => setCounselingReplyInput({ ...counselingReplyInput, [req.id]: e.target.value })} placeholder="답변을 작성해주세요." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', minHeight: '80px', fontSize: '13px', marginBottom: '8px', outline: 'none' }} />
@@ -5496,7 +5513,7 @@ export default function App() {
                             )}
                         </div>
                     </div>
-                </div>
+                </div >
             );
         }
 
@@ -5616,7 +5633,11 @@ export default function App() {
         const virtualBirthNotis = birthdayMembers.map(m => ({
             id: `birth-${m.id}`, type: 'birthday', actor_name: m.full_name, avatar_url: m.avatar_url, created_at: new Date().toISOString(), is_read: false
         }));
-        const allNotis = [...virtualBirthNotis, ...[...notifications].reverse()];
+        const filteredNotis = notifications.filter(n => {
+            if (n.type === 'counseling_req' || n.type === 'counseling_user_reply') return isMainAdmin;
+            return true;
+        });
+        const allNotis = [...virtualBirthNotis, ...[...filteredNotis].reverse()];
 
         return (
             <>
@@ -5652,7 +5673,10 @@ export default function App() {
                                             {n.type === 'birthday' && <>🎂 오늘은 <strong>{n.actor_name}</strong> 성도님의 생일입니다! 🎉</>}
                                             {n.type === 'comment' && <><strong>{n.actor_name}</strong>님이 은혜나눔에 댓글을 남기셨습니다.</>}
                                             {n.type === 'community_post' && <>✨ <strong>{n.actor_name}</strong>님이 새로운 은혜를 나누셨습니다.</>}
-                                            {(!['birthday', 'comment', 'community_post'].includes(n.type)) && <><strong>{n.actor_name}</strong>님이 새로운 소식을 보내셨습니다.</>}
+                                            {n.type === 'counseling_req' && <>🙏 새로운 <strong>상담 및 기도 요청</strong>이 도착했습니다.</>}
+                                            {n.type === 'counseling_user_reply' && <>💬 <strong>{n.actor_name}</strong> 성도님이 상담에 추가 답글을 남기셨습니다.</>}
+                                            {n.type === 'counseling_reply' && <>🙏 <strong>목사님</strong>의 상담 답변이 도착했습니다. 확인해 보세요.</>}
+                                            {(!['birthday', 'comment', 'community_post', 'counseling_req', 'counseling_user_reply', 'counseling_reply'].includes(n.type)) && <><strong>{n.actor_name}</strong>님이 새로운 소식을 보내셨습니다.</>}
                                         </div>
                                     </div>
                                 </div>
@@ -6719,7 +6743,9 @@ export default function App() {
                                             } catch (e) { }
                                         }
                                     }} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'stats' ? 'white' : 'transparent', boxShadow: adminTab === 'stats' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'stats' ? '#333' : '#777' }}>📊 통계</button>
-                                    <button onClick={() => setAdminTab('reset')} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'reset' ? 'white' : 'transparent', boxShadow: adminTab === 'reset' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'reset' ? '#333' : '#777' }}>🗑️ 초기화</button>
+                                    {isMainAdmin && (
+                                        <button onClick={() => setAdminTab('reset')} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'reset' ? 'white' : 'transparent', boxShadow: adminTab === 'reset' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'reset' ? '#333' : '#777' }}>🗑️ 초기화</button>
+                                    )}
                                     {isSuperAdmin && (
                                         <button onClick={() => { setAdminTab('master'); fetchAllAdmins(); }} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'master' ? 'white' : 'transparent', boxShadow: adminTab === 'master' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'master' ? '#333' : '#777' }}>👑 마스터</button>
                                     )}
@@ -7199,34 +7225,36 @@ export default function App() {
                                                         ))}
                                                     </div>
 
-                                                    {/* Row 3: 하단 특수 액션 (Pastel Rose) */}
-                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                                                        <button
-                                                            onClick={async () => {
-                                                                if (window.confirm('정말 모든 성도 데이터를 삭제하시겠습니까?')) {
-                                                                    const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_all_members', church_id: churchId }) });
-                                                                    if (res.ok) { setMemberList([]); alert('삭제 완료'); }
-                                                                }
-                                                            }}
-                                                            style={{ height: '46px', background: '#FCE4EC', color: '#C2185B', border: '1px solid #F8BBD0', borderRadius: '12px', fontSize: '14px', fontWeight: 800, cursor: 'pointer' }}
-                                                        >🗑️ 데이터 일괄 삭제</button>
-                                                        <button
-                                                            onClick={async () => {
-                                                                if (window.confirm('모든 미인증 성도를 승인 대기로 전환할까요?')) {
-                                                                    try {
-                                                                        const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reset_unverified_status', church_id: churchId }) });
-                                                                        const data = await res.json();
-                                                                        if (data.success) {
-                                                                            alert(`${data.count}명 전환 완료`);
-                                                                            const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
-                                                                            if (r.ok) setMemberList(await r.json());
-                                                                        }
-                                                                    } catch (e) { alert('오류 발생'); }
-                                                                }
-                                                            }}
-                                                            style={{ height: '46px', background: '#FCE4EC', color: '#C2185B', border: '1px solid #F8BBD0', borderRadius: '12px', fontSize: '14px', fontWeight: 800, cursor: 'pointer' }}
-                                                        >⏳ 미인증자 승인해제</button>
-                                                    </div>
+                                                    {/* Row 3: 하단 특수 액션 (Pastel Rose) - 메인 관리자 전용 */}
+                                                    {isMainAdmin && (
+                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                                            <button
+                                                                onClick={async () => {
+                                                                    if (window.confirm('정말 모든 성도 데이터를 삭제하시겠습니까?')) {
+                                                                        const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_all_members', church_id: churchId }) });
+                                                                        if (res.ok) { setMemberList([]); alert('삭제 완료'); }
+                                                                    }
+                                                                }}
+                                                                style={{ height: '46px', background: '#FCE4EC', color: '#C2185B', border: '1px solid #F8BBD0', borderRadius: '12px', fontSize: '14px', fontWeight: 800, cursor: 'pointer' }}
+                                                            >🗑️ 데이터 일괄 삭제</button>
+                                                            <button
+                                                                onClick={async () => {
+                                                                    if (window.confirm('모든 미인증 성도를 승인 대기로 전환할까요?')) {
+                                                                        try {
+                                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reset_unverified_status', church_id: churchId }) });
+                                                                            const data = await res.json();
+                                                                            if (data.success) {
+                                                                                alert(`${data.count}명 전환 완료`);
+                                                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                                if (r.ok) setMemberList(await r.json());
+                                                                            }
+                                                                        } catch (e) { alert('오류 발생'); }
+                                                                    }
+                                                                }}
+                                                                style={{ height: '46px', background: '#FCE4EC', color: '#C2185B', border: '1px solid #F8BBD0', borderRadius: '12px', fontSize: '14px', fontWeight: 800, cursor: 'pointer' }}
+                                                            >⏳ 미인증자 승인해제</button>
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#F5F5F3', padding: '6px 12px', borderRadius: '10px' }}>
@@ -7866,7 +7894,8 @@ export default function App() {
                                                     <input id="add-admin-birthdate" placeholder="생년월일 (예: 1990-01-01)" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: 'white' }} />
                                                     <input id="add-admin-church" placeholder="소속 교회 ID (예: jesus-in)" defaultValue={churchId} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: 'white' }} />
                                                     <select id="add-admin-role" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: 'white', appearance: 'none', cursor: 'pointer' }}>
-                                                        <option value="church_admin">일반 관리자</option>
+                                                        <option value="church_admin">관리자 (상담내역 열람 가능)</option>
+                                                        <option value="sub_admin">부관리자 (상담내역 열람 불가)</option>
                                                         <option value="super_admin">슈퍼 관리자 (전체 권한)</option>
                                                     </select>
                                                     <button onClick={async () => {
