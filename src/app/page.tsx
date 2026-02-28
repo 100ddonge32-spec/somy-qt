@@ -1356,7 +1356,16 @@ export default function App() {
                                 body: JSON.stringify({
                                     messages: [{
                                         role: 'user',
-                                        content: `당신은 다음 큐티 내용을 10대~20대 초반 청년들이 이해하기 쉽도록 '눈높이 맞춤형'으로 재구성해주는 다정한 목회자입니다.\n\n[원본 내용]\n- 본문 성경구절: ${initialQt.reference}\n- 본문 해설: ${initialQt.interpretation}\n- 기존 질문: ${initialQt.questions.join(', ')}\n\n반드시 JSON 형식으로 답하세요: {"interpretation": "...", "questions": ["...", "...", "..."]}`
+                                        content: `당신은 성경 말씀을 10대~20대 초반 청년들이 이해하기 쉽도록 '눈높이 맞춤형'으로 재구성해주는 힙하고 다정하며 지혜로운 멘토 목회자입니다.
+- 원본 본문과 해설의 영적 깊이는 유지하되, 이들의 일상(학업, 진로, 관계, 자존감 등)과 직접 연결되는 언어와 사례를 사용하여 묵상 가이드와 질문을 다시 써주세요.
+- 말투는 친구처럼 편안하면서도 따뜻한 존댓말('~해요', '~해볼까요?')을 사용하고, 적절하게 이모지(✨, 🌱, 💡 등)를 섞어 가독성을 높여주세요.
+
+[원본 내용]
+- 본문 성경구절: ${initialQt.reference}
+- 본문 해설: ${initialQt.interpretation}
+- 기존 질문: ${initialQt.questions.join(', ')}
+
+반드시 JSON 형식으로만 답하세요: {"interpretation": "새롭게 구성된 청년용 해설", "questions": ["질문1", "질문2", "질문3"]}`
                                     }]
                                 })
                             });
