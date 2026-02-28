@@ -54,33 +54,53 @@ export async function POST(req: NextRequest) {
 
         if (error) throw error;
 
-        // 알림 전송 (관리자에게)
-        const { data: admins } = await supabaseAdmin.from('app_admins').select('email').in('role', ['church_admin', 'super_admin']).eq('church_id', church_id || 'jesus-in');
-        if (admins && admins.length > 0) {
-            const adminEmails = admins.map(a => a.email);
-            const { data: adminProfiles } = await supabaseAdmin.from('profiles').select('id').in('email', adminEmails);
-            if (adminProfiles) {
-                for (const p of adminProfiles) {
-                    await supabaseAdmin.from('notifications').insert([{
-                        user_id: p.id,
-                        actor_name: user_name,
-                        type: 'counseling_req',
-                        post_id: data.id,
-                        is_read: false
-                    }]);
-                    const { data: subsData } = await supabaseAdmin.from('push_subscriptions').select('subscription').eq('user_id', p.id);
-                    if (subsData && subsData.length > 0) {
-                        for (const sub of subsData) {
-                            if (!sub.subscription) continue;
-                            try {
-                                const payload = JSON.stringify({
-                                    title: '🙏 새 상담/기도 요청',
-                                    body: `${user_name} 성도님의 요청이 도착했습니다.`,
-                                    url: '/?view=counseling',
-                                    userId: p.id
-                                });
-                                await webpush.sendNotification(sub.subscription, payload);
-                            } catch (e) { }
+        // ✅ 알림 전송 로직 개선 (김부장의 스마트 알림)
+        // 1. 관리자 정보 조회 (해당 교회의 관리자 + 모든 슈퍼관리자)
+        const { data: admins } = await supabaseAdmin.from('app_admins')
+            .select('email, role, church_id')
+            .in('role', ['church_admin', 'super_admin']);
+
+        const targetAdminsEmails = (admins || [])
+            .filter(a => a.role === 'super_admin' || a.church_id === (church_id || 'jesus-in'))
+            .map(a => a.email.toLowerCase().trim());
+
+        // 2. 관리자 프로필 및 '보스' 계정(백동희/동희) 추가 조회
+        const { data: adminProfiles } = await supabaseAdmin.from('profiles')
+            .select('id, email, full_name')
+            .or(`email.in.(${targetAdminsEmails.join(',')}),full_name.eq.백동희,full_name.eq.동희`);
+
+        if (adminProfiles && adminProfiles.length > 0) {
+            // 중복 알림 방지를 위한 id Set
+            const notifiedIds = new Set<string>();
+
+            for (const p of adminProfiles) {
+                if (notifiedIds.has(p.id)) continue;
+                notifiedIds.add(p.id);
+
+                // 내부 알림함 저장
+                await supabaseAdmin.from('notifications').insert([{
+                    user_id: p.id,
+                    actor_name: user_name,
+                    type: 'counseling_req',
+                    post_id: data.id,
+                    is_read: false
+                }]);
+
+                // 실시간 푸쉬 발송
+                const { data: subsData } = await supabaseAdmin.from('push_subscriptions').select('subscription').eq('user_id', p.id);
+                if (subsData && subsData.length > 0) {
+                    for (const sub of subsData) {
+                        if (!sub.subscription) continue;
+                        try {
+                            const payload = JSON.stringify({
+                                title: '🙏 새 상담/기도 요청',
+                                body: `${user_name} 성도님의 요청이 도착했습니다.`,
+                                url: '/?view=counseling',
+                                userId: p.id
+                            });
+                            await webpush.sendNotification(sub.subscription, payload);
+                        } catch (e) {
+                            console.error(`[Push Error] for ${p.id}:`, e);
                         }
                     }
                 }
@@ -164,35 +184,48 @@ export async function PATCH(req: NextRequest) {
             }
         }
 
-        // 성도가 추가 답글을 단 경우 -> 관리자에게 알림
+        // ✅ 성도가 추가 답글을 단 경우 -> 관리자에게 알림 (스마트 타겟팅)
         if (user_reply) {
-            const { data: admins } = await supabaseAdmin.from('app_admins').select('email').in('role', ['church_admin', 'super_admin']).eq('church_id', data.church_id);
-            if (admins && admins.length > 0) {
-                const adminEmails = admins.map(a => a.email);
-                const { data: adminProfiles } = await supabaseAdmin.from('profiles').select('id').in('email', adminEmails);
-                if (adminProfiles) {
-                    for (const p of adminProfiles) {
-                        await supabaseAdmin.from('notifications').insert([{
-                            user_id: p.id,
-                            actor_name: user_name || '성도',
-                            type: 'counseling_user_reply',
-                            post_id: data.id,
-                            is_read: false
-                        }]);
-                        const { data: subsData } = await supabaseAdmin.from('push_subscriptions').select('subscription').eq('user_id', p.id);
-                        if (subsData && subsData.length > 0) {
-                            for (const sub of subsData) {
-                                if (!sub.subscription) continue;
-                                try {
-                                    const payload = JSON.stringify({
-                                        title: '🙏 상담/기도 추가 답글',
-                                        body: `${user_name || '성도'}님의 추가 답글이 도착했습니다.`,
-                                        url: '/?view=counseling',
-                                        userId: p.id
-                                    });
-                                    await webpush.sendNotification(sub.subscription, payload);
-                                } catch (e) { }
-                            }
+            const { data: admins } = await supabaseAdmin.from('app_admins')
+                .select('email, role, church_id')
+                .in('role', ['church_admin', 'super_admin']);
+
+            const targetAdminsEmails = (admins || [])
+                .filter(a => a.role === 'super_admin' || a.church_id === (data.church_id))
+                .map(a => a.email.toLowerCase().trim());
+
+            const { data: adminProfiles } = await supabaseAdmin.from('profiles')
+                .select('id, email, full_name')
+                .or(`email.in.(${targetAdminsEmails.join(',')}),full_name.eq.백동희,full_name.eq.동희`);
+
+            if (adminProfiles && adminProfiles.length > 0) {
+                const notifiedIds = new Set<string>();
+
+                for (const p of adminProfiles) {
+                    if (notifiedIds.has(p.id)) continue;
+                    notifiedIds.add(p.id);
+
+                    await supabaseAdmin.from('notifications').insert([{
+                        user_id: p.id,
+                        actor_name: user_name || '성도',
+                        type: 'counseling_user_reply',
+                        post_id: data.id,
+                        is_read: false
+                    }]);
+
+                    const { data: subsData } = await supabaseAdmin.from('push_subscriptions').select('subscription').eq('user_id', p.id);
+                    if (subsData && subsData.length > 0) {
+                        for (const sub of subsData) {
+                            if (!sub.subscription) continue;
+                            try {
+                                const payload = JSON.stringify({
+                                    title: '🙏 상담/기도 추가 답글',
+                                    body: `${user_name || '성도'}님의 추가 답글이 도착했습니다.`,
+                                    url: '/?view=counseling',
+                                    userId: p.id
+                                });
+                                await webpush.sendNotification(sub.subscription, payload);
+                            } catch (e) { }
                         }
                     }
                 }
