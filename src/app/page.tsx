@@ -1183,6 +1183,12 @@ export default function App() {
         }
     };
 
+    useEffect(() => {
+        if (showSettings && isSuperAdmin) {
+            fetchAllAdmins();
+        }
+    }, [showSettings, isSuperAdmin]);
+
     const handleDeleteAdmin = async (email: string) => {
         if (!confirm(`${email} 관리자를 삭제하시겠습니까?`)) return;
         try {
@@ -1201,6 +1207,59 @@ export default function App() {
         } catch (err) {
             alert('삭제 실패');
         }
+    };
+
+    const handleNominateFromList = async (member: any) => {
+        if (!member.email) {
+            alert('이메일 정보가 없는 성도는 관리자로 등록할 수 없습니다.');
+            return;
+        }
+        if (!confirm(`${member.full_name} 성도님께 관리자 권한을 부여하시겠습니까?`)) return;
+
+        try {
+            const res = await fetch('/api/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'add_admin',
+                    email: member.email,
+                    church_id: member.church_id || churchId,
+                    role: 'church_admin'
+                })
+            });
+            if (res.ok) {
+                alert('성공적으로 관리자 권한을 부여했습니다! ✨');
+                fetchAllAdmins();
+                // 멤버 목록 새로고침 (필요 시)
+                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                if (r.ok) setMemberList(await r.json());
+            } else {
+                const err = await res.json();
+                alert('에러: ' + err.error);
+            }
+        } catch (e) { alert('통신 중 오류가 발생했습니다.'); }
+    };
+
+    const handleRevokeFromList = async (member: any) => {
+        if (!member.email) return;
+        if (!confirm(`${member.full_name} 성도님의 관리자 권한을 해제하시겠습니까?`)) return;
+
+        try {
+            const res = await fetch('/api/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete_admin', target_email: member.email })
+            });
+            if (res.ok) {
+                alert('관리자 권한을 해제했습니다.');
+                fetchAllAdmins();
+                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                if (r.ok) setMemberList(await r.json());
+            } else {
+                const err = await res.json();
+                alert('에러: ' + (err.error || '삭제 실패'));
+            }
+        } catch (e) { alert('통신 중 오류가 발생했습니다.'); }
     };
     const [history, setHistory] = useState<any[]>([]);
     const [isHistoryLoading, setIsHistoryLoading] = useState(false);
@@ -5568,7 +5627,7 @@ export default function App() {
         }
 
         if (view === "memberSearch") {
-            return <MemberSearchView churchId={churchId} setView={setView} baseFont={baseFont} isAdmin={isAdmin} />;
+            return <MemberSearchView churchId={churchId} setView={setView} baseFont={baseFont} isAdmin={isAdmin} isSuperAdmin={isSuperAdmin} user={user} />;
         }
 
         return null; // 모든 뷰에 해당하지 않을 때
@@ -7440,8 +7499,11 @@ export default function App() {
                                                                             {/* 상단: 이름/직분 및 관리 버튼 */}
                                                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%', marginBottom: '6px', flexWrap: 'wrap' }}>
                                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', flex: 1, minWidth: '100px' }}>
-                                                                                    <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', whiteSpace: 'nowrap' }}>
+                                                                                    <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                                                         {(member.full_name && member.full_name !== '.' && member.full_name !== '이름 없음') ? member.full_name : (member.email ? member.email.split('@')[0] : '성도')}
+                                                                                        {allAdminList.some(a => a.email === member.email) && (
+                                                                                            <span style={{ fontSize: '9px', background: '#333', color: 'white', padding: '1px 4px', borderRadius: '4px', fontWeight: 700 }}>ADMIN</span>
+                                                                                        )}
                                                                                     </div>
                                                                                     {!member.full_name || member.full_name === '.' || member.full_name === '이름 없음' ? (
                                                                                         <span style={{ fontSize: '10px', color: '#666', background: '#EEE', padding: '2px 4px', borderRadius: '4px' }}>이름 미입력</span>
@@ -7453,6 +7515,25 @@ export default function App() {
                                                                                 </div>
 
                                                                                 <div style={{ display: 'flex', gap: '4px', flexShrink: 0, marginLeft: 'auto', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                                                                                    {isSuperAdmin && member.email && (
+                                                                                        allAdminList.some(a => a.email === member.email) ? (
+                                                                                            <button
+                                                                                                onClick={() => handleRevokeFromList(member)}
+                                                                                                style={{ background: '#FFEBEE', color: '#C62828', border: '1px solid #FFCDD2', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}
+                                                                                                title="관리자 권한 해제"
+                                                                                            >
+                                                                                                🚫 해제
+                                                                                            </button>
+                                                                                        ) : (
+                                                                                            <button
+                                                                                                onClick={() => handleNominateFromList(member)}
+                                                                                                style={{ background: '#E3F2FD', color: '#1565C0', border: '1px solid #BBDEFB', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}
+                                                                                                title="관리자로 임명"
+                                                                                            >
+                                                                                                🛡️ 임명
+                                                                                            </button>
+                                                                                        )
+                                                                                    )}
                                                                                     {!member.is_approved && (
                                                                                         <button
                                                                                             onClick={async () => {
