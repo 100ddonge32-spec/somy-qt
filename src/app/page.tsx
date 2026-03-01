@@ -6003,11 +6003,45 @@ export default function App() {
                     <div className="preview-flex" style={{ display: 'flex', gap: '30px', justifyContent: 'center' }}>
                         {/* 홈 화면 모형 */}
                         <div style={{ width: '240px', height: '440px', background: '#FEF0D8', border: '8px solid #333', borderRadius: '36px', overflow: 'hidden', position: 'relative', boxShadow: '0 20px 50px rgba(0,0,0,0.1)' }}>
-                            <div style={{ padding: '40px 15px' }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                                    {[1, 2, 3, 4].map(i => <div key={i} style={{ aspectRatio: '1', background: 'white', borderRadius: '12px', border: '1px solid #EEE' }} />)}
+                            {/* 상단바 */}
+                            <div style={{ padding: '35px 15px 10px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'white', border: '1px solid #D4AF37', overflow: 'hidden' }}>
+                                    <img src={SOMY_IMG} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                                 </div>
-                                <div style={{ marginTop: '20px', height: '100px', background: 'rgba(255,255,255,0.7)', borderRadius: '16px' }} />
+                            </div>
+
+                            <div style={{ padding: '0 15px' }}>
+                                {/* 공지사항 모형 */}
+                                <div style={{ background: 'linear-gradient(135deg, #2C3E50 0%, #3498DB 100%)', height: '36px', borderRadius: '12px', marginBottom: '10px', display: 'flex', alignItems: 'center', padding: '0 10px' }}>
+                                    <div style={{ width: '12px', height: '12px', background: 'white', borderRadius: '50%', opacity: 0.8 }} />
+                                    <div style={{ width: '60%', height: '6px', background: 'white', opacity: 0.3, marginLeft: '8px', borderRadius: '3px' }} />
+                                </div>
+
+                                {/* 메인 2x2 그리드 */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                    <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #EEE', padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <div style={{ width: '16px', height: '16px', background: '#F5F5F3', borderRadius: '4px' }} />
+                                        <div style={{ width: '80%', height: '6px', background: '#EEE', borderRadius: '3px' }} />
+                                    </div>
+                                    <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #EEE', padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <div style={{ width: '16px', height: '16px', background: '#FFFBEA', borderRadius: '4px' }} />
+                                        <div style={{ width: '80%', height: '6px', background: '#EEE', borderRadius: '3px' }} />
+                                    </div>
+                                    <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #EEE', padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <div style={{ width: '16px', height: '16px', background: '#FFF0F5', borderRadius: '4px' }} />
+                                        <div style={{ width: '80%', height: '6px', background: '#EEE', borderRadius: '3px' }} />
+                                    </div>
+                                    <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #EEE', padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <div style={{ width: '16px', height: '16px', background: '#FFF6E5', borderRadius: '4px' }} />
+                                        <div style={{ width: '80%', height: '6px', background: '#EEE', borderRadius: '3px' }} />
+                                    </div>
+                                </div>
+
+                                {/* 하단 카드 2열 */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '8px' }}>
+                                    <div style={{ height: '80px', background: 'rgba(255,255,255,0.7)', borderRadius: '18px', border: '1px solid #F0ECE4' }} />
+                                    <div style={{ height: '80px', background: 'rgba(255,255,255,0.7)', borderRadius: '18px', border: '1px solid #F0ECE4' }} />
+                                </div>
                             </div>
                             <div style={{ position: 'absolute', bottom: '15px', left: '50%', transform: 'translateX(-50%)', width: '40px', height: '4px', background: '#333', borderRadius: '2px' }} />
                         </div>
