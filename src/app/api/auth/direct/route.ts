@@ -96,24 +96,38 @@ export async function POST(req: NextRequest) {
             });
 
             if (isNewDevice) {
-                // 기존 기기(ID) 정보 삭제 (데이터 클린업)
-                await supabaseAdmin.from('profiles').delete().eq('id', match.id);
+                // 관리자 권한 이전 로직 (기존 프로필 삭제 전 수행)
+                const oldSurrogateEmail = `${match.id}@anonymous.local`;
+                const realEmail = match.email && !match.email.includes('anonymous.local') ? match.email : null;
+                const newSurrogateEmail = `${user_id}@anonymous.local`;
+                const targetEmail = realEmail || newSurrogateEmail;
 
-                // 관리자 권한 이전 로직
-                const adminCheckEmail = match.email;
+                // 1. 기존 권한 조회 (ID 기반 또는 기존 저장된 이메일 기반)
                 const { data: adminEntries } = await supabaseAdmin.from('app_admins')
                     .select('*')
-                    .or(`email.eq.${match.id},email.eq.${adminCheckEmail}`);
+                    .or(`user_id.eq.${match.id},email.eq.${match.id},email.eq.${oldSurrogateEmail}${realEmail ? `,email.eq.${realEmail.toLowerCase().trim()}` : ''}`);
 
                 if (adminEntries && adminEntries.length > 0) {
+                    console.log(`[Admin Migration] Moving rights for ${match.full_name} to new ID: ${user_id}`);
                     for (const entry of adminEntries) {
+                        // 새 계정으로 권한 복사/업데이트
                         await supabaseAdmin.from('app_admins').upsert({
                             ...entry,
-                            email: `${user_id}@anonymous.local`
-                        });
+                            email: targetEmail.toLowerCase().trim(),
+                            user_id: user_id // 새 세션 ID로 업데이트
+                        }, { onConflict: 'email' });
+
+                        // 만약 이메일이 변경되었다면(즉, 기존 이메일이 surrogate였던 경우) 이전 이메일은 삭제
+                        if (entry.email.toLowerCase().trim() !== targetEmail.toLowerCase().trim()) {
+                            await supabaseAdmin.from('app_admins').delete().eq('email', entry.email);
+                        }
                     }
                 }
+
+                // [중요] 기존 기기(ID) 정보 삭제 (데이터 클립업)
+                await supabaseAdmin.from('profiles').delete().eq('id', match.id);
             }
+
 
             return NextResponse.json({
                 success: true,
@@ -122,35 +136,26 @@ export async function POST(req: NextRequest) {
                 church_id: match.church_id || 'jesus-in'
             });
         } else {
-            // 매칭 실패 시 -> 승인 대기 상태로 프로필 생성 (슈퍼관리자는 예외)
-            const SUPER_ADMIN_NAMES = ['백동희', '동희'];
-            const isBoss = SUPER_ADMIN_NAMES.includes(name.trim());
-
+            // [보안 지침] 이름('백동희')만으로 슈퍼관리자 권한을 부여하지 않음 (카카오 로그인 전용)
+            // 매칭 정보가 없을 경우, 일단 비승인 상태로 프로필만 생성합니다.
             await supabaseAdmin.from('profiles').upsert({
                 id: user_id,
                 full_name: name,
                 phone: phoneTail.length > 4 ? phoneTail : `(미인증)${phoneTail}`,
                 birthdate: birthdate || null,
-                is_approved: isBoss,
+                is_approved: false,
                 church_id: 'jesus-in',
                 email: `${user_id}@anonymous.local`
             });
 
-            if (isBoss) {
-                await supabaseAdmin.from('app_admins').upsert({
-                    email: `${user_id}@anonymous.local`,
-                    role: 'super_admin',
-                    church_id: 'jesus-in'
-                });
-            }
-
             return NextResponse.json({
                 success: true,
-                status: isBoss ? 'linked' : 'pending',
+                status: 'pending',
                 name: name,
-                message: isBoss ? '슈퍼관리자님, 환영합니다!' : '성도 명단에서 정보를 찾을 수 없어 승인 대기 단계로 접수되었습니다.'
+                message: '성도 명단에서 정보를 찾을 수 없어 승인 대기 단계로 접수되었습니다.'
             });
         }
+
 
     } catch (err: any) {
         console.error('[DirectAuth Error]', err);

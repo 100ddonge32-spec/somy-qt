@@ -36,26 +36,11 @@ export async function GET(req: NextRequest) {
                     .eq('id', userId)
                     .maybeSingle();
 
-                if (profile) {
-                    if (profile.email && !profile.email.includes('anonymous.local')) {
-                        email = profile.email;
-                    }
-
-                    // [정석 보완] 이름이 '백동희'라면 무조건 슈퍼관리자로 인식 (DB 누락 대비)
-                    const isBossName = profile.full_name?.trim() === '백동희' || profile.full_name?.trim() === '동희';
-                    if (isBossName) {
-                        console.log(`[AdminCheck] Boss detected by name in profile: ${profile.full_name}`);
-                        // DB에도 권한이 없는 상태라면 복구 시도
-                        const targetEmail = email || `${userId}@anonymous.local`;
-                        await supabaseAdmin.from('app_admins').upsert({
-                            email: targetEmail.toLowerCase().trim(),
-                            role: 'super_admin',
-                            church_id: profile.church_id || 'jesus-in'
-                        });
-                        return NextResponse.json({ email: targetEmail, role: 'super_admin', church_id: profile.church_id || 'jesus-in' });
-                    }
+                if (profile && profile.email && !profile.email.includes('anonymous.local')) {
+                    email = profile.email;
                 }
             }
+
 
             let query = supabaseAdmin.from('app_admins').select('*');
 
@@ -69,20 +54,8 @@ export async function GET(req: NextRequest) {
 
             const { data, error } = await query.limit(1);
 
-            // 만약 여기까지 왔는데 데이터가 없고, userId가 있고, 이름이 백동희라면 (위의 userId 기반 체크에서 안 걸렸을 수 있음)
-            if ((!data || data.length === 0) && userId) {
-                const { data: profile } = await supabaseAdmin.from('profiles').select('full_name, church_id, email').eq('id', userId).maybeSingle();
-                if (profile?.full_name?.trim() === '백동희' || profile?.full_name?.trim() === '동희') {
-                    const targetEmail = email || profile.email || `${userId}@anonymous.local`;
-                    await supabaseAdmin.from('app_admins').upsert({
-                        email: targetEmail.toLowerCase().trim(),
-                        role: 'super_admin',
-                        church_id: profile.church_id || 'jesus-in'
-                    });
-                    return NextResponse.json({ email: targetEmail, role: 'super_admin', church_id: profile.church_id || 'jesus-in' });
-                }
-            }
-
+            // [보안 지침] 이름('백동희')만으로 권한을 자동 생성하거나 부여하지 않음 (카카오 로그인 전용)
+            // 여기까지 데이터가 없으면 일반 사용자로 간주합니다.
             return NextResponse.json((data && data.length > 0) ? data[0] : { role: 'user' });
         }
 
@@ -126,10 +99,10 @@ export async function GET(req: NextRequest) {
         }
 
         if (action === 'list_all_admins') {
-            // Step 1: app_admins 전체 조회 (join 없이 안정적으로)
+            // Step 1: app_admins 전체 조회
             const { data: admins, error: adminsError } = await supabaseAdmin
                 .from('app_admins')
-                .select('email, role, church_id, created_at')
+                .select('email, role, church_id, created_at, user_id')
                 .order('created_at', { ascending: false });
 
             if (adminsError) {
@@ -138,21 +111,26 @@ export async function GET(req: NextRequest) {
             }
             if (!admins || admins.length === 0) return NextResponse.json([]);
 
-            // Step 2: 등록된 이메일 목록으로 profiles 별도 조회
-            const emails = admins.map((a: any) => a.email);
+            // Step 2: 등록된 이메일 또는 user_id로 profiles 별도 조회
+            const emails = admins.map((a: any) => a.email?.toLowerCase()).filter(Boolean);
+            const userIds = admins.map((a: any) => a.user_id).filter(Boolean);
+
             const { data: profiles } = await supabaseAdmin
                 .from('profiles')
-                .select('email, full_name, avatar_url')
-                .in('email', emails);
+                .select('id, email, full_name, avatar_url')
+                .or(`email.in.(${emails.map(e => `"${e}"`).join(',')})${userIds.length > 0 ? `,id.in.(${userIds.map(id => `"${id}"`).join(',')})` : ''}`);
 
-            // Step 3: 수동으로 merge
-            const profileMap: Record<string, any> = {};
+            // Step 3: 매핑 생성 (Email 우선, 그 다음 ID)
+            const profileMapByEmail: Record<string, any> = {};
+            const profileMapById: Record<string, any> = {};
+
             (profiles || []).forEach((p: any) => {
-                if (p.email) profileMap[p.email.toLowerCase()] = p;
+                if (p.email) profileMapByEmail[p.email.toLowerCase()] = p;
+                if (p.id) profileMapById[p.id] = p;
             });
 
             const formattedData = admins.map((admin: any) => {
-                const profile = profileMap[admin.email?.toLowerCase()] || null;
+                const profile = profileMapByEmail[admin.email?.toLowerCase()] || profileMapById[admin.user_id] || null;
                 return {
                     ...admin,
                     name: profile?.full_name || '이름 없음',
@@ -163,6 +141,7 @@ export async function GET(req: NextRequest) {
             console.log('[list_all_admins] Returning', formattedData.length, 'admins');
             return NextResponse.json(formattedData);
         }
+
 
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     } catch (err: any) {
@@ -754,11 +733,8 @@ export async function POST(req: NextRequest) {
             if (fetchErr) throw fetchErr;
 
             if (targets && targets.length > 0) {
-                // 대표님 등 슈퍼관리자 성함은 제외하고 일괄 미승인 처리
-                const BOSS_NAMES = ['백동희', '동희'];
-                const filteredIds = targets
-                    .filter(t => !BOSS_NAMES.includes(t.full_name?.trim()))
-                    .map(t => t.id);
+                // 일괄 미승인 처리 (관리자가 명시적으로 승인한 사람만 남김)
+                const filteredIds = targets.map(t => t.id);
 
                 if (filteredIds.length > 0) {
                     const { error: updateErr } = await supabaseAdmin

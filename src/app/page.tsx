@@ -2154,12 +2154,42 @@ export default function App() {
                                         {isDirectLoggingIn ? '정보 확인 중...' : '교인 정보로 바로 시작하기'}
                                     </button>
 
+                                    {/* [보안 강화] 슈퍼관리자 및 공식 관리자 전용 입구 */}
+                                    <div style={{ margin: '20px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <div style={{ flex: 1, height: '1px', background: '#EEE' }} />
+                                        <span style={{ fontSize: '11px', color: '#AAA', fontWeight: 600 }}>또는 관리자이신가요?</span>
+                                        <div style={{ flex: 1, height: '1px', background: '#EEE' }} />
+                                    </div>
+
+                                    <button
+                                        onClick={() => handleLogin('kakao')}
+                                        style={{
+                                            width: '100%',
+                                            padding: '16px',
+                                            background: '#FEE500', // 카카오 노란색
+                                            color: '#3C1E1E',
+                                            border: 'none',
+                                            borderRadius: '18px',
+                                            fontSize: '15px',
+                                            fontWeight: 800,
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '10px',
+                                            boxShadow: '0 4px 12px rgba(254, 229, 0, 0.2)'
+                                        }}
+                                    >
+                                        <span style={{ fontSize: '18px' }}>💬</span> 카카오톡으로 관리자 로그인
+                                    </button>
+
                                     <div style={{ marginTop: '16px', fontSize: '12px', color: '#B8924A', lineHeight: 1.6, background: '#FDF7E7', padding: '12px', borderRadius: '12px', border: '1px solid #F5E0BB' }}>
-                                        ✅ 한번 로그인하면 계속 유지됩니다.<br />
-                                        정보가 틀릴 경우 관리자 승인 대기 상태로 되오니 정확하게 입력해 주세요!
+                                        ✅ 일반 성도님은 위 칸에 정보를 입력해 주세요.<br />
+                                        슈퍼관리자는 보안을 위해 카카오 로그인을 권장합니다.
                                     </div>
                                 </div>
                             </div>
+
                         ) : !isApproved && !isAdmin ? (
                             <div style={{ background: '#FFFDE7', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', border: '1px solid #FFF59D', textAlign: 'center' }}>
                                 <div style={{ fontSize: '40px', marginBottom: '15px' }}>🔒</div>
