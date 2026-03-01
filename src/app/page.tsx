@@ -8570,6 +8570,41 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
                 >
                     {isSavingProfile ? '저장 중...' : isDirty ? '💾 정보 수정하기' : '변경사항 없음'}
                 </button>
+                {/* ✅ 맨 위로 가기 버튼 (전체 앱 범용) */}
+                {showScrollTop && (
+                    <button
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                        style={{
+                            position: 'fixed',
+                            bottom: '100px',
+                            right: '25px',
+                            width: '50px',
+                            height: '50px',
+                            borderRadius: '50%',
+                            background: 'white',
+                            color: '#B8924A',
+                            border: '1px solid #F0ECE4',
+                            boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '24px',
+                            fontWeight: 900,
+                            zIndex: 9999,
+                            cursor: 'pointer',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            animation: 'fade-in-up 0.4s ease-out'
+                        }}
+                    >
+                        ↑
+                        <style>{`
+                            @keyframes fade-in-up {
+                                from { opacity: 0; transform: translateY(20px); }
+                                to { opacity: 1; transform: translateY(0); }
+                            }
+                        `}</style>
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -9108,42 +9143,6 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                     </div>
                 )}
 
-                {/* ✅ 맨 위로 가기 버튼 (성도 검색 등 긴 페이지용) */}
-                {showScrollTop && (
-                    <button
-                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                        style={{
-                            position: 'fixed',
-                            bottom: '100px',
-                            right: '25px',
-                            width: '50px',
-                            height: '50px',
-                            borderRadius: '50%',
-                            background: 'white',
-                            color: '#B8924A',
-                            border: '1px solid #F0ECE4',
-                            boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '24px',
-                            fontWeight: 900,
-                            zIndex: 9999,
-                            cursor: 'pointer',
-                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            animation: 'fade-in-up 0.4s ease-out'
-                        }}
-                    >
-                        ↑
-                        <style>{`
-                            @keyframes fade-in-up {
-                                from { opacity: 0; transform: translateY(20px); }
-                                to { opacity: 1; transform: translateY(0); }
-                            }
-                        `}</style>
-                    </button>
-                )}
             </div>
-        </div>
-    );
+            );
 }
