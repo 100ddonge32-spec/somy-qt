@@ -2390,25 +2390,30 @@ export default function App() {
                                     </button>
 
                                     <div style={{ marginTop: '20px', borderTop: '1px dashed #EEE', paddingTop: '20px' }}>
-                                        <div style={{ fontSize: '13px', color: '#999', marginBottom: '12px' }}>타교회 관리자이신가요? 1초 만에 개인 체험판을 만드세요</div>
+                                        <div style={{ fontSize: '13px', color: '#999', marginBottom: '12px' }}>성도 관리, 통계, 설교 등록이 궁금하다면?</div>
                                         <button
                                             onClick={handleTrialCreation}
                                             disabled={isDirectLoggingIn}
                                             style={{
                                                 width: '100%',
-                                                padding: '16px',
-                                                background: 'linear-gradient(135deg, #333 0%, #000 100%)',
+                                                padding: '18px',
+                                                background: 'linear-gradient(135deg, #1A5D55 0%, #0D2E2B 100%)',
                                                 color: 'white',
                                                 border: 'none',
                                                 borderRadius: '16px',
-                                                fontSize: '15px',
+                                                fontSize: '16px',
                                                 fontWeight: 800,
                                                 cursor: 'pointer',
-                                                boxShadow: '0 8px 16px rgba(0,0,0,0.15)',
-                                                marginBottom: '10px'
+                                                boxShadow: '0 8px 20px rgba(26,93,85,0.25)',
+                                                marginBottom: '10px',
+                                                position: 'relative',
+                                                overflow: 'hidden'
                                             }}>
-                                            {isDirectLoggingIn ? '🛠️ 전용 체험판 생성 중...' : '🚀 나만의 교회 체험판 만들기'}
+                                            {isDirectLoggingIn ? '🛠️ 전용 체험판 세팅 중...' : '👑 관리자 대시보드 체험하기'}
+                                            {!isDirectLoggingIn && <div style={{ position: 'absolute', top: '0', right: '0', background: '#FFD700', color: '#000', fontSize: '9px', padding: '2px 6px', fontWeight: 900 }}>HOT</div>}
                                         </button>
+                                        <div style={{ fontSize: '11px', color: '#B8924A', marginBottom: '16px', fontWeight: 700 }}>✨ 가상 성도 30명, 통계 데이터가 즉시 생성됩니다.</div>
+
                                         <button
                                             onClick={() => {
                                                 setChurchId('demo');
@@ -2418,14 +2423,14 @@ export default function App() {
                                                 width: '100%',
                                                 padding: '12px',
                                                 background: 'white',
-                                                color: '#B8924A',
-                                                border: '1px solid #F0ECE4',
+                                                color: '#888',
+                                                border: '1px solid #EEE',
                                                 borderRadius: '14px',
                                                 fontSize: '13px',
                                                 fontWeight: 700,
                                                 cursor: 'pointer'
                                             }}>
-                                            ✨ 소미 공식 데모 둘러보기
+                                            가볍게 공식 데모 둘러보기
                                         </button>
                                     </div>
 
