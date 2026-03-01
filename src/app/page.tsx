@@ -7398,150 +7398,119 @@ export default function App() {
                                                     )}
                                                 </div>
 
-                                                {/* 단체 문자 발송 버튼 */}
+                                                {/* 단체 액션 도구 모음 */}
                                                 {memberList.filter(m => adminMemberSearchTerm ? m.full_name?.includes(adminMemberSearchTerm) || m.phone?.includes(adminMemberSearchTerm) || m.church_rank?.includes(adminMemberSearchTerm) : true).length > 0 && (
-                                                    <div style={{ padding: '0 4px', marginBottom: '16px', display: 'flex', gap: '8px' }}>
-                                                        <button onClick={() => {
-                                                            const targetPhones = memberList
-                                                                .filter(m => selectedMemberIds.includes(m.id))
-                                                                .filter(m => m.phone)
-                                                                .map(m => m.phone.replace(/[^0-9]/g, ''));
-                                                            if (targetPhones.length === 0) { alert('선택된 성도 중 전화번호가 등록된 분이 없습니다.'); return; }
-                                                            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-                                                            const uniquePhones = targetPhones
-                                                                .map(p => p.trim())
-                                                                .filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
-                                                            let smsUrl = '';
-                                                            if (isIOS) {
-                                                                smsUrl = `sms:;${uniquePhones.join(';')}`;
-                                                            } else {
-                                                                smsUrl = `sms:${uniquePhones.join(',')}`;
-                                                            }
-
-                                                            const link = document.createElement('a');
-                                                            link.href = smsUrl;
-                                                            document.body.appendChild(link);
-                                                            link.click();
-                                                            document.body.removeChild(link);
-                                                        }} style={{ flex: 4, padding: '12px', background: selectedMemberIds.length > 0 ? '#2E7D32' : '#AAA', color: 'white', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 800, cursor: selectedMemberIds.length > 0 ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: selectedMemberIds.length > 0 ? '0 4px 10px rgba(46,125,50,0.2)' : 'none', transition: 'all 0.2s' }}>
-                                                            💬 단체 문자발송 ({memberList.filter(m => selectedMemberIds.includes(m.id)).filter(m => m.phone).length}명)
-                                                        </button>
-                                                        <button
-                                                            onClick={() => {
+                                                    <div style={{ padding: '0 4px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                        {/* 1층: 소통 및 복사 */}
+                                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                                            <button onClick={() => {
                                                                 const targetPhones = memberList
                                                                     .filter(m => selectedMemberIds.includes(m.id))
                                                                     .filter(m => m.phone)
                                                                     .map(m => m.phone.replace(/[^0-9]/g, ''));
                                                                 if (targetPhones.length === 0) { alert('선택된 성도 중 전화번호가 등록된 분이 없습니다.'); return; }
-                                                                const uniquePhones = targetPhones.filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
-                                                                navigator.clipboard.writeText(uniquePhones.join(', '));
-                                                                alert('번호가 복사되었습니다! 메시지 앱의 수신인 칸에 붙여넣기 하세요.');
-                                                            }}
-                                                            style={{
-                                                                flex: 1, padding: '12px', background: '#F5F5F3', color: '#555', border: '1px solid #E5E5E5', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s'
-                                                            }}
-                                                            title="번호 복사"
-                                                        >
-                                                            📋 복사
-                                                        </button>
-                                                        <button
-                                                            onClick={async () => {
-                                                                if (selectedMemberIds.length === 0) { alert('승인할 성도를 먼저 선택해주세요.'); return; }
-                                                                // 현재 선택된 사람 중 대기자(is_approved가 false인 사람)만 필터링
-                                                                const pendingIds = memberList.filter(m => selectedMemberIds.includes(m.id) && !m.is_approved).map(m => m.id);
-
-                                                                if (pendingIds.length === 0) { alert('선택한 성도 중 승인 대기자가 없습니다.'); return; }
-
-                                                                if (window.confirm(`선택한 ${pendingIds.length}명의 성도를 일괄 승인하시겠습니까?`)) {
-                                                                    try {
-                                                                        const res = await fetch('/api/admin', {
-                                                                            method: 'POST',
-                                                                            headers: { 'Content-Type': 'application/json' },
-                                                                            body: JSON.stringify({ action: 'bulk_approve_users', ids: pendingIds, approve: true })
-                                                                        });
-                                                                        if (res.ok) {
-                                                                            alert('선택한 성도가 모두 승인되었습니다! 🎉');
-                                                                            setSelectedMemberIds([]);
-                                                                            const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
-                                                                            if (r.ok) setMemberList(await r.json());
-                                                                        } else {
-                                                                            const err = await res.json();
-                                                                            alert('승인 실패: ' + err.error);
-                                                                        }
-                                                                    } catch (e) {
-                                                                        alert('승인 중 오류가 발생했습니다.');
-                                                                    }
+                                                                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                                                                const uniquePhones = targetPhones
+                                                                    .map(p => p.trim())
+                                                                    .filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
+                                                                let smsUrl = '';
+                                                                if (isIOS) {
+                                                                    smsUrl = `sms:;${uniquePhones.join(';')}`;
+                                                                } else {
+                                                                    smsUrl = `sms:${uniquePhones.join(',')}`;
                                                                 }
-                                                            }}
-                                                            style={{
-                                                                flex: 1, padding: '12px 0', background: '#E8F5E9', color: '#2E7D32', border: '1px solid #C8E6C9', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s'
-                                                            }}
-                                                        >
-                                                            ✅ 승인
-                                                        </button>
-                                                        <button
-                                                            onClick={async () => {
-                                                                if (selectedMemberIds.length === 0) { alert('해제할 성도를 먼저 선택해주세요.'); return; }
-                                                                const approvedIds = memberList.filter(m => selectedMemberIds.includes(m.id) && m.is_approved).map(m => m.id);
-                                                                if (approvedIds.length === 0) { alert('선택한 성도 중 이미 승인된 분이 없습니다.'); return; }
 
-                                                                if (window.confirm(`선택한 ${approvedIds.length}명의 승인을 취소하고 대기 상태로 전환하시겠습니까?`)) {
-                                                                    try {
-                                                                        const res = await fetch('/api/admin', {
-                                                                            method: 'POST',
-                                                                            headers: { 'Content-Type': 'application/json' },
-                                                                            body: JSON.stringify({ action: 'bulk_approve_users', ids: approvedIds, approve: false })
-                                                                        });
-                                                                        if (res.ok) {
-                                                                            alert('승인이 해제되었습니다.');
-                                                                            setSelectedMemberIds([]);
-                                                                            const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
-                                                                            if (r.ok) setMemberList(await r.json());
-                                                                        } else {
-                                                                            const err = await res.json();
-                                                                            alert('해제 실패: ' + err.error);
-                                                                        }
-                                                                    } catch (e) {
-                                                                        alert('처리 중 오류가 발생했습니다.');
+                                                                const link = document.createElement('a');
+                                                                link.href = smsUrl;
+                                                                document.body.appendChild(link);
+                                                                link.click();
+                                                                document.body.removeChild(link);
+                                                            }} style={{ flex: 1.5, height: '48px', background: selectedMemberIds.length > 0 ? '#2E7D32' : '#F0F0F0', color: selectedMemberIds.length > 0 ? 'white' : '#999', border: 'none', borderRadius: '14px', fontSize: '14px', fontWeight: 900, cursor: selectedMemberIds.length > 0 ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: selectedMemberIds.length > 0 ? '0 6px 15px rgba(46,125,50,0.2)' : 'none', transition: 'all 0.3s' }}>
+                                                                💬 단체 문자발송 ({memberList.filter(m => selectedMemberIds.includes(m.id)).filter(m => m.phone).length}명)
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    const targetPhones = memberList
+                                                                        .filter(m => selectedMemberIds.includes(m.id))
+                                                                        .filter(m => m.phone)
+                                                                        .map(m => m.phone.replace(/[^0-9]/g, ''));
+                                                                    if (targetPhones.length === 0) { alert('선택된 성도 중 전화번호가 등록된 분이 없습니다.'); return; }
+                                                                    const uniquePhones = targetPhones.filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
+                                                                    navigator.clipboard.writeText(uniquePhones.join(', '));
+                                                                    alert('번호가 복사되었습니다! 메시지 앱의 수신인 칸에 붙여넣기 하세요.');
+                                                                }}
+                                                                style={{
+                                                                    flex: 1, height: '48px', background: '#FFFFFF', color: '#555', border: '1px solid #E5E5E5', borderRadius: '14px', fontSize: '13px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s', boxShadow: '0 4px 6px rgba(0,0,0,0.02)'
+                                                                }}
+                                                            >
+                                                                📋 번호복사
+                                                            </button>
+                                                        </div>
+
+                                                        {/* 2층: 상태 관리 (승인/해제/삭제) */}
+                                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                                                            <button
+                                                                onClick={async () => {
+                                                                    if (selectedMemberIds.length === 0) { alert('승인할 성도를 먼저 선택해주세요.'); return; }
+                                                                    const pendingIds = memberList.filter(m => selectedMemberIds.includes(m.id) && !m.is_approved).map(m => m.id);
+                                                                    if (pendingIds.length === 0) { alert('선택한 성도 중 승인 대기자가 없습니다.'); return; }
+                                                                    if (window.confirm(`선택한 ${pendingIds.length}명의 성도를 일괄 승인하시겠습니까?`)) {
+                                                                        try {
+                                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_approve_users', ids: pendingIds, approve: true }) });
+                                                                            if (res.ok) {
+                                                                                alert('선택한 성도가 모두 승인되었습니다! 🎉');
+                                                                                setSelectedMemberIds([]);
+                                                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                                if (r.ok) setMemberList(await r.json());
+                                                                            }
+                                                                        } catch (e) { alert('승인 중 오류 발생'); }
                                                                     }
-                                                                }
-                                                            }}
-                                                            style={{
-                                                                flex: 1, padding: '12px 0', background: '#FFF4E5', color: '#B45309', border: '1px solid #FFD8A8', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s'
-                                                            }}
-                                                        >
-                                                            🔓 해제
-                                                        </button>
-                                                        <button
-                                                            onClick={async () => {
-                                                                if (selectedMemberIds.length === 0) { alert('삭제할 성도를 먼저 선택해주세요.'); return; }
-                                                                if (window.confirm(`선택한 ${selectedMemberIds.length}명의 성도 정보를 영구적으로 삭제하시겠습니까?`)) {
-                                                                    try {
-                                                                        const res = await fetch('/api/admin', {
-                                                                            method: 'POST',
-                                                                            headers: { 'Content-Type': 'application/json' },
-                                                                            body: JSON.stringify({ action: 'bulk_delete_members', ids: selectedMemberIds })
-                                                                        });
-                                                                        if (res.ok) {
-                                                                            alert('선택한 성도가 삭제되었습니다.');
-                                                                            setSelectedMemberIds([]);
-                                                                            const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
-                                                                            if (r.ok) setMemberList(await r.json());
-                                                                        } else {
-                                                                            const err = await res.json();
-                                                                            alert('삭제 실패: ' + err.error);
-                                                                        }
-                                                                    } catch (e) {
-                                                                        alert('삭제 중 오류가 발생했습니다.');
+                                                                }}
+                                                                style={{ height: '44px', background: '#E8F5E9', color: '#2E7D32', border: '1px solid #C8E6C9', borderRadius: '12px', fontSize: '12px', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                                                            >
+                                                                ✅ 승인
+                                                            </button>
+                                                            <button
+                                                                onClick={async () => {
+                                                                    if (selectedMemberIds.length === 0) { alert('해제할 성도를 먼저 선택해주세요.'); return; }
+                                                                    const approvedIds = memberList.filter(m => selectedMemberIds.includes(m.id) && m.is_approved).map(m => m.id);
+                                                                    if (approvedIds.length === 0) { alert('선택한 성도 중 이미 승인된 분이 없습니다.'); return; }
+                                                                    if (window.confirm(`선택한 ${approvedIds.length}명의 승인을 취소하시겠습니까?`)) {
+                                                                        try {
+                                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_approve_users', ids: approvedIds, approve: false }) });
+                                                                            if (res.ok) {
+                                                                                alert('승인이 취소되었습니다.');
+                                                                                setSelectedMemberIds([]);
+                                                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                                if (r.ok) setMemberList(await r.json());
+                                                                            }
+                                                                        } catch (e) { alert('처리 중 오류 발생'); }
                                                                     }
-                                                                }
-                                                            }}
-                                                            style={{
-                                                                flex: 1, padding: '12px 0', background: '#FFF5F5', color: '#C62828', border: '1px solid #FFC9C9', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s'
-                                                            }}
-                                                        >
-                                                            🗑️ 삭제
-                                                        </button>
+                                                                }}
+                                                                style={{ height: '44px', background: '#FFF3E0', color: '#E65100', border: '1px solid #FFE0B2', borderRadius: '12px', fontSize: '12px', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                                                            >
+                                                                🔓 해제
+                                                            </button>
+                                                            <button
+                                                                onClick={async () => {
+                                                                    if (selectedMemberIds.length === 0) { alert('삭제할 성도를 먼저 선택해주세요.'); return; }
+                                                                    if (window.confirm(`선택한 ${selectedMemberIds.length}명을 삭제하시겠습니까?`)) {
+                                                                        try {
+                                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_delete_members', ids: selectedMemberIds }) });
+                                                                            if (res.ok) {
+                                                                                alert('삭제되었습니다.');
+                                                                                setSelectedMemberIds([]);
+                                                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                                if (r.ok) setMemberList(await r.json());
+                                                                            }
+                                                                        } catch (e) { alert('삭제 중 오류 발생'); }
+                                                                    }
+                                                                }}
+                                                                style={{ height: '44px', background: '#FFEBEE', color: '#C62828', border: '1px solid #FFCDD2', borderRadius: '12px', fontSize: '12px', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                                                            >
+                                                                🗑️ 삭제
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 )}
 
