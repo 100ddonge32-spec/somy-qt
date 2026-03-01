@@ -18,7 +18,7 @@ webpush.setVapidDetails(
 
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
-    const churchId = searchParams.get('church_id') || 'jesus-in';
+    const churchId = searchParams.get('church_id') || '';
 
     try {
         const { data, error } = await supabaseAdmin

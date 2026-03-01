@@ -154,8 +154,8 @@ export async function POST(req: NextRequest) {
                 member_no: match.member_no || profileById?.member_no,
                 gender: match.gender || profileById?.gender,
                 avatar_url: finalAvatar,
-                church_id: match.church_id || profileById?.church_id || 'jesus-in',
-                is_approved: match.is_approved || profileById?.is_approved || IS_BOSS || true // 매칭된 계정은 즉시 승인 (이미 명단에 있는 분)
+                church_id: match.church_id || profileById?.church_id || '',
+                is_approved: match.is_approved || profileById?.is_approved || IS_BOSS // 명단 매칭 시 승인 우선
             };
 
             if (profileById) {
@@ -184,8 +184,8 @@ export async function POST(req: NextRequest) {
             phone: profileById?.phone || rawPhone,
             birthdate: profileById?.birthdate || rawBirth,
             avatar_url: profileById?.avatar_url || rawAvatar,
-            church_id: profileById?.church_id || 'jesus-in',
-            is_approved: profileById?.is_approved || isAdminMember || true  // [변경] 승인 대기 단계 없이 바로 승인 (관리자 요청)
+            church_id: profileById?.church_id || '',
+            is_approved: profileById?.is_approved || isAdminMember || IS_BOSS  // [변경] 명시적 권한 있을 때만 승인
         };
 
         if (profileById) {
@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
             const hasRealInfo = (rawName && !isSystemGeneratedName && !genericNames.includes(rawName)) || (rawPhone && rawPhone.length > 5);
             if (isAnonymous && !hasRealInfo) {
                 console.log(`[Sync] Skipping profile creation for generic/anonymous user: ${email}`);
-                return NextResponse.json({ status: 'visitor', is_approved: false, church_id: 'jesus-in' });
+                return NextResponse.json({ status: 'visitor', is_approved: false, church_id: '' });
             }
             await supabaseAdmin.from('profiles').insert([dataToSet]);
             return NextResponse.json({ ...dataToSet, status: 'created' });

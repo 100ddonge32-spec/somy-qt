@@ -384,7 +384,7 @@ export async function POST(req: NextRequest) {
             }
 
             const formattedEmail = targetEmail.toLowerCase().trim();
-            const finalChurchId = (target_church_id || 'jesus-in').trim();
+            const finalChurchId = (target_church_id || '').trim();
 
             // 0. 프로필 정보의 교회 식별자 업데이트 (매우 중요: 재로그인 시 이 정보를 기준으로 교회 앱이 세팅됨)
             if (matchedUserId) {
@@ -778,7 +778,7 @@ export async function POST(req: NextRequest) {
         // [추가] 모든 미인증/신규 유저(가계정, 카카오 신규, 익명 등)를 일괄 승인 완료 상태로 전환
         if (action === 'bulk_approve_unverified') {
             const { church_id } = body;
-            const targetChurchId = church_id || 'jesus-in';
+            const targetChurchId = church_id || '';
 
             const { data: targets, error: fetchErr } = await supabaseAdmin
                 .from('profiles')
@@ -805,7 +805,7 @@ export async function POST(req: NextRequest) {
         // [추가] '성도', '사용자' 처럼 이름이 성의 없는 유령 계정들 일괄 삭제
         if (action === 'delete_junk_members') {
             const { church_id } = body;
-            const targetChurchId = church_id || 'jesus-in';
+            const targetChurchId = church_id || '';
             const junkNames = ['성도', '이름 없음', '이름미입력', '사용자', '큐티', 'somy', '.', ''];
 
             const { data: targets, error: fetchErr } = await supabaseAdmin
@@ -833,7 +833,7 @@ export async function POST(req: NextRequest) {
         // [추가] 미인증 유저(업로드 전용 가계정)를 승인 대기 상태로 초기화
         if (action === 'reset_unverified_status') {
             const { church_id } = body;
-            const targetChurchId = church_id || 'jesus-in';
+            const targetChurchId = church_id || '';
 
             // @church.local 또는 @noemail.local인 성도들은 실제 로그인을 아직 안 한 업로드 데이터임
             const { data: targets, error: fetchErr } = await supabaseAdmin
@@ -865,7 +865,7 @@ export async function POST(req: NextRequest) {
         // 일괄 프라이버시 설정
         if (action === 'bulk_update_privacy') {
             const { church_id, field, value } = body;
-            const targetChurchId = church_id || 'jesus-in';
+            const targetChurchId = church_id || '';
 
             // church_id가 일치하거나, NULL인 경우(초기 데이터) 모두 업데이트
             const { error } = await supabaseAdmin

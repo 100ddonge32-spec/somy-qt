@@ -404,7 +404,7 @@ export default function App() {
     const [profileName, setProfileName] = useState<string | null>(null);
     const [profileBirthdate, setProfileBirthdate] = useState<string | null>(null);
     const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
-    const [churchId, setChurchId] = useState('jesus-in');
+    const [churchId, setChurchId] = useState('');
     const isAdmin = !!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin' || adminInfo.role === 'sub_admin');
     const isSuperAdmin = adminInfo?.role === 'super_admin';
     const isMainAdmin = !!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin');
@@ -441,12 +441,12 @@ export default function App() {
     const hasNewCounseling = notifications.some(n => !n.is_read && ['counseling_reply', 'counseling_req', 'counseling_user_reply'].includes(n.type));
 
     const [churchSettings, setChurchSettings] = useState<any>({
-        church_name: CHURCH_NAME,
-        church_logo_url: CHURCH_LOGO,
-        church_url: CHURCH_URL,
+        church_name: "",
+        church_logo_url: "",
+        church_url: "",
         sermon_url: "",
         manual_sermon_url: "",
-        app_subtitle: APP_SUBTITLE,
+        app_subtitle: "",
         plan: 'free',
         community_visible: true,
         allow_member_edit: false,
@@ -464,12 +464,12 @@ export default function App() {
         pastor_column_content: '',
     });
     const [settingsForm, setSettingsForm] = useState<any>({
-        church_name: CHURCH_NAME,
-        church_logo_url: CHURCH_LOGO,
-        church_url: CHURCH_URL,
+        church_name: "",
+        church_logo_url: "",
+        church_url: "",
         sermon_url: "",
         manual_sermon_url: "",
-        app_subtitle: APP_SUBTITLE,
+        app_subtitle: "",
         plan: 'free',
         community_visible: true,
         allow_member_edit: false,
@@ -1143,7 +1143,8 @@ export default function App() {
     // [김부장의 신의 한 수] 유저의 교회 정보가 확인되면 즉시 해당 교회 설정 로드
     useEffect(() => {
         const loadSettings = async () => {
-            const cId = churchId || 'jesus-in';
+            const cId = churchId;
+            if (!cId) return;
             console.log(`[Reactive Settings] Loading for: ${cId}`);
             try {
                 const r = await fetch(`/api/settings?church_id=${cId}`, { cache: 'no-store' });
@@ -1174,7 +1175,8 @@ export default function App() {
         loadSettings();
 
         const loadAnnouncements = async () => {
-            const cId = churchId || 'jesus-in';
+            const cId = churchId;
+            if (!cId) return;
             try {
                 const r = await fetch(`/api/announcements?church_id=${cId}`, { cache: 'no-store' });
                 const data = await r.json();
@@ -1404,7 +1406,7 @@ export default function App() {
         setIsQtLoading(true);
         setIsHistoryMode(false);
         try {
-            const r = await fetch(`/api/qt?church_id=${churchId || 'jesus-in'}`, { cache: 'no-store' });
+            const r = await fetch(`/api/qt?church_id=${churchId}`, { cache: 'no-store' });
             const { qt } = await r.json();
             if (qt) {
                 const { fullPassage, interpretation, youthData } = parsePassage(qt.passage);
@@ -2153,10 +2155,10 @@ export default function App() {
                         marginBottom: "20px",
                         animation: "fade-in 0.8s ease-out"
                     }}>
-                        {churchSettings.church_logo_url ? (
+                        {churchId && churchSettings.church_logo_url ? (
                             <img src={churchSettings.church_logo_url} alt={`${churchSettings.church_name} 로고`} style={{ height: "45px", objectFit: "contain" }} />
                         ) : (
-                            <div style={{ fontSize: '24px', fontWeight: 900, color: '#333' }}>{churchSettings.church_name || '우리 교회'}</div>
+                            <div style={{ fontSize: '24px', fontWeight: 900, color: '#333' }}>{churchId ? (churchSettings.church_name || '우리 교회') : ''}</div>
                         )}
                         <div style={{ fontSize: "12px", color: "#666", letterSpacing: "1px", fontWeight: 700 }}>홈페이지</div>
                     </a>
@@ -2906,7 +2908,7 @@ export default function App() {
                         zIndex: 10
                     }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
-                        {churchSettings.church_logo_url && (
+                        {churchId && churchSettings.church_logo_url && (
                             <img src={churchSettings.church_logo_url} alt="로고" style={{ height: "24px", objectFit: 'contain' }} />
                         )}
                         <div style={{ fontWeight: 700, color: "#333", fontSize: "14px" }}>
@@ -3297,7 +3299,7 @@ export default function App() {
                             <button onClick={async () => {
                                 setAiLoading(true);
                                 try {
-                                    const res = await fetch(`/api/qt?date=${qtForm.date}&force=true&church_id=${churchId || 'jesus-in'}`, { cache: 'no-store' });
+                                    const res = await fetch(`/api/qt?date=${qtForm.date}&force=true&church_id=${churchId}`, { cache: 'no-store' });
                                     const { qt } = await res.json();
                                     if (qt) {
                                         const { fullPassage, interpretation, youthData } = parsePassage(qt.passage);
@@ -4867,7 +4869,7 @@ export default function App() {
                                 // 자동으로 오늘 데이터가 있는지 조회 시도
                                 setAiLoading(true);
                                 try {
-                                    const res = await fetch(`/api/qt?date=${today}&church_id=${churchId || 'jesus-in'}`, { cache: 'no-store' });
+                                    const res = await fetch(`/api/qt?date=${today}&church_id=${churchId}`, { cache: 'no-store' });
                                     const { qt } = await res.json();
                                     if (qt) {
                                         const { fullPassage, interpretation, youthData } = parsePassage(qt.passage);

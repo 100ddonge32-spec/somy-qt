@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const date = searchParams.get('date') || getKoreaDateString();
     const force = searchParams.get('force') === 'true';
-    const churchId = searchParams.get('church_id') || 'jesus-in';
+    const churchId = searchParams.get('church_id') || '';
 
     console.log(`[QT API] Request for date: ${date}, force: ${force}, church: ${churchId}`);
 

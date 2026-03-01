@@ -12,7 +12,7 @@ const supabaseAdmin = createClient(
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const query = searchParams.get('query') || '';
-    const churchId = searchParams.get('church_id') || 'jesus-in';
+    const churchId = searchParams.get('church_id') || '';
 
     try {
         let supabaseQuery = supabaseAdmin

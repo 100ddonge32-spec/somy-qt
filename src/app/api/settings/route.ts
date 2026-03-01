@@ -13,23 +13,20 @@ export async function GET(req: NextRequest) {
 
     console.log(`[API Settings] Requesting settings. Fallback strategy active.`);
 
-    const targetChurchId = churchId || 'jesus-in';
+    const targetChurchId = churchId;
 
-    // 1순위: church_id로 검색, 2순위: id: 1(기본값)로 검색
+    if (!targetChurchId) {
+        return NextResponse.json({ settings: null });
+    }
+
+    // 1순위: church_id로 검색
     let { data, error } = await supabaseAdmin
         .from('church_settings')
         .select('*')
         .eq('church_id', targetChurchId)
         .maybeSingle();
 
-    if (!data) {
-        let { data: fallback } = await supabaseAdmin
-            .from('church_settings')
-            .select('*')
-            .eq('id', 1)
-            .single();
-        data = fallback;
-    }
+    // 더이상 id=1 (예수인교회) 강제 폴백을 하지 않음 (타 교회 브랜딩 노출 방지)
 
     if (data) {
         // ✅ DB 컬럼이 없을 경우를 대비해 plan 필드에 저장된 정보를 읽어와 매핑하는 '김부장의 신의 한 수'
