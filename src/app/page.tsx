@@ -7539,9 +7539,11 @@ export default function App() {
                                                                     .filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
                                                                 let smsUrl = '';
                                                                 if (isIOS) {
-                                                                    smsUrl = `sms:;${uniquePhones.join(';')}`;
+                                                                    // iPhone용 기술적 최적화: /open?addresses= 형식이 그룹핑에 효과적입니다.
+                                                                    smsUrl = `sms:/open?addresses=${uniquePhones.join(',')}&body=`;
                                                                 } else {
-                                                                    smsUrl = `sms:${uniquePhones.join(',')}`;
+                                                                    // 안드로이드용: 세미콜론(;)이 가장 안정적입니다.
+                                                                    smsUrl = `sms:${uniquePhones.join(';')}`;
                                                                 }
 
                                                                 const link = document.createElement('a');
@@ -8749,12 +8751,10 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                                         if (!confirm(`현재 ${uniquePhones.length}명이 선택되었습니다. 통신사 제한으로 인해 문자가 일부만 전송될 수 있습니다. 계속할까요?`)) return;
                                     }
 
-                                    // [이과장의 최종 분석] 주신 자료에 따르면 MFMessageComposeViewController를 쓸 수 없는 웹 환경에서는
-                                    // sms: 주소 방식이 최선입니다. 단체방 유도를 위해 표준인 ','를 쓰고 &body= 를 붙입니다.
-                                    const separator = ',';
+                                    // [기술적 최적화] iPhone(iOS) 그룹 메시지 전용 주소 체계 적용
                                     const smsUrl = isIOS
-                                        ? `sms:${uniquePhones.join(separator)}&body=`
-                                        : `sms:${uniquePhones.join(separator)}?body=`;
+                                        ? `sms:/open?addresses=${uniquePhones.join(',')}&body=`
+                                        : `sms:${uniquePhones.join(';')}${uniquePhones.length > 1 ? '' : ''}`;
 
                                     const link = document.createElement('a');
                                     link.href = smsUrl;
