@@ -9,10 +9,10 @@ import * as XLSX from 'xlsx';
 type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "adminGuide" | "brandGuide" | "profile" | "memberSearch" | "book" | "pastorColumn";
 
 const SOMY_IMG = "/somy.png";
-const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "";
+const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://lfjrfyylsxhvwosdpujv.supabase.co/storage/v1/object/public/church-assets/jesus-in-logo.png";
 const CHURCH_URL = process.env.NEXT_PUBLIC_CHURCH_URL || "";
-const CHURCH_NAME = process.env.NEXT_PUBLIC_CHURCH_NAME || "";
-const APP_SUBTITLE = process.env.NEXT_PUBLIC_APP_SUBTITLE || "";
+const CHURCH_NAME = process.env.NEXT_PUBLIC_CHURCH_NAME || "예수인교회";
+const APP_SUBTITLE = process.env.NEXT_PUBLIC_APP_SUBTITLE || "말씀과 기도로 거룩해지는 공동체";
 const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
 
 
@@ -1351,6 +1351,9 @@ export default function App() {
         if (churchFromUrl) {
             setChurchId(churchFromUrl);
             console.log(`[Initialize] Church set from URL: ${churchFromUrl}`);
+        } else {
+            // [복구] 명시적 교회 지정이 없으면 기본적으로 'jesus-in' 설정
+            setChurchId('jesus-in');
         }
 
         const hasVisited = localStorage.getItem('somy_intro_seen');

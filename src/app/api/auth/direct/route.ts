@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
                 success: true,
                 status: 'linked',
                 name: match.full_name,
-                church_id: match.church_id || ''
+                church_id: match.church_id || 'jesus-in'
             });
         } else {
             // [추가] '성도', '사용자' 처럼 너무 일반적인 이름은 입력을 막음
@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
                 phone: phoneTail.length > 4 ? phoneTail : `(미인증)${phoneTail}`,
                 birthdate: birthdate || null,
                 is_approved: true, // [변경] 자동 승인
-                church_id: church_id || '',
+                church_id: church_id || 'jesus-in',
                 email: `${user_id}@anonymous.local`
             });
 
@@ -161,7 +161,7 @@ export async function POST(req: NextRequest) {
                 success: true,
                 status: 'pending',
                 name: name,
-                church_id: church_id || '',
+                church_id: church_id || 'jesus-in',
                 message: '성도 명단에서 정보를 찾을 수 없어 원활한 서비스 이용을 위해 임시 승인되었습니다.'
             });
         }

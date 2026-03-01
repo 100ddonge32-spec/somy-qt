@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
                 member_no: match.member_no || profileById?.member_no,
                 gender: match.gender || profileById?.gender,
                 avatar_url: finalAvatar,
-                church_id: match.church_id || profileById?.church_id || '',
+                church_id: match.church_id || profileById?.church_id || 'jesus-in',
                 is_approved: match.is_approved || profileById?.is_approved || IS_BOSS // 명단 매칭 시 승인 우선
             };
 
@@ -184,7 +184,7 @@ export async function POST(req: NextRequest) {
             phone: profileById?.phone || rawPhone,
             birthdate: profileById?.birthdate || rawBirth,
             avatar_url: profileById?.avatar_url || rawAvatar,
-            church_id: profileById?.church_id || '',
+            church_id: profileById?.church_id || 'jesus-in',
             is_approved: profileById?.is_approved || isAdminMember || IS_BOSS  // [변경] 명시적 권한 있을 때만 승인
         };
 
@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
             const hasRealInfo = (rawName && !isSystemGeneratedName && !genericNames.includes(rawName)) || (rawPhone && rawPhone.length > 5);
             if (isAnonymous && !hasRealInfo) {
                 console.log(`[Sync] Skipping profile creation for generic/anonymous user: ${email}`);
-                return NextResponse.json({ status: 'visitor', is_approved: false, church_id: '' });
+                return NextResponse.json({ status: 'visitor', is_approved: false, church_id: 'jesus-in' });
             }
             await supabaseAdmin.from('profiles').insert([dataToSet]);
             return NextResponse.json({ ...dataToSet, status: 'created' });
