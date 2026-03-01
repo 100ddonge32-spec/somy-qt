@@ -51,18 +51,31 @@ export async function GET(req: NextRequest) {
 
                 // [부팅 로직] 하드코딩된 리스트에 있으면 즉시 슈퍼관리자로 등록/인정
                 if (HARDCODED_ADMINS.includes(formattedEmail)) {
-                    await supabaseAdmin.from('app_admins').upsert({
-                        email: formattedEmail,
-                        role: 'super_admin',
-                        church_id: 'jesus-in',
-                        user_id: userId || null
-                    }, { onConflict: 'email' });
+                    // [기능 보강] upsert 실패 시 무시하고 진행 (user_id 컬럼 등이 없을 수 있으므로)
+                    try {
+                        const payload: any = {
+                            email: formattedEmail,
+                            role: 'super_admin',
+                            church_id: 'jesus-in' // 기본값 (교회명이 아닌 ID 형식으로 통일 권장)
+                        };
+                        if (userId) payload.user_id = userId;
+
+                        await supabaseAdmin.from('app_admins').upsert(payload, { onConflict: 'email' });
+                    } catch (e) {
+                        console.error("[check_admin] Super admin upsert failed (silently ignoring):", e);
+                    }
                     return NextResponse.json({ email: formattedEmail, role: 'super_admin', church_id: 'jesus-in' });
                 }
 
                 query = query.eq('email', formattedEmail);
             } else if (userId) {
-                // [복구] user_id 컬럼이 없으므로 email 필드에 저장된 ID 기반으로 검색
+                // [복구] email이 없으면 user_id로 직접 조회 시도 (app_admins에 user_id 컬럼이 있는 경우 대비)
+                try {
+                    const { data: byId } = await supabaseAdmin.from('app_admins').select('*').eq('user_id', userId).maybeSingle();
+                    if (byId) return NextResponse.json(byId);
+                } catch (e) { }
+
+                // [백업] email 필드에 저장된 ID 기반으로 검색 (레거시 지원)
                 query = query.or(`email.eq.${userId},email.ilike.%${userId}%`);
             } else {
                 return NextResponse.json({ role: 'user' });
@@ -70,8 +83,7 @@ export async function GET(req: NextRequest) {
 
             const { data, error } = await query.limit(1);
 
-            // [보안 지침] 이름('백동희')만으로 권한을 자동 생성하거나 부여하지 않음 (카카오 로그인 전용)
-            // 여기까지 데이터가 없으면 일반 사용자로 간주합니다.
+            // 데이터가 없으면 일반 사용자로 간주 (마지막 희망: 이름 '백동희' 등 하드코딩 매칭은 하지 않음)
             return NextResponse.json((data && data.length > 0) ? data[0] : { role: 'user' });
         }
 
@@ -116,26 +128,37 @@ export async function GET(req: NextRequest) {
         }
 
         if (action === 'list_all_admins') {
-            // Step 1: app_admins 전체 조회
-            const { data: admins, error: adminsError } = await supabaseAdmin
-                .from('app_admins')
-                .select('email, role, church_id, created_at, user_id')
-                .order('created_at', { ascending: false });
-
-            if (adminsError) {
-                console.error('[list_all_admins] Failed to fetch admins:', adminsError.message);
-                throw adminsError;
+            // Step 1: app_admins 전체 조회 (컬럼 유무와 상관없이 최대한 안전하게 시도)
+            let adminsResult: any;
+            try {
+                // user_id, created_at 컬럼이 없을 때를 대비해 select('*') 사용
+                adminsResult = await supabaseAdmin
+                    .from('app_admins')
+                    .select('*')
+                    .order('email', { ascending: true });
+            } catch (err) {
+                console.error('[list_all_admins] Fetch failed:', err);
+                return NextResponse.json({ error: '관리자 목록을 불러올 수 없습니다.' }, { status: 500 });
             }
+
+            const admins = adminsResult.data;
+            if (adminsResult.error) throw adminsResult.error;
             if (!admins || admins.length === 0) return NextResponse.json([]);
 
             // Step 2: 등록된 이메일 또는 user_id로 profiles 별도 조회
             const emails = admins.map((a: any) => a.email?.toLowerCase()).filter(Boolean);
             const userIds = admins.map((a: any) => a.user_id).filter(Boolean);
 
-            const { data: profiles } = await supabaseAdmin
-                .from('profiles')
-                .select('id, email, full_name, avatar_url')
-                .or(`email.in.(${emails.map(e => `"${e}"`).join(',')})${userIds.length > 0 ? `,id.in.(${userIds.map(id => `"${id}"`).join(',')})` : ''}`);
+            let profileQuery = supabaseAdmin.from('profiles').select('id, email, full_name, avatar_url');
+
+            // PostgREST .or()를 위한 안전한 필터 생성
+            const filters = [];
+            if (emails.length > 0) filters.push(`email.in.(${emails.map((e: any) => `"${e}"`).join(',')})`);
+            if (userIds.length > 0) filters.push(`id.in.(${userIds.map((id: any) => `"${id}"`).join(',')})`);
+
+            const { data: profiles } = filters.length > 0
+                ? await profileQuery.or(filters.join(','))
+                : { data: [] };
 
             // Step 3: 매핑 생성 (Email 우선, 그 다음 ID)
             const profileMapByEmail: Record<string, any> = {};
@@ -147,15 +170,15 @@ export async function GET(req: NextRequest) {
             });
 
             const formattedData = admins.map((admin: any) => {
-                const profile = profileMapByEmail[admin.email?.toLowerCase()] || profileMapById[admin.user_id] || null;
+                const profile = profileMapByEmail[admin.email?.toLowerCase()] || profileMapById[admin.user_id] || profileMapById[admin.id] || null;
                 return {
                     ...admin,
-                    name: profile?.full_name || '이름 없음',
-                    avatar_url: profile?.avatar_url || null
+                    name: profile?.full_name || admin.full_name || admin.name || '이름 없음',
+                    avatar_url: profile?.avatar_url || admin.avatar_url || null
                 };
             });
 
-            console.log('[list_all_admins] Returning', formattedData.length, 'admins');
+            console.log('[list_all_admins] Total admins found:', formattedData.length);
             return NextResponse.json(formattedData);
         }
 
@@ -218,6 +241,7 @@ export async function POST(req: NextRequest) {
             const formattedEmail = targetEmail.toLowerCase().trim();
             const adminPayload: any = { email: formattedEmail, role };
             if (church_id) adminPayload.church_id = church_id.trim();
+            if (targetUserId) adminPayload.user_id = targetUserId; // [추가] user_id 추가 (매칭성 향상)
 
             // 1차 시도: church_id 포함하여 저장
             let result: any = await supabaseAdmin
