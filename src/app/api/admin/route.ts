@@ -545,7 +545,7 @@ export async function POST(req: NextRequest) {
                     await supabaseAdmin.from('notifications').insert([{
                         user_id,
                         actor_name: '시스템',
-                        type: 'system', // 'system' 또는 'admin_notice'
+                        type: 'system',
                         title: '🎉 계정 승인 완료',
                         content: '축하드립니다! 교회 앱 사용 권한이 승인되었습니다. 지금 바로 이용해 보세요!',
                         is_read: false
@@ -590,6 +590,16 @@ export async function POST(req: NextRequest) {
             }
 
             return NextResponse.json(data);
+        }
+
+        // [추가] 신규 기기 로그인 알림 확인 처리
+        if (action === 'clear_new_login') {
+            const { data, error } = await supabaseAdmin
+                .from('profiles')
+                .update({ is_new_login: false })
+                .eq('id', user_id);
+            if (error) throw error;
+            return NextResponse.json({ success: true });
         }
 
         // 선택 성도 일괄 승인/해제

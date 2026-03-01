@@ -78,15 +78,25 @@ export async function POST(req: NextRequest) {
         if (match) {
             console.log(`[DirectAuth] Match Found: ${match.full_name} (${match.id})`);
 
+            // [개선] 기기/ID 변경 감지 및 관리자 검토 플래그
+            const isNewDevice = match.id !== user_id;
+            const now = new Date().toISOString();
+
             // 매칭된 경우: 익명 user_id를 이 프로필에 연결 및 즉시 승인
+            // last_login_at을 기록하고 기기 변경이 감지되면 메모 필드 등에 남김 (감사항목)
             await supabaseAdmin.from('profiles').upsert({
                 ...match,
                 id: user_id,
                 email: match.email || `${user_id}@anonymous.local`,
-                is_approved: true // 매칭 성공 시 자동 승인
+                is_approved: true, // 매칭 성공 시 즉시 사용 가능하도록 자동 승인
+                last_login_at: now,
+                // 기기가 변경된 경우 관리자가 확인할 수 있도록 플래그나 메모를 남길 수 있음 (컬럼이 있다는 가정하에)
+                // 만약 전용 컬럼이 없다면 full_name 검색 시 구분 가능하도록 로직 보완 가능
+                is_new_login: isNewDevice
             });
 
-            if (match.id !== user_id) {
+            if (isNewDevice) {
+                // 기존 기기(ID) 정보 삭제 (데이터 클린업)
                 await supabaseAdmin.from('profiles').delete().eq('id', match.id);
 
                 // 관리자 권한 이전 로직

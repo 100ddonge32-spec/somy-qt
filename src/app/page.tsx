@@ -1530,17 +1530,14 @@ export default function App() {
 
             const result = await res.json();
             if (res.ok && result.success) {
-                // ... (성공 처리)
-                if (result.status === 'linked') {
-                    alert(`${result.name} 성도님, 반갑습니다! 🎊\n환영합니다. 소미와 함께 풍성한 은례 나누세요.`);
-                } else {
-                    alert(`${result.name}님, 가입 신청이 접수되었습니다! ⏳\n교회 관리자의 승인 후 바로 이용하실 수 있어요.`);
-                }
-
+                // [개선] 불필요한 알럿 창 제거 - 로그인 성공 시 즉시 메인으로 진입
                 const { data: { session } } = await supabase.auth.getSession();
                 setUser(session?.user ?? null);
+
                 if (result.church_id) setChurchId(result.church_id);
                 if (result.name) setProfileName(result.name);
+
+                // 상태 체크 후 내부 로직에 의해 자동으로 메인 화면으로 이동됨
                 checkApprovalStatus(true);
             } else {
                 throw new Error(result.error || "서버 인증 처리 중 오류가 발생했습니다.");
@@ -7593,6 +7590,7 @@ export default function App() {
                                                                                         padding: '1px 8px', borderRadius: '6px', fontWeight: 800, fontSize: '10px'
                                                                                     }}>{member.gender || '성별 미설정'}</span>
                                                                                     {!member.is_approved && <span style={{ fontSize: '10px', background: '#FFF5F5', color: '#E03131', padding: '1px 6px', borderRadius: '6px', fontWeight: 800 }}>대기</span>}
+                                                                                    {member.is_new_login && <span style={{ fontSize: '10px', background: '#E3F2FD', color: '#1971C2', padding: '1px 6px', borderRadius: '6px', fontWeight: 800, border: '1px solid #BBDEFB' }}>신규 기기</span>}
                                                                                 </div>
                                                                             </div>
                                                                         </div>
@@ -7633,6 +7631,19 @@ export default function App() {
                                                                                     style={{ background: '#D4AF37', color: 'white', border: 'none', padding: '7px 12px', borderRadius: '10px', fontSize: '11px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 8px rgba(212,175,55,0.2)' }}
                                                                                 >
                                                                                     승인 확정
+                                                                                </button>
+                                                                            )}
+                                                                            {member.is_new_login && (
+                                                                                <button
+                                                                                    onClick={async () => {
+                                                                                        const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_new_login', user_id: member.id }) });
+                                                                                        if (res.ok) {
+                                                                                            setMemberList(prev => prev.map(m => m.id === member.id ? { ...m, is_new_login: false } : m));
+                                                                                        }
+                                                                                    }}
+                                                                                    style={{ background: '#E3F2FD', color: '#1971C2', border: '1px solid #BBDEFB', padding: '7px 12px', borderRadius: '10px', fontSize: '11px', fontWeight: 900, cursor: 'pointer' }}
+                                                                                >
+                                                                                    기기 확인
                                                                                 </button>
                                                                             )}
                                                                             <div style={{ display: 'flex', gap: '4px' }}>
