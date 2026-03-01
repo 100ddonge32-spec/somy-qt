@@ -7537,15 +7537,13 @@ export default function App() {
                                                                 const uniquePhones = targetPhones
                                                                     .map(p => p.trim())
                                                                     .filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
-                                                                let smsUrl = '';
                                                                 if (isIOS) {
-                                                                    // [아이폰 최적화] 가장 표준적인 콤마(,) 구분 방식을 사용합니다. 
-                                                                    smsUrl = `sms:${uniquePhones.join(',')}`;
-                                                                } else {
-                                                                    // 안드로이드용: 세미콜론(;)이 가장 안정적입니다.
-                                                                    smsUrl = `sms:${uniquePhones.join(';')}`;
+                                                                    alert('⚠️ 아이폰 안내\n\n아이폰(iOS)은 보안 정책상 브라우저에서 단체 문자를 여는 기능을 제한하고 있습니다.\n\n옆의 [📋 번호복사] 버튼을 눌러 번호를 복사하신 후, 메시지 앱의 "받는 사람" 칸에 직접 붙여넣어 전송해 주세요.');
+                                                                    return;
                                                                 }
 
+                                                                // 안드로이드용: 세미콜론(;)이 가장 안정적입니다.
+                                                                const smsUrl = `sms:${uniquePhones.join(';')}`;
                                                                 const link = document.createElement('a');
                                                                 link.href = smsUrl;
                                                                 document.body.appendChild(link);
@@ -7562,10 +7560,10 @@ export default function App() {
                                                                         .map(m => m.phone.replace(/[^0-9]/g, ''));
                                                                     if (targetPhones.length === 0) { alert('선택된 성도 중 전화번호가 등록된 분이 없습니다.'); return; }
                                                                     const uniquePhones = targetPhones.filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
-                                                                    // [아이폰/맥북 붙여넣기 최종 최적화] 콤마와 공백(, ) 조합이 애플 기기에서 가장 수신인을 잘 구분합니다.
+                                                                    // [최적화] 가장 표준적인 콤마+공백 조합으로 복사합니다.
                                                                     const textToCopy = uniquePhones.join(', ');
                                                                     navigator.clipboard.writeText(textToCopy);
-                                                                    alert('번호가 복사되었습니다! ✨\n\n[아이폰 단체문자 팁]\n메시지 앱의 수신인 칸에 "붙여넣기" 한 뒤,\n키보드의 "엔터(Return)" 키를 눌러주시면\n모든 번호가 각각의 수신인으로 한꺼번에 등록됩니다!');
+                                                                    alert('번호가 복사되었습니다! ✨\n\n메시지 앱의 수신인 칸에 "붙여넣기" 한 뒤 전송해 주세요.');
                                                                 }}
                                                                 style={{
                                                                     flex: 1, height: '48px', background: '#FFFFFF', color: '#555', border: '1px solid #E5E5E5', borderRadius: '14px', fontSize: '13px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s', boxShadow: '0 4px 6px rgba(0,0,0,0.02)'
@@ -8753,11 +8751,13 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                                         if (!confirm(`현재 ${uniquePhones.length}명이 선택되었습니다. 통신사 제한으로 인해 문자가 일부만 전송될 수 있습니다. 계속할까요?`)) return;
                                     }
 
-                                    // [아이폰 최적화] 콤마(,) 구분 방식의 표준 sms: 프로토콜 사용
-                                    const smsUrl = isIOS
-                                        ? `sms:${uniquePhones.join(',')}`
-                                        : `sms:${uniquePhones.join(';')}`;
+                                    if (isIOS) {
+                                        alert('⚠️ 아이폰 안내\n\n아이폰은 브라우저에서 단체 문자를 생성하는 기능을 제한하고 있습니다.\n\n우측의 [복사] 아이콘을 눌러 번호를 복사한 뒤, 메시지 앱 수신인 칸에 붙여넣어 주세요.');
+                                        return;
+                                    }
 
+                                    // 안드로이드용
+                                    const smsUrl = `sms:${uniquePhones.join(';')}`;
                                     const link = document.createElement('a');
                                     link.href = smsUrl;
                                     document.body.appendChild(link);
@@ -8798,7 +8798,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                                     document.body.removeChild(textArea);
 
                                     if (successful) {
-                                        alert('번호가 복사되었습니다! ✨\n\n[아이폰 단체문자 설정 안내]\n만약 개별로 전송된다면 아이폰 [설정 > 메시지]에서\n1️⃣ MMS 메시지: ON\n2️⃣ 그룹 메시지: ON\n상태인지 확인해 주세요!');
+                                        alert('번호가 복사되었습니다! ✨\n\n메시지 앱 수신인 칸에 붙여넣어 주세요.');
                                     } else {
                                         navigator.clipboard.writeText(textToCopy).then(() => {
                                             alert('번호가 복사되었습니다! ✨');
