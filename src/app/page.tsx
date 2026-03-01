@@ -1639,43 +1639,54 @@ export default function App() {
 
     const handleVerification = async () => {
         if (!user || !vName.trim() || !vPhone.trim()) {
-            alert("성함과 연락처를 모두 입력해 주세요.");
+            alert("성함과 연락잘를 모두 입력해 주세요.");
+            return;
+        }
+        if (!vBirthdate.trim()) {
+            alert("정확한 인증을 위해 생년월일도 입력해 주세요.\n(예: 800101)");
             return;
         }
 
         setIsLinking(true);
         try {
-            const res = await fetch('/api/auth/sync', {
+            // [핵심] sync 대신 direct API 사용
+            // 이름 + 전화번호 + 생년월일 3가지 정확히 일치해야만 즉시 승인
+            // 불일치 시 유령 계정 생성 없이 오류 메시지만 표시
+            const res = await fetch('/api/auth/direct', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     user_id: user.id,
-                    email: user.email,
                     name: vName.trim(),
-                    phone: vPhone.trim(),
+                    phoneTail: vPhone.trim(),
                     birthdate: vBirthdate.trim(),
-                    avatar_url: user.user_metadata?.avatar_url
+                    church_id: churchId
                 })
             });
 
             const result = await res.json();
-            if (res.ok && (result.status === 'merged' || result.status === 'linked' || result.status === 'updated')) {
-                alert(`${result.name} 성도님으로 정보가 등록되었습니다! 🎊\n관리자가 확인 후 승인해 드릴 예정입니다. 잠시만 기다려 주세요.`);
-                checkApprovalStatus(true);
+            const resultName = result.name || vName.trim();
+
+            if (res.ok && result.success && result.status === 'linked' && result.is_approved) {
+                // ✅ 3가지 정보 모두 일치 → 즉시 메인 화면!
+                setProfileName(resultName);
+                if (result.church_id) setChurchId(result.church_id);
                 setShowVerification(false);
-            } else if (result.status === 'already_approved') {
-                alert("이미 승인이 완료되었습니다! 메인 화면으로 이동합니다.");
                 checkApprovalStatus(true);
-                setShowVerification(false);
+            } else if (res.ok && result.success && result.status === 'pending') {
+                // 일치 안됨 → 유령 계정 없이 오류몜 부드럽게 안내
+                alert("입력하신 정보와 일치하는 성도 정보를 찾지 못했습니다.\n\n• 성함: 전체 이름 정확히 (예: 홍길동)\n• 연락처: 하이픈 없이 숫자만 (예: 01012345678)\n• 생년월일: 6자리 (예: 800101)\n\n입력하신 정보를 다시 확인하거나 관리자에게 문의해 주세요.");
             } else {
-                alert("일치하는 성도 정보를 찾을 수 없습니다. 입력 정보를 다시 확인하시거나 관리자 승인을 기다려 주세요.");
+                // API 오류
+                throw new Error(result.error || "서버 응답 오류");
             }
         } catch (err: any) {
-            alert("처리 중 오류가 발생했습니다: " + err.message);
+            alert("오류가 발생했습니다: " + err.message);
         } finally {
             setIsLinking(false);
         }
     };
+
 
     const handleLogout = async () => {
         await supabase.auth.signOut();

@@ -60,26 +60,32 @@ export async function POST(req: NextRequest) {
             const isNameMatch = dbName === inputNameClean;
             if (!isNameMatch) return false;
 
-            // 전화번호 매칭: DB에 전화번호가 있으면 반드시 비교
+            // ― 전화번호 매칭 ―
             let isPhoneMatch = false;
             if (dbPhone && inputPhone) {
-                // 전체 번호 일치 또는 끝 4자리 이상 일치
+                // 전체 번호 일치 또는 뒤 4자리 이상 일치
                 isPhoneMatch = dbPhone === inputPhone || (inputPhone.length >= 4 && dbPhone.endsWith(inputPhone));
-            } else if (!dbPhone && !inputPhone) {
-                // 둘 다 없으면 전화번호 조건 통과 (생년월일로 확인)
+            } else if (!dbPhone) {
+                // DB에 전화번호 없으면 통과 (이름+생년월일로만 확인)
                 isPhoneMatch = true;
             }
 
-            // 생년월일 매칭
+            // ― 생년월일 매칭 (★ 입력했으면 반드시 일치해야 함) ―
             let isBirthMatch = false;
-            if (dbBirth && inputBirth) {
-                isBirthMatch = dbBirth === inputBirth || dbBirth.endsWith(inputBirth) || inputBirth.endsWith(dbBirth);
-            } else if (!dbBirth || !inputBirth) {
-                // 한쪽에만 없으면 생략 가능
+            if (inputBirth && dbBirth) {
+                // 둘 다 있으면 반드시 일치
+                const cleanDb = dbBirth.replace(/[^0-9]/g, '');
+                const cleanIn = inputBirth.replace(/[^0-9]/g, '');
+                isBirthMatch = cleanDb === cleanIn || cleanDb.endsWith(cleanIn) || cleanIn.endsWith(cleanDb);
+            } else if (!dbBirth) {
+                // DB에 생년월일 없으면 통과 (등록 누락)
+                isBirthMatch = true;
+            } else if (!inputBirth) {
+                // 사용자가 안 입력했으면 통과
                 isBirthMatch = true;
             }
 
-            // ★ 이름 + (전화번호 OR 생년월일) 중 하나 이상 일치 시 매칭
+            // ★ 이름 + 전화번호 + 생년월일 모두 일치
             return isNameMatch && isPhoneMatch && isBirthMatch;
         });
 

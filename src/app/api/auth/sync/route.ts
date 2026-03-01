@@ -141,10 +141,11 @@ export async function POST(req: NextRequest) {
         }
 
         if (match) {
-            console.log(`[Sync] Merging match: ${match.full_name} (${match.id}) -> ${user_id} (Admin priority active)`);
+            console.log(`[Sync] 학습 성공: ${match.full_name} (${match.id}) -> ${user_id}`);
             const finalAvatar = profileById?.avatar_url || match.avatar_url || rawAvatar;
 
-            // [기준] 관리자가 업로드한 엑셀(match) 필드가 최우선입니다.
+            // [핵심 수정] 관리자 DB에 등록된 성도와 이름+전화번호가 일치하면 무조건 즉시 승인!
+            // match.is_approved가 null/false인 경우도 매칭 성공이면 학습된 성도이므로 true
             const updateFields: any = {
                 full_name: match.full_name || profileById?.full_name || rawName || '성도',
                 phone: match.phone || profileById?.phone || rawPhone,
@@ -155,7 +156,7 @@ export async function POST(req: NextRequest) {
                 gender: match.gender || profileById?.gender,
                 avatar_url: finalAvatar,
                 church_id: match.church_id || profileById?.church_id || 'jesus-in',
-                is_approved: match.is_approved || profileById?.is_approved || IS_BOSS // 명단 매칭 시 승인 우선
+                is_approved: true // ← 매칭 성공 시 항상 true (관리자가 등록한 성도 = 승인된 성도)
             };
 
             if (profileById) {
@@ -163,12 +164,15 @@ export async function POST(req: NextRequest) {
                 if (match.id !== user_id) {
                     await supabaseAdmin.from('profiles').delete().eq('id', match.id);
                 }
-                return NextResponse.json({ ...updateFields, status: 'merged' });
+                // name 필드도 함께 반환 (result.name 호환성 유지)
+                return NextResponse.json({ ...updateFields, name: updateFields.full_name, status: 'merged' });
             } else {
                 const newProfile = { ...updateFields, id: user_id, email: email || match.email };
                 await supabaseAdmin.from('profiles').insert([newProfile]);
-                await supabaseAdmin.from('profiles').delete().eq('id', match.id);
-                return NextResponse.json({ ...newProfile, status: 'linked' });
+                if (match.id !== user_id) {
+                    await supabaseAdmin.from('profiles').delete().eq('id', match.id);
+                }
+                return NextResponse.json({ ...newProfile, name: newProfile.full_name, status: 'linked' });
             }
         }
 
