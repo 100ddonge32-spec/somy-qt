@@ -7539,8 +7539,9 @@ export default function App() {
                                                                     .filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
                                                                 let smsUrl = '';
                                                                 if (isIOS) {
-                                                                    // iPhone용 기술적 최적화: /open?addresses= 형식이 그룹핑에 효과적입니다.
-                                                                    smsUrl = `sms:/open?addresses=${uniquePhones.join(',')}&body=`;
+                                                                    // [아이폰 최적화] 가장 표준적인 쉼표(,) 구분 방식을 사용합니다. 
+                                                                    // 특수 경로나 body를 추가할 경우 한 명만 선택되는 현상이 발생할 수 있어 정석대로 처리합니다.
+                                                                    smsUrl = `sms:${uniquePhones.join(',')}`;
                                                                 } else {
                                                                     // 안드로이드용: 세미콜론(;)이 가장 안정적입니다.
                                                                     smsUrl = `sms:${uniquePhones.join(';')}`;
@@ -8751,10 +8752,10 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                                         if (!confirm(`현재 ${uniquePhones.length}명이 선택되었습니다. 통신사 제한으로 인해 문자가 일부만 전송될 수 있습니다. 계속할까요?`)) return;
                                     }
 
-                                    // [기술적 최적화] iPhone(iOS) 그룹 메시지 전용 주소 체계 적용
+                                    // [아이폰 최적화] 쉼표(,) 구분 방식의 표준 sms: 프로토콜 사용
                                     const smsUrl = isIOS
-                                        ? `sms:/open?addresses=${uniquePhones.join(',')}&body=`
-                                        : `sms:${uniquePhones.join(';')}${uniquePhones.length > 1 ? '' : ''}`;
+                                        ? `sms:${uniquePhones.join(',')}`
+                                        : `sms:${uniquePhones.join(';')}`;
 
                                     const link = document.createElement('a');
                                     link.href = smsUrl;
