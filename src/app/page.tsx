@@ -190,8 +190,8 @@ const EventPosterPopup = ({ imageUrl, onClose }: { imageUrl: string, onClose: ()
 
 const StatsView = ({ memberList }: { memberList: any[] }) => {
     // Gender Calculation
-    const maleCount = memberList.filter(m => m.gender === '남성').length;
-    const femaleCount = memberList.filter(m => m.gender === '여성').length;
+    const maleCount = memberList.filter(m => m.gender === '남' || m.gender === '남성').length;
+    const femaleCount = memberList.filter(m => m.gender === '여' || m.gender === '여성').length;
     const totalGender = maleCount + femaleCount || 1;
 
     // Age Calculation
