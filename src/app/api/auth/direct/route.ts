@@ -99,8 +99,7 @@ export async function POST(req: NextRequest) {
             if (isSameUser) {
                 // 같은 ID면 그냥 is_approved 갱신
                 await supabaseAdmin.from('profiles').update({
-                    is_approved: true,
-                    last_login_at: now
+                    is_approved: true
                 }).eq('id', user_id);
             } else {
                 // [수정] 이관 시 유니크 제약조건(email, phone 등) 충돌 방지
@@ -118,8 +117,7 @@ export async function POST(req: NextRequest) {
                     ...match,
                     id: user_id,
                     email: match.email || `${user_id}@anonymous.local`,
-                    is_approved: true,
-                    last_login_at: now
+                    is_approved: true
                 });
 
                 if (upsertError) {
