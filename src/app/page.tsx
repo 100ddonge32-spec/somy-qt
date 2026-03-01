@@ -1149,13 +1149,15 @@ export default function App() {
                     setChurchSettings(saneSettings);
                     setSettingsForm(saneSettings);
 
-                    // ✅ 행사 포스터 팝업 노출 로직 (오늘 하루 안보기 체크)
+                    // ✅ 행사 포스터 팝업 ([수정] 로그인 + 승인된 성도에게만 표시)
                     if (saneSettings.event_poster_url && saneSettings.event_poster_visible) {
                         const cleanUrl = saneSettings.event_poster_url.split('?')[0];
                         const hideKey = `somy_hide_poster_${btoa(cleanUrl).substring(0, 32)}`;
                         const hideDate = localStorage.getItem(hideKey);
+                        // 로그인 + 승인 상태에서만 포스터 노출
+                        // (user는 여기에서 주입 불가하므로 이후 checkApprovalStatus에서 별도 학대로 체크)
                         if (hideDate !== new Date().toDateString()) {
-                            setShowEventPopup(true);
+                            setShowEventPopup(true); // isApproved 체크는 렌더 조건에서 함
                         }
                     }
                 } else {
@@ -6956,7 +6958,7 @@ export default function App() {
             </div>
             {renderContent()}
 
-            {showEventPopup && churchSettings.event_poster_url && churchSettings.event_poster_visible && (
+            {showEventPopup && isApproved && churchSettings.event_poster_url && churchSettings.event_poster_visible && (
                 <EventPosterPopup
                     imageUrl={`${churchSettings.event_poster_url}${churchSettings.event_poster_url.includes('?') ? '&' : '?'}t=${Date.now()}`}
                     onClose={() => setShowEventPopup(false)}
