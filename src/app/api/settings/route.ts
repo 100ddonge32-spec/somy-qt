@@ -134,7 +134,11 @@ export async function POST(req: NextRequest) {
         church_id: body_church_id
     } = body;
 
-    const targetChurchId = body_church_id || 'jesus-in';
+    const targetChurchId = body_church_id;
+
+    if (!targetChurchId) {
+        return NextResponse.json({ success: false, error: "church_id가 유효하지 않습니다." }, { status: 400 });
+    }
 
     // ✅ 기존 정보를 먼저 조회하여 체험판 정보가 있으면 보존 (김부장 방식 유지)
     const { data: currentSettings } = await supabaseAdmin
