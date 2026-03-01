@@ -2643,32 +2643,30 @@ export default function App() {
                                     gap: '10px',
                                     width: '100%'
                                 }}>
-                                    {churchSettings.sermon_url ? (
-                                        <button onClick={() => {
-                                            if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
-                                                playerRef.current.pauseVideo();
-                                                setPlayRequested(false);
-                                            }
-                                            setView('sermon');
-                                            setHasNewSermon(false);
-                                            localStorage.setItem(`last_view_sermon_${churchId}`, Date.now().toString());
-                                        }} className="main-action-button" style={{
-                                            padding: "16px 12px",
-                                            background: "linear-gradient(145deg, #ffffff 0%, #fff4f2 100%)", color: "#BA2D0B",
-                                            fontWeight: 800, fontSize: "15px", borderRadius: "18px",
-                                            border: "1px solid #fcd3c8", cursor: "pointer",
-                                            boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
-                                            display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
-                                            transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                                            position: 'relative', justifyContent: 'flex-start'
-                                        }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                            <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="#FF0000"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" /></svg>
-                                            </div>
-                                            <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>담임목사 설교</span>
-                                            {hasNewSermon && <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px' }}>N</div>}
-                                        </button>
-                                    ) : null}
+                                    <button onClick={() => {
+                                        if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
+                                            playerRef.current.pauseVideo();
+                                            setPlayRequested(false);
+                                        }
+                                        setView('sermon');
+                                        setHasNewSermon(false);
+                                        localStorage.setItem(`last_view_sermon_${churchId}`, Date.now().toString());
+                                    }} className="main-action-button" style={{
+                                        padding: "16px 12px",
+                                        background: "linear-gradient(145deg, #ffffff 0%, #fff4f2 100%)", color: "#BA2D0B",
+                                        fontWeight: 800, fontSize: "15px", borderRadius: "18px",
+                                        border: "1px solid #fcd3c8", cursor: "pointer",
+                                        boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
+                                        display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
+                                        transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                                        position: 'relative', justifyContent: 'flex-start'
+                                    }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                                        <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#FF0000"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" /></svg>
+                                        </div>
+                                        <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>담임목사 설교</span>
+                                        {hasNewSermon && <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px' }}>N</div>}
+                                    </button>
                                     <div style={{ position: 'relative' }}>
                                         <button onClick={async () => {
                                             setView('counseling');
