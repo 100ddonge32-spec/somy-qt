@@ -8533,14 +8533,22 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
                 if (cleanMetaPhone.startsWith('8210')) cleanMetaPhone = '0' + cleanMetaPhone.substring(2);
                 else if (cleanMetaPhone.startsWith('82')) cleanMetaPhone = '0' + cleanMetaPhone.substring(2);
 
-                // 1. 서버 측 동기화 API 호출 (이미 ID가 있더라도 누락된 정보를 위해 머지 로직 실행됨)
+                // ★ 익명+정보없는 사용자는 sync 차단 (성도 유령계정 방지)
+                const metaNameFull = user.user_metadata?.full_name || user.user_metadata?.name;
+                const isAnon = !user.email || user.email.includes('anonymous.local') || user.is_anonymous;
+                if (isAnon && !metaNameFull && !cleanMetaPhone) {
+                    console.log('[ProfileLoad] 익명+정보없음 → sync 미호출');
+                    return;
+                }
+
+                // 1. 서버 측 동기화 API 호출
                 const syncRes = await fetch('/api/auth/sync', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         user_id: user.id,
                         email: user.email,
-                        name: user.user_metadata?.full_name || user.user_metadata?.name,
+                        name: metaNameFull,
                         avatar_url: user.user_metadata?.avatar_url,
                         phone: cleanMetaPhone
                     })
