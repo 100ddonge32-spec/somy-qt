@@ -5,11 +5,11 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 const APP_URL = "https://somy-qt.vercel.app";
-const churchName = process.env.NEXT_PUBLIC_CHURCH_NAME || "예수인교회";
+const churchName = process.env.NEXT_PUBLIC_CHURCH_NAME || "";
 const appName = process.env.NEXT_PUBLIC_APP_NAME || "소미 QT";
 
 export const metadata: Metadata = {
-  title: `${appName} - ${churchName}`,
+  title: churchName ? `${appName} - ${churchName}` : appName,
   description: "소미와 함께하는 따뜻한 큐티 시간 🐑",
   themeColor: "#D4AF37",
   viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover",

@@ -9,10 +9,10 @@ import * as XLSX from 'xlsx';
 type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "adminGuide" | "brandGuide" | "profile" | "memberSearch" | "book" | "pastorColumn";
 
 const SOMY_IMG = "/somy.png";
-const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://cdn.imweb.me/thumbnail/20210813/569458bf12dd0.png";
-const CHURCH_URL = process.env.NEXT_PUBLIC_CHURCH_URL || "https://jesus-in.imweb.me/index";
-const CHURCH_NAME = process.env.NEXT_PUBLIC_CHURCH_NAME || "예수인교회";
-const APP_SUBTITLE = process.env.NEXT_PUBLIC_APP_SUBTITLE || "큐티 동반자";
+const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "";
+const CHURCH_URL = process.env.NEXT_PUBLIC_CHURCH_URL || "";
+const CHURCH_NAME = process.env.NEXT_PUBLIC_CHURCH_NAME || "";
+const APP_SUBTITLE = process.env.NEXT_PUBLIC_APP_SUBTITLE || "";
 const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
 
 
@@ -346,7 +346,7 @@ export default function App() {
     const [showBirthdayPopup, setShowBirthdayPopup] = useState(false); // ✅ 생일 팝업 노출 여부
     const [todayBirthdayMembers, setTodayBirthdayMembers] = useState<any[]>([]); // ✅ 오늘 생일인 성도 목록
     const [messages, setMessages] = useState([
-        { role: "assistant", content: "안녕하세요! 저는 예수인교회의 큐티 동반자 소미예요 😊\n오늘 어떤 말씀을 함께 나눠볼까요?" }
+        { role: "assistant", content: `안녕하세요! 저는 성도님의 큐티 동반자 소미예요 😊\n오늘 어떤 말씀을 함께 나눠볼까요?` }
     ]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -2153,7 +2153,11 @@ export default function App() {
                         marginBottom: "20px",
                         animation: "fade-in 0.8s ease-out"
                     }}>
-                        <img src={churchSettings.church_logo_url} alt={`${churchSettings.church_name} 로고`} style={{ height: "45px", objectFit: "contain" }} />
+                        {churchSettings.church_logo_url ? (
+                            <img src={churchSettings.church_logo_url} alt={`${churchSettings.church_name} 로고`} style={{ height: "45px", objectFit: "contain" }} />
+                        ) : (
+                            <div style={{ fontSize: '24px', fontWeight: 900, color: '#333' }}>{churchSettings.church_name || '우리 교회'}</div>
+                        )}
                         <div style={{ fontSize: "12px", color: "#666", letterSpacing: "1px", fontWeight: 700 }}>홈페이지</div>
                     </a>
                     {/* Action Buttons을 최상단으로 옮김 */}
@@ -2902,7 +2906,9 @@ export default function App() {
                         zIndex: 10
                     }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
-                        <img src={churchSettings.church_logo_url} alt="로고" style={{ height: "24px", objectFit: 'contain' }} />
+                        {churchSettings.church_logo_url && (
+                            <img src={churchSettings.church_logo_url} alt="로고" style={{ height: "24px", objectFit: 'contain' }} />
+                        )}
                         <div style={{ fontWeight: 700, color: "#333", fontSize: "14px" }}>
                             {isHistoryMode ? "지난 묵상 기록" : "오늘의 큐티"}
                         </div>
@@ -5625,7 +5631,7 @@ export default function App() {
                             <img src={SOMY_IMG} alt="소미" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </div>
                         <div>
-                            <div style={{ fontWeight: 700, color: "#333", fontSize: "14px" }}>소미 @예수인교회</div>
+                            <div style={{ fontWeight: 700, color: "#333", fontSize: "14px" }}>소미 {churchSettings.church_name ? `@${churchSettings.church_name}` : ""}</div>
                             <div style={{ fontSize: "11px", color: "#999" }}>실시간 묵상 가이드</div>
                         </div>
                     </div>

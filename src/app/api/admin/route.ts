@@ -431,8 +431,8 @@ export async function POST(req: NextRequest) {
                     const newSetting: any = {
                         ...cleanTemplate,
                         church_id: finalChurchId,
-                        church_name: `${finalChurchId} 교회`,
-                        app_subtitle: '새로운 교회 공동체에 오신 것을 환영합니다.',
+                        church_name: '',
+                        app_subtitle: '',
                         // 예수인교회 전용 데이터는 초기화하여 '정보가 그대로 넘어가는 문제' 해결
                         church_logo_url: '',
                         sermon_url: '',
