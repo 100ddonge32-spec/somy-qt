@@ -594,7 +594,7 @@ export default function App() {
     }, []);
 
     useEffect(() => {
-        if (ccmIndex === null || !user) return; // ✅ 로그인 전에는 음악을 준비하거나 재생하지 않음
+        if (ccmIndex === null || (!user && churchId !== 'demo')) return; // ✅ 로그인 전에는 음악을 준비하지 않음 (단, 데모는 허용)
 
         // 인덱스 범위 초과 방지 (목록이 바뀌었을 때 대비)
         const safeIdx = ccmIndex >= activeCcmList.length ? 0 : ccmIndex;
@@ -2345,7 +2345,7 @@ export default function App() {
                     </a>
                     {/* Action Buttons을 최상단으로 옮김 */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%", maxWidth: "340px", animation: "fade-in 1.4s ease-out", paddingBottom: "20px" }}>
-                        {!user ? (
+                        {!user && churchId !== 'demo' ? (
                             <div style={{ background: 'white', padding: '30px', borderRadius: '32px', boxShadow: '0 15px 50px rgba(0,0,0,0.1)', border: '1px solid #F0ECE4', textAlign: 'center' }}>
                                 <div style={{ fontSize: '20px', fontWeight: 900, color: '#333', marginBottom: '8px' }}>우리 교회 성도 로그인 ✨</div>
                                 <div style={{ fontSize: '13px', color: '#888', marginBottom: '28px', lineHeight: 1.5 }}>관리자가 등록한 정보를 입력하시면<br />별도의 승인 없이 바로 시작됩니다.</div>
@@ -2485,7 +2485,7 @@ export default function App() {
                                 </div>
                             </div>
 
-                        ) : !isApproved && !isAdmin ? (
+                        ) : !isApproved && !isAdmin && churchId !== 'demo' ? (
                             <div style={{ background: '#FFFDE7', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', border: '1px solid #FFF59D', textAlign: 'center' }}>
                                 <div style={{ fontSize: '40px', marginBottom: '15px' }}>🔒</div>
                                 {showVerification ? (
