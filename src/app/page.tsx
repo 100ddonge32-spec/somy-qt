@@ -1696,55 +1696,77 @@ export default function App() {
         setIsGeneratingColumn(true);
         try {
             const verse = getGraceVerse();
-            const prompt = `당신은 ${CHURCH_NAME}의 담임목사입니다. 오늘의 말씀 [${verse.book} ${verse.ref}: ${verse.verse}]을 바탕으로 성도들에게 위로와 도전을 주는 짧고 강렬한 '담임목사 칼럼'을 작성해주세요. 
-            형식:
-            제목: (강렬한 제목)
-            내용: (200자 내외의 따뜻한 권면의 글)
-            말투는 자애롭고 권위 있으면서도 친근한 목소리로 작성해주세요.`;
+            // ✅ 프롬프트를 더 풍성하고 깊이 있게 수정
+            const prompt = `당신은 ${settingsForm.church_name || CHURCH_NAME}의 담임목사입니다. 오늘의 말씀 [${verse.book} ${verse.ref}: ${verse.verse}]을 바탕으로 성도들에게 깊은 위로와 영적 도전을 주는 '담임목사 칼럼'을 작성해주세요. 
+
+[작성 가이드라인]
+1. 분량: 약 500자 내외로 풍성하게 작성하세요.
+2. 구조: 말씀 묵상 - 삶의 적용 - 따뜻한 격려와 축복의 순서로 구성하세요.
+3. 말투: 성도를 진심으로 아끼는 마음이 담긴 자애롭고 은혜로운 목소리(존댓말)를 사용하세요.
+4. 내용: 단순히 말씀을 설명하기보다, 오늘을 살아가는 성도들의 삶에 실제적인 힘이 되는 조언을 포함하세요.
+
+반드시 아래 형식을 엄격히 지켜서 출력하세요:
+제목: (강렬하고 은혜로운 제목)
+내용: (깊이 있고 풍성한 권면의 글)
+
+마크다운 기호(** 등)는 사용하지 말고 텍스트로만 정성스럽게 작성해주세요.`;
 
             const res = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     messages: [{ role: "user", content: prompt }],
+                    max_tokens: 1000, // ✅ 글자수가 많아지므로 토큰 용량 상향
                     stream: false
                 }),
             });
 
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || "AI 호출 실패");
+            }
+
             const data = await res.json();
             const aiResponse = data.content || "";
+            console.log("AI Column Response:", aiResponse);
 
-            const titleMatch = aiResponse.match(/제목:\s*(.+)/);
-            const contentMatch = aiResponse.match(/내용:\s*([\s\S]+)/);
+            // ✅ 정규표현식 개선 (마크다운 ** 등이 포함되어도 인식 가능하도록)
+            const titleMatch = aiResponse.match(/(?:제목|주제|Title)\s*[:：]\s*(.+)/i) || aiResponse.match(/\*\*(?:제목|주제|Title)\s*[:：]\s*\*\*(.+)/i);
+            const contentMatch = aiResponse.match(/(?:내용|본문|Content)\s*[:：]\s*([\s\S]+)/i) || aiResponse.match(/\*\*(?:내용|본문|Content)\s*[:：]\s*\*\*(.+)/i);
 
-            const newTitle = titleMatch ? titleMatch[1].trim() : "오늘의 은혜";
-            const newContent = contentMatch ? contentMatch[1].trim() : aiResponse;
+            let newTitle = titleMatch ? titleMatch[1].replace(/\*/g, '').trim() : "오늘의 은혜";
+            let newContent = contentMatch ? contentMatch[1].replace(/\*/g, '').trim() : aiResponse.trim();
 
-            // 서버에 저장 시도
+            // 제목만 있고 내용 파싱 실패 시 aiResponse 전체를 내용으로 사용
+            if (aiResponse.includes('제목:') && !aiResponse.includes('내용:')) {
+                newContent = aiResponse.split('제목:')[1].split('\n').slice(1).join('\n').trim();
+            }
+
+            // ✅ 현재 settingsForm을 기반으로 저장 (사용자가 다른 설정을 바꿨을 수 있으므로)
+            const updatedPayload = {
+                ...settingsForm,
+                church_id: churchId,
+                pastor_column_title: newTitle,
+                pastor_column_content: newContent
+            };
+
             const saveRes = await fetch('/api/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...churchSettings,
-                    church_id: churchId,
-                    pastor_column_title: newTitle,
-                    pastor_column_content: newContent
-                })
+                body: JSON.stringify(updatedPayload)
             });
 
             if (saveRes.ok) {
-                const updatedSettings = {
-                    ...churchSettings,
-                    pastor_column_title: newTitle,
-                    pastor_column_content: newContent
-                };
-                setChurchSettings(updatedSettings);
-                setSettingsForm(updatedSettings);
+                setChurchSettings(updatedPayload);
+                setSettingsForm(updatedPayload);
                 alert("✨ AI가 오늘의 칼럼을 정성스럽게 작성했습니다!");
+            } else {
+                const saveError = await saveRes.json();
+                throw new Error(saveError.error || "저장 실패");
             }
         } catch (e) {
             console.error("칼럼 생성 실패:", e);
-            alert("칼럼 생성 중 오류가 발생했습니다.");
+            alert("칼럼 생성 중 오류가 발생했습니다: " + (e as Error).message);
         } finally {
             setIsGeneratingColumn(false);
         }
