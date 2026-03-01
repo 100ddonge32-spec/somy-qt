@@ -26,9 +26,25 @@ export async function GET(req: NextRequest) {
         .eq('church_id', targetChurchId)
         .maybeSingle();
 
-    // 더이상 id=1 (예수인교회) 강제 폴백을 하지 않음 (타 교회 브랜딩 노출 방지)
+    // 2순위: jesus-in에 한해서는 id=1 레코드를 마지막 보루로 시도 (호환성)
+    if (!data && targetChurchId === 'jesus-in') {
+        const { data: fallback } = await supabaseAdmin
+            .from('church_settings')
+            .select('*')
+            .eq('id', 1)
+            .maybeSingle();
+        if (fallback) {
+            data = fallback;
+            console.log(`[API Settings] Fallback to ID 1 successful for jesus-in`);
+        }
+    }
 
     if (data) {
+        // [보정] 주요 필드가 비어있을 경우 기본값 주입 (데이터 증발 방지용 안전장치)
+        if (!data.church_name) data.church_name = "예수인교회";
+        if (!data.church_logo_url) data.church_logo_url = "https://lfjrfyylsxhvwosdpujv.supabase.co/storage/v1/object/public/church-assets/jesus-in-logo.png";
+        if (!data.app_subtitle) data.app_subtitle = "말씀과 기도로 거룩해지는 공동체";
+
         // ✅ DB 컬럼이 없을 경우를 대비해 plan 필드에 저장된 정보를 읽어와 매핑하는 '김부장의 신의 한 수'
         const planStr = data.plan || '';
 

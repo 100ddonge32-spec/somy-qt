@@ -1152,6 +1152,9 @@ export default function App() {
                 if (settings) {
                     const saneSettings = {
                         ...settings,
+                        church_name: settings.church_name || CHURCH_NAME,
+                        church_logo_url: settings.church_logo_url || CHURCH_LOGO,
+                        app_subtitle: settings.app_subtitle || APP_SUBTITLE,
                         community_visible: settings.community_visible ?? true,
                         allow_member_edit: settings.allow_member_edit ?? false
                     };

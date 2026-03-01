@@ -23,31 +23,36 @@ const fallbackData = {
     totalCompletions: 0
 };
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     console.log("[Stats API] GET Request Started");
     try {
+        const { searchParams } = new URL(req.url);
+        const churchId = searchParams.get('church_id') || 'jesus-in';
         const today = getKoreaDateString();
-        console.log("[Stats API] Target Date:", today);
+        console.log(`[Stats API] Target Date: ${today}, Church: ${churchId}`);
 
-        // 1. 오늘 참여자 조회 (3초 타임아웃 비스무리하게 비구성)
+        // 1. 오늘 참여자 조회 (교회별 격리)
         const todayPromise = supabaseAdmin
             .from('qt_completions')
             .select('user_name, avatar_url')
             .eq('completed_date', today)
+            .eq('church_id', churchId)
             .order('created_at', { ascending: true });
 
-        // 2. 이번 달 랭킹 조회
+        // 2. 이번 달 랭킹 조회 (교회별 격리)
         const firstOfMonth = today.slice(0, 7) + '-01';
         const rankingPromise = supabaseAdmin
             .from('qt_completions')
             .select('user_id, user_name, avatar_url')
+            .eq('church_id', churchId)
             .gte('completed_date', firstOfMonth)
             .lte('completed_date', today);
 
-        // 3. 전체 통계
+        // 3. 전체 통계 (교회별 격리)
         const totalPromise = supabaseAdmin
             .from('qt_completions')
-            .select('id', { count: 'exact', head: true });
+            .select('id', { count: 'exact', head: true })
+            .eq('church_id', churchId);
 
         // 모든 쿼리를 병렬로 실행 (속도 향상)
         const [todayRes, rankingRes, totalRes] = await Promise.all([
@@ -85,7 +90,7 @@ export async function GET() {
             totalCompletions: totalRes.count || 0,
         };
 
-        console.log("[Stats API] Success:", result.today.count, "participants today");
+        console.log(`[Stats API] Success: ${result.today.count} participants in ${churchId}`);
         return NextResponse.json(result);
 
     } catch (err: any) {
@@ -98,7 +103,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { user_id, user_name, avatar_url, answers } = body;
+        const { user_id, user_name, avatar_url, answers, church_id } = body;
 
         if (!user_id) return NextResponse.json({ error: 'No user_id' }, { status: 400 });
 
@@ -111,6 +116,7 @@ export async function POST(req: NextRequest) {
                     user_name: user_name || '성도',
                     avatar_url,
                     completed_date: today,
+                    church_id: church_id || 'jesus-in', // [격리] 교회 ID 저장
                     answers: answers || [] // 답변 데이터 추가 저장
                 },
                 { onConflict: 'user_id,completed_date' }
@@ -124,13 +130,20 @@ export async function POST(req: NextRequest) {
     }
 }
 
-// 큐티 통계 초기화 (DELETE)
-export async function DELETE() {
+// 큐티 통계 초기화 (DELETE) - 교회별 선택적 초기화 지원
+export async function DELETE(req: NextRequest) {
     try {
+        const { searchParams } = new URL(req.url);
+        const churchId = searchParams.get('church_id');
+
+        if (!churchId) {
+            return NextResponse.json({ error: 'Church ID is required for selective reset' }, { status: 400 });
+        }
+
         const { error } = await supabaseAdmin
             .from('qt_completions')
             .delete()
-            .neq('id', 0);
+            .eq('church_id', churchId);
 
         if (error) throw error;
         return NextResponse.json({ success: true });
