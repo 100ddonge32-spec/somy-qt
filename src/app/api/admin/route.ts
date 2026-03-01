@@ -146,31 +146,37 @@ export async function GET(req: NextRequest) {
             if (!admins || admins.length === 0) return NextResponse.json([]);
 
             // Step 2: 등록된 이메일 또는 user_id로 profiles 별도 조회
-            const emails = admins.map((a: any) => a.email?.toLowerCase()).filter(Boolean);
-            const userIds = admins.map((a: any) => a.user_id).filter(Boolean);
+            const identifiers: any[] = admins.flatMap((a: any) => [a.email, a.user_id, a.id]).filter(Boolean);
+            const uniqueIdentifiers = Array.from(new Set(identifiers.map((i: any) => i.toString())))
+                .filter((i: string) => i.length > 5); // 유효한 식별자만
 
             let profileQuery = supabaseAdmin.from('profiles').select('id, email, full_name, avatar_url');
 
-            // PostgREST .or()를 위한 안전한 필터 생성
-            const filters = [];
-            if (emails.length > 0) filters.push(`email.in.(${emails.map((e: any) => `"${e}"`).join(',')})`);
-            if (userIds.length > 0) filters.push(`id.in.(${userIds.map((id: any) => `"${id}"`).join(',')})`);
+            let profiles: any[] = [];
+            if (uniqueIdentifiers.length > 0) {
+                const idList = uniqueIdentifiers.map(i => `"${i}"`).join(',');
+                const { data } = await profileQuery.or(`email.in.(${idList}),id.in.(${idList})`);
+                profiles = data || [];
+            }
 
-            const { data: profiles } = filters.length > 0
-                ? await profileQuery.or(filters.join(','))
-                : { data: [] };
-
-            // Step 3: 매핑 생성 (Email 우선, 그 다음 ID)
+            // Step 3: 매핑 생성
             const profileMapByEmail: Record<string, any> = {};
             const profileMapById: Record<string, any> = {};
 
-            (profiles || []).forEach((p: any) => {
+            profiles.forEach((p: any) => {
                 if (p.email) profileMapByEmail[p.email.toLowerCase()] = p;
                 if (p.id) profileMapById[p.id] = p;
             });
 
             const formattedData = admins.map((admin: any) => {
-                const profile = profileMapByEmail[admin.email?.toLowerCase()] || profileMapById[admin.user_id] || profileMapById[admin.id] || null;
+                const emailKey = admin.email?.toLowerCase();
+                // 매핑 시도: 정석 이메일 -> id -> user_id -> email필드를 id로 간주 -> legacy id
+                const profile = (emailKey && profileMapByEmail[emailKey])
+                    || (admin.user_id && profileMapById[admin.user_id])
+                    || (admin.email && profileMapById[admin.email]) // 이메일 칸에 ID가 들어있는 경우
+                    || (admin.id && profileMapById[admin.id])
+                    || null;
+
                 return {
                     ...admin,
                     name: profile?.full_name || admin.full_name || admin.name || '이름 없음',
