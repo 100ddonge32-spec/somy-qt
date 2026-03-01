@@ -1772,6 +1772,18 @@ export default function App() {
         }
     };
 
+    // [기능] 좋아요 누른 사람 이름 목록 가져오기 (김부장의 디테일)
+    const getLikerNames = (likerIds: string[]) => {
+        if (!likerIds || !Array.isArray(likerIds) || likerIds.length === 0) return null;
+        const names = likerIds.map(id => {
+            const m = memberList.find(member => member.id === id) || allAdminList.find(a => a.id === id);
+            return m?.full_name || null;
+        }).filter(Boolean);
+        if (names.length === 0) return null;
+        if (names.length <= 3) return names.join(", ") + "님이 좋아합니다";
+        return `${names.slice(0, 2).join(", ")}님 외 ${names.length - 2}명이 좋아합니다`;
+    };
+
     const handleAnswerChange = (index: number, value: string) => {
         const newAnswers = [...answers];
         newAnswers[index] = value;
@@ -3979,6 +3991,13 @@ export default function App() {
                                             </div>
                                         </div>
 
+                                        {/* 좋아요 명단 표시 */}
+                                        {post.liker_ids && post.liker_ids.length > 0 && (
+                                            <div style={{ fontSize: '11px', color: '#999', marginBottom: '12px', padding: '0 4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <span>❤️</span> {getLikerNames(post.liker_ids)}
+                                            </div>
+                                        )}
+
                                         {/* Comments Section */}
                                         <div style={{ borderTop: '1px solid #F5F5F5', paddingTop: '15px' }}>
                                             <div style={{ display: 'none' }}>댓글 {post.comments?.length || 0}개</div>
@@ -4457,6 +4476,13 @@ export default function App() {
                                                 <span>💬</span> 댓글 {diary.comments?.length || 0}개
                                             </div>
                                         </div>
+
+                                        {/* 좋아요 명단 표시 */}
+                                        {diary.liker_ids && diary.liker_ids.length > 0 && (
+                                            <div style={{ fontSize: '11px', color: '#E07A5F', marginBottom: '12px', padding: '0 4px', display: 'flex', alignItems: 'center', gap: '4px', opacity: 0.8 }}>
+                                                <span>❤️</span> {getLikerNames(diary.liker_ids)}
+                                            </div>
+                                        )}
 
                                         <div style={{ borderTop: '1px solid #FFF1E6', paddingTop: '15px' }}>
                                             <div style={{ display: 'none' }}>댓글 {diary.comments?.length || 0}개</div>
