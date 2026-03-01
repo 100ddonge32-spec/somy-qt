@@ -103,7 +103,17 @@ export async function POST(req: NextRequest) {
                     last_login_at: now
                 }).eq('id', user_id);
             } else {
-                // 다른 ID (새 기기/새 계정) → 기존 데이터 이관
+                // [수정] 이관 시 유니크 제약조건(email, phone 등) 충돌 방지
+                // 기존 데이터의 유니크 필드를 먼저 제거/변경한 후 새 ID로 이관합니다.
+                const { error: clearError } = await supabaseAdmin.from('profiles').update({
+                    email: null,
+                    phone: null
+                }).eq('id', match.id);
+
+                if (clearError) {
+                    console.error(`[DirectAuth] 기존 프로필 유니크 필드 제거 실패:`, clearError);
+                }
+
                 const { error: upsertError } = await supabaseAdmin.from('profiles').upsert({
                     ...match,
                     id: user_id,
@@ -114,7 +124,8 @@ export async function POST(req: NextRequest) {
 
                 if (upsertError) {
                     console.error(`[DirectAuth] 프로필 이관 실패:`, upsertError);
-                    throw new Error('프로필 연결 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+                    // [개선] 사용자에게 실제 실패 원인을 조금 더 구체적으로 노출 (디버깅용)
+                    throw new Error(`프로필 연결 실패: ${upsertError.message || '데이터베이스 오류'}`);
                 }
 
                 // 관리자 권한 이전
