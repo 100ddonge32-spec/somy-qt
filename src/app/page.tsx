@@ -1735,17 +1735,23 @@ export default function App() {
     const handleSaveSettings = async () => {
         setSettingsSaving(true);
         try {
+            // [핵심 버그 수정] settingsForm에만 없는 설교 관련 필드를 churchSettings에서 가져와 병합
+            // 이렇게 해야 기본 설정 저장 시 설교 요약/질문 내용이 사라지지 않습니다.
+            const fullPayload = {
+                ...churchSettings, // 현재 전체 설정 (설교 데이터 포함)
+                ...settingsForm,   // 수정된 기본 설정으로 덮어쓰기
+                church_id: churchId
+            };
+
             const res = await fetch('/api/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...settingsForm,
-                    church_id: churchId
-                }),
+                body: JSON.stringify(fullPayload),
             });
             const data = await res.json();
             if (data.success) {
-                setChurchSettings({ ...settingsForm });
+                setChurchSettings(fullPayload);
+
                 setShowSettings(false);
                 alert('설정이 저장되었습니다! ✅');
 
