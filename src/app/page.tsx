@@ -131,6 +131,25 @@ function getYouVersionUrl(reference: string): string {
     return `https://www.bible.com/ko/search/bible?q=${encodeURIComponent(reference)}`;
 }
 
+// ✅ 한국 전화번호 자동 포맷팅 (하이픈 추가)
+function formatPhone(phone: string): string {
+    if (!phone) return "";
+    const cleaned = phone.replace(/[^0-9]/g, "");
+    if (cleaned.length === 11) {
+        return cleaned.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
+    } else if (cleaned.length === 10) {
+        if (cleaned.startsWith("02")) {
+            return cleaned.replace(/(\d{2})(\d{4})(\d{4})/, "$1-$2-$3");
+        }
+        return cleaned.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3");
+    } else if (cleaned.length === 9) {
+        return cleaned.replace(/(\d{2})(\d{3})(\d{4})/, "$1-$2-$3");
+    } else if (cleaned.length === 8) {
+        return cleaned.replace(/(\d{4})(\d{4})/, "$1-$2");
+    }
+    return phone;
+}
+
 const BookView = ({ book, onBack }: { book: any, onBack: () => void }) => {
     // ... (rest of BookView unchanged)
     return (
@@ -6511,7 +6530,7 @@ export default function App() {
 
                     <div style={{ background: '#F9F7F2', padding: '15px', borderRadius: '15px', marginBottom: '20px', border: '1px solid #E4DCCF' }}>
                         <div style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', marginBottom: '10px' }}>원본 데이터 (등록된 정보)</div>
-                        <div style={{ fontSize: '14px', fontWeight: 700 }}>{mergeTarget.full_name} ({mergeTarget.phone || '번호없음'})</div>
+                        <div style={{ fontSize: '14px', fontWeight: 700 }}>{mergeTarget.full_name} ({formatPhone(mergeTarget.phone) || '번호없음'})</div>
                         <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>이 성도님의 직분, 사진, 주소 정보를 선택한 계정으로 합칩니다.</div>
                     </div>
 
@@ -7756,7 +7775,7 @@ export default function App() {
                                                                     }}>
                                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                                             <span style={{ opacity: 0.6 }}>📞</span>
-                                                                            <span style={{ fontWeight: 700, color: '#333' }}>{member.phone || '-'}</span>
+                                                                            <span style={{ fontWeight: 700, color: '#333' }}>{formatPhone(member.phone) || '-'}</span>
                                                                         </div>
                                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                                             <span style={{ opacity: 0.6 }}>🎂</span>
@@ -8904,7 +8923,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                                         {member.member_no && <span style={{ fontSize: '11px', background: '#E3F2FD', color: '#1565C0', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>{member.member_no}</span>}
                                     </div>
                                     <div style={{ fontSize: '12px', color: member.phone ? '#555' : '#BBB' }}>
-                                        📞 {member.phone || (member.is_phone_public ? '미등록' : '비공개')}
+                                        📞 {formatPhone(member.phone) || (member.is_phone_public ? '미등록' : '비공개')}
                                     </div>
                                 </div>
 
@@ -9016,7 +9035,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 <div>
                                                     <div style={{ fontSize: '12px', color: '#B8924A', fontWeight: 700 }}>휴대폰 번호</div>
-                                                    <div style={{ fontSize: '16px', fontWeight: 600 }}>{selectedMember.phone || '미등록'}</div>
+                                                    <div style={{ fontSize: '16px', fontWeight: 600 }}>{formatPhone(selectedMember.phone) || '미등록'}</div>
                                                     <div style={{ fontSize: '11px', color: '#AAA', marginTop: '2px' }}>{selectedMember.email || '이메일 정보 없음'}</div>
                                                 </div>
                                                 <div style={{ display: 'flex', gap: '6px' }}>
