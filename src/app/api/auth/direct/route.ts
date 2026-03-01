@@ -16,13 +16,13 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-        const { name, phoneTail, birthdate, user_id } = await req.json();
+        const { name, phoneTail, birthdate, user_id, church_id } = await req.json();
 
         if (!name || !phoneTail || !user_id) {
             return NextResponse.json({ error: '필수 정보가 누락되었습니다.' }, { status: 400 });
         }
 
-        console.log(`[DirectAuth] Login Try - Name: ${name}, PhoneTail: ${phoneTail}, Birthdate: ${birthdate}`);
+        console.log(`[DirectAuth] Login Try - Name: ${name}, PhoneTail: ${phoneTail}, Birthdate: ${birthdate}, Church: ${church_id}`);
 
         // 1. 이름으로 먼저 후보군 찾기 (이름은 공백을 포함할 수 있으므로 앞뒤 공백만 제거)
         const inputNameClean = name.replace(/\s+/g, '').toLowerCase();
@@ -84,16 +84,19 @@ export async function POST(req: NextRequest) {
 
             // 매칭된 경우: 익명 user_id를 이 프로필에 연결 및 즉시 승인
             // last_login_at을 기록하고 기기 변경이 감지되면 메모 필드 등에 남김 (감사항목)
-            await supabaseAdmin.from('profiles').upsert({
+            const { error: upsertError } = await supabaseAdmin.from('profiles').upsert({
                 ...match,
                 id: user_id,
                 email: match.email || `${user_id}@anonymous.local`,
                 is_approved: true, // 매칭 성공 시 즉시 사용 가능하도록 자동 승인
-                last_login_at: now,
-                // 기기가 변경된 경우 관리자가 확인할 수 있도록 플래그나 메모를 남길 수 있음 (컬럼이 있다는 가정하에)
-                // 만약 전용 컬럼이 없다면 full_name 검색 시 구분 가능하도록 로직 보완 가능
-                is_new_login: isNewDevice
+                last_login_at: now
+                // [수정] is_new_login 컬럼은 DB에 없을 수 있으므로 제거 (필요 시 DB 추가 후 사용)
             });
+
+            if (upsertError) {
+                console.error(`[DirectAuth] Profile linkage failed for ${match.full_name}:`, upsertError);
+                throw new Error('프로필 연결 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+            }
 
             if (isNewDevice) {
                 // 관리자 권한 이전 로직 (기존 프로필 삭제 전 수행)
@@ -125,6 +128,7 @@ export async function POST(req: NextRequest) {
                 }
 
                 // [중요] 기존 기기(ID) 정보 삭제 (데이터 클립업)
+                // UPSERT가 성공한 후에만 삭제가 수행되도록 보장됨
                 await supabaseAdmin.from('profiles').delete().eq('id', match.id);
             }
 
@@ -133,7 +137,7 @@ export async function POST(req: NextRequest) {
                 success: true,
                 status: 'linked',
                 name: match.full_name,
-                church_id: match.church_id || 'jesus-in'
+                church_id: match.church_id || ''
             });
         } else {
             // [추가] '성도', '사용자' 처럼 너무 일반적인 이름은 입력을 막음
@@ -149,7 +153,7 @@ export async function POST(req: NextRequest) {
                 phone: phoneTail.length > 4 ? phoneTail : `(미인증)${phoneTail}`,
                 birthdate: birthdate || null,
                 is_approved: true, // [변경] 자동 승인
-                church_id: 'jesus-in',
+                church_id: church_id || '',
                 email: `${user_id}@anonymous.local`
             });
 
@@ -157,7 +161,8 @@ export async function POST(req: NextRequest) {
                 success: true,
                 status: 'pending',
                 name: name,
-                message: '성도 명단에서 정보를 찾을 수 없어 승인 대기 단계로 접수되었습니다.'
+                church_id: church_id || '',
+                message: '성도 명단에서 정보를 찾을 수 없어 원활한 서비스 이용을 위해 임시 승인되었습니다.'
             });
         }
 

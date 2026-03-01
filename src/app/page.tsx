@@ -1592,7 +1592,8 @@ export default function App() {
                     user_id: authId,
                     name: loginName.trim(),
                     phoneTail: loginPhoneTail.trim(),
-                    birthdate: loginBirthdate.trim()
+                    birthdate: loginBirthdate.trim(),
+                    church_id: churchId // [추가] 교회 식별자 전달
                 })
             });
 
