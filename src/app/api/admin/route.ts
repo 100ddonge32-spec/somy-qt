@@ -952,18 +952,19 @@ export async function POST(req: NextRequest) {
                 pastor_column_content: '소미와 함께 우리 교회만의 디지털 공간을 만들어가보세요.'
             });
 
-            // 3. 사용자 즉시 관리자로 등록
+            // 3. 사용자 즉시 관리자로 등록 (최대한 모든 방법 동원)
             const adminPayload: any = {
                 user_id: user_id,
                 role: 'admin',
-                church_id: trialChurchId
+                church_id: trialChurchId,
+                email: email ? email.toLowerCase().trim() : `${user_id}@trial.somy`
             };
-            if (email) {
-                adminPayload.email = email.toLowerCase().trim();
-                await supabaseAdmin.from('app_admins').upsert(adminPayload, { onConflict: 'email' });
-            } else {
-                // 이메일 권한이 없는 체험자(익명)는 user_id 기반으로 등록 시도
-                adminPayload.email = `${user_id}@trial.somy`; // 유니크 제약 방지용 가상 이메일
+
+            // [전략 1] 이메일 기준 upsert
+            const { error: err1 } = await supabaseAdmin.from('app_admins').upsert(adminPayload, { onConflict: 'email' });
+
+            // [전략 2] 만약 user_id 컬럼이 있고 유니크 키라면 user_id 기준 재시도
+            if (err1) {
                 await supabaseAdmin.from('app_admins').upsert(adminPayload, { onConflict: 'user_id' });
             }
 
@@ -976,40 +977,44 @@ export async function POST(req: NextRequest) {
                 is_approved: true
             }, { onConflict: 'id' });
 
-            // 5. 샘플 공지사항 및 더미 데이터 추가 (교회가 살아있는 느낌을 주기 위해)
-            await supabaseAdmin.from('announcements').insert([
-                { church_id: trialChurchId, title: '트라이얼 시작을 환영합니다! 🎉', content: '관리자 센터에서는 교회의 성도 명단을 업로드하고, 공지사항을 등록하며, 큐티왕 통계를 관리할 수 있습니다.', author_name: '소미 도우미' },
-                { church_id: trialChurchId, title: '관리자님, 이렇게 활용해 보세요 💡', content: '1. 하단 탭의 관리자 센터를 클릭합니다. \n2. 설정에서 교회 이름을 바꿔봅니다. \n3. 성도 명단에서 더미 데이터들을 관리해 보세요.', author_name: '소미 관리자' }
-            ]);
+            // 5. 샘플 공지사항 및 더미 데이터 추가 (개별 에러 핸들링으로 하나라도 성공하게)
+            try {
+                await supabaseAdmin.from('announcements').insert([
+                    { church_id: trialChurchId, title: '트라이얼 시작을 환영합니다! 🎉', content: '관리자 센터에서는 교회의 성도 명단을 업로드하고, 공지사항을 등록하며, 큐티왕 통계를 관리할 수 있습니다.', author_name: '소미 도우미' },
+                    { church_id: trialChurchId, title: '관리자님, 이렇게 활용해 보세요 💡', content: '1. 하단 탭의 관리자 센터를 클릭합니다. \n2. 설정에서 교회 이름을 바꿔봅니다. \n3. 성도 명단에서 더미 데이터들을 관리해 보세요.', author_name: '소미 관리자' }
+                ]);
 
-            // [더미 데이터 생성] 가상 성도 30명 생성
-            const lastNames = ['김', '이', '박', '최', '정', '강', '조', '윤', '장', '임'];
-            const firstNames = ['민수', '영희', '철수', '지은', '도윤', '서연', '하준', '은우', '지아', '예준'];
-            const dummyMembers = [];
-            for (let i = 0; i < 30; i++) {
-                const name = lastNames[Math.floor(Math.random() * lastNames.length)] + firstNames[Math.floor(Math.random() * firstNames.length)] + (i + 1);
-                dummyMembers.push({
-                    church_id: trialChurchId,
-                    full_name: name,
-                    phone_tail: Math.floor(1000 + Math.random() * 9000).toString(),
-                    is_approved: true,
-                    gender: i % 2 === 0 ? 'male' : 'female',
-                    birthdate: `19${Math.floor(60 + Math.random() * 40)}-${Math.floor(1 + Math.random() * 12).toString().padStart(2, '0')}-${Math.floor(1 + Math.random() * 28).toString().padStart(2, '0')}`,
-                    rank: ['성도', '집사', '권사', '장로'][Math.floor(Math.random() * 4)]
-                });
+                // [더미 데이터 생성] 가상 성도 30명 생성
+                const lastNames = ['김', '이', '박', '최', '정', '강', '조', '윤', '장', '임'];
+                const firstNames = ['민수', '영희', '철수', '지은', '도윤', '서연', '하준', '은우', '지아', '예준'];
+                const dummyMembers = [];
+                for (let i = 0; i < 30; i++) {
+                    const dName = lastNames[Math.floor(Math.random() * lastNames.length)] + firstNames[Math.floor(Math.random() * firstNames.length)] + (i + 1);
+                    dummyMembers.push({
+                        church_id: trialChurchId,
+                        full_name: dName,
+                        phone_tail: Math.floor(1000 + Math.random() * 9000).toString(),
+                        is_approved: true,
+                        gender: i % 2 === 0 ? 'male' : 'female',
+                        birthdate: `19${Math.floor(60 + Math.random() * 40)}-${Math.floor(1 + Math.random() * 12).toString().padStart(2, '0')}-${Math.floor(1 + Math.random() * 28).toString().padStart(2, '0')}`,
+                        rank: ['성도', '집사', '권사', '장로'][Math.floor(Math.random() * 4)]
+                    });
+                }
+                await supabaseAdmin.from('profiles').insert(dummyMembers);
+
+                // [더미 데이터 생성] 샘플 커뮤니티 글
+                await supabaseAdmin.from('community_posts').insert([
+                    { church_id: trialChurchId, user_id: user_id, author_name: '철수(더미)', content: '오늘 말씀 너무 좋네요! 다들 은계되셨나요? 🙏', is_private: false },
+                    { church_id: trialChurchId, user_id: user_id, author_name: '영희(더미)', content: '우리 교회가 소미를 도입해서 너무 기쁩니다. 화이팅!', is_private: false }
+                ]);
+
+                // [더미 데이터 생성] 샘플 상담 요청
+                await supabaseAdmin.from('counseling_requests').insert([
+                    { church_id: trialChurchId, user_id: user_id, user_name: '지은(더미)', title: '가족 관계를 위한 기도 부탁드립니다.', content: '요즘 부모님과의 관계가 소원하여 마음이 무겁습니다. 지혜를 주시도록 기도 부탁드려요.', status: 'pending' }
+                ]);
+            } catch (seedError) {
+                console.error("[Trial Seeding Error] Some data might be missing:", seedError);
             }
-            await supabaseAdmin.from('profiles').insert(dummyMembers);
-
-            // [더미 데이터 생성] 샘플 커뮤니티 글
-            await supabaseAdmin.from('community_posts').insert([
-                { church_id: trialChurchId, user_id: user_id, author_name: '철수(더미)', content: '오늘 말씀 너무 좋네요! 다들 은계되셨나요? 🙏', is_private: false },
-                { church_id: trialChurchId, user_id: user_id, author_name: '영희(더미)', content: '우리 교회가 소미를 도입해서 너무 기쁩니다. 화이팅!', is_private: false }
-            ]);
-
-            // [더미 데이터 생성] 샘플 상담 요청
-            await supabaseAdmin.from('counseling_requests').insert([
-                { church_id: trialChurchId, user_id: user_id, user_name: '지은(더미)', title: '가족 관계를 위한 기도 부탁드립니다.', content: '요즘 부모님과의 관계가 소원하여 마음이 무겁습니다. 지혜를 주시도록 기도 부탁드려요.', status: 'pending' }
-            ]);
 
             return NextResponse.json({ success: true, church_id: trialChurchId });
         }
