@@ -4995,18 +4995,31 @@ export default function App() {
         ══════════════════════════════ */
         if (view === "sermon") {
             const getYoutubeEmbedUrl = (url: string, manualUrl?: string) => {
-                const targetUrl = manualUrl || url || "https://www.youtube.com/watch?v=dQw4w9WgXcQ"; // 수동 주소 우선
+                const rawUrl = (manualUrl || url || "").trim();
+                if (!rawUrl) return null;
 
-                if (targetUrl.startsWith('UC') && targetUrl.length > 20) {
-                    const playlistId = 'UU' + targetUrl.substring(2);
+                // 1. 채널 ID (UC...) -> 업로드 목록(UU...)
+                if (rawUrl.startsWith('UC') && rawUrl.length > 20) {
+                    const playlistId = 'UU' + rawUrl.substring(2);
                     return `https://www.youtube.com/embed?listType=playlist&list=${playlistId}`;
                 }
 
-                const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-                const match = targetUrl.match(regExp);
-                const videoId = (match && match[2].length === 11) ? match[2] : null;
+                // 2. 비디오 ID 추출 (shorts, live 등 지원 강화)
+                const regExp = /^.*(?:youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/|live\/)([^#&?/\s]{11})/;
+                const match = rawUrl.match(regExp);
+                const videoId = match ? match[1] : null;
 
-                return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1` : null;
+                if (videoId) {
+                    return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
+                }
+
+                // 3. 이미 embed 형태인 경우
+                if (rawUrl.includes('/embed/')) {
+                    if (rawUrl.startsWith('//')) return 'https:' + rawUrl;
+                    if (rawUrl.startsWith('http')) return rawUrl;
+                }
+
+                return null;
             };
             const embedUrl = getYoutubeEmbedUrl(churchSettings?.sermon_url || "", churchSettings?.manual_sermon_url);
 
