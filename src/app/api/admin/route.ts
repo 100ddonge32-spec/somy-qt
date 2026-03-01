@@ -931,13 +931,19 @@ export async function POST(req: NextRequest) {
             const trialChurchId = `trial-${randomCode}`;
             const trialChurchName = `${name || '새'} 교회 (체험판)`;
 
-            // 2. 교회 기본 설정 생성
+            // 트라이얼 만료일 계산 (30일 후)
+            const expireDate = new Date();
+            expireDate.setDate(expireDate.getDate() + 30);
+            const expireStr = expireDate.toISOString().split('T')[0];
+
+            // 2. 교회 기본 설정 생성 (김부장 인코딩 방식 적용)
+            // plan: trial | expires:YYYY-MM-DD | usage:0 | limit:30
             await supabaseAdmin.from('church_settings').upsert({
                 church_id: trialChurchId,
                 church_name: trialChurchName,
                 app_subtitle: '함께 성장하는 영적 공동체 (체험판)',
                 church_logo_url: '/somy.png',
-                plan: 'premium',
+                plan: `trial|expires:${expireStr}|usage:0|limit:30`,
                 community_visible: true,
                 allow_member_edit: true,
                 sermon_url: 'UC_MIn7PmxkKIDW6xX6Z4Vng', // 기본 샘플 영상

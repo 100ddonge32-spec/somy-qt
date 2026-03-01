@@ -89,12 +89,19 @@ export async function GET(req: NextRequest) {
             const match = planStr.match(/s_q2:([^|]+)/);
             if (match) data.sermon_q2 = decodeURIComponent(match[1]);
         }
-        if (!data.sermon_q3 && planStr.includes('s_q3:')) {
-            const match = planStr.match(/s_q3:([^|]+)/);
-            if (match) data.sermon_q3 = decodeURIComponent(match[1]);
-        }
+        if (data.plan) {
+            // [트라이얼 체크] 만료일 및 사용량 파싱
+            if (planStr.includes('trial')) {
+                const expireMatch = planStr.match(/expires:([^|]+)/);
+                const usageMatch = planStr.match(/usage:([^|]+)/);
+                const limitMatch = planStr.match(/limit:([^|]+)/);
 
-        if (data.plan) data.plan = data.plan.split('|')[0]; // 원래 plan 값만 추출
+                data.trial_expires_at = expireMatch ? expireMatch[1] : null;
+                data.trial_usage_count = usageMatch ? parseInt(usageMatch[1]) : 0;
+                data.trial_usage_limit = limitMatch ? parseInt(limitMatch[1]) : 0;
+            }
+            data.plan = data.plan.split('|')[0]; // 원래 plan 값만 추출 (ui용)
+        }
     }
 
     return NextResponse.json({ settings: data });
@@ -129,8 +136,26 @@ export async function POST(req: NextRequest) {
 
     const targetChurchId = body_church_id || 'jesus-in';
 
-    // ✅ DB 컬럼이 없을 가능성을 대비해 plan 필드에 플래그를 심어 저장 (김부장 방식 확장)
+    // ✅ 기존 정보를 먼저 조회하여 체험판 정보가 있으면 보존 (김부장 방식 유지)
+    const { data: currentSettings } = await supabaseAdmin
+        .from('church_settings')
+        .select('plan, id')
+        .eq('church_id', targetChurchId)
+        .maybeSingle();
+
     let encodedPlan = (plan || 'free').split('|')[0];
+    const oldPlanStr = currentSettings?.plan || '';
+
+    // 체험판 정보 보존
+    if (oldPlanStr.includes('trial')) {
+        const expireMatch = oldPlanStr.match(/expires:([^|]+)/);
+        const usageMatch = oldPlanStr.match(/usage:([^|]+)/);
+        const limitMatch = oldPlanStr.match(/limit:([^|]+)/);
+        if (expireMatch) encodedPlan += `|${expireMatch[0]}`;
+        if (usageMatch) encodedPlan += `|${usageMatch[0]}`;
+        if (limitMatch) encodedPlan += `|${limitMatch[0]}`;
+    }
+
     if (allow_member_edit) encodedPlan += '|member_edit_on';
     if (event_poster_visible) encodedPlan += '|poster_on';
     if (event_poster_url) encodedPlan += `|poster_url:${event_poster_url}`;
@@ -159,15 +184,8 @@ export async function POST(req: NextRequest) {
         today_book_image_url
     };
 
-    // ✅ DB 제약 조건 문제를 피하기 위해 먼저 기존 레코드를 조회하여 ID를 확보
-    const { data: existingRecord } = await supabaseAdmin
-        .from('church_settings')
-        .select('id')
-        .eq('church_id', targetChurchId)
-        .maybeSingle();
-
-    if (existingRecord) {
-        baseData.id = existingRecord.id;
+    if (currentSettings) {
+        baseData.id = currentSettings.id;
     } else if (targetChurchId === 'jesus-in') {
         // jesus-in(id:1)인 경우 기존 호환성을 위해 id:1 강제 지정
         baseData.id = 1;

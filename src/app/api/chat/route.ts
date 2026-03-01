@@ -22,7 +22,39 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "API Key가 없습니다." }, { status: 500 });
         }
 
-        const { messages } = await req.json();
+        const { messages, church_id: rawChurchId } = await req.json();
+        const church_id = rawChurchId || 'demo';
+
+        // [트라이얼 사용량 및 만료 체크]
+        if (church_id.startsWith('trial-') || church_id === 'demo') {
+            const { data: settings } = await supabaseAdmin.from('church_settings').select('plan').eq('church_id', church_id).maybeSingle();
+
+            if (settings?.plan?.startsWith('trial')) {
+                const planStr = settings.plan;
+                const expireMatch = planStr.match(/expires:([^|]+)/);
+                const usageMatch = planStr.match(/usage:([^|]+)/);
+                const limitMatch = planStr.match(/limit:([^|]+)/);
+
+                if (expireMatch) {
+                    const expire = new Date(expireMatch[1]);
+                    if (new Date() > expire) {
+                        return NextResponse.json({ content: "⌛ 체험판 기간이 만료되었습니다. 정규 플랜 전환이 필요해요! 🙏" });
+                    }
+                }
+
+                if (usageMatch && limitMatch) {
+                    const usage = parseInt(usageMatch[1]);
+                    const limit = parseInt(limitMatch[1]);
+                    if (usage >= limit) {
+                        return NextResponse.json({ content: "📢 체험판의 무료 AI 대화 사용량을 모두 소진했습니다. 관리자 센터에서 플랜을 확인해 주세요! ✨" });
+                    }
+
+                    // 사용량 1 증가 시킨 후 저장
+                    const newPlan = planStr.replace(`usage:${usage}`, `usage:${usage + 1}`);
+                    await supabaseAdmin.from('church_settings').update({ plan: newPlan }).eq('church_id', church_id);
+                }
+            }
+        }
 
         // 오늘 큐티 본문 가져오기
         let qtContext = "";

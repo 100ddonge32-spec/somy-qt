@@ -462,6 +462,9 @@ export default function App() {
         event_poster_visible: false,
         pastor_column_title: '',
         pastor_column_content: '',
+        trial_expires_at: null,
+        trial_usage_count: 0,
+        trial_usage_limit: 0,
     });
     const [settingsForm, setSettingsForm] = useState<any>({
         church_name: CHURCH_NAME,
@@ -1645,20 +1648,30 @@ export default function App() {
 
     // [추가] 고유 트라이얼(체험용) 교회 생성 및 진입
     const handleTrialCreation = async () => {
-        if (!user?.id) {
-            alert("인증 정보가 없습니다. 잠시 후 다시 시도해 주세요.");
-            return;
-        }
-
         setIsDirectLoggingIn(true);
         try {
+            // 1. 인증 정보 확인 (있으면 쓰고, 없으면 익명 로그인)
+            let currentUserId = user?.id;
+            let currentUserEmail = user?.email;
+
+            if (!currentUserId) {
+                console.log("[Trial] No session found, signing in anonymously...");
+                const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+                if (authError) throw authError;
+                currentUserId = authData.user?.id;
+                currentUserEmail = authData.user?.email;
+            }
+
+            if (!currentUserId) throw new Error("사용자 인증에 실패했습니다.");
+
+            // 2. 서버에 트라이얼 교회 생성 요청
             const res = await fetch('/api/admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'create_trial',
-                    user_id: user.id,
-                    email: user.email,
+                    user_id: currentUserId,
+                    email: currentUserEmail,
                     name: '체험용 관리자'
                 })
             });
@@ -1669,12 +1682,13 @@ export default function App() {
                 setChurchId(result.church_id);
                 setIsApproved(true);
                 setProfileName('체험용 관리자');
-                // 즉시 진입을 위해 강제 리로드
+                // 즉시 진입을 위해 강제 리로드 (파라미터 포함)
                 window.location.href = `/?church_id=${result.church_id}`;
             } else {
                 throw new Error(result.error || "트라이얼 생성 중 오류가 발생했습니다.");
             }
         } catch (err: any) {
+            console.error("[Trial Error]", err);
             alert("트라이얼 생성 실패: " + err.message);
         } finally {
             setIsDirectLoggingIn(false);
@@ -1998,7 +2012,10 @@ export default function App() {
             const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ messages: [...messages, userMessage] }),
+                body: JSON.stringify({
+                    messages: [...messages, userMessage],
+                    church_id: churchId // [추가] 사용량 체크를 위해 전달
+                }),
             });
             const data = await response.json();
             setMessages((prev) => [...prev, { role: "assistant", content: data.content || data.error }]);
@@ -2296,6 +2313,20 @@ export default function App() {
                         <div style={{ fontSize: "12px", color: (churchId === 'demo' || (churchId && churchId.startsWith('trial-'))) ? "#B8924A" : "#666", letterSpacing: "1px", fontWeight: 700 }}>
                             {churchId === 'demo' ? "✨ 데모 모드 (공식 샘플)" : (churchId && churchId.startsWith('trial-') ? "✨ 체험 중 (개별 체험판)" : "홈페이지")}
                         </div>
+                        {churchSettings.trial_expires_at && (
+                            <div style={{
+                                fontSize: '11px',
+                                color: '#FF3D00',
+                                fontWeight: 800,
+                                background: '#FFF1F0',
+                                padding: '4px 10px',
+                                borderRadius: '20px',
+                                marginTop: '4px',
+                                border: '1px solid #FFCCC7'
+                            }}>
+                                📅 {Math.max(0, Math.ceil((new Date(churchSettings.trial_expires_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))}일 남음 | AI {churchSettings.trial_usage_count}/{churchSettings.trial_usage_limit}회
+                            </div>
+                        )}
                     </a>
                     {/* Action Buttons을 최상단으로 옮김 */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%", maxWidth: "340px", animation: "fade-in 1.4s ease-out", paddingBottom: "20px" }}>
@@ -3599,6 +3630,7 @@ export default function App() {
                                                 method: 'POST',
                                                 headers: { 'Content-Type': 'application/json' },
                                                 body: JSON.stringify({
+                                                    church_id: churchId, // [추가]
                                                     messages: [{
                                                         role: 'user',
                                                         content: `당신은 다음 큐티 내용을 청춘(10~20대)의 언어로 다정하게 바꿔주는 목회자입니다.\n\n해설: ${qtForm.interpretation}\n질문: ${[qtForm.question1, qtForm.question2, qtForm.question3].join(', ')}\n\n반드시 JSON 형식으로 답하세요: {"interpretation": "...", "questions": ["...", "...", "..."]}`
