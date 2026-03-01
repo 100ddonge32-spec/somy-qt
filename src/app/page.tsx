@@ -441,12 +441,12 @@ export default function App() {
     const hasNewCounseling = notifications.some(n => !n.is_read && ['counseling_reply', 'counseling_req', 'counseling_user_reply'].includes(n.type));
 
     const [churchSettings, setChurchSettings] = useState<any>({
-        church_name: "",
-        church_logo_url: "",
-        church_url: "",
+        church_name: CHURCH_NAME,
+        church_logo_url: CHURCH_LOGO,
+        church_url: CHURCH_URL,
         sermon_url: "",
         manual_sermon_url: "",
-        app_subtitle: "",
+        app_subtitle: APP_SUBTITLE,
         plan: 'free',
         community_visible: true,
         allow_member_edit: false,
@@ -464,12 +464,12 @@ export default function App() {
         pastor_column_content: '',
     });
     const [settingsForm, setSettingsForm] = useState<any>({
-        church_name: "",
-        church_logo_url: "",
-        church_url: "",
+        church_name: CHURCH_NAME,
+        church_logo_url: CHURCH_LOGO,
+        church_url: CHURCH_URL,
         sermon_url: "",
         manual_sermon_url: "",
-        app_subtitle: "",
+        app_subtitle: APP_SUBTITLE,
         plan: 'free',
         community_visible: true,
         allow_member_edit: false,
@@ -2158,7 +2158,7 @@ export default function App() {
                         {churchId && churchSettings.church_logo_url ? (
                             <img src={churchSettings.church_logo_url} alt={`${churchSettings.church_name} 로고`} style={{ height: "45px", objectFit: "contain" }} />
                         ) : (
-                            <div style={{ fontSize: '24px', fontWeight: 900, color: '#333' }}>{churchId ? (churchSettings.church_name || '우리 교회') : ''}</div>
+                            <div style={{ fontSize: '24px', fontWeight: 900, color: '#333' }}>{churchId ? churchSettings.church_name : ''}</div>
                         )}
                         <div style={{ fontSize: "12px", color: "#666", letterSpacing: "1px", fontWeight: 700 }}>홈페이지</div>
                     </a>
