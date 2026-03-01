@@ -7539,9 +7539,9 @@ export default function App() {
                                                                     .filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
                                                                 let smsUrl = '';
                                                                 if (isIOS) {
-                                                                    // [아이폰 최적화] 가장 표준적인 쉼표(,) 구분 방식을 사용합니다. 
-                                                                    // 특수 경로나 body를 추가할 경우 한 명만 선택되는 현상이 발생할 수 있어 정석대로 처리합니다.
-                                                                    smsUrl = `sms:${uniquePhones.join(',')}`;
+                                                                    // [아이폰 최적화] 제공된 가이드에 따라 콤마(,) 구분자와 &body= 접미사를 사용합니다.
+                                                                    // 이 방식이 iOS 메시지 앱에서 다중 수신자를 그룹으로 인식할 확률이 가장 높습니다.
+                                                                    smsUrl = `sms:${uniquePhones.join(',')}&body=`;
                                                                 } else {
                                                                     // 안드로이드용: 세미콜론(;)이 가장 안정적입니다.
                                                                     smsUrl = `sms:${uniquePhones.join(';')}`;
@@ -7563,7 +7563,8 @@ export default function App() {
                                                                         .map(m => m.phone.replace(/[^0-9]/g, ''));
                                                                     if (targetPhones.length === 0) { alert('선택된 성도 중 전화번호가 등록된 분이 없습니다.'); return; }
                                                                     const uniquePhones = targetPhones.filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
-                                                                    navigator.clipboard.writeText(uniquePhones.join(', '));
+                                                                    // [아이폰 붙여넣기 최적화] 공백 없이 콤마(,)로만 연결하여 붙여넣을 때 수신인이 누락되지 않도록 합니다.
+                                                                    navigator.clipboard.writeText(uniquePhones.join(','));
                                                                     alert('번호가 복사되었습니다! 메시지 앱의 수신인 칸에 붙여넣기 하세요.');
                                                                 }}
                                                                 style={{
@@ -8752,9 +8753,9 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                                         if (!confirm(`현재 ${uniquePhones.length}명이 선택되었습니다. 통신사 제한으로 인해 문자가 일부만 전송될 수 있습니다. 계속할까요?`)) return;
                                     }
 
-                                    // [아이폰 최적화] 쉼표(,) 구분 방식의 표준 sms: 프로토콜 사용
+                                    // [아이폰 최적화] 제공된 기술 가이드에 따라 콤마(,) + &body= 포맷 적용
                                     const smsUrl = isIOS
-                                        ? `sms:${uniquePhones.join(',')}`
+                                        ? `sms:${uniquePhones.join(',')}&body=`
                                         : `sms:${uniquePhones.join(';')}`;
 
                                     const link = document.createElement('a');
@@ -8780,8 +8781,8 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                                     if (phones.length === 0) return;
                                     const uniquePhones = phones.filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
 
-                                    // [이과장의 최종 분석] 아이폰 주소창(To:)에 붙여넣을 때 가장 안정적인 콤마+공백 형식입니다.
-                                    const textToCopy = uniquePhones.join(', ');
+                                    // [아이폰 붙여넣기 최적화] 공백 없는 콤마(,) 형식이 수신인 대량 인식에 더 유리합니다.
+                                    const textToCopy = uniquePhones.join(',');
 
                                     const textArea = document.createElement("textarea");
                                     textArea.value = textToCopy;
