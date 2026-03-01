@@ -953,23 +953,28 @@ export async function POST(req: NextRequest) {
             });
 
             // 3. 사용자 즉시 관리자로 등록
+            const adminPayload: any = {
+                user_id: user_id,
+                role: 'admin',
+                church_id: trialChurchId
+            };
             if (email) {
-                await supabaseAdmin.from('app_admins').upsert({
-                    email: email.toLowerCase().trim(),
-                    user_id: user_id,
-                    role: 'admin',
-                    church_id: trialChurchId
-                }, { onConflict: 'email' });
+                adminPayload.email = email.toLowerCase().trim();
+                await supabaseAdmin.from('app_admins').upsert(adminPayload, { onConflict: 'email' });
+            } else {
+                // 이메일 권한이 없는 체험자(익명)는 user_id 기반으로 등록 시도
+                adminPayload.email = `${user_id}@trial.somy`; // 유니크 제약 방지용 가상 이메일
+                await supabaseAdmin.from('app_admins').upsert(adminPayload, { onConflict: 'user_id' });
             }
 
             // 4. 프로필 즉시 승인 처리
             await supabaseAdmin.from('profiles').upsert({
                 id: user_id,
                 full_name: name || '트라이얼 관리자',
-                email: email,
+                email: email || `${user_id}@trial.somy`,
                 church_id: trialChurchId,
                 is_approved: true
-            });
+            }, { onConflict: 'id' });
 
             // 5. 샘플 공지사항 및 더미 데이터 추가 (교회가 살아있는 느낌을 주기 위해)
             await supabaseAdmin.from('announcements').insert([

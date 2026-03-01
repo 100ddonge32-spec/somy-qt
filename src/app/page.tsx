@@ -949,9 +949,10 @@ export default function App() {
                 const isAnonymousUser = !user.email || user.email.includes('anonymous.local') || user.is_anonymous;
 
                 // ★ 핵심: 이름도 전화도 없는 익명 사용자는 sync 호출 차단
-                // → '성도'라는 이름의 유령 계정이 생성되는 본질적 원인 해결
+                // (단, 체험판(trial-) 환경인 경우는 허용하여 즉시 진입 유도)
                 const hasRealInfo = (metaName && metaName.length >= 2) || (metaPhone && metaPhone.length > 5);
-                if (isAnonymousUser && !hasRealInfo && !isKakaoUser) {
+                const isTrial = churchId && churchId.startsWith('trial-');
+                if (isAnonymousUser && !hasRealInfo && !isKakaoUser && !isTrial) {
                     console.log("[checkApprovalStatus] 익명+정보없음 → 로그인 화면 유지 (프로필 미생성)");
                     setIsApproved(false);
                     setShowVerification(true);
