@@ -1540,7 +1540,17 @@ export default function App() {
         };
         checkUser();
 
-        // 인앱 브라우저 체크
+        // ★ URL 오류 파라미터 감지 (카카오 켜백 오류 안내)
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlError = urlParams.get('error');
+        if (urlError === 'admin_only') {
+            alert('카카오 로그인은 관리자 전용입니다. \ud83d\udd12\n\n일반 성도님은 아래 "기존 성도 정보 연결" 에서\n이름·전화번호·생년월일을 입력해 주세요.');
+            window.history.replaceState(null, '', window.location.pathname);
+        } else if (urlError && urlError !== 'kakao_cancelled') {
+            console.warn('[URL Error]', urlError);
+            window.history.replaceState(null, '', window.location.pathname);
+        }
+
         const ua = navigator.userAgent.toLowerCase();
         if (ua.includes('kakao') || ua.includes('line') || ua.includes('naver') || ua.includes('kakaotalk')) {
             setIsInApp(true);
@@ -2347,8 +2357,8 @@ export default function App() {
                                     </button>
 
                                     <div style={{ marginTop: '16px', fontSize: '12px', color: '#B8924A', lineHeight: 1.6, background: '#FDF7E7', padding: '12px', borderRadius: '12px', border: '1px solid #F5E0BB' }}>
-                                        ✅ 일반 성도님은 위 칸에 정보를 입력해 주세요.<br />
-                                        슈퍼관리자는 보안을 위해 카카오 로그인을 권장합니다.
+                                        🔒 관리자 전용 로그인입니다.<br />
+                                        일반 성도님은 위 칸에 <b>이름·전화번호·생년월일</b>을 입력해 주세요.
                                     </div>
                                 </div>
                             </div>

@@ -67,7 +67,60 @@ export async function GET(req: NextRequest) {
     const profileImage: string | null = kakaoUser.kakao_account?.profile?.profile_image_url ?? null;
     const syntheticEmail = `kakao_${kakaoId}@kakao.somy-qt.local`;
 
-    // STEP 3: Supabase Auth 사용자 생성 또는 업데이트
+    // ★ STEP 2.5: [핵심] 관리자 여부 확인 - 관리자가 아니면 즉시 차단!
+    // app_admins 테이블에서 이 카카오 계정이 관리자인지 먼저 확인
+    const isAlreadyKnownUser = (await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 }))
+        .data?.users?.find((u) => u.email === syntheticEmail);
+
+    let isAdminUser = false;
+
+    // ★ 1순위: 하드코딩 슈퍼관리자 이메일 체크 (DB 조회 전에 먼저 확인)
+    // admin/route.ts의 HARDCODED_ADMINS와 동일 로직
+    const HARDCODED_ADMINS = (
+        process.env.NEXT_PUBLIC_ADMIN_EMAIL ||
+        'pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local'
+    ).toLowerCase().split(',').map((e: string) => e.trim());
+
+    if (HARDCODED_ADMINS.includes(syntheticEmail.toLowerCase())) {
+        console.log(`[Kakao] ✅ 하드코딩 슈퍼관리자 로그인: ${syntheticEmail}`);
+        isAdminUser = true;
+    }
+
+    // ★ 2순위: 이름 체크 (혜시 만약 kakaoId가 바뀔었을 경우 대비)
+    if (!isAdminUser) {
+        const IS_BOSS = nickname?.trim() === '백동희' || nickname?.trim() === '동희';
+        if (IS_BOSS) {
+            console.log(`[Kakao] ✅ 슈퍼관리자 이름 확인: ${nickname}`);
+            isAdminUser = true;
+        }
+    }
+
+    // ★ 3순위: app_admins DB 테이블 조회
+    if (!isAdminUser) {
+        if (isAlreadyKnownUser) {
+            const { data: adminByUserId } = await supabaseAdmin.from('app_admins')
+                .select('role').eq('user_id', isAlreadyKnownUser.id).maybeSingle();
+            const { data: adminByEmail } = await supabaseAdmin.from('app_admins')
+                .select('role').eq('email', syntheticEmail).maybeSingle();
+            isAdminUser = !!(adminByUserId || adminByEmail);
+        } else {
+            const { data: adminByEmail } = await supabaseAdmin.from('app_admins')
+                .select('role').eq('email', syntheticEmail).maybeSingle();
+            isAdminUser = !!adminByEmail;
+        }
+    }
+
+    if (!isAdminUser) {
+        // ★ 관리자가 아닌 일반 성도 → 완전 차단, 유령 계정 생성 없음
+        console.log(`[Kakao] 🚫 관리자 아님 차단: nickname=${nickname}, kakaoId=${kakaoId}`);
+        // 신규 유저면 방금 생성된 auth user 정리 (있을 경우)
+        if (isAlreadyKnownUser) {
+            // 이미 있던 계정이면 삭제하지 않음 (데이터 보호)
+        }
+        return NextResponse.redirect(`${APP_URL}?error=admin_only`);
+    }
+
+    // STEP 3: Supabase Auth 사용자 생성 또는 업데이트 (관리자만 이 지점 도달)
     const { error: createErr } = await supabaseAdmin.auth.admin.createUser({
         email: syntheticEmail,
         email_confirm: true,
@@ -97,7 +150,7 @@ export async function GET(req: NextRequest) {
         const { data: profileById } = await supabaseAdmin.from('profiles').select('*').eq('id', supabaseUser.id).maybeSingle();
 
         if (!profileById) {
-            // 닉네임이 유의미한 경우에만 처리
+            // 관리자 프로필 생성 (이름 매칭으로 기존 데이터 이관)
             const isGenericName = !nickname || nickname.length < 2;
 
             if (!isGenericName && nickname) {
@@ -114,45 +167,43 @@ export async function GET(req: NextRequest) {
                         return cleanDbName === cleanNickname;
                     });
                     if (matches.length > 0) {
-                        // 가계정(church.local) 우선 매칭
                         match = matches.find(m => m.email?.includes('@church.local')) ||
                             (matches.length === 1 ? matches[0] : null);
                     }
                 }
 
                 if (match) {
-                    // ✅ 매칭 성공 → 즉시 승인 이관
-                    console.log(`[Kakao] 매칭 성공: ${match.full_name} → 즉시 승인 이관`);
+                    console.log(`[Kakao Admin] 기존 프로필 이관: ${match.full_name}`);
                     const { error: insertErr } = await supabaseAdmin.from('profiles').insert({
                         ...match,
                         id: supabaseUser.id,
                         email: syntheticEmail,
                         avatar_url: match.avatar_url || profileImage,
-                        is_approved: true
+                        is_approved: true  // 관리자는 항상 승인
                     });
-                    if (!insertErr) {
+                    if (!insertErr && match.id !== supabaseUser.id) {
                         await supabaseAdmin.from('profiles').delete().eq('id', match.id);
                     }
                 } else {
-                    // ✅ 매칭 실패 → [핵심 변경] 미승인 최소 프로필 생성 (정보 입력 화면 유도)
-                    console.log(`[Kakao] 매칭 실패 (${nickname}) → 미승인 상태로 생성. 정보 입력 필요.`);
+                    // 관리자 신규 프로필 생성
                     await supabaseAdmin.from('profiles').insert({
                         id: supabaseUser.id,
                         full_name: nickname,
                         avatar_url: profileImage,
                         email: syntheticEmail,
                         church_id: 'jesus-in',
-                        is_approved: false, // ← 관리자 명단 불일치 → 미승인
+                        is_approved: true,  // 관리자는 항상 승인
                     });
                 }
             }
-            // 이름이 너무 일반적이면 프로필 생성 스킵 (정보 입력 화면에서 직접 처리)
         } else {
-            // 이미 프로필 있음 → 사진만 최신화
+            // 기존 관리자 프로필 최신화
             const updateData: any = {};
             const isManualUpload = (profileById.avatar_url || '').includes('supabase.co');
             if (!isManualUpload && profileImage) updateData.avatar_url = profileImage;
             if (profileById.full_name === '성도' && nickname) updateData.full_name = nickname;
+            // 관리자는 is_approved 항상 true 보장
+            if (!profileById.is_approved) updateData.is_approved = true;
             if (Object.keys(updateData).length > 0) {
                 await supabaseAdmin.from('profiles').update(updateData).eq('id', supabaseUser.id);
             }
