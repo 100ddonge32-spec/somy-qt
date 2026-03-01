@@ -7244,7 +7244,7 @@ export default function App() {
                                                                 style={{ height: '46px', background: '#FCE4EC', color: '#C2185B', border: '1px solid #F8BBD0', borderRadius: '12px', fontSize: '14px', fontWeight: 800, cursor: 'pointer' }}
                                                             >🗑️ 데이터 전체 삭제</button>
 
-                                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
+                                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
                                                                 <button
                                                                     onClick={async () => {
                                                                         if (window.confirm('입력된 모든 성도를 승인 완료 상태로 만들까요?')) {
@@ -7259,8 +7259,11 @@ export default function App() {
                                                                             } catch (e) { alert('승인 도중 오류가 발생했습니다.'); }
                                                                         }
                                                                     }}
-                                                                    style={{ height: '46px', background: '#E8F5E9', color: '#2E7D32', border: '1px solid #C8E6C9', borderRadius: '12px', fontSize: '11px', fontWeight: 900, cursor: 'pointer' }}
-                                                                >✅ 일괄승인</button>
+                                                                    style={{ height: '54px', background: '#E8F5E9', color: '#2E7D32', border: '1px solid #C8E6C9', borderRadius: '12px', fontSize: '12px', fontWeight: 900, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px', lineHeight: '1.1' }}
+                                                                >
+                                                                    <span>✅ 일괄</span>
+                                                                    <span>승인</span>
+                                                                </button>
 
                                                                 <button
                                                                     onClick={async () => {
@@ -7276,8 +7279,11 @@ export default function App() {
                                                                             } catch (e) { alert('정리 도중 오류가 발생했습니다.'); }
                                                                         }
                                                                     }}
-                                                                    style={{ height: '46px', background: '#FFF5F5', color: '#E03131', border: '1px solid #FFE3E3', borderRadius: '12px', fontSize: '11px', fontWeight: 900, cursor: 'pointer' }}
-                                                                >🧹 유령삭제</button>
+                                                                    style={{ height: '54px', background: '#FFF5F5', color: '#E03131', border: '1px solid #FFE3E3', borderRadius: '12px', fontSize: '12px', fontWeight: 900, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px', lineHeight: '1.1' }}
+                                                                >
+                                                                    <span>🧹 유령</span>
+                                                                    <span>삭제</span>
+                                                                </button>
 
                                                                 <button
                                                                     onClick={async () => {
@@ -7293,8 +7299,11 @@ export default function App() {
                                                                             } catch (e) { alert('초기화 도중 오류가 발생했습니다.'); }
                                                                         }
                                                                     }}
-                                                                    style={{ height: '46px', background: '#F5F5F3', color: '#666', border: '1px solid #E0E0E0', borderRadius: '12px', fontSize: '11px', fontWeight: 900, cursor: 'pointer' }}
-                                                                >⚠️ 초기화</button>
+                                                                    style={{ height: '54px', background: '#F5F5F3', color: '#666', border: '1px solid #E0E0E0', borderRadius: '12px', fontSize: '11px', fontWeight: 900, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px', lineHeight: '1.1' }}
+                                                                >
+                                                                    <span>⚠️ 상태</span>
+                                                                    <span>초기화</span>
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     )}
