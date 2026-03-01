@@ -8766,9 +8766,30 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
             </div>
 
             <div style={{ marginTop: '10px' }}>
-                {/* 단체 문자 발송 섹션 (관리자 전용) */}
-                {isAdmin && finalResults.length > 0 && (
+                {/* 단체 문자 발송 섹션 (전체 성도 공개) */}
+                {finalResults.length > 0 && (
                     <div style={{ marginBottom: '16px', background: 'white', padding: '16px', borderRadius: '20px', border: '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                        {/* 💡 기기별 안내 문구 추가 */}
+                        <div style={{
+                            background: '#F8F9FA',
+                            padding: '10px 14px',
+                            borderRadius: '12px',
+                            fontSize: '11px',
+                            color: '#666',
+                            lineHeight: 1.5,
+                            marginBottom: '15px',
+                            border: '1px solid #EEE',
+                            display: 'flex',
+                            gap: '8px',
+                            alignItems: 'flex-start'
+                        }}>
+                            <span style={{ fontSize: '14px' }}>ℹ️</span>
+                            <div>
+                                <strong>안드로이드:</strong> '발송' 버튼 클릭 시 바로 단체 문자창이 열립니다.<br />
+                                <strong>아이폰:</strong> 시스템 제한으로 인해 <strong>[복사]</strong> 후 메시지 앱에 붙여넣어 주세요.
+                            </div>
+                        </div>
+
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                             <div
                                 style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
@@ -8931,7 +8952,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                                 {member.is_system_admin && (
                                     <div style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '10px', background: '#333', color: 'white', padding: '3px 8px', borderRadius: '6px', fontWeight: 800 }}>👑 관리자</div>
                                 )}
-                                {isAdmin && (
+                                {true && (
                                     <div
                                         onClick={(e) => {
                                             e.stopPropagation();
