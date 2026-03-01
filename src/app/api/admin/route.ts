@@ -154,9 +154,19 @@ export async function GET(req: NextRequest) {
 
             let profiles: any[] = [];
             if (uniqueIdentifiers.length > 0) {
-                const idList = uniqueIdentifiers.map(i => `"${i}"`).join(',');
-                const { data } = await profileQuery.or(`email.in.(${idList}),id.in.(${idList})`);
-                profiles = data || [];
+                // PostgREST uuid 타입 체크 오류 방지를 위해 분리 조회
+                const uuids = uniqueIdentifiers.filter(i => /^[0-9a-f-]{36}$/i.test(i));
+                const nonUuids = uniqueIdentifiers.filter(i => !/^[0-9a-f-]{36}$/i.test(i));
+
+                const orConditions = [];
+                if (uniqueIdentifiers.length > 0) orConditions.push(`email.in.(${uniqueIdentifiers.map(i => `"${i}"`).join(',')})`);
+                if (uuids.length > 0) orConditions.push(`id.in.(${uuids.map(i => `"${i}"`).join(',')})`);
+
+                if (orConditions.length > 0) {
+                    const { data, error } = await profileQuery.or(orConditions.join(','));
+                    if (error) console.error('[list_all_admins] Profiles fetch error:', error.message);
+                    profiles = data || [];
+                }
             }
 
             // Step 3: 매핑 생성
@@ -179,7 +189,7 @@ export async function GET(req: NextRequest) {
 
                 return {
                     ...admin,
-                    name: profile?.full_name || admin.full_name || admin.name || '이름 없음',
+                    name: profile?.full_name || admin.full_name || admin.name || (admin.role === 'super_admin' ? '운영자(슈퍼)' : '신규 관리자'),
                     avatar_url: profile?.avatar_url || admin.avatar_url || null
                 };
             });

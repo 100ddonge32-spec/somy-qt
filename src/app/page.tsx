@@ -7937,10 +7937,10 @@ export default function App() {
                                                                         </div>
                                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
                                                                             <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                                {admin.name || '이름 없음'}
+                                                                                {admin.name || (admin.role === 'super_admin' ? '운영자(슈퍼)' : '신규 관리자')}
                                                                                 <span style={{ fontSize: '10px', background: admin.role === 'super_admin' ? '#E3F2FD' : '#F5F5F3', color: admin.role === 'super_admin' ? '#1565C0' : '#888', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>{admin.role === 'super_admin' ? '슈퍼' : '일반'}</span>
                                                                             </div>
-                                                                            <div style={{ fontSize: '11px', color: '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{admin.email} | 📍 {admin.church_id || '전체'}</div>
+                                                                            <div style={{ fontSize: '11px', color: '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{admin.email?.includes('@') ? admin.email : 'ID: ' + (admin.email || admin.id)} | 📍 {admin.church_id || '전체'}</div>
                                                                         </div>
                                                                     </div>
                                                                     {admin.email !== user?.email && (
@@ -7964,7 +7964,7 @@ export default function App() {
                                                                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center', minWidth: 0, flex: 1 }}>
                                                                         <div style={{ width: '30px', height: '30px', background: '#F5F5F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>'🏢'</div>
                                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
-                                                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#444' }}>{admin.name || '이름 없음'} <span style={{ fontSize: '9px', color: '#999' }}>({admin.role === 'super_admin' ? '슈퍼' : '일반'})</span></div>
+                                                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#444' }}>{admin.name || (admin.role === 'super_admin' ? '운영자' : '관리자')} <span style={{ fontSize: '9px', color: '#999' }}>({admin.role === 'super_admin' ? '슈퍼' : '일반'})</span></div>
                                                                             <div style={{ fontSize: '10px', color: '#AAA' }}>⛪ {admin.church_id} 소속</div>
                                                                         </div>
                                                                     </div>
