@@ -7242,23 +7242,43 @@ export default function App() {
                                                                     }
                                                                 }}
                                                                 style={{ height: '46px', background: '#FCE4EC', color: '#C2185B', border: '1px solid #F8BBD0', borderRadius: '12px', fontSize: '14px', fontWeight: 800, cursor: 'pointer' }}
-                                                            >🗑️ 데이터 일괄 삭제</button>
-                                                            <button
-                                                                onClick={async () => {
-                                                                    if (window.confirm('모든 미인증 성도를 승인 대기로 전환할까요?')) {
-                                                                        try {
-                                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reset_unverified_status', church_id: churchId }) });
-                                                                            const data = await res.json();
-                                                                            if (data.success) {
-                                                                                alert(`${data.count}명 전환 완료`);
-                                                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
-                                                                                if (r.ok) setMemberList(await r.json());
-                                                                            }
-                                                                        } catch (e) { alert('오류 발생'); }
-                                                                    }
-                                                                }}
-                                                                style={{ height: '46px', background: '#FCE4EC', color: '#C2185B', border: '1px solid #F8BBD0', borderRadius: '12px', fontSize: '14px', fontWeight: 800, cursor: 'pointer' }}
-                                                            >⏳ 미인증자 승인해제</button>
+                                                            >🗑️ 데이터 전체 삭제</button>
+
+                                                            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '4px' }}>
+                                                                <button
+                                                                    onClick={async () => {
+                                                                        if (window.confirm('입력된 모든 성도를 승인 완료 상태로 만들까요?')) {
+                                                                            try {
+                                                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_approve_unverified', church_id: churchId }) });
+                                                                                if (res.ok) {
+                                                                                    const info = await res.json();
+                                                                                    alert(`${info.count}명의 성도가 승인되었습니다! 🎉`);
+                                                                                    const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                                    if (r.ok) setMemberList(await r.json());
+                                                                                }
+                                                                            } catch (e) { alert('승인 도중 오류가 발생했습니다.'); }
+                                                                        }
+                                                                    }}
+                                                                    style={{ height: '46px', background: '#E8F5E9', color: '#2E7D32', border: '1px solid #C8E6C9', borderRadius: '12px', fontSize: '13px', fontWeight: 900, cursor: 'pointer' }}
+                                                                >✅ 일괄 승인</button>
+
+                                                                <button
+                                                                    onClick={async () => {
+                                                                        if (window.confirm('모든 미인증 성도를 임시 대기 상태로 되돌릴까요?')) {
+                                                                            try {
+                                                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reset_unverified_status', church_id: churchId }) });
+                                                                                if (res.ok) {
+                                                                                    const info = await res.json();
+                                                                                    alert(`${info.count}명이 대기 상태로 변경되었습니다.`);
+                                                                                    const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                                    if (r.ok) setMemberList(await r.json());
+                                                                                }
+                                                                            } catch (e) { alert('처리 도중 오류가 발생했습니다.'); }
+                                                                        }
+                                                                    }}
+                                                                    style={{ height: '46px', background: '#FFF3E0', color: '#E65100', border: '1px solid #FFE0B2', borderRadius: '12px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                                                                >⚠️ 초기화</button>
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>

@@ -735,6 +735,32 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true });
         }
 
+        // [추가] 미인증 유저(업로드 전용 가계정)를 일괄 승인 완료 상태로 전환
+        if (action === 'bulk_approve_unverified') {
+            const { church_id } = body;
+            const targetChurchId = church_id || 'jesus-in';
+
+            const { data: targets, error: fetchErr } = await supabaseAdmin
+                .from('profiles')
+                .select('id')
+                .eq('church_id', targetChurchId)
+                .or('email.ilike.%@church.local,email.ilike.%@noemail.local');
+
+            if (fetchErr) throw fetchErr;
+
+            if (targets && targets.length > 0) {
+                const targetIds = targets.map(t => t.id);
+                const { error: updateErr } = await supabaseAdmin
+                    .from('profiles')
+                    .update({ is_approved: true })
+                    .in('id', targetIds);
+
+                if (updateErr) throw updateErr;
+                return NextResponse.json({ success: true, count: targetIds.length });
+            }
+            return NextResponse.json({ success: true, count: 0 });
+        }
+
         // [추가] 미인증 유저(업로드 전용 가계정)를 승인 대기 상태로 초기화
         if (action === 'reset_unverified_status') {
             const { church_id } = body;
