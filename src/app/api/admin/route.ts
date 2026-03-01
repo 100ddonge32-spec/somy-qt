@@ -62,8 +62,8 @@ export async function GET(req: NextRequest) {
 
                 query = query.eq('email', formattedEmail);
             } else if (userId) {
-                // [개선] userId 컬럼이 존재하므로 명시적으로 검색하고, 기존 방식(email에 ID 기록된 경우)도 지원
-                query = query.or(`user_id.eq.${userId},email.eq.${userId},email.ilike.%${userId}%`);
+                // [복구] user_id 컬럼이 없으므로 email 필드에 저장된 ID 기반으로 검색
+                query = query.or(`email.eq.${userId},email.ilike.%${userId}%`);
             } else {
                 return NextResponse.json({ role: 'user' });
             }
@@ -208,7 +208,7 @@ export async function POST(req: NextRequest) {
                 }
 
                 targetUserId = matchedUsers[0].id;
-                targetEmail = matchedUsers[0].email || `${targetUserId}@church.local`;
+                targetEmail = matchedUsers[0].email || `${targetUserId}@anonymous.local`; // [통일] anonymous.local 도메인으로 맞춤
             }
 
             if (!targetEmail) {
@@ -216,11 +216,7 @@ export async function POST(req: NextRequest) {
             }
 
             const formattedEmail = targetEmail.toLowerCase().trim();
-            const adminPayload: any = {
-                email: formattedEmail,
-                role,
-                user_id: targetUserId || null // [수정] user_id를 명시적으로 저장하여 조회 가능하게 함
-            };
+            const adminPayload: any = { email: formattedEmail, role };
             if (church_id) adminPayload.church_id = church_id.trim();
 
             // 1차 시도: church_id 포함하여 저장
