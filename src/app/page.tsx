@@ -2416,7 +2416,8 @@ export default function App() {
                                     <>
                                         <div style={{ fontSize: '18px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>{profileName || '성도'}님, 반가워요!</div>
                                         <div style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, marginBottom: '24px' }}>
-                                            아직 교회 관리자의 승인이 완료되지 않았습니다.<br />잠시만 기다려 주시면 곧 모든 기능을 이용하실 수 있어요.
+                                            입력하신 정보가 성도 명단과 확인 중입니다.<br />
+                                            이름·전화번호·생년월일이 정확하면 <b>자동으로 승인</b>됩니다.
                                             <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', margin: '15px auto 0', border: '2px solid #EEE' }}>
                                                 <img src={SOMY_IMG} alt="소미" style={{ width: '100%', height: '100%', objectFit: "cover" }} />
                                             </div>
@@ -2427,19 +2428,19 @@ export default function App() {
                                                     const btn = document.getElementById('refresh-btn');
                                                     if (btn) btn.innerText = "상태 확인 중...";
                                                     checkApprovalStatus(true).finally(() => {
-                                                        if (btn) btn.innerText = "🔄 상태 다시 확인하기";
+                                                        if (btn) btn.innerText = "🔄 승인 상태 재확인";
                                                     });
                                                 }}
                                                 id="refresh-btn"
                                                 style={{ width: '100%', padding: '14px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                                             >
-                                                🔄 상태 다시 확인하기
+                                                🔄 승인 상태 재확인
                                             </button>
                                             <button
                                                 onClick={() => setShowVerification(true)}
                                                 style={{ width: '100%', padding: '12px', background: 'white', color: '#D4AF37', border: '1px solid #D4AF37', borderRadius: '12px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
                                             >
-                                                👤 이미 교회에 등록된 성도인가요?
+                                                ✏️ 정보를 잘못 입력했나요? 다시 시도
                                             </button>
                                             <button
                                                 onClick={handleLogout}
