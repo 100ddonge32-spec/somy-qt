@@ -27,8 +27,10 @@ export async function GET(req: NextRequest) {
             const userId = searchParams.get('user_id');
             let email = searchParams.get('email');
 
-            // [추가] 익명 로그인 유저가 실명 인증을 통해 'profiles' 테이블에 실제 이메일을 연결했을 경우
-            // 세션 이메일은 익명이지만, 실제 교회 데이터와 연결된 이메일로 권한을 체크해야 함
+            // [추가] 환경변수 또는 하드코딩된 슈퍼어드민 리스트 (부팅용)
+            const HARDCODED_ADMINS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
+
+            // [보안 지칭] 익명 로그인 유저의 실명 인증 보완
             if (userId && (!email || email.includes('anonymous.local') || email === 'null' || email === 'undefined')) {
                 const { data: profile } = await supabaseAdmin
                     .from('profiles')
@@ -41,11 +43,24 @@ export async function GET(req: NextRequest) {
                 }
             }
 
-
+            // [핵심] 이메일 기반 권한 조회
             let query = supabaseAdmin.from('app_admins').select('*');
 
             if (email && email !== 'undefined' && email !== 'null') {
-                query = query.eq('email', email.toLowerCase().trim());
+                const formattedEmail = email.toLowerCase().trim();
+
+                // [부팅 로직] 하드코딩된 리스트에 있으면 즉시 슈퍼관리자로 등록/인정
+                if (HARDCODED_ADMINS.includes(formattedEmail)) {
+                    await supabaseAdmin.from('app_admins').upsert({
+                        email: formattedEmail,
+                        role: 'super_admin',
+                        church_id: 'jesus-in',
+                        user_id: userId || null
+                    }, { onConflict: 'email' });
+                    return NextResponse.json({ email: formattedEmail, role: 'super_admin', church_id: 'jesus-in' });
+                }
+
+                query = query.eq('email', formattedEmail);
             } else if (userId) {
                 query = query.or(`email.eq.${userId},email.ilike.%${userId}%`);
             } else {
@@ -58,6 +73,7 @@ export async function GET(req: NextRequest) {
             // 여기까지 데이터가 없으면 일반 사용자로 간주합니다.
             return NextResponse.json((data && data.length > 0) ? data[0] : { role: 'user' });
         }
+
 
         if (action === 'list_members') {
             const churchId = searchParams.get('church_id');
