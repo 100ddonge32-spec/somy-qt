@@ -5101,7 +5101,8 @@ export default function App() {
                 if (channelIdMatch) {
                     const channelId = channelIdMatch[1];
                     const playlistId = 'UU' + channelId.substring(2);
-                    return `https://www.youtube.com/embed?listType=playlist&list=${playlistId}`;
+                    // [변경] 더 안정적인 videoseries 주소 체계 적용
+                    return `https://www.youtube.com/embed/videoseries?list=${playlistId}&rel=0`;
                 }
 
                 // 2. 비디오 ID 추출 (shorts, live 등 지원 강화)
