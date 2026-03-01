@@ -843,7 +843,7 @@ export default function App() {
         try {
             const registration = await navigator.serviceWorker.ready;
 
-            // 기존 구독 취소 후 재구독 (갱신을 위해)
+            // [김부장의 팁] 기존 구독이 가끔 꼬이는 경우가 있어, 매번 새로 갱신해 주는 것이 가장 확실합니다.
             const existingSub = await registration.pushManager.getSubscription();
             if (existingSub) await existingSub.unsubscribe();
 
@@ -852,14 +852,15 @@ export default function App() {
                 applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BCpTn0SHIYSZzjST5xxL1Cv9svmlp3f9Xmvt9FSALBvo4QwLQCBlo_mu4ThoMHgINRmAk4c9sxwVwI2QtDyHr1I')
             });
 
-            await fetch('/api/auth/push-subscribe', {
+            // 모든 푸시 알람 구독은 하나의 API로 통일했습니다.
+            await fetch('/api/push-subscribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: userId, subscription })
             });
-            console.log("✅ 푸시 구독 성공!");
+            console.log("✅ 푸시 알림 서버 등록 완료!");
         } catch (e) {
-            console.error("❌ 푸시 구독 실패:", e);
+            console.error("❌ 푸시 알림 구독 실패:", e);
         }
     };
 
@@ -1101,27 +1102,12 @@ export default function App() {
                     console.log('Service Worker Registered');
 
                     const subscribeUser = async () => {
-                        try {
-                            const subscribeOptions = {
-                                userVisibleOnly: true,
-                                applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BCpTn0SHIYSZzjST5xxL1Cv9svmlp3f9Xmvt9FSALBvo4QwLQCBlo_mu4ThoMHgINRmAk4c9sxwVwI2QtDyHr1I')
-                            };
-                            const subscription = await reg.pushManager.subscribe(subscribeOptions);
-                            console.log('Push Subscribed:', subscription);
-
-                            await fetch('/api/push-subscribe', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ user_id: user.id, subscription })
-                            });
-                        } catch (e) {
-                            console.error('Push Subscription Error:', e);
-                        }
+                        await subscribePush(user.id);
                     };
 
                     if (Notification.permission === 'default') {
                         setTimeout(async () => {
-                            if (confirm('오늘의 큐티 알림을 받아보시겠어요? 😊')) {
+                            if (confirm('알림 신청 시, 오늘의 큐티와 교회 공지를 실시간으로 받아보실 수 있어요! 😊')) {
                                 const permission = await Notification.requestPermission();
                                 if (permission === 'granted') await subscribeUser();
                             }
@@ -2443,6 +2429,10 @@ export default function App() {
                                     관리자 승인 후에도 이 화면이 보인다면,<br />
                                     우측 상단 <b>⋮</b> 버튼 → <b>다른 브라우저로 열기</b>를<br />
                                     선택하시면 즉시 해결됩니다.
+                                    <div style={{ height: '8px' }} />
+                                    📢 <b>아이폰(iOS) 사용자 필독</b><br />
+                                    푸시 알람을 받으려면 하단 <b>공유 버튼</b> 클릭 후<br />
+                                    <b>[홈 화면에 추가]</b>를 하신 다음 실행해 주세요!
                                 </div>
                             </div>
                         ) : (
