@@ -981,7 +981,7 @@ export default function App() {
                 return;
             }
 
-            // [수정] 프로필 정보가 있을 때 상태 업데이트 누락 수정
+            // 프로필이 있을 때 상태 업데이트
             setIsApproved(!!data.is_approved);
             if (data.church_id) setChurchId(data.church_id);
             if (data.full_name && data.full_name !== '이름 없음' && data.full_name !== '.') {
@@ -998,13 +998,15 @@ export default function App() {
                 subscribePush(user.id);
                 checkNewContent();
 
-                // [추가] 성도 정보가 승인되었을 때 메인 화면에서도 생일 체크를 위해 멤버 목록 가져오기
                 if (memberList.length === 0) {
                     fetch(`/api/members?church_id=${data.church_id || 'jesus-in'}`)
                         .then(r => r.ok ? r.json() : [])
                         .then(members => { if (Array.isArray(members)) setMemberList(members); })
                         .catch(err => console.error("멤버 목록 로딩 실패:", err));
                 }
+            } else {
+                // 미승인 상태 - is_approved=false 이므로 UI가 자동으로 승인 대기 화면을 표시함
+                console.log("⏳ 미승인 상태 - 관리자 승인 대기 중");
             }
         } catch (e) {
             console.error("승인 체크 에러:", e);
@@ -1605,11 +1607,8 @@ export default function App() {
             }
         } catch (err: any) {
             console.error("[Login Error]", err);
-            let msg = err.message || "알 수 없는 오류가 발생했습니다.";
-
-            // 더 구체적인 디버깅을 위해 에러 객체 전체 정보를 포함
-            const errorDetail = err.toString();
-            alert(`오류가 발생했습니다.\n\n메시지: ${msg}\n상세정보: ${errorDetail}\n\n* Vercel 환경변수(Service Role Key)와 Supabase Anonymous Auth 설정을 다시 확인해주세요.`);
+            const msg = err.message || "알 수 없는 오류가 발생했습니다.";
+            alert(`로그인 중 문제가 발생했습니다.\n\n${msg}\n\n⚙️ 개발자 참고: 서버 환경변수(익명 로그인, Service Role Key) 설정을 확인하세요.`);
         } finally {
             setIsDirectLoggingIn(false);
         }

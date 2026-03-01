@@ -59,13 +59,15 @@ export async function GET(req: NextRequest) {
     }
 
     const kakaoId = String(kakaoUser.id);
-    const nickname: string | null = (kakaoUser.kakao_account?.profile?.nickname && kakaoUser.kakao_account.profile.nickname !== '성도')
+    const nickname: string | null = (kakaoUser.kakao_account?.profile?.nickname &&
+        kakaoUser.kakao_account.profile.nickname !== '성도' &&
+        kakaoUser.kakao_account.profile.nickname.length >= 2)
         ? kakaoUser.kakao_account.profile.nickname
         : null;
     const profileImage: string | null = kakaoUser.kakao_account?.profile?.profile_image_url ?? null;
     const syntheticEmail = `kakao_${kakaoId}@kakao.somy-qt.local`;
 
-    // STEP 3: Supabase 사용자 생성 또는 업데이트
+    // STEP 3: Supabase Auth 사용자 생성 또는 업데이트
     const { error: createErr } = await supabaseAdmin.auth.admin.createUser({
         email: syntheticEmail,
         email_confirm: true,
@@ -82,97 +84,75 @@ export async function GET(req: NextRequest) {
         return NextResponse.redirect(`${APP_URL}?error=step3_${encodeURIComponent(createErr.message.slice(0, 50))}`);
     }
 
-    // STEP 4: 사용자 ID 확보 (신규 또는 기존)
+    // STEP 4: 사용자 ID 확보
     const { data: usersData } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
     const supabaseUser = usersData?.users?.find((u) => u.email === syntheticEmail);
 
     if (supabaseUser) {
-        // 이름/사진 최신화 (Auth 메타데이터만)
+        // 메타데이터 최신화
         await supabaseAdmin.auth.admin.updateUserById(supabaseUser.id, {
             user_metadata: { full_name: nickname, name: nickname, avatar_url: profileImage },
         });
 
-        // 이름으로 매칭 시도 (기본 닉네임이 유의미할 때만)
-        const isGenericName = !nickname || nickname === '성도' || nickname === '사용자' || nickname.length < 2;
-
-        // ✅ 프로필 매칭 및 병합 로직 (성도 중복 방지 최적화)
         const { data: profileById } = await supabaseAdmin.from('profiles').select('*').eq('id', supabaseUser.id).maybeSingle();
 
         if (!profileById) {
-            // 1. 기존에 등록된 성도가 있는지 확인 (이메일 또는 이름 매칭)
-            let match = null;
+            // 닉네임이 유의미한 경우에만 처리
+            const isGenericName = !nickname || nickname.length < 2;
 
-            if (!isGenericName) {
-                const cleanNickname = nickname!.replace(/\s+/g, '').toLowerCase();
+            if (!isGenericName && nickname) {
+                const cleanNickname = nickname.replace(/\s+/g, '').toLowerCase();
                 const { data: nameCandidates } = await supabaseAdmin.from('profiles')
                     .select('*')
-                    .not('full_name', 'is', null);
+                    .not('full_name', 'is', null)
+                    .neq('id', supabaseUser.id);
 
+                let match = null;
                 if (nameCandidates) {
                     const matches = nameCandidates.filter(c => {
                         const cleanDbName = (c.full_name || '').replace(/\s+/g, '').toLowerCase();
                         return cleanDbName === cleanNickname;
                     });
-
-                    // [개선] 동일 이름이 여러 명이라면, 아직 주인이 없는(가계정 @church.local) 정보를 우선적으로 찾음
                     if (matches.length > 0) {
-                        match = matches.find(m => m.email?.includes('@church.local') && !m.id.includes('-')) ||
-                            matches.find(m => m.email?.includes('@church.local')) ||
+                        // 가계정(church.local) 우선 매칭
+                        match = matches.find(m => m.email?.includes('@church.local')) ||
                             (matches.length === 1 ? matches[0] : null);
                     }
                 }
-            }
 
-            if (match) {
-                console.log(`[Kakao Callback] 매칭 발견: ${match.full_name}. 기존 데이터를 신규 계정(${supabaseUser.id})으로 이관합니다.`);
-                // 1. 기존 가계정(@church.local) 데이터를 기반으로 새 프로필 생성
-                const { error: insertErr } = await supabaseAdmin.from('profiles')
-                    .insert({
+                if (match) {
+                    // ✅ 매칭 성공 → 즉시 승인 이관
+                    console.log(`[Kakao] 매칭 성공: ${match.full_name} → 즉시 승인 이관`);
+                    const { error: insertErr } = await supabaseAdmin.from('profiles').insert({
                         ...match,
                         id: supabaseUser.id,
                         email: syntheticEmail,
-                        avatar_url: match.avatar_url || profileImage, // 기존 사진 우선
-                        is_approved: true // 매칭된 계정은 즉시 승인 처리 (관리자가 이미 신뢰한 데이터)
+                        avatar_url: match.avatar_url || profileImage,
+                        is_approved: true
                     });
-
-                if (insertErr) {
-                    console.error('[Kakao Callback] 프로필 매칭 이관 실패:', insertErr.message);
+                    if (!insertErr) {
+                        await supabaseAdmin.from('profiles').delete().eq('id', match.id);
+                    }
                 } else {
-                    // 2. 이관 성공 시 기존 가계정 삭제
-                    await supabaseAdmin.from('profiles').delete().eq('id', match.id);
-                }
-            } else {
-                // [핵심] 일치하는 성도가 없고, 이름도 '성도'처럼 너무 일반적이면 유령 계정 생성을 건너뜀
-                if (isGenericName) {
-                    console.log('[Kakao Callback] 유의미한 정보가 없어 프로필 생성을 스킵합니다.');
-                } else {
-                    // 이름이 명확하면 신규 생성
+                    // ✅ 매칭 실패 → [핵심 변경] 미승인 최소 프로필 생성 (정보 입력 화면 유도)
+                    console.log(`[Kakao] 매칭 실패 (${nickname}) → 미승인 상태로 생성. 정보 입력 필요.`);
                     await supabaseAdmin.from('profiles').insert({
                         id: supabaseUser.id,
                         full_name: nickname,
                         avatar_url: profileImage,
                         email: syntheticEmail,
                         church_id: 'jesus-in',
-                        is_approved: true, // [변경] 신규 유저도 즉시 승인 처리 (관리자 요청)
+                        is_approved: false, // ← 관리자 명단 불일치 → 미승인
                     });
                 }
             }
+            // 이름이 너무 일반적이면 프로필 생성 스킵 (정보 입력 화면에서 직접 처리)
         } else {
-            // 이미 프로필이 있음 -> 정보 최신화 (사진이 이미 있으면 덮어쓰지 않음: 김부장의 센스)
+            // 이미 프로필 있음 → 사진만 최신화
             const updateData: any = {};
-
-            // 기존 사진이 없거나 카카오 기본 이미지가 아닌 경우만 업데이트 고려 (사용자가 직접 올린 건 'supabase.co' 포함됨)
-            const currentAvatar = profileById.avatar_url || '';
-            const isManualUpload = currentAvatar.includes('supabase.co');
-
-            if (!isManualUpload && profileImage) {
-                updateData.avatar_url = profileImage;
-            }
-
-            if (profileById.full_name === '성도' && !isGenericName) {
-                updateData.full_name = nickname;
-            }
-
+            const isManualUpload = (profileById.avatar_url || '').includes('supabase.co');
+            if (!isManualUpload && profileImage) updateData.avatar_url = profileImage;
+            if (profileById.full_name === '성도' && nickname) updateData.full_name = nickname;
             if (Object.keys(updateData).length > 0) {
                 await supabaseAdmin.from('profiles').update(updateData).eq('id', supabaseUser.id);
             }
