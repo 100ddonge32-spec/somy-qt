@@ -30,8 +30,14 @@ export async function GET(req: NextRequest) {
 
         const isAdminQuery = searchParams.get('admin') === 'true';
 
+        // [정석 보완] 이름이 '성도'이면서 전화번호도 없는 '유령 계정'은 제외 (관리자용 쿼리와 동일 기준)
+        const activeProfiles = (data || []).filter(m => {
+            const isGhost = (m.full_name === '성도' || m.full_name === '이름 없음' || m.full_name === '.') && !m.phone;
+            return !isGhost || m.is_approved;
+        });
+
         // 프라이버시 필터링
-        const filteredData = data.map(member => ({
+        const filteredData = activeProfiles.map(member => ({
             id: member.id,
             full_name: member.full_name,
             // [수정] 관리자 쿼리인 경우에만 이메일 포함 (보안 유지)
@@ -48,7 +54,7 @@ export async function GET(req: NextRequest) {
             is_address_public: member.is_address_public,
             // [추가] 관리자용 필수 필드
             created_at: isAdminQuery ? member.created_at : null,
-            is_approved: isAdminQuery ? member.is_approved : null
+            is_approved: member.is_approved
         }));
 
         return NextResponse.json(filteredData);
