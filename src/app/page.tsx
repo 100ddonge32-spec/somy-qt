@@ -7585,147 +7585,146 @@ export default function App() {
                                                             return (
                                                                 <div key={member.id} style={{
                                                                     background: '#FFFFFF',
-                                                                    padding: '24px',
-                                                                    borderRadius: '28px',
+                                                                    padding: '20px',
+                                                                    borderRadius: '24px',
                                                                     border: selectedMemberIds.includes(member.id) ? '2.5px solid #D4AF37' : '1px solid #F0F0F0',
                                                                     marginBottom: '16px',
-                                                                    boxShadow: '0 8px 32px rgba(0,0,0,0.03)',
+                                                                    boxShadow: '0 8px 24px rgba(0,0,0,0.04)',
                                                                     transition: 'all 0.3s ease',
-                                                                    position: 'relative'
+                                                                    position: 'relative',
+                                                                    display: 'flex',
+                                                                    flexDirection: 'column',
+                                                                    gap: '16px'
                                                                 }}>
+                                                                    {/* [상단 섹션] 체크박스 + 프로필 + 이름 */}
+                                                                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                                                        <div
+                                                                            onClick={() => {
+                                                                                if (selectedMemberIds.includes(member.id)) {
+                                                                                    setSelectedMemberIds(prev => prev.filter(id => id !== member.id));
+                                                                                } else {
+                                                                                    setSelectedMemberIds(prev => [...prev, member.id]);
+                                                                                }
+                                                                            }}
+                                                                            style={{
+                                                                                width: '24px', height: '24px', borderRadius: '8px', border: '2.5px solid #D4AF37',
+                                                                                background: selectedMemberIds.includes(member.id) ? '#D4AF37' : 'white',
+                                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
+                                                                            }}
+                                                                        >
+                                                                            {selectedMemberIds.includes(member.id) && <span style={{ color: 'white', fontSize: '14px', fontWeight: 900 }}>✓</span>}
+                                                                        </div>
+
+                                                                        <div style={{ position: 'relative', flexShrink: 0 }}>
+                                                                            <div style={{ width: 54, height: 54, borderRadius: '18px', overflow: 'hidden', background: '#F8F9FA', border: '1px solid #EEE' }}>
+                                                                                <img alt="" src={member.avatar_url || 'https://via.placeholder.com/62'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                            </div>
+                                                                            {isAdmin && <div style={{ position: 'absolute', bottom: '-4px', right: '-4px', background: '#333', color: 'white', fontSize: '8px', padding: '2px 5px', borderRadius: '6px', fontWeight: 900, border: '1px solid white' }}>ADMIN</div>}
+                                                                        </div>
+
+                                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                                                                <span style={{ fontSize: '17px', fontWeight: 900, color: '#1A1A1A' }}>{displayName}</span>
+                                                                                {member.church_rank && <span style={{ fontSize: '9px', background: '#FFF9E6', color: '#B08C3E', padding: '2px 6px', borderRadius: '5px', fontWeight: 800 }}>{member.church_rank}</span>}
+                                                                            </div>
+                                                                            <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                                                                                <span style={{
+                                                                                    background: member.gender === '남' ? '#E7F5FF' : member.gender === '여' ? '#FFF0F6' : '#F1F3F5',
+                                                                                    color: member.gender === '남' ? '#1971C2' : member.gender === '여' ? '#D6336C' : '#888',
+                                                                                    padding: '1px 8px', borderRadius: '6px', fontWeight: 800, fontSize: '9px'
+                                                                                }}>{member.gender || '미설정'}</span>
+                                                                                {!member.is_approved && <span style={{ fontSize: '9px', background: '#FFF5F5', color: '#E03131', padding: '1px 6px', borderRadius: '6px', fontWeight: 800 }}>대기</span>}
+                                                                                {member.is_new_login && <span style={{ fontSize: '9px', background: '#E3F2FD', color: '#1971C2', padding: '1px 6px', borderRadius: '6px', fontWeight: 800, border: '1px solid #BBDEFB' }}>신규기기</span>}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* [중간 섹션] 연락처 및 정보 그리드 (모바일 최적화 2열) */}
                                                                     <div style={{
                                                                         display: 'grid',
-                                                                        gridTemplateColumns: '1.2fr 2.1fr 180px',
-                                                                        alignItems: 'center',
-                                                                        width: '100%',
-                                                                        gap: '24px'
+                                                                        gridTemplateColumns: '1.2fr 1fr',
+                                                                        gap: '10px',
+                                                                        padding: '12px 16px',
+                                                                        background: '#F9F9F9',
+                                                                        borderRadius: '16px',
+                                                                        fontSize: '12.5px'
                                                                     }}>
-                                                                        {/* [1열:Identity] [2열:DetailedInfo] [3열:Actions] */}
-                                                                        {/* [TOP] 프로필 마스터 섹션 */}
-                                                                        {/* 1열: 프로필 아이덴티티 */}
-                                                                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                                                                            <div
-                                                                                onClick={() => {
-                                                                                    if (selectedMemberIds.includes(member.id)) {
-                                                                                        setSelectedMemberIds(prev => prev.filter(id => id !== member.id));
-                                                                                    } else {
-                                                                                        setSelectedMemberIds(prev => [...prev, member.id]);
-                                                                                    }
-                                                                                }}
-                                                                                style={{
-                                                                                    width: '24px', height: '24px', borderRadius: '8px', border: '2.5px solid #D4AF37',
-                                                                                    background: selectedMemberIds.includes(member.id) ? '#D4AF37' : 'white',
-                                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
-                                                                                }}
-                                                                            >
-                                                                                {selectedMemberIds.includes(member.id) && <span style={{ color: 'white', fontSize: '14px', fontWeight: 900 }}>✓</span>}
-                                                                            </div>
-
-                                                                            <div style={{ position: 'relative', flexShrink: 0 }}>
-                                                                                <div style={{ width: 62, height: 62, borderRadius: '20px', overflow: 'hidden', background: '#F8F9FA', border: '1px solid #EEE' }}>
-                                                                                    <img alt="" src={member.avatar_url || 'https://via.placeholder.com/62'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                                                </div>
-                                                                                {isAdmin && <div style={{ position: 'absolute', bottom: '-4px', right: '-4px', background: '#333', color: 'white', fontSize: '8px', padding: '2px 5px', borderRadius: '6px', fontWeight: 900, border: '1px solid white' }}>ADMIN</div>}
-                                                                            </div>
-
-                                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                                    <span style={{ fontSize: '18px', fontWeight: 900, color: '#1A1A1A' }}>{displayName}</span>
-                                                                                    {member.church_rank && <span style={{ fontSize: '10px', background: '#FFF9E6', color: '#B08C3E', padding: '1px 6px', borderRadius: '5px', fontWeight: 800 }}>{member.church_rank}</span>}
-                                                                                </div>
-                                                                                <div style={{ display: 'flex', gap: '5px' }}>
-                                                                                    <span style={{
-                                                                                        background: member.gender === '남' ? '#E7F5FF' : member.gender === '여' ? '#FFF0F6' : '#F1F3F5',
-                                                                                        color: member.gender === '남' ? '#1971C2' : member.gender === '여' ? '#D6336C' : '#888',
-                                                                                        padding: '1px 8px', borderRadius: '6px', fontWeight: 800, fontSize: '10px'
-                                                                                    }}>{member.gender || '성별 미설정'}</span>
-                                                                                    {!member.is_approved && <span style={{ fontSize: '10px', background: '#FFF5F5', color: '#E03131', padding: '1px 6px', borderRadius: '6px', fontWeight: 800 }}>대기</span>}
-                                                                                    {member.is_new_login && <span style={{ fontSize: '10px', background: '#E3F2FD', color: '#1971C2', padding: '1px 6px', borderRadius: '6px', fontWeight: 800, border: '1px solid #BBDEFB' }}>신규 기기</span>}
-                                                                                </div>
-                                                                            </div>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                            <span style={{ opacity: 0.6 }}>📞</span>
+                                                                            <span style={{ fontWeight: 700, color: '#333' }}>{member.phone || '-'}</span>
                                                                         </div>
-
-                                                                        {/* 2열: 정보 그리드 */}
-                                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 24px', borderLeft: '1px solid #EEE', paddingLeft: '24px' }}>
-                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                                <span style={{ fontSize: '14px' }}>📞</span>
-                                                                                <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#222' }}>{member.phone || '-'}</span>
-                                                                            </div>
-                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                                <span style={{ fontSize: '14px' }}>🎂</span>
-                                                                                <span style={{ fontSize: '13.5px', fontWeight: 600, color: '#444' }}>{member.birthdate || '-'}</span>
-                                                                            </div>
-                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                                <span style={{ fontSize: '14px' }}>📅</span>
-                                                                                <span style={{ fontSize: '13.5px', fontWeight: 600, color: '#666' }}>{member.created_at ? (String(member.created_at).split(/[T\s]/)[0]) : '-'}</span>
-                                                                            </div>
-                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                                <span style={{ fontSize: '14px' }}>🏠</span>
-                                                                                <span style={{ fontSize: '12.5px', color: '#777', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>{member.address || '-'}</span>
-                                                                            </div>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                            <span style={{ opacity: 0.6 }}>🎂</span>
+                                                                            <span style={{ fontWeight: 600, color: '#555' }}>{member.birthdate || '-'}</span>
                                                                         </div>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                            <span style={{ opacity: 0.6 }}>📅</span>
+                                                                            <span style={{ fontWeight: 600, color: '#666' }}>{member.created_at ? (String(member.created_at).split(/[T\s]/)[0]) : '-'}</span>
+                                                                        </div>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                                                                            <span style={{ opacity: 0.6 }}>🏠</span>
+                                                                            <span style={{ color: '#777', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.address || '-'}</span>
+                                                                        </div>
+                                                                    </div>
 
-                                                                        {/* 3열: 하단 버튼 */}
-                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                                                            {!member.is_approved && (
-                                                                                <button
-                                                                                    onClick={async () => {
-                                                                                        if (window.confirm(`${member.full_name} 성도를 승인하시겠습니까?`)) {
-                                                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve_user', user_id: member.id, is_approved: true }) });
-                                                                                            if (res.ok) {
-                                                                                                setMemberList(prev => prev.map(m => m.id === member.id ? { ...m, is_approved: true } : m));
-                                                                                                alert(`${member.full_name} 성도가 승인되었습니다. 🎉`);
-                                                                                            }
-                                                                                        }
-                                                                                    }}
-                                                                                    style={{ background: '#D4AF37', color: 'white', border: 'none', padding: '7px 12px', borderRadius: '10px', fontSize: '11px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 8px rgba(212,175,55,0.2)' }}
-                                                                                >
-                                                                                    승인 확정
-                                                                                </button>
-                                                                            )}
-                                                                            {member.is_new_login && (
-                                                                                <button
-                                                                                    onClick={async () => {
-                                                                                        const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_new_login', user_id: member.id }) });
-                                                                                        if (res.ok) {
-                                                                                            setMemberList(prev => prev.map(m => m.id === member.id ? { ...m, is_new_login: false } : m));
-                                                                                        }
-                                                                                    }}
-                                                                                    style={{ background: '#E3F2FD', color: '#1971C2', border: '1px solid #BBDEFB', padding: '7px 12px', borderRadius: '10px', fontSize: '11px', fontWeight: 900, cursor: 'pointer' }}
-                                                                                >
-                                                                                    기기 확인
-                                                                                </button>
-                                                                            )}
-                                                                            <div style={{ display: 'flex', gap: '4px' }}>
-                                                                                <button onClick={() => {
-                                                                                    setSelectedMemberForEdit(member);
-                                                                                    const form = {
-                                                                                        full_name: member.full_name || '', church_rank: member.church_rank || '', phone: member.phone || '', birthdate: member.birthdate || '', gender: member.gender || '', member_no: member.member_no || '', address: member.address || '', is_phone_public: member.is_phone_public || false, is_birthdate_public: member.is_birthdate_public || false, is_birthdate_lunar: member.is_birthdate_lunar || false, is_address_public: member.is_address_public || false, created_at: member.created_at || ''
-                                                                                    };
-                                                                                    setMemberEditForm(form);
-                                                                                    setInitialMemberEditForm(form);
-                                                                                }} style={{ flex: 1, background: '#FFFFFF', border: '1px solid #E0E0E0', color: '#444', padding: '7px', borderRadius: '10px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}>상세 관리</button>
-                                                                                <button
-                                                                                    onClick={() => { setMergeTarget(member); setMergeSearchKeyword(member.full_name || ''); setShowMergeModal(true); }}
-                                                                                    style={{
-                                                                                        flex: 1, background: isDuplicate ? '#FFF9EB' : '#FFFFFF', border: isDuplicate ? '1.5px solid #D4AF37' : '1px solid #E0E0E0', padding: '7px', borderRadius: '10px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', color: '#444'
-                                                                                    }}
-                                                                                >
-                                                                                    통합
-                                                                                </button>
-                                                                            </div>
+                                                                    {/* [하단 섹션] 액션 버튼 */}
+                                                                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                                                        {!member.is_approved && (
                                                                             <button
                                                                                 onClick={async () => {
-                                                                                    if (window.confirm(`${member.full_name} 성도를 삭제하시겠습니까?`)) {
-                                                                                        const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_member', user_id: member.id, church_id: churchId }) });
-                                                                                        if (res.ok) setMemberList(prev => prev.filter(m => m.id !== member.id));
+                                                                                    if (window.confirm(`${member.full_name} 성도를 승인하시겠습니까?`)) {
+                                                                                        const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve_user', user_id: member.id, is_approved: true }) });
+                                                                                        if (res.ok) {
+                                                                                            setMemberList(prev => prev.map(m => m.id === member.id ? { ...m, is_approved: true } : m));
+                                                                                            alert(`${member.full_name} 성도가 승인되었습니다. 🎉`);
+                                                                                        }
                                                                                     }
                                                                                 }}
-                                                                                style={{ background: '#FFF5F5', border: '1px solid #FFE3E3', padding: '7px', borderRadius: '10px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', color: '#E03131' }}
+                                                                                style={{ flex: 1.5, background: '#D4AF37', color: 'white', border: 'none', padding: '10px', borderRadius: '12px', fontSize: '11px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 8px rgba(212,175,55,0.2)' }}
                                                                             >
-                                                                                삭제
+                                                                                승인 확정
                                                                             </button>
-                                                                        </div>
+                                                                        )}
+                                                                        {member.is_new_login && (
+                                                                            <button
+                                                                                onClick={async () => {
+                                                                                    const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_new_login', user_id: member.id }) });
+                                                                                    if (res.ok) {
+                                                                                        setMemberList(prev => prev.map(m => m.id === member.id ? { ...m, is_new_login: false } : m));
+                                                                                    }
+                                                                                }}
+                                                                                style={{ flex: 1, background: '#E3F2FD', color: '#1971C2', border: '1px solid #BBDEFB', padding: '10px', borderRadius: '12px', fontSize: '11px', fontWeight: 900, cursor: 'pointer' }}
+                                                                            >
+                                                                                기기 확인
+                                                                            </button>
+                                                                        )}
+                                                                        <button onClick={() => {
+                                                                            setSelectedMemberForEdit(member);
+                                                                            const form = {
+                                                                                full_name: member.full_name || '', church_rank: member.church_rank || '', phone: member.phone || '', birthdate: member.birthdate || '', gender: member.gender || '', member_no: member.member_no || '', address: member.address || '', is_phone_public: member.is_phone_public || false, is_birthdate_public: member.is_birthdate_public || false, is_birthdate_lunar: member.is_birthdate_lunar || false, is_address_public: member.is_address_public || false, created_at: member.created_at || ''
+                                                                            };
+                                                                            setMemberEditForm(form);
+                                                                            setInitialMemberEditForm(form);
+                                                                        }} style={{ flex: 1, background: '#FFFFFF', border: '1px solid #E0E0E0', color: '#444', padding: '10px', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}>상세 수정</button>
+                                                                        <button
+                                                                            onClick={() => { setMergeTarget(member); setMergeSearchKeyword(member.full_name || ''); setShowMergeModal(true); }}
+                                                                            style={{
+                                                                                flex: 1, background: isDuplicate ? '#FFF9EB' : '#FFFFFF', border: isDuplicate ? '1.5px solid #D4AF37' : '1px solid #E0E0E0', padding: '10px', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', color: '#444'
+                                                                            }}
+                                                                        >
+                                                                            통합
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={async () => {
+                                                                                if (window.confirm(`${member.full_name} 성도를 삭제하시겠습니까?`)) {
+                                                                                    const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_member', user_id: member.id, church_id: churchId }) });
+                                                                                    if (res.ok) setMemberList(prev => prev.filter(m => m.id !== member.id));
+                                                                                }
+                                                                            }}
+                                                                            style={{ background: '#FFF5F5', border: '1px solid #FFE3E3', padding: '10px', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', color: '#E03131' }}
+                                                                        >
+                                                                            삭제
+                                                                        </button>
                                                                     </div>
                                                                 </div>
                                                             );
