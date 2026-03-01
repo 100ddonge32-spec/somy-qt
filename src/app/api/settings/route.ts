@@ -141,18 +141,27 @@ export async function POST(req: NextRequest) {
     }
 
     // [보안] jesus-in이나 정식 교회 설정에 트라이얼 정보가 덮어씌워지는 것 방지
-    if (targetChurchId === 'jesus-in' && (plan?.startsWith('trial') || church_name?.includes('(체험판)'))) {
-        return NextResponse.json({ success: false, error: "메인 교회 설정에 체험판 정보를 저장할 수 없습니다." }, { status: 403 });
+    let cleanPlan = plan;
+    let cleanName = church_name;
+    if (targetChurchId === 'jesus-in') {
+        if (plan?.includes('trial')) {
+            // jesus-in인데 trial 정보가 들어왔다면 메타데이터 제거 후 프리미엄 복구
+            cleanPlan = plan.split('|').filter((p: string) => !p.startsWith('trial') && !p.startsWith('expires:') && !p.startsWith('usage:') && !p.startsWith('limit:')).join('|');
+            if (!cleanPlan || cleanPlan === '') cleanPlan = 'premium';
+        }
+        if (church_name?.includes('(체험판)')) {
+            cleanName = church_name.replace('(체험판)', '').trim();
+        }
     }
 
     // ✅ 기존 정보를 먼저 조회하여 체험판 정보가 있으면 보존 (김부장 방식 유지)
     const { data: currentSettings } = await supabaseAdmin
         .from('church_settings')
-        .select('plan, id')
+        .select('id, plan')
         .eq('church_id', targetChurchId)
         .maybeSingle();
 
-    let encodedPlan = (plan || 'free').split('|')[0];
+    let encodedPlan = (cleanPlan || 'free').split('|')[0];
     const oldPlanStr = currentSettings?.plan || '';
 
     // 체험판 정보 보존
@@ -180,7 +189,7 @@ export async function POST(req: NextRequest) {
 
     const baseData: any = {
         church_id: targetChurchId,
-        church_name,
+        church_name: cleanName,
         church_logo_url,
         church_url,
         app_subtitle,
