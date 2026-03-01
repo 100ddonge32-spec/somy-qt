@@ -5096,9 +5096,11 @@ export default function App() {
                 const rawUrl = (manualUrl || url || "").trim();
                 if (!rawUrl) return null;
 
-                // 1. 채널 ID (UC...) -> 업로드 목록(UU...)
-                if (rawUrl.startsWith('UC') && rawUrl.length > 20) {
-                    const playlistId = 'UU' + rawUrl.substring(2);
+                // 1. 채널 ID 추출 (UC... 형태) - URL 포함 여부와 상관없이 추출 시도
+                const channelIdMatch = rawUrl.match(/(UC[a-zA-Z0-9_-]{20,})/);
+                if (channelIdMatch) {
+                    const channelId = channelIdMatch[1];
+                    const playlistId = 'UU' + channelId.substring(2);
                     return `https://www.youtube.com/embed?listType=playlist&list=${playlistId}`;
                 }
 
