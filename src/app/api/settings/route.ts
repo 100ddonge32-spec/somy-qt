@@ -146,8 +146,17 @@ export async function POST(req: NextRequest) {
         today_book_image_url
     };
 
-    // jesus-in(id:1)인 경우 기존 호환성을 위해 id:1 명시
-    if (targetChurchId === 'jesus-in') {
+    // ✅ DB 제약 조건 문제를 피하기 위해 먼저 기존 레코드를 조회하여 ID를 확보
+    const { data: existingRecord } = await supabaseAdmin
+        .from('church_settings')
+        .select('id')
+        .eq('church_id', targetChurchId)
+        .maybeSingle();
+
+    if (existingRecord) {
+        baseData.id = existingRecord.id;
+    } else if (targetChurchId === 'jesus-in') {
+        // jesus-in(id:1)인 경우 기존 호환성을 위해 id:1 강제 지정
         baseData.id = 1;
     }
 
@@ -165,15 +174,15 @@ export async function POST(req: NextRequest) {
             event_poster_visible: event_poster_visible ?? false,
             pastor_column_title,
             pastor_column_content
-        }, { onConflict: 'church_id' });
+        }); // onConflict를 명시하지 않으면 Primary Key(id)를 기준으로 처리함
 
     if (firstError) {
         console.warn("[Settings POST] First attempt failed, retrying without new columns...", firstError.message);
 
-        // 2차 시도: 새 컬럼을 제외하고 plan 필드의 인코딩에 의존하여 저장 (이것이 진정한 신의 한 수)
+        // 2차 시도: 새 컬럼을 제외하고 plan 필드의 인코딩에 의존하여 저장
         const { error: secondError } = await supabaseAdmin
             .from('church_settings')
-            .upsert(baseData, { onConflict: 'church_id' });
+            .upsert(baseData);
 
         if (secondError) {
             console.error("[Settings POST Error]", secondError);
