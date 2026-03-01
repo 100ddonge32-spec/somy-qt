@@ -1685,12 +1685,10 @@ export default function App() {
                 if (result.church_id) setChurchId(result.church_id);
                 setShowVerification(false);
                 checkApprovalStatus(true);
-            } else if (res.ok && result.success && result.status === 'pending') {
-                // 일치 안됨 → 유령 계정 없이 오류몜 부드럽게 안내
-                alert("입력하신 정보와 일치하는 성도 정보를 찾지 못했습니다.\n\n• 성함: 전체 이름 정확히 (예: 홍길동)\n• 연락처: 하이픈 없이 숫자만 (예: 01012345678)\n• 생년월일: 6자리 (예: 800101)\n\n입력하신 정보를 다시 확인하거나 관리자에게 문의해 주세요.");
             } else {
-                // API 오류
-                throw new Error(result.error || "서버 응답 오류");
+                // 불일치 (not_found) → 유령 계정 없이 안내만 표시
+                const errMsg = result.error || '일치하는 성도 정보를 찾지 못했습니다.';
+                alert(`❌ ${errMsg}\n\n• 성함: 전체 이름 정확히 (예: 홍길동)\n• 연락처: 하이픈 없이 숫자만 (예: 01012345678)\n• 생년월일: 6자리 (예: 800101)\n\n확인 후 다시 시도하거나 관리자에게 문의해 주세요.`);
             }
         } catch (err: any) {
             alert("오류가 발생했습니다: " + err.message);

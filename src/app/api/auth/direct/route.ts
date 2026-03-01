@@ -145,53 +145,16 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        // ─── 4단계: 매칭 실패 → 승인 대기 상태로 신규 생성 (유령 계정 최소화) ──
-        console.log(`[DirectAuth] ❌ 매칭 실패 - 성도 명단에 없음. 승인 대기로 생성.`);
-
-        // 이미 이 user_id로 프로필이 있는지 확인
-        const { data: existingProfile } = await supabaseAdmin.from('profiles')
-            .select('id, is_approved, church_id')
-            .eq('id', user_id)
-            .maybeSingle();
-
-        if (existingProfile) {
-            // 이미 있으면 이름/전화만 업데이트 (승인 상태 건드리지 않음)
-            await supabaseAdmin.from('profiles').update({
-                full_name: name,
-                phone: inputPhone.length > 4 ? phoneTail : `(미확인)${phoneTail}`,
-                birthdate: birthdate || null,
-                church_id: existingProfile.church_id || targetChurchId
-            }).eq('id', user_id);
-
-            return NextResponse.json({
-                success: true,
-                status: 'pending',
-                name: name,
-                church_id: existingProfile.church_id || targetChurchId,
-                is_approved: existingProfile.is_approved || false,
-                message: '성도 명단과 일치하는 정보를 찾지 못했습니다. 관리자 승인 후 이용하실 수 있습니다.'
-            });
-        }
-
-        // 신규 프로필 생성 (승인 대기)
-        await supabaseAdmin.from('profiles').upsert({
-            id: user_id,
-            full_name: name,
-            phone: inputPhone.length > 4 ? phoneTail : `(미확인)${phoneTail}`,
-            birthdate: birthdate || null,
-            is_approved: false, // ← 명단 불일치 시 관리자 승인 필요
-            church_id: targetChurchId,
-            email: `${user_id}@anonymous.local`
-        });
+        // ─── 4단계: 매칭 실패 → 프로필 생성 없이 오류 반환 ────────────────────
+        // [핵심 수정] 불일치 시 유령 계정을 생성하지 않음!
+        // 이전에는 is_approved:false 프로필이 생성되어 관리자 목록에 나타나는 문제가 있었음
+        console.log(`[DirectAuth] ❌ 매칭 실패 - 유령 계정 생성 없이 오류 반환`);
 
         return NextResponse.json({
-            success: true,
-            status: 'pending',
-            name: name,
-            church_id: targetChurchId,
-            is_approved: false,
-            message: '성도 명단과 일치하는 정보가 없어 관리자 승인을 기다려 주세요.'
-        });
+            success: false,
+            status: 'not_found',
+            error: '입력하신 정보와 일치하는 성도를 찾을 수 없습니다. 이름·전화번호·생년월일을 다시 확인해 주세요.'
+        }, { status: 404 });
 
     } catch (err: any) {
         console.error('[DirectAuth Error]', err);
