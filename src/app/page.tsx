@@ -321,6 +321,7 @@ const StatsView = ({ memberList }: { memberList: any[] }) => {
 };
 
 export default function App() {
+    const [showScrollTop, setShowScrollTop] = useState(false);
     const [view, setView] = useState<View>("home");
     const [memberList, setMemberList] = useState<any[]>([]); // ✅ 성도 목록
     const [showBirthdayPopup, setShowBirthdayPopup] = useState(false); // ✅ 생일 팝업 노출 여부
@@ -593,6 +594,15 @@ export default function App() {
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
+
+        const handleScroll = () => {
+            if (window.scrollY > 400) {
+                setShowScrollTop(true);
+            } else {
+                setShowScrollTop(false);
+            }
+        };
+        window.addEventListener('scroll', handleScroll);
 
         // [초속 로딩] YouTube 서버 사전 연결
         const preconnects = [
@@ -7538,7 +7548,7 @@ export default function App() {
                                                                     .map(p => p.trim())
                                                                     .filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
                                                                 if (isIOS) {
-                                                                    alert('⚠️ 아이폰 안내\n\n아이폰(iOS)은 보안 정책상 브라우저에서 단체 문자를 여는 기능을 제한하고 있습니다.\n\n옆의 [📋 번호복사] 버튼을 눌러 번호를 복사하신 후, 메시지 앱의 "받는 사람" 칸에 직접 붙여넣어 전송해 주세요.');
+                                                                    alert('⚠️ 아이폰(iOS) 단체문자 제한 안내\n\n아이폰은 보안 정책상 브라우저에서의 단체 문자 자동 전송을 지원하지 않습니다.\n\n대신 옆의 [📋 번호복사] 버튼을 눌러 번호를 복사하신 후, 메시지 앱의 "받는 사람" 칸에 "붙여넣기" 하여 전송해 주세요.\n\n(참고: 안드로이드는 자동 전송이 정상 지원됩니다.)');
                                                                     return;
                                                                 }
 
@@ -9078,7 +9088,43 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                         </div>
                     </div>
                 )}
+
+                {/* ✅ 맨 위로 가기 버튼 (성도 검색 등 긴 페이지용) */}
+                {showScrollTop && (
+                    <button
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                        style={{
+                            position: 'fixed',
+                            bottom: '100px',
+                            right: '25px',
+                            width: '50px',
+                            height: '50px',
+                            borderRadius: '50%',
+                            background: 'white',
+                            color: '#B8924A',
+                            border: '1px solid #F0ECE4',
+                            boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '24px',
+                            fontWeight: 900,
+                            zIndex: 9999,
+                            cursor: 'pointer',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            animation: 'fade-in-up 0.4s ease-out'
+                        }}
+                    >
+                        ↑
+                        <style>{`
+                            @keyframes fade-in-up {
+                                from { opacity: 0; transform: translateY(20px); }
+                                to { opacity: 1; transform: translateY(0); }
+                            }
+                        `}</style>
+                    </button>
+                )}
             </div>
-        </div >
+        </div>
     );
 }
