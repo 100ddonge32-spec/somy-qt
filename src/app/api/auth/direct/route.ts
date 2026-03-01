@@ -136,14 +136,19 @@ export async function POST(req: NextRequest) {
                 church_id: match.church_id || 'jesus-in'
             });
         } else {
-            // [보안 지침] 이름('백동희')만으로 슈퍼관리자 권한을 부여하지 않음 (카카오 로그인 전용)
-            // 매칭 정보가 없을 경우, 일단 비승인 상태로 프로필만 생성합니다.
+            // [추가] '성도', '사용자' 처럼 너무 일반적인 이름은 입력을 막음
+            const genericNames = ['성도', '이름 없음', '이름미입력', '사용자', '큐티', 'somy', '.', ''];
+            if (genericNames.includes(name.trim())) {
+                return NextResponse.json({ error: '정확한 성함을 입력해 주세요.' }, { status: 400 });
+            }
+
+            // 매칭 정보가 없을 경우, 일단 신규 가입으로 간주하고 자동 승인 처리합니다. (관리자 요청)
             await supabaseAdmin.from('profiles').upsert({
                 id: user_id,
                 full_name: name,
                 phone: phoneTail.length > 4 ? phoneTail : `(미인증)${phoneTail}`,
                 birthdate: birthdate || null,
-                is_approved: false,
+                is_approved: true, // [변경] 자동 승인
                 church_id: 'jesus-in',
                 email: `${user_id}@anonymous.local`
             });

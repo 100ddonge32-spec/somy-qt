@@ -735,7 +735,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true });
         }
 
-        // [추가] 미인증 유저(업로드 전용 가계정)를 일괄 승인 완료 상태로 전환
+        // [추가] 모든 미인증/신규 유저(가계정, 카카오 신규, 익명 등)를 일괄 승인 완료 상태로 전환
         if (action === 'bulk_approve_unverified') {
             const { church_id } = body;
             const targetChurchId = church_id || 'jesus-in';
@@ -744,7 +744,8 @@ export async function POST(req: NextRequest) {
                 .from('profiles')
                 .select('id')
                 .eq('church_id', targetChurchId)
-                .or('email.ilike.%@church.local,email.ilike.%@noemail.local');
+                .or('email.ilike.%@church.local,email.ilike.%@noemail.local,email.ilike.%@anonymous.local,email.ilike.%@kakao.somy-qt.local')
+                .eq('is_approved', false);
 
             if (fetchErr) throw fetchErr;
 
@@ -757,6 +758,34 @@ export async function POST(req: NextRequest) {
 
                 if (updateErr) throw updateErr;
                 return NextResponse.json({ success: true, count: targetIds.length });
+            }
+            return NextResponse.json({ success: true, count: 0 });
+        }
+
+        // [추가] '성도', '사용자' 처럼 이름이 성의 없는 유령 계정들 일괄 삭제
+        if (action === 'delete_junk_members') {
+            const { church_id } = body;
+            const targetChurchId = church_id || 'jesus-in';
+            const junkNames = ['성도', '이름 없음', '이름미입력', '사용자', '큐티', 'somy', '.', ''];
+
+            const { data: targets, error: fetchErr } = await supabaseAdmin
+                .from('profiles')
+                .select('id, full_name')
+                .eq('church_id', targetChurchId);
+
+            if (fetchErr) throw fetchErr;
+
+            const junkIds = (targets || [])
+                .filter(m => !m.full_name || junkNames.includes(m.full_name.trim()))
+                .map(m => m.id);
+
+            if (junkIds.length > 0) {
+                const { error: delErr } = await supabaseAdmin
+                    .from('profiles')
+                    .delete()
+                    .in('id', junkIds);
+                if (delErr) throw delErr;
+                return NextResponse.json({ success: true, count: junkIds.length });
             }
             return NextResponse.json({ success: true, count: 0 });
         }

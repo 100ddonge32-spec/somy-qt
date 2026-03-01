@@ -153,7 +153,7 @@ export async function GET(req: NextRequest) {
                         avatar_url: profileImage,
                         email: syntheticEmail,
                         church_id: 'jesus-in',
-                        is_approved: false,
+                        is_approved: true, // [변경] 신규 유저도 즉시 승인 처리 (관리자 요청)
                     });
                 }
             }

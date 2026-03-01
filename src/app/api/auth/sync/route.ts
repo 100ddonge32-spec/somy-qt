@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
                 gender: match.gender || profileById?.gender,
                 avatar_url: finalAvatar,
                 church_id: match.church_id || profileById?.church_id || 'jesus-in',
-                is_approved: match.is_approved || profileById?.is_approved || IS_BOSS || true // 매칭된 계정은 승인된 걸로 간주
+                is_approved: match.is_approved || profileById?.is_approved || IS_BOSS || true // 매칭된 계정은 즉시 승인 (이미 명단에 있는 분)
             };
 
             if (profileById) {
@@ -185,7 +185,7 @@ export async function POST(req: NextRequest) {
             birthdate: profileById?.birthdate || rawBirth,
             avatar_url: profileById?.avatar_url || rawAvatar,
             church_id: profileById?.church_id || 'jesus-in',
-            is_approved: profileById?.is_approved || isAdminMember || false
+            is_approved: profileById?.is_approved || isAdminMember || true  // [변경] 승인 대기 단계 없이 바로 승인 (관리자 요청)
         };
 
         if (profileById) {
@@ -196,7 +196,7 @@ export async function POST(req: NextRequest) {
                 email.includes('anonymous.local') ||
                 email.includes('noemail.local') ||
                 email.includes('kakao.somy-qt.local');
-            const hasRealInfo = (rawName && !isSystemGeneratedName) || (rawPhone && rawPhone.length > 5);
+            const hasRealInfo = (rawName && !isSystemGeneratedName && !genericNames.includes(rawName)) || (rawPhone && rawPhone.length > 5);
             if (isAnonymous && !hasRealInfo) {
                 console.log(`[Sync] Skipping profile creation for generic/anonymous user: ${email}`);
                 return NextResponse.json({ status: 'visitor', is_approved: false, church_id: 'jesus-in' });
