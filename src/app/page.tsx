@@ -1168,6 +1168,25 @@ export default function App() {
                         }
                     }
                 } else {
+                    // [추가] 데모 버전일 경우 초기 데이터 자동 생성 호출
+                    if (cId === 'demo') {
+                        try {
+                            await fetch('/api/admin', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ action: 'seed_demo', church_id: 'demo' })
+                            });
+                            // 생성 후 다시 로드 시도
+                            const retry = await fetch(`/api/settings?church_id=demo`, { cache: 'no-store' });
+                            const { settings: demoData } = await retry.json();
+                            if (demoData) {
+                                setChurchSettings(demoData);
+                                setSettingsForm(demoData);
+                                return;
+                            }
+                        } catch (e) { console.error("데모 세팅 자동 생성 실패", e); }
+                    }
+
                     // [추가] 교회 설정이 없으면 기존 스테이트 초기화 (다른 교회 정보 유출 방지)
                     const blank = {
                         church_name: CHURCH_NAME,
@@ -2190,12 +2209,19 @@ export default function App() {
                         marginBottom: "20px",
                         animation: "fade-in 0.8s ease-out"
                     }}>
-                        {churchId && churchSettings.church_logo_url ? (
-                            <img src={churchSettings.church_logo_url} alt={`${churchSettings.church_name} 로고`} style={{ height: "45px", objectFit: "contain" }} />
-                        ) : (
-                            <div style={{ fontSize: '24px', fontWeight: 900, color: '#333' }}>{churchId ? churchSettings.church_name : ''}</div>
-                        )}
-                        <div style={{ fontSize: "12px", color: "#666", letterSpacing: "1px", fontWeight: 700 }}>홈페이지</div>
+                        <div style={{ position: 'relative' }}>
+                            {churchId && churchSettings.church_logo_url ? (
+                                <img src={churchSettings.church_logo_url} alt={`${churchSettings.church_name} 로고`} style={{ height: "45px", objectFit: "contain" }} />
+                            ) : (
+                                <div style={{ fontSize: '24px', fontWeight: 900, color: '#333' }}>{churchId ? churchSettings.church_name : ''}</div>
+                            )}
+                            {churchId === 'demo' && (
+                                <div style={{ position: 'absolute', top: '-10px', right: '-30px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '2px 6px', borderRadius: '6px', boxShadow: '0 2px 5px rgba(255,61,0,0.3)' }}>DEMO</div>
+                            )}
+                        </div>
+                        <div style={{ fontSize: "12px", color: churchId === 'demo' ? "#B8924A" : "#666", letterSpacing: "1px", fontWeight: 700 }}>
+                            {churchId === 'demo' ? "✨ 데모 모드 (체험 중)" : "홈페이지"}
+                        </div>
                     </a>
                     {/* Action Buttons을 최상단으로 옮김 */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%", maxWidth: "340px", animation: "fade-in 1.4s ease-out", paddingBottom: "20px" }}>
@@ -2257,6 +2283,30 @@ export default function App() {
                                     >
                                         {isDirectLoggingIn ? '정보 확인 중...' : '교인 정보로 바로 시작하기'}
                                     </button>
+
+                                    <div style={{ marginTop: '20px', borderTop: '1px dashed #EEE', paddingTop: '20px' }}>
+                                        <div style={{ fontSize: '13px', color: '#999', marginBottom: '12px' }}>또는 관리자/성도 기능을 미리 체험해보세요</div>
+                                        <button
+                                            onClick={() => {
+                                                setChurchId('demo');
+                                                setView('home');
+                                            }}
+                                            style={{
+                                                width: '100%',
+                                                padding: '14px',
+                                                background: 'white',
+                                                color: '#B8924A',
+                                                border: '2px solid #F0ECE4',
+                                                borderRadius: '16px',
+                                                fontSize: '14px',
+                                                fontWeight: 800,
+                                                cursor: 'pointer',
+                                                boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                                                transition: 'all 0.2s'
+                                            }}>
+                                            ✨ 데모 버전 체험하기
+                                        </button>
+                                    </div>
 
                                     {/* [보안 강화] 슈퍼관리자 및 공식 관리자 전용 입구 */}
                                     <div style={{ margin: '20px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>

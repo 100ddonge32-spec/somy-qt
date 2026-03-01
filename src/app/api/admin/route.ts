@@ -921,6 +921,41 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true });
         }
 
+        // [추가] 데모 초기 데이터 세팅
+        if (action === 'seed_demo') {
+            const { church_id } = body;
+            if (church_id !== 'demo') throw new Error('데모 전용 기능입니다.');
+
+            // 1. 데모 교회 기본 설정 생성 (onConflict로 이미 있으면 수정만)
+            await supabaseAdmin.from('church_settings').upsert({
+                church_id: 'demo',
+                church_name: '⛪ 소미 데모교회',
+                app_subtitle: '모든 교회를 위한 따뜻한 동반자 (데모 버전)',
+                church_logo_url: '/somy.png',
+                church_url: 'https://google.com',
+                plan: 'premium',
+                community_visible: true,
+                allow_member_edit: true,
+                sermon_url: 'UC_MIn7PmxkKIDW6xX6Z4Vng',
+                sermon_summary: '데모 버전에 오신 것을 환영합니다! \n이곳에서 성도님들의 영적 성장을 돕는 모든 기능을 체험해보세요.',
+                sermon_q1: '오늘 설교에서 가장 인상 깊었던 내용은 무엇인가요?',
+                sermon_q2: '이번 주 한 주 동안 실천하고 싶은 한 가지는?',
+                sermon_q3: '교회 공동체를 위해 함께 기도할 제목을 적어보세요.',
+                pastor_column_title: '🙏 오늘의 목양 메시지',
+                pastor_column_content: '반갑습니다! 소미 QT 데모를 통해 우리 교회가 누릴 수 있는 풍성한 은혜를 미리 경험해보시길 바랍니다.'
+            }, { onConflict: 'church_id' });
+
+            // 2. 데모용 공지사항 추가 (중복 방지)
+            const { count } = await supabaseAdmin.from('announcements').select('id', { count: 'exact', head: true }).eq('church_id', 'demo');
+            if (!count) {
+                await supabaseAdmin.from('announcements').insert([
+                    { church_id: 'demo', title: '데모 버전 이용 가이드 📖', content: '관리자 센터 버튼을 눌러보세요. 교회의 이름과 설교 영상을 직접 바꿔보며 우리 교회만의 앱을 디자인할 수 있습니다.', author_name: '소미 관리자' }
+                ]);
+            }
+
+            return NextResponse.json({ success: true });
+        }
+
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
