@@ -140,6 +140,11 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: "church_id가 유효하지 않습니다." }, { status: 400 });
     }
 
+    // [보안] jesus-in이나 정식 교회 설정에 트라이얼 정보가 덮어씌워지는 것 방지
+    if (targetChurchId === 'jesus-in' && (plan?.startsWith('trial') || church_name?.includes('(체험판)'))) {
+        return NextResponse.json({ success: false, error: "메인 교회 설정에 체험판 정보를 저장할 수 없습니다." }, { status: 403 });
+    }
+
     // ✅ 기존 정보를 먼저 조회하여 체험판 정보가 있으면 보존 (김부장 방식 유지)
     const { data: currentSettings } = await supabaseAdmin
         .from('church_settings')

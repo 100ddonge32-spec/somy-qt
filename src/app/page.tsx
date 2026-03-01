@@ -975,7 +975,14 @@ export default function App() {
                 if (syncRes.ok) {
                     const syncData = await syncRes.json();
                     setIsApproved(!!syncData.is_approved);
-                    if (syncData.church_id) setChurchId(syncData.church_id);
+                    if (syncData.church_id) {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id');
+                        if (!hasSpecificChurchUrl) {
+                            setChurchId(syncData.church_id);
+                            localStorage.setItem('church_id', syncData.church_id);
+                        }
+                    }
 
                     const sName = syncData.full_name || syncData.name;
                     if (sName && sName !== '성도' && sName !== '이름 없음' && sName !== '.') {
@@ -998,7 +1005,14 @@ export default function App() {
 
             // 프로필이 있을 때 상태 업데이트
             setIsApproved(!!data.is_approved);
-            if (data.church_id) setChurchId(data.church_id);
+            if (data.church_id) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id');
+                if (!hasSpecificChurchUrl) {
+                    setChurchId(data.church_id);
+                    localStorage.setItem('church_id', data.church_id);
+                }
+            }
             if (data.full_name && data.full_name !== '이름 없음' && data.full_name !== '.') {
                 setProfileName(data.full_name);
             }
