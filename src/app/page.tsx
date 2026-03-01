@@ -2314,7 +2314,7 @@ export default function App() {
                         <div style={{ fontSize: "12px", color: (churchId === 'demo' || (churchId && churchId.startsWith('trial-'))) ? "#B8924A" : "#666", letterSpacing: "1px", fontWeight: 700 }}>
                             {churchId === 'demo' ? "✨ 데모 모드 (공식 샘플)" : (churchId && churchId.startsWith('trial-') ? "✨ 체험 중 (개별 체험판)" : "홈페이지")}
                         </div>
-                        {churchSettings.trial_expires_at && (
+                        {churchId && churchId.startsWith('trial-') && churchSettings.trial_expires_at && (
                             <div style={{
                                 fontSize: '11px',
                                 color: '#FF3D00',

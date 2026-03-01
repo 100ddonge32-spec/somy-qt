@@ -90,8 +90,8 @@ export async function GET(req: NextRequest) {
             if (match) data.sermon_q2 = decodeURIComponent(match[1]);
         }
         if (data.plan) {
-            // [트라이얼 체크] 만료일 및 사용량 파싱
-            if (planStr.includes('trial')) {
+            // [트라이얼 체크] 만료일 및 사용량 파싱 (이름이 'trial'로 시작하는 경우에만)
+            if (planStr.startsWith('trial')) {
                 const expireMatch = planStr.match(/expires:([^|]+)/);
                 const usageMatch = planStr.match(/usage:([^|]+)/);
                 const limitMatch = planStr.match(/limit:([^|]+)/);
