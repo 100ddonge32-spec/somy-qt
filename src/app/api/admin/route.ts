@@ -921,7 +921,59 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true });
         }
 
-        // [추가] 데모 초기 데이터 세팅
+        // [추가] 고유 트라이얼(Trial) 교회 생성
+        if (action === 'create_trial') {
+            const { user_id, email, name } = body;
+            if (!user_id) throw new Error('사용자 ID가 필요합니다.');
+
+            // 1. 고유한 Trial Church ID 생성 (예: trial-ABCD)
+            const randomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+            const trialChurchId = `trial-${randomCode}`;
+            const trialChurchName = `${name || '새'} 교회 (체험판)`;
+
+            // 2. 교회 기본 설정 생성
+            await supabaseAdmin.from('church_settings').upsert({
+                church_id: trialChurchId,
+                church_name: trialChurchName,
+                app_subtitle: '함께 성장하는 영적 공동체 (체험판)',
+                church_logo_url: '/somy.png',
+                plan: 'premium',
+                community_visible: true,
+                allow_member_edit: true,
+                sermon_url: 'UC_MIn7PmxkKIDW6xX6Z4Vng', // 기본 샘플 영상
+                sermon_summary: '새로운 교회의 시작을 축하드립니다! \n관리자 센터에서 교회의 이름과 설교 영상을 직접 바꿔보세요.',
+                pastor_column_title: '🙏 시작하는 메시지',
+                pastor_column_content: '소미와 함께 우리 교회만의 디지털 공간을 만들어가보세요.'
+            });
+
+            // 3. 사용자 즉시 관리자로 등록
+            if (email) {
+                await supabaseAdmin.from('app_admins').upsert({
+                    email: email.toLowerCase().trim(),
+                    user_id: user_id,
+                    role: 'admin',
+                    church_id: trialChurchId
+                }, { onConflict: 'email' });
+            }
+
+            // 4. 프로필 즉시 승인 처리
+            await supabaseAdmin.from('profiles').upsert({
+                id: user_id,
+                full_name: name || '트라이얼 관리자',
+                email: email,
+                church_id: trialChurchId,
+                is_approved: true
+            });
+
+            // 5. 샘플 공지사항 1개 추가
+            await supabaseAdmin.from('announcements').insert([
+                { church_id: trialChurchId, title: '트라이얼 시작을 환영합니다! 🎉', content: '관리자 센터에서는 교회의 성도 명단을 업로드하고, 공지사항을 등록하며, 큐티왕 통계를 관리할 수 있습니다.', author_name: '소미 도우미' }
+            ]);
+
+            return NextResponse.json({ success: true, church_id: trialChurchId });
+        }
+
+        // [기존] 데모 초기 데이터 세팅
         if (action === 'seed_demo') {
             const { church_id } = body;
             if (church_id !== 'demo') throw new Error('데모 전용 기능입니다.');

@@ -1349,14 +1349,20 @@ export default function App() {
     useEffect(() => {
         setIsMounted(true);
 
-        // ✅ URL 파라미터에서 교회 ID 읽어오기 (?church=교회ID)
+        // ✅ URL 파라미터 또는 localStorage에서 교회 ID 읽어오기
         const params = new URLSearchParams(window.location.search);
-        const churchFromUrl = params.get('church');
+        const churchFromUrl = params.get('church') || params.get('church_id');
+        const churchFromLocal = typeof window !== 'undefined' ? localStorage.getItem('church_id') : null;
+
         if (churchFromUrl) {
             setChurchId(churchFromUrl);
+            localStorage.setItem('church_id', churchFromUrl);
             console.log(`[Initialize] Church set from URL: ${churchFromUrl}`);
+        } else if (churchFromLocal) {
+            setChurchId(churchFromLocal);
+            console.log(`[Initialize] Church set from LocalStorage: ${churchFromLocal}`);
         } else {
-            // [복구] 명시적 교회 지정이 없으면 기본적으로 'jesus-in' 설정
+            // 기본값
             setChurchId('jesus-in');
         }
 
@@ -1632,6 +1638,44 @@ export default function App() {
             console.error("[Login Error]", err);
             const msg = err.message || "알 수 없는 오류가 발생했습니다.";
             alert(`로그인 중 문제가 발생했습니다.\n\n${msg}\n\n⚙️ 개발자 참고: 서버 환경변수(익명 로그인, Service Role Key) 설정을 확인하세요.`);
+        } finally {
+            setIsDirectLoggingIn(false);
+        }
+    };
+
+    // [추가] 고유 트라이얼(체험용) 교회 생성 및 진입
+    const handleTrialCreation = async () => {
+        if (!user?.id) {
+            alert("인증 정보가 없습니다. 잠시 후 다시 시도해 주세요.");
+            return;
+        }
+
+        setIsDirectLoggingIn(true);
+        try {
+            const res = await fetch('/api/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'create_trial',
+                    user_id: user.id,
+                    email: user.email,
+                    name: '체험용 관리자'
+                })
+            });
+
+            const result = await res.json();
+            if (res.ok && result.success) {
+                localStorage.setItem('church_id', result.church_id); // 영구 저장
+                setChurchId(result.church_id);
+                setIsApproved(true);
+                setProfileName('체험용 관리자');
+                // 즉시 진입을 위해 강제 리로드
+                window.location.href = `/?church_id=${result.church_id}`;
+            } else {
+                throw new Error(result.error || "트라이얼 생성 중 오류가 발생했습니다.");
+            }
+        } catch (err: any) {
+            alert("트라이얼 생성 실패: " + err.message);
         } finally {
             setIsDirectLoggingIn(false);
         }
@@ -2245,12 +2289,12 @@ export default function App() {
                             ) : (
                                 <div style={{ fontSize: '24px', fontWeight: 900, color: '#333' }}>{churchId ? churchSettings.church_name : ''}</div>
                             )}
-                            {churchId === 'demo' && (
-                                <div style={{ position: 'absolute', top: '-10px', right: '-30px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '2px 6px', borderRadius: '6px', boxShadow: '0 2px 5px rgba(255,61,0,0.3)' }}>DEMO</div>
+                            {(churchId === 'demo' || (churchId && churchId.startsWith('trial-'))) && (
+                                <div style={{ position: 'absolute', top: '-10px', right: '-30px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '2px 6px', borderRadius: '6px', boxShadow: '0 2px 5px rgba(255,61,0,0.3)' }}>{churchId === 'demo' ? 'DEMO' : 'TRIAL'}</div>
                             )}
                         </div>
-                        <div style={{ fontSize: "12px", color: churchId === 'demo' ? "#B8924A" : "#666", letterSpacing: "1px", fontWeight: 700 }}>
-                            {churchId === 'demo' ? "✨ 데모 모드 (체험 중)" : "홈페이지"}
+                        <div style={{ fontSize: "12px", color: (churchId === 'demo' || (churchId && churchId.startsWith('trial-'))) ? "#B8924A" : "#666", letterSpacing: "1px", fontWeight: 700 }}>
+                            {churchId === 'demo' ? "✨ 데모 모드 (공식 샘플)" : (churchId && churchId.startsWith('trial-') ? "✨ 체험 중 (개별 체험판)" : "홈페이지")}
                         </div>
                     </a>
                     {/* Action Buttons을 최상단으로 옮김 */}
@@ -2315,7 +2359,25 @@ export default function App() {
                                     </button>
 
                                     <div style={{ marginTop: '20px', borderTop: '1px dashed #EEE', paddingTop: '20px' }}>
-                                        <div style={{ fontSize: '13px', color: '#999', marginBottom: '12px' }}>또는 관리자/성도 기능을 미리 체험해보세요</div>
+                                        <div style={{ fontSize: '13px', color: '#999', marginBottom: '12px' }}>타교회 관리자이신가요? 1초 만에 개인 체험판을 만드세요</div>
+                                        <button
+                                            onClick={handleTrialCreation}
+                                            disabled={isDirectLoggingIn}
+                                            style={{
+                                                width: '100%',
+                                                padding: '16px',
+                                                background: 'linear-gradient(135deg, #333 0%, #000 100%)',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '16px',
+                                                fontSize: '15px',
+                                                fontWeight: 800,
+                                                cursor: 'pointer',
+                                                boxShadow: '0 8px 16px rgba(0,0,0,0.15)',
+                                                marginBottom: '10px'
+                                            }}>
+                                            {isDirectLoggingIn ? '🛠️ 전용 체험판 생성 중...' : '🚀 나만의 교회 체험판 만들기'}
+                                        </button>
                                         <button
                                             onClick={() => {
                                                 setChurchId('demo');
@@ -2323,18 +2385,16 @@ export default function App() {
                                             }}
                                             style={{
                                                 width: '100%',
-                                                padding: '14px',
+                                                padding: '12px',
                                                 background: 'white',
                                                 color: '#B8924A',
-                                                border: '2px solid #F0ECE4',
-                                                borderRadius: '16px',
-                                                fontSize: '14px',
-                                                fontWeight: 800,
-                                                cursor: 'pointer',
-                                                boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
-                                                transition: 'all 0.2s'
+                                                border: '1px solid #F0ECE4',
+                                                borderRadius: '14px',
+                                                fontSize: '13px',
+                                                fontWeight: 700,
+                                                cursor: 'pointer'
                                             }}>
-                                            ✨ 데모 버전 체험하기
+                                            ✨ 소미 공식 데모 둘러보기
                                         </button>
                                     </div>
 
