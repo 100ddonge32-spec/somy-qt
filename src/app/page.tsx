@@ -939,18 +939,30 @@ export default function App() {
                 .single();
 
             if (error || !data) {
-                console.log("프로필 없음, 동기화 시도...");
-                // 메타데이터에서 가능한 경우 연락처/생일 추출
+                const metaName = user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.nickname || user.user_metadata?.display_name || user.user_metadata?.user_name || '';
                 const metaPhone = user.phone || user.user_metadata?.phone || user.user_metadata?.phone_number || user.user_metadata?.mobile || '';
                 const metaBirth = user.user_metadata?.birth || user.user_metadata?.birthdate || '';
+                const isKakaoUser = user.email?.includes('kakao.somy-qt.local');
+                const isAnonymousUser = !user.email || user.email.includes('anonymous.local') || user.is_anonymous;
 
+                // ★ 핵심: 이름도 전화도 없는 익명 사용자는 sync 호출 차단
+                // → '성도'라는 이름의 유령 계정이 생성되는 본질적 원인 해결
+                const hasRealInfo = (metaName && metaName.length >= 2) || (metaPhone && metaPhone.length > 5);
+                if (isAnonymousUser && !hasRealInfo && !isKakaoUser) {
+                    console.log("[checkApprovalStatus] 익명+정보없음 → 로그인 화면 유지 (프로필 미생성)");
+                    setIsApproved(false);
+                    setShowVerification(true);
+                    return;
+                }
+
+                console.log("프로필 없음, 동기화 시도...");
                 const syncRes = await fetch(`/api/auth/sync?t=${cacheBuster}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         user_id: user.id,
                         email: user.email,
-                        name: user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.nickname || user.user_metadata?.display_name || user.user_metadata?.user_name || '',
+                        name: metaName,
                         avatar_url: user.user_metadata?.avatar_url,
                         phone: metaPhone,
                         birthdate: metaBirth
@@ -964,16 +976,15 @@ export default function App() {
                     const sName = syncData.full_name || syncData.name;
                     if (sName && sName !== '성도' && sName !== '이름 없음' && sName !== '.') {
                         setProfileName(sName);
-                    } else if (user.user_metadata?.full_name || user.user_metadata?.name) {
-                        const mName = user.user_metadata.full_name || user.user_metadata.name;
-                        if (mName !== '성도') setProfileName(mName);
+                    } else if (metaName && metaName !== '성도') {
+                        setProfileName(metaName);
                     }
 
                     if (syncData.avatar_url) setProfileAvatar(syncData.avatar_url);
                     else if (user.user_metadata?.avatar_url) setProfileAvatar(user.user_metadata.avatar_url);
 
                     if (syncData.birthdate) setProfileBirthdate(syncData.birthdate);
-                    if (syncData.status === 'visitor') {
+                    if (syncData.status === 'visitor' || !syncData.is_approved) {
                         setShowVerification(true);
                     }
                     if (syncData.is_approved) subscribePush(user.id);
