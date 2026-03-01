@@ -7562,9 +7562,10 @@ export default function App() {
                                                                         .map(m => m.phone.replace(/[^0-9]/g, ''));
                                                                     if (targetPhones.length === 0) { alert('선택된 성도 중 전화번호가 등록된 분이 없습니다.'); return; }
                                                                     const uniquePhones = targetPhones.filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
-                                                                    // [아이폰 붙여넣기 최적화] 콤마(,) 대신 공백(' ')을 구분자로 사용하면 아이폰 메시지 앱에서 각각의 수신인으로 자동 변환될 확률이 높습니다.
-                                                                    navigator.clipboard.writeText(uniquePhones.join(' '));
-                                                                    alert('번호가 복사되었습니다! ✨\n\n[아이폰 단체문자 안내]\n메시지 앱의 수신인 칸에 붙여넣기 한 뒤,\n키보드의 "엔터"나 "줄바꿈"을 눌러주시면\n모든 번호가 정상적으로 입력됩니다!');
+                                                                    // [아이폰/맥북 붙여넣기 최종 최적화] 콤마와 공백(, ) 조합이 애플 기기에서 가장 수신인을 잘 구분합니다.
+                                                                    const textToCopy = uniquePhones.join(', ');
+                                                                    navigator.clipboard.writeText(textToCopy);
+                                                                    alert('번호가 복사되었습니다! ✨\n\n[아이폰 단체문자 팁]\n메시지 앱의 수신인 칸에 "붙여넣기" 한 뒤,\n키보드의 "엔터(Return)" 키를 눌러주시면\n모든 번호가 각각의 수신인으로 한꺼번에 등록됩니다!');
                                                                 }}
                                                                 style={{
                                                                     flex: 1, height: '48px', background: '#FFFFFF', color: '#555', border: '1px solid #E5E5E5', borderRadius: '14px', fontSize: '13px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s', boxShadow: '0 4px 6px rgba(0,0,0,0.02)'
@@ -8780,8 +8781,8 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                                     if (phones.length === 0) return;
                                     const uniquePhones = phones.filter((v, i, a) => v.length > 0 && a.indexOf(v) === i);
 
-                                    // [아이폰 붙여넣기 최적화] 콤마(,) 대신 공백(' ')을 구분자로 사용하면 아이폰 메시지 앱에서 수신인 인식이 훨씬 잘 됩니다.
-                                    const textToCopy = uniquePhones.join(' ');
+                                    // [아이폰/맥북 붙여넣기 최종 최적화] 01012345678, 01056781234 형식이 수신인 대량 인식이 가장 잘 됩니다.
+                                    const textToCopy = uniquePhones.join(', ');
 
                                     const textArea = document.createElement("textarea");
                                     textArea.value = textToCopy;
