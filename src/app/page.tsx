@@ -6002,48 +6002,64 @@ export default function App() {
                     <h2 style={{ fontSize: '24px', fontWeight: 900, textAlign: 'center', marginBottom: '40px' }}>미리 만나는 소미 에코시스템</h2>
                     <div className="preview-flex" style={{ display: 'flex', gap: '30px', justifyContent: 'center' }}>
                         {/* 홈 화면 모형 */}
-                        <div style={{ width: '240px', height: '440px', background: '#FEF0D8', border: '8px solid #333', borderRadius: '36px', overflow: 'hidden', position: 'relative', boxShadow: '0 20px 50px rgba(0,0,0,0.1)' }}>
+                        <div style={{ width: '240px', height: '440px', background: 'linear-gradient(180deg, #FFF8F0 0%, #FEF0D8 100%)', border: '8px solid #333', borderRadius: '36px', overflow: 'hidden', position: 'relative', boxShadow: '0 20px 50px rgba(0,0,0,0.1)' }}>
                             {/* 상단바 */}
-                            <div style={{ padding: '35px 15px 10px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'white', border: '1px solid #D4AF37', overflow: 'hidden' }}>
+                            <div style={{ padding: '30px 15px 5px', display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'white', border: '1px solid #D4AF37', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
                                     <img src={SOMY_IMG} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                                 </div>
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'white', border: '1px solid #EEE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#666', fontWeight: 800 }}>Aa</div>
                             </div>
 
-                            <div style={{ padding: '0 15px' }}>
+                            <div style={{ padding: '0 12px' }}>
                                 {/* 공지사항 모형 */}
-                                <div style={{ background: 'linear-gradient(135deg, #2C3E50 0%, #3498DB 100%)', height: '36px', borderRadius: '12px', marginBottom: '10px', display: 'flex', alignItems: 'center', padding: '0 10px' }}>
-                                    <div style={{ width: '12px', height: '12px', background: 'white', borderRadius: '50%', opacity: 0.8 }} />
-                                    <div style={{ width: '60%', height: '6px', background: 'white', opacity: 0.3, marginLeft: '8px', borderRadius: '3px' }} />
+                                <div style={{ background: 'linear-gradient(135deg, #2C3E50 0%, #3498DB 100%)', height: '32px', borderRadius: '10px', marginBottom: '10px', display: 'flex', alignItems: 'center', padding: '0 10px', boxShadow: '0 4px 10px rgba(52, 152, 219, 0.2)' }}>
+                                    <span style={{ fontSize: '12px', marginRight: '6px' }}>📢</span>
+                                    <div style={{ width: '60%', height: '4px', background: 'white', opacity: 0.5, borderRadius: '2px' }} />
                                 </div>
 
                                 {/* 메인 2x2 그리드 */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                                    <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #EEE', padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                        <div style={{ width: '16px', height: '16px', background: '#F5F5F3', borderRadius: '4px' }} />
-                                        <div style={{ width: '80%', height: '6px', background: '#EEE', borderRadius: '3px' }} />
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                                    <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #F0F8F8', padding: '8px', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}>
+                                        <div style={{ width: '18px', height: '18px', borderRadius: '4px', border: '1px solid #EEE', overflow: 'hidden', flexShrink: 0 }}>
+                                            <img src={SOMY_IMG} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                                        </div>
+                                        <div style={{ fontSize: '8px', fontWeight: 900, color: '#1A5D55', transform: 'scale(0.85)', transformOrigin: 'left' }}>AI소미 대화</div>
                                     </div>
-                                    <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #EEE', padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                        <div style={{ width: '16px', height: '16px', background: '#FFFBEA', borderRadius: '4px' }} />
-                                        <div style={{ width: '80%', height: '6px', background: '#EEE', borderRadius: '3px' }} />
+                                    <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #FFFBEA', padding: '8px', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}>
+                                        <div style={{ fontSize: '12px', flexShrink: 0 }}>📖</div>
+                                        <div style={{ fontSize: '8px', fontWeight: 900, color: '#8E754C', transform: 'scale(0.85)', transformOrigin: 'left' }}>오늘의 큐티</div>
                                     </div>
-                                    <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #EEE', padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                        <div style={{ width: '16px', height: '16px', background: '#FFF0F5', borderRadius: '4px' }} />
-                                        <div style={{ width: '80%', height: '6px', background: '#EEE', borderRadius: '3px' }} />
+                                    <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #FFF0F5', padding: '8px', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}>
+                                        <div style={{ fontSize: '12px', flexShrink: 0 }}>💌</div>
+                                        <div style={{ fontSize: '8px', fontWeight: 900, color: '#9E2A5B', transform: 'scale(0.85)', transformOrigin: 'left' }}>은혜나눔</div>
                                     </div>
-                                    <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #EEE', padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                        <div style={{ width: '16px', height: '16px', background: '#FFF6E5', borderRadius: '4px' }} />
-                                        <div style={{ width: '80%', height: '6px', background: '#EEE', borderRadius: '3px' }} />
+                                    <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #FFF6E5', padding: '8px', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}>
+                                        <div style={{ fontSize: '12px', flexShrink: 0 }}>🌻</div>
+                                        <div style={{ fontSize: '8px', fontWeight: 900, color: '#E07A5F', transform: 'scale(0.85)', transformOrigin: 'left' }}>감사일기</div>
                                     </div>
                                 </div>
 
                                 {/* 하단 카드 2열 */}
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '8px' }}>
-                                    <div style={{ height: '80px', background: 'rgba(255,255,255,0.7)', borderRadius: '18px', border: '1px solid #F0ECE4' }} />
-                                    <div style={{ height: '80px', background: 'rgba(255,255,255,0.7)', borderRadius: '18px', border: '1px solid #F0ECE4' }} />
+                                    <div style={{ height: '70px', background: 'white', borderRadius: '16px', border: '1px solid #F0ECE4', padding: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                                        <div style={{ width: '20px', height: '28px', background: '#F5F5F3', borderRadius: '3px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+                                            <div style={{ width: '100%', height: '100%', background: '#EEE', opacity: 0.5 }} />
+                                        </div>
+                                        <div style={{ fontSize: '7px', fontWeight: 800, color: '#D4AF37', textAlign: 'center' }}>이달의 도서</div>
+                                    </div>
+                                    <div style={{ height: '70px', background: 'white', borderRadius: '16px', border: '1px solid #F0ECE4', padding: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                                        <div style={{ fontSize: '16px' }}>⛪</div>
+                                        <div style={{ fontSize: '7px', fontWeight: 800, color: '#333', textAlign: 'center' }}>목사님 칼럼</div>
+                                    </div>
+                                </div>
+
+                                {/* 배너 모형 */}
+                                <div style={{ marginTop: '10px', height: '40px', background: 'rgba(255,255,255,0.6)', borderRadius: '14px', border: '1px dotted #D4AF37', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#D4AF37', fontWeight: 700 }}>
+                                    AD BANNER PREVIEW
                                 </div>
                             </div>
-                            <div style={{ position: 'absolute', bottom: '15px', left: '50%', transform: 'translateX(-50%)', width: '40px', height: '4px', background: '#333', borderRadius: '2px' }} />
+                            <div style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', width: '35px', height: '3px', background: '#333', borderRadius: '1.5px' }} />
                         </div>
                         {/* 큐티 화면 모형 */}
                         <div style={{ width: '240px', height: '440px', background: 'white', border: '8px solid #333', borderRadius: '36px', overflow: 'hidden', position: 'relative', boxShadow: '0 20px 50px rgba(0,0,0,0.1)' }}>
