@@ -1167,6 +1167,24 @@ export default function App() {
                             setShowEventPopup(true);
                         }
                     }
+                } else {
+                    // [추가] 교회 설정이 없으면 기존 스테이트 초기화 (다른 교회 정보 유출 방지)
+                    const blank = {
+                        church_name: CHURCH_NAME,
+                        church_logo_url: CHURCH_LOGO,
+                        church_url: CHURCH_URL,
+                        sermon_url: "",
+                        manual_sermon_url: "",
+                        app_subtitle: APP_SUBTITLE,
+                        plan: 'free',
+                        community_visible: true,
+                        allow_member_edit: false,
+                        sermon_summary: '', sermon_q1: '', sermon_q2: '', sermon_q3: '',
+                        event_poster_url: '', event_poster_visible: false
+                    };
+                    setChurchSettings(blank);
+                    setSettingsForm(blank);
+                    setShowEventPopup(false);
                 }
             } catch (err) {
                 console.error("[Settings] Load Failed:", err);
@@ -1650,6 +1668,23 @@ export default function App() {
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
+        setChurchId('');
+        const blank = {
+            church_name: CHURCH_NAME,
+            church_logo_url: CHURCH_LOGO,
+            church_url: CHURCH_URL,
+            sermon_url: "",
+            manual_sermon_url: "",
+            app_subtitle: APP_SUBTITLE,
+            plan: 'free',
+            community_visible: true,
+            allow_member_edit: false,
+            sermon_summary: '', sermon_q1: '', sermon_q2: '', sermon_q3: '',
+            event_poster_url: '', event_poster_visible: false
+        };
+        setChurchSettings(blank);
+        setSettingsForm(blank);
+        setShowEventPopup(false);
         setView("home");
     };
 
