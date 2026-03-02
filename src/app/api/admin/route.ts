@@ -994,7 +994,16 @@ export async function POST(req: NextRequest) {
             const { church_id } = body;
             if (church_id !== 'demo') throw new Error('데모 전용 기능입니다.');
 
-            // 1. 데모 교회 기본 설정 생성 (onConflict로 이미 있으면 수정만)
+            // 1. 데모 교회 기본 설정 생성 전 보안 검사
+            const { data: demoCheck } = await supabaseAdmin.from('church_settings').select('id').eq('church_id', 'demo').maybeSingle();
+
+            // [치명적 버그 방지] 만약 demo 교회의 DB ID가 1번(예수인교회)으로 잡혀있다면 덮어쓰지 않고 에러를 던지거나 중단
+            if (demoCheck && demoCheck.id === 1) {
+                console.error("[CRITICAL] Demo church is illegally mapped to ID 1. Aborting seed_demo to protect main data.");
+                return NextResponse.json({ success: false, error: "데이터 정합성 오류로 데모를 생성할 수 없습니다. 관리자에게 문의하세요." });
+            }
+
+            // 안전한 경우에만 데모 교회 초기 설정 (onConflict로 이미 있으면 수정만, 단 ID 1은 위에서 차단됨)
             await supabaseAdmin.from('church_settings').upsert({
                 church_id: 'demo',
                 church_name: '⛪ 소미 데모교회',

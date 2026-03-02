@@ -35,6 +35,18 @@ export async function GET(req: NextRequest) {
             .maybeSingle();
         if (fallback) {
             data = fallback;
+
+            // [자동 복구/Self-Healing] 과거 버그로 인해 ID 1번(메인)의 church_id가 체험판으로 오염된 경우 즉시 복구
+            if (data.church_id && data.church_id !== 'jesus-in') {
+                console.log(`[API Settings] CRITICAL: ID 1 is corrupted with church_id ${data.church_id}. Auto-healing...`);
+                await supabaseAdmin.from('church_settings').update({
+                    church_id: 'jesus-in',
+                    church_name: '예수인교회'
+                }).eq('id', 1);
+
+                data.church_id = 'jesus-in';
+                data.church_name = '예수인교회';
+            }
             console.log(`[API Settings] Fallback to ID 1 successful for jesus-in`);
         }
     }

@@ -1023,7 +1023,16 @@ export default function App() {
             if (data.church_id) {
                 const urlParams = new URLSearchParams(window.location.search);
                 const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id');
-                if (!hasSpecificChurchUrl && (!churchId || !churchId.startsWith('trial-'))) {
+
+                // [궁극의 탈출구] 마스터는 URL에 체험판이 찍혀있든 뭐가 있든 무조건 메인으로 강제 고정
+                if (isHardcodedAdmin || isMasterName) {
+                    setChurchId('jesus-in');
+                    localStorage.setItem('church_id', 'jesus-in');
+                    // 주소창 강제 정리 (옵션, 사용자 경험을 위해)
+                    if (hasSpecificChurchUrl && hasSpecificChurchUrl.startsWith('trial-')) {
+                        window.history.replaceState({}, '', '/');
+                    }
+                } else if (!hasSpecificChurchUrl && (!churchId || !churchId.startsWith('trial-'))) {
                     setChurchId(data.church_id);
                     localStorage.setItem('church_id', data.church_id);
                 }
@@ -2245,7 +2254,9 @@ export default function App() {
                                                     onClick={() => {
                                                         localStorage.removeItem('church_id');
                                                         sessionStorage.removeItem('church_id');
-                                                        window.location.href = '/';
+                                                        // URL에 남아있는 파라미터까지 완전히 제거하고 히스토리 스택 초기화 (뒤로가기 방지)
+                                                        window.history.replaceState({}, '', '/');
+                                                        window.location.replace('/');
                                                     }}
                                                     style={{ background: '#FF3D00', color: 'white', border: 'none', borderRadius: '12px', padding: '4px 10px', fontSize: '10px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 8px rgba(255,61,0,0.2)' }}
                                                 >
