@@ -165,16 +165,16 @@ export async function POST(req: NextRequest) {
     let cleanSermonQ2 = sermon_q2;
     let cleanSermonQ3 = sermon_q3;
 
-    const trialKeywords = ['(체험판)', '체험용', '트라이얼', 'demo', '샘플', '가상 성도', '가상성도', '오늘의 묵상 칼럼', '소미와 함께'];
+    const trialKeywords = ['(체험판)', '체험용', '트라이얼', 'demo', '데모', '샘플', '가상 성도', '가상성도', '오늘의 묵상 칼럼', '소미와 함께', '시작하는 메시지'];
 
     if (targetChurchId === 'jesus-in') {
         // 1. 이름 및 부제목 보호 (필수)
         if (!cleanName || trialKeywords.some(k => cleanName.includes(k))) cleanName = '예수인교회';
-        if (!cleanSubtitle || trialKeywords.some(k => cleanSubtitle.includes(k))) cleanSubtitle = '함께 성장하는 영적 공동체';
+        if (!cleanSubtitle || trialKeywords.some(k => cleanSubtitle.includes(k))) cleanSubtitle = '말씀과 기도로 거룩해지는 공동체';
 
         // 2. 로고 보호 (체험판 전용 로고나 빈 로고 방지)
-        if (!cleanLogoUrl || cleanLogoUrl.includes('trial-') || cleanLogoUrl.includes('placeholder')) {
-            cleanLogoUrl = 'https://ai-qt.vercel.app/jesus-in-logo.png'; // 본교회 기본 로고 강제 지정
+        if (!cleanLogoUrl || cleanLogoUrl.includes('trial-') || cleanLogoUrl.includes('placeholder') || cleanLogoUrl.includes('somy.png')) {
+            cleanLogoUrl = 'https://lfjrfyylsxhvwosdpujv.supabase.co/storage/v1/object/public/church-assets/jesus-in-logo.png'; // 본교회 기본 로고 강제 지정
         }
 
         // 3. 설교 유튜브 채널 보호 (엉뚱한 실습용 채널 방지)
@@ -192,7 +192,7 @@ export async function POST(req: NextRequest) {
 
         // 5. 설교 요약 및 질문 보호 (체험판 샘플 내용 유입 차단)
         const sampleSermonTag = '관리자 센터에서 교회의 이름과 설교 영상을 직접 바꿔보세요';
-        if (!cleanSermonSummary || cleanSermonSummary.includes(sampleSermonTag)) {
+        if (!cleanSermonSummary || cleanSermonSummary.includes(sampleSermonTag) || trialKeywords.some(k => cleanSermonSummary.includes(k))) {
             cleanSermonSummary = '성도님들과 함께 나눌 오늘의 말씀 요약을 입력해주세요.';
             cleanSermonQ1 = '오늘 말씀을 통해 깨달은 점은 무엇인가요?';
             cleanSermonQ2 = '내 삶에 어떻게 적용할 수 있을까요?';
@@ -253,7 +253,7 @@ export async function POST(req: NextRequest) {
     if (cleanSermonQ2) encodedPlan += `|s_q2:${encodeURIComponent(cleanSermonQ2)}`;
     if (cleanSermonQ3) encodedPlan += `|s_q3:${encodeURIComponent(cleanSermonQ3)}`;
 
-    const baseData: any = {
+    const safeBaseData: any = {
         church_id: targetChurchId,
         church_name: cleanName,
         church_logo_url: cleanLogoUrl,
@@ -261,48 +261,48 @@ export async function POST(req: NextRequest) {
         app_subtitle: cleanSubtitle,
         plan: encodedPlan,
         community_visible: community_visible ?? true,
-        sermon_url: cleanSermonUrl,
-        custom_ccm_list,
-        today_book_title,
-        today_book_description,
-        today_book_image_url
+        sermon_url: cleanSermonUrl
     };
 
     // [최후의 보루] ID 매칭 강제화
     if (targetChurchId === 'jesus-in') {
-        baseData.id = 1; // 예수인교회는 무조건 ID 1 고정
+        safeBaseData.id = 1; // 예수인교회는 무조건 ID 1 고정
     } else if (currentSettings) {
-        // 이미 존재하는 트라이얼인 경우 해당 ID 유지 (단, 1번은 절대 안됨)
         if (currentSettings.id === 1) {
             return NextResponse.json({ success: false, error: "데이터 무결성 오류" }, { status: 403 });
         }
-        baseData.id = currentSettings.id;
+        safeBaseData.id = currentSettings.id;
     }
-    // id가 없는 경우는 신규 트라이얼이므로 자동 생성되게 둠
+
+    const advancedData = {
+        ...safeBaseData,
+        custom_ccm_list,
+        today_book_title,
+        today_book_description,
+        today_book_image_url,
+        manual_sermon_url,
+        sermon_summary: cleanSermonSummary,
+        sermon_q1: cleanSermonQ1,
+        sermon_q2: cleanSermonQ2,
+        sermon_q3: cleanSermonQ3,
+        event_poster_url,
+        event_poster_visible: event_poster_visible ?? false,
+        pastor_column_title: cleanColumnTitle,
+        pastor_column_content: cleanColumnContent
+    };
 
     // 1차 시도: 모든 컬럼 포함하여 저장
     const { error: upsertError } = await supabaseAdmin
         .from('church_settings')
-        .upsert({
-            ...baseData,
-            manual_sermon_url,
-            sermon_summary: cleanSermonSummary,
-            sermon_q1: cleanSermonQ1,
-            sermon_q2: cleanSermonQ2,
-            sermon_q3: cleanSermonQ3,
-            event_poster_url,
-            event_poster_visible: event_poster_visible ?? false,
-            pastor_column_title: cleanColumnTitle,
-            pastor_column_content: cleanColumnContent
-        }); // 기본 ID 기반 upsert (안전)
+        .upsert(advancedData); // 기본 ID 기반 upsert (안전)
 
     if (upsertError) {
         console.warn("[Settings POST] First attempt failed, retrying without new columns...", upsertError.message);
 
-        // 2차 시도: 새 컬럼을 제외하고 plan 필드의 인코딩에 의존하여 저장
+        // 2차 시도: 새 컬럼을 제외하고 plan 필드의 인코딩에 의존하여 기본 컬럼만 저장
         const { error: secondError } = await supabaseAdmin
             .from('church_settings')
-            .upsert(baseData);
+            .upsert(safeBaseData);
 
         if (secondError) {
             console.error("[Settings POST Error]", secondError);
@@ -310,5 +310,5 @@ export async function POST(req: NextRequest) {
         }
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, settings: advancedData });
 }
