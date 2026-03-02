@@ -979,7 +979,7 @@ export default function App() {
                     if (syncData.church_id) {
                         const urlParams = new URLSearchParams(window.location.search);
                         const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id');
-                        if (!hasSpecificChurchUrl) {
+                        if (!hasSpecificChurchUrl && (!churchId || !churchId.startsWith('trial-'))) {
                             setChurchId(syncData.church_id);
                             // 정식 교인 소속은 localStorage에 영구보관
                             localStorage.setItem('church_id', syncData.church_id);
@@ -1010,7 +1010,7 @@ export default function App() {
             if (data.church_id) {
                 const urlParams = new URLSearchParams(window.location.search);
                 const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id');
-                if (!hasSpecificChurchUrl) {
+                if (!hasSpecificChurchUrl && (!churchId || !churchId.startsWith('trial-'))) {
                     setChurchId(data.church_id);
                     localStorage.setItem('church_id', data.church_id);
                 }

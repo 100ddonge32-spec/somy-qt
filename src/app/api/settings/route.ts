@@ -148,6 +148,10 @@ export async function POST(req: NextRequest) {
     let cleanColumnContent = pastor_column_content;
     let cleanLogoUrl = church_logo_url;
     let cleanSermonUrl = sermon_url;
+    let cleanSermonSummary = sermon_summary;
+    let cleanSermonQ1 = sermon_q1;
+    let cleanSermonQ2 = sermon_q2;
+    let cleanSermonQ3 = sermon_q3;
 
     const trialKeywords = ['(체험판)', '체험용', '트라이얼', 'demo', '샘플', '가상 성도', '가상성도', '오늘의 묵상 칼럼', '소미와 함께'];
 
@@ -174,7 +178,16 @@ export async function POST(req: NextRequest) {
             cleanColumnContent = '반갑습니다. 예수인교회 성도님들을 주님의 이름으로 축복합니다. 소미와 함께 말씀 묵상의 즐거움을 누리시길 기도합니다.';
         }
 
-        // 5. 플랜 요금제 보호 (체험판 기간 정보가 유입되지 않도록)
+        // 5. 설교 요약 및 질문 보호 (체험판 샘플 내용 유입 차단)
+        const sampleSermonTag = '관리자 센터에서 교회의 이름과 설교 영상을 직접 바꿔보세요';
+        if (!cleanSermonSummary || cleanSermonSummary.includes(sampleSermonTag)) {
+            cleanSermonSummary = '성도님들과 함께 나눌 오늘의 말씀 요약을 입력해주세요.';
+            cleanSermonQ1 = '오늘 말씀을 통해 깨달은 점은 무엇인가요?';
+            cleanSermonQ2 = '내 삶에 어떻게 적용할 수 있을까요?';
+            cleanSermonQ3 = '함께 기도하고 싶은 제목을 나누어보세요.';
+        }
+
+        // 6. 플랜 요금제 보호 (체험판 기간 정보가 유입되지 않도록)
         if (plan?.includes('trial')) {
             cleanPlan = plan.split('|').filter((p: string) => !p.startsWith('trial') && !p.startsWith('expires:') && !p.startsWith('usage:') && !p.startsWith('limit:')).join('|');
             if (!cleanPlan || cleanPlan === '') cleanPlan = 'premium';
@@ -213,10 +226,10 @@ export async function POST(req: NextRequest) {
     if (cleanColumnContent) encodedPlan += `|column_content:${encodeURIComponent(cleanColumnContent)}`;
 
     if (manual_sermon_url) encodedPlan += `|m_sermon_url:${encodeURIComponent(manual_sermon_url)}`;
-    if (sermon_summary) encodedPlan += `|s_summary:${encodeURIComponent(sermon_summary)}`;
-    if (sermon_q1) encodedPlan += `|s_q1:${encodeURIComponent(sermon_q1)}`;
-    if (sermon_q2) encodedPlan += `|s_q2:${encodeURIComponent(sermon_q2)}`;
-    if (sermon_q3) encodedPlan += `|s_q3:${encodeURIComponent(sermon_q3)}`;
+    if (cleanSermonSummary) encodedPlan += `|s_summary:${encodeURIComponent(cleanSermonSummary)}`;
+    if (cleanSermonQ1) encodedPlan += `|s_q1:${encodeURIComponent(cleanSermonQ1)}`;
+    if (cleanSermonQ2) encodedPlan += `|s_q2:${encodeURIComponent(cleanSermonQ2)}`;
+    if (cleanSermonQ3) encodedPlan += `|s_q3:${encodeURIComponent(cleanSermonQ3)}`;
 
     const baseData: any = {
         church_id: targetChurchId,
@@ -250,15 +263,15 @@ export async function POST(req: NextRequest) {
         .upsert({
             ...baseData,
             manual_sermon_url,
-            sermon_summary,
-            sermon_q1,
-            sermon_q2,
-            sermon_q3,
+            sermon_summary: cleanSermonSummary,
+            sermon_q1: cleanSermonQ1,
+            sermon_q2: cleanSermonQ2,
+            sermon_q3: cleanSermonQ3,
             event_poster_url,
             event_poster_visible: event_poster_visible ?? false,
             pastor_column_title: cleanColumnTitle,
             pastor_column_content: cleanColumnContent
-        }); // onConflict를 명시하지 않으면 Primary Key(id)를 기준으로 처리함
+        }, { onConflict: 'church_id' }); // ✅ ID가 아닌 church_id를 기준으로 업데이트하여 교차 오염 방지
 
     if (upsertError) {
         console.warn("[Settings POST] First attempt failed, retrying without new columns...", upsertError.message);
@@ -266,7 +279,7 @@ export async function POST(req: NextRequest) {
         // 2차 시도: 새 컬럼을 제외하고 plan 필드의 인코딩에 의존하여 저장
         const { error: secondError } = await supabaseAdmin
             .from('church_settings')
-            .upsert(baseData);
+            .upsert(baseData, { onConflict: 'church_id' });
 
         if (secondError) {
             console.error("[Settings POST Error]", secondError);
