@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
                 success: true,
                 status: 'linked',
                 name: match.full_name,
-                church_id: match.church_id || targetChurchId,
+                church_id: (match.church_id && !match.church_id.startsWith('trial-')) ? match.church_id : targetChurchId,
                 is_approved: true
             });
         }

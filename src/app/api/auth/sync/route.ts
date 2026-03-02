@@ -161,13 +161,17 @@ export async function POST(req: NextRequest) {
             // [핵심 수정] 관리자 DB에 등록된 성도와 이름+전화번호가 일치하면 무조건 즉시 승인!
             // match.is_approved가 null/false인 경우도 매칭 성공이면 학습된 성도이므로 true
             // [보안] 이미 정식 소속 교회('jesus-in' 등)가 있는 경우 트라이얼 소속으로 영구 변경되지 않도록 보호
-            // 1. adminChurchId가 우선 (관리자 설정이 최우선)
-            // 2. 만약 현재 소속이 !startsWith('trial-') 라면 그대로 유지 (이게 핵심)
-            // 3. 둘 다 아니면 신규 trial/bodyId 소속으로 지정
+            // 1. adminChurchId가 있으면 그것을 따름 (관리자 설정 우선)
+            // 2. 만약 일반 성도인데 체험판 링크로 들어왔다면, DB에는 정식 소속('jesus-in')을 유지 (메인 증발 방지 핵심)
             const currentProfileChurch = profileById?.church_id;
-            const finalChurchToSet = (adminChurchId && !adminChurchId.startsWith('trial-')) ? adminChurchId :
+            let finalChurchToSet = (adminChurchId) ? adminChurchId :
                 (currentProfileChurch && !currentProfileChurch.startsWith('trial-')) ? currentProfileChurch :
-                    (adminChurchId || match.church_id || bodyChurchId || 'jesus-in');
+                    (match.church_id && !match.church_id.startsWith('trial-') ? match.church_id : (bodyChurchId || 'jesus-in'));
+
+            // [핵심] 일반 유저인데 체험판 ID가 지정되려 하면 'jesus-in'으로 강제 전환 (DB 오염 방지)
+            if (finalChurchToSet.startsWith('trial-') && !isAdminMember) {
+                finalChurchToSet = (currentProfileChurch && !currentProfileChurch.startsWith('trial-')) ? currentProfileChurch : 'jesus-in';
+            }
 
             const updateFields: any = {
                 full_name: match.full_name || profileById?.full_name || rawName || '성도',
@@ -206,9 +210,14 @@ export async function POST(req: NextRequest) {
 
         // [보안] 체험판으로 인해 본래 소속 교회 정보가 유실되지 않도록 보호
         const curPC = profileById?.church_id;
-        const finalC = (adminChurchId && !adminChurchId.startsWith('trial-')) ? adminChurchId :
+        let finalC = (adminChurchId) ? adminChurchId :
             (curPC && !curPC.startsWith('trial-')) ? curPC :
-                (adminChurchId || bodyChurchId || 'jesus-in');
+                (bodyChurchId || 'jesus-in');
+
+        // [핵심] 일반 성도는 DB에 절대로 체험판 ID를 저장하지 않음 (메인 유지용)
+        if (finalC.startsWith('trial-') && !isAdminMember) {
+            finalC = (curPC && !curPC.startsWith('trial-')) ? curPC : 'jesus-in';
+        }
 
         const dataToSet: any = {
             id: user_id,
