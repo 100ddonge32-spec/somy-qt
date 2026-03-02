@@ -410,10 +410,11 @@ export default function App() {
     const isHardcodedAdmin = !!user && !!user.email && MASTER_EMAILS.includes(user.email.toLowerCase().trim());
     const isMasterName = !!user && (user.user_metadata?.full_name === '백동희' || user.user_metadata?.name === '백동희' || profileName === '백동희');
 
-    // [전략] 마스터이거나 adminInfo에 권한이 있으면 관리자로 인정
-    const isAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin' || adminInfo.role === 'sub_admin' || adminInfo.role === 'admin'));
-    const isSuperAdmin = isHardcodedAdmin || isMasterName || adminInfo?.role === 'super_admin';
-    const isMainAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin' || adminInfo.role === 'admin'));
+    // [전략] 마스터이거나, 체험판(샌드박스) 환경이거나, adminInfo에 권한이 있으면 관리자로 인정
+    const isTrialEnvironment = typeof churchId === 'string' && churchId.startsWith('trial-');
+    const isAdmin = isHardcodedAdmin || isMasterName || isTrialEnvironment || (!!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin' || adminInfo.role === 'sub_admin' || adminInfo.role === 'admin'));
+    const isSuperAdmin = isHardcodedAdmin || isMasterName || isTrialEnvironment || (!!adminInfo && adminInfo.role === 'super_admin');
+    const isMainAdmin = isHardcodedAdmin || isMasterName || isTrialEnvironment || (!!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin' || adminInfo.role === 'admin'));
     const [editingPostId, setEditingPostId] = useState<any>(null);
     const [editContent, setEditContent] = useState("");
     const [editingCommentId, setEditingCommentId] = useState<any>(null);
@@ -1399,6 +1400,11 @@ export default function App() {
         // ✅ URL 파라미터 또는 저장장치에서 교회 ID 읽어오기
         const params = new URLSearchParams(window.location.search);
         const churchFromUrl = params.get('church') || params.get('church_id');
+        const initialView = params.get('view') as any;
+
+        if (initialView) {
+            setView(initialView);
+        }
 
         // 체험판(trial-)은 sessionStorage(세션 종료 시 삭제)에, 정식 교회는 localStorage에 우선 보관
         const churchFromSession = typeof window !== 'undefined' ? sessionStorage.getItem('church_id') : null;
@@ -1735,8 +1741,8 @@ export default function App() {
                 setChurchId(result.church_id);
                 setIsApproved(true);
                 setProfileName('체험용 관리자');
-                // 즉시 진입을 위해 강제 리로드 (파라미터 포함)
-                window.location.href = `/?church_id=${result.church_id}`;
+                // 즉시 진입을 위해 강제 리로드 (파라미터 포함, 바로 관리자 센터로 이동)
+                window.location.href = `/?church_id=${result.church_id}&view=admin`;
             } else {
                 throw new Error(result.error || "트라이얼 생성 중 오류가 발생했습니다.");
             }
