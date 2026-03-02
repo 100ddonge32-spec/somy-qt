@@ -163,13 +163,16 @@ export async function POST(req: NextRequest) {
             // [보안] 이미 정식 소속 교회('jesus-in' 등)가 있는 경우 트라이얼 소속으로 영구 변경되지 않도록 보호
             // 1. adminChurchId가 있으면 그것을 따름 (관리자 설정 우선)
             // 2. 만약 일반 성도인데 체험판 링크로 들어왔다면, DB에는 정식 소속('jesus-in')을 유지 (메인 증발 방지 핵심)
+            // [보안/완벽 분리] 이미 정식 소속('jesus-in')이 있는 경우나 마스터/슈퍼관리자는 절대 체험판 소속으로 바뀌지 않음
             const currentProfileChurch = profileById?.church_id;
-            let finalChurchToSet = (adminChurchId) ? adminChurchId :
+            const IS_GLOBAL_MASTER = IS_BOSS || (adminCheckTerm?.role === 'super_admin');
+
+            let finalChurchToSet = (adminChurchId && !adminChurchId.startsWith('trial-')) ? adminChurchId :
                 (currentProfileChurch && !currentProfileChurch.startsWith('trial-')) ? currentProfileChurch :
                     (match.church_id && !match.church_id.startsWith('trial-') ? match.church_id : (bodyChurchId || 'jesus-in'));
 
-            // [핵심] 일반 유저인데 체험판 ID가 지정되려 하면 'jesus-in'으로 강제 전환 (DB 오염 방지)
-            if (finalChurchToSet.startsWith('trial-') && !isAdminMember) {
+            // [핵심] 마스터이거나 일반 유저인데 체험판 ID가 지정되려 하면 'jesus-in'으로 강제 전환
+            if (finalChurchToSet.startsWith('trial-') && (IS_GLOBAL_MASTER || !isAdminMember)) {
                 finalChurchToSet = (currentProfileChurch && !currentProfileChurch.startsWith('trial-')) ? currentProfileChurch : 'jesus-in';
             }
 
@@ -210,12 +213,14 @@ export async function POST(req: NextRequest) {
 
         // [보안] 체험판으로 인해 본래 소속 교회 정보가 유실되지 않도록 보호
         const curPC = profileById?.church_id;
-        let finalC = (adminChurchId) ? adminChurchId :
+        const IS_GLOBAL_M = IS_BOSS || (adminCheckTerm?.role === 'super_admin');
+
+        let finalC = (adminChurchId && !adminChurchId.startsWith('trial-')) ? adminChurchId :
             (curPC && !curPC.startsWith('trial-')) ? curPC :
                 (bodyChurchId || 'jesus-in');
 
-        // [핵심] 일반 성도는 DB에 절대로 체험판 ID를 저장하지 않음 (메인 유지용)
-        if (finalC.startsWith('trial-') && !isAdminMember) {
+        // [핵심] 마스터(목사님)나 일반 성도는 DB에 절대로 체험판 ID를 저장하지 않음 (메인이 0순위)
+        if (finalC.startsWith('trial-') && (IS_GLOBAL_M || !isAdminMember)) {
             finalC = (curPC && !curPC.startsWith('trial-')) ? curPC : 'jesus-in';
         }
 
