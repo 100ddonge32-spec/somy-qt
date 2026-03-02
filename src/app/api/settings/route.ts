@@ -271,7 +271,7 @@ export async function POST(req: NextRequest) {
             event_poster_visible: event_poster_visible ?? false,
             pastor_column_title: cleanColumnTitle,
             pastor_column_content: cleanColumnContent
-        }, { onConflict: 'church_id' }); // ✅ ID가 아닌 church_id를 기준으로 업데이트하여 교차 오염 방지
+        }); // 기본 ID 기반 upsert (안전)
 
     if (upsertError) {
         console.warn("[Settings POST] First attempt failed, retrying without new columns...", upsertError.message);
@@ -279,7 +279,7 @@ export async function POST(req: NextRequest) {
         // 2차 시도: 새 컬럼을 제외하고 plan 필드의 인코딩에 의존하여 저장
         const { error: secondError } = await supabaseAdmin
             .from('church_settings')
-            .upsert(baseData, { onConflict: 'church_id' });
+            .upsert(baseData);
 
         if (secondError) {
             console.error("[Settings POST Error]", secondError);
