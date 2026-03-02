@@ -405,9 +405,9 @@ export default function App() {
     const [profileBirthdate, setProfileBirthdate] = useState<string | null>(null);
     const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
     const [churchId, setChurchId] = useState('');
-    const isAdmin = !!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin' || adminInfo.role === 'sub_admin');
+    const isAdmin = !!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin' || adminInfo.role === 'sub_admin' || adminInfo.role === 'admin');
     const isSuperAdmin = adminInfo?.role === 'super_admin';
-    const isMainAdmin = !!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin');
+    const isMainAdmin = !!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin' || adminInfo.role === 'admin');
     const [editingPostId, setEditingPostId] = useState<any>(null);
     const [editContent, setEditContent] = useState("");
     const [editingCommentId, setEditingCommentId] = useState<any>(null);
@@ -655,7 +655,7 @@ export default function App() {
     }, []);
 
     const initPlayer = useCallback(() => {
-        if (!isApiReady || !todayCcm || playerRef.current || ccmIndex === null || !user) return;
+        if (!isApiReady || !todayCcm || playerRef.current || ccmIndex === null || (!user && churchId !== 'demo')) return;
 
         const container = document.getElementById('ccm-player-hidden-global');
         if (!container) return;
@@ -1049,7 +1049,7 @@ export default function App() {
             fetch(`/api/admin?action=check_admin&email=${user.email}&user_id=${user.id}`)
                 .then(r => r.ok ? r.json() : null)
                 .then(data => {
-                    if (data && (data.role === 'church_admin' || data.role === 'super_admin')) {
+                    if (data && (data.role === 'church_admin' || data.role === 'super_admin' || data.role === 'admin')) {
                         setAdminInfo(data);
                         console.log("관리자 정보 확인됨, 상세 성도 명단 로딩...");
                         // 관리자인 경우 즉시 상세 정보를 포함한 전체 명단을 가져와서 '등록일', '승인상태' 누락 방지
@@ -2319,44 +2319,76 @@ export default function App() {
                     )}
 
                     {/* Church Logo Header */}
-                    <a href={churchSettings.church_url} target="_blank" rel="noopener noreferrer" style={{
-                        textDecoration: "none",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: "8px",
-                        marginTop: "30px", // 겹침 방지를 위해 위쪽 여백 추가
-                        marginBottom: "20px",
-                        animation: "fade-in 0.8s ease-out"
-                    }}>
-                        <div style={{ position: 'relative' }}>
-                            {churchId && churchSettings.church_logo_url ? (
-                                <img src={churchSettings.church_logo_url} alt={`${churchSettings.church_name} 로고`} style={{ height: "45px", objectFit: "contain" }} />
-                            ) : (
-                                <div style={{ fontSize: '24px', fontWeight: 900, color: '#333' }}>{churchId ? churchSettings.church_name : ''}</div>
-                            )}
-                            {(churchId === 'demo' || (churchId && churchId.startsWith('trial-'))) && (
-                                <div style={{ position: 'absolute', top: '-10px', right: '-30px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '2px 6px', borderRadius: '6px', boxShadow: '0 2px 5px rgba(255,61,0,0.3)' }}>{churchId === 'demo' ? 'DEMO' : 'TRIAL'}</div>
-                            )}
-                        </div>
-                        <div style={{ fontSize: "12px", color: (churchId === 'demo' || (churchId && churchId.startsWith('trial-'))) ? "#B8924A" : "#666", letterSpacing: "1px", fontWeight: 700 }}>
-                            {churchId === 'demo' ? "✨ 데모 모드 (공식 샘플)" : (churchId && churchId.startsWith('trial-') ? "✨ 체험 중 (개별 체험판)" : "홈페이지")}
-                        </div>
-                        {churchId && churchId.startsWith('trial-') && churchSettings.trial_expires_at && (
-                            <div style={{
-                                fontSize: '11px',
-                                color: '#FF3D00',
-                                fontWeight: 800,
-                                background: '#FFF1F0',
-                                padding: '4px 10px',
-                                borderRadius: '20px',
-                                marginTop: '4px',
-                                border: '1px solid #FFCCC7'
-                            }}>
-                                📅 {Math.max(0, Math.ceil((new Date(churchSettings.trial_expires_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))}일 남음 | AI {churchSettings.trial_usage_count}/{churchSettings.trial_usage_limit}회
-                            </div>
+                    <div style={{ width: '100%', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        {churchId === 'demo' && (
+                            <button
+                                onClick={() => {
+                                    setChurchId('');
+                                    sessionStorage.removeItem('church_id');
+                                    localStorage.removeItem('church_id');
+                                    // 완전한 초기화를 위해 리로드
+                                    window.location.href = '/';
+                                }}
+                                style={{
+                                    position: 'absolute',
+                                    top: '0',
+                                    left: '20px',
+                                    background: '#F5F5F3',
+                                    border: '1px solid #EEE',
+                                    borderRadius: '12px',
+                                    padding: '8px 12px',
+                                    fontSize: '12px',
+                                    fontWeight: 700,
+                                    color: '#666',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    zIndex: 10
+                                }}
+                            >
+                                <span>←</span> 나가기
+                            </button>
                         )}
-                    </a>
+                        <a href={churchSettings.church_url} target="_blank" rel="noopener noreferrer" style={{
+                            textDecoration: "none",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: "8px",
+                            marginTop: "30px", // 겹침 방지를 위해 위쪽 여백 추가
+                            marginBottom: "20px",
+                            animation: "fade-in 0.8s ease-out"
+                        }}>
+                            <div style={{ position: 'relative' }}>
+                                {churchId && churchSettings.church_logo_url ? (
+                                    <img src={churchSettings.church_logo_url} alt={`${churchSettings.church_name} 로고`} style={{ height: "45px", objectFit: "contain" }} />
+                                ) : (
+                                    <div style={{ fontSize: '24px', fontWeight: 900, color: '#333' }}>{churchId ? churchSettings.church_name : ''}</div>
+                                )}
+                                {(churchId === 'demo' || (churchId && churchId.startsWith('trial-'))) && (
+                                    <div style={{ position: 'absolute', top: '-10px', right: '-30px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '2px 6px', borderRadius: '6px', boxShadow: '0 2px 5px rgba(255,61,0,0.3)' }}>{churchId === 'demo' ? 'DEMO' : 'TRIAL'}</div>
+                                )}
+                            </div>
+                            <div style={{ fontSize: "12px", color: (churchId === 'demo' || (churchId && churchId.startsWith('trial-'))) ? "#B8924A" : "#666", letterSpacing: "1px", fontWeight: 700 }}>
+                                {churchId === 'demo' ? "✨ 데모 모드 (공식 샘플)" : (churchId && churchId.startsWith('trial-') ? "✨ 체험 중 (개별 체험판)" : "홈페이지")}
+                            </div>
+                            {churchId && churchId.startsWith('trial-') && churchSettings.trial_expires_at && (
+                                <div style={{
+                                    fontSize: '11px',
+                                    color: '#FF3D00',
+                                    fontWeight: 800,
+                                    background: '#FFF1F0',
+                                    padding: '4px 10px',
+                                    borderRadius: '20px',
+                                    marginTop: '4px',
+                                    border: '1px solid #FFCCC7'
+                                }}>
+                                    📅 {Math.max(0, Math.ceil((new Date(churchSettings.trial_expires_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))}일 남음 | AI {churchSettings.trial_usage_count}/{churchSettings.trial_usage_limit}회
+                                </div>
+                            )}
+                        </a>
+                    </div>
                     {/* Action Buttons을 최상단으로 옮김 */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%", maxWidth: "340px", animation: "fade-in 1.4s ease-out", paddingBottom: "20px" }}>
                         {!user && churchId !== 'demo' ? (
@@ -6968,7 +7000,7 @@ export default function App() {
 
     // 소미 시그니처 레트로 플레이어 (저작권 걱정 없는 독자적 디자인)
     const renderMiniPlayer = () => {
-        if (!todayCcm || view === 'ccm' || !user) return null;
+        if (!todayCcm || view === 'ccm' || (!user && churchId !== 'demo')) return null;
 
         const handleStart = (clientX: number, clientY: number) => {
             setIsDragging(true);
@@ -8567,7 +8599,7 @@ export default function App() {
             {renderMergeModal()}
             {renderNotificationList()}
             {
-                user && (
+                (user || churchId === 'demo') && (
                     <>
                         {view !== 'sermon' && view !== 'chat' && (showIpod ? renderMiniPlayer() : (
                             <div
