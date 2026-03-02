@@ -1046,8 +1046,8 @@ export default function App() {
 
     useEffect(() => {
         if (user) {
-            // DB 기반 관리자 권한 체크
-            fetch(`/api/admin?action=check_admin&email=${user.email}&user_id=${user.id}`)
+            // DB 기반 관리자 권한 체크 (현재 교회 ID 포함 필수)
+            fetch(`/api/admin?action=check_admin&email=${user.email}&user_id=${user.id}&church_id=${churchId}`)
                 .then(r => r.ok ? r.json() : null)
                 .then(data => {
                     if (data && (data.role === 'church_admin' || data.role === 'super_admin' || data.role === 'admin')) {
@@ -5227,7 +5227,7 @@ export default function App() {
                             <button onClick={async () => {
                                 if (confirm('모든 성도님들께 오늘의 큐티 알림을 전송하시겠습니까?')) {
                                     try {
-                                        const res = await fetch('/api/push-send-daily?secret=somy-push-secret-123');
+                                        const res = await fetch(`/api/push-send-daily?secret=somy-push-secret-123&church_id=${churchId}`);
                                         const data = await res.json();
                                         if (data.success) {
                                             if (data.sentCount === 0 && data.failedCount === 0 && (data.totalApprovedCount === 0 || data.totalApprovedCount === undefined)) {

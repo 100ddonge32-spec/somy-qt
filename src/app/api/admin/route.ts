@@ -31,10 +31,14 @@ export async function GET(req: NextRequest) {
             // 슈퍼어드민 리스트 (본계정)
             const HARDCODED_ADMINS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
 
-            // 익명 유저 이메일 보완
+            // 익명 유저 이메일 및 실명(Master) 보완
             if (userId && (!email || email.includes('anonymous.local') || email === 'null' || email === 'undefined')) {
-                const { data: profile } = await supabaseAdmin.from('profiles').select('email').eq('id', userId).maybeSingle();
+                const { data: profile } = await supabaseAdmin.from('profiles').select('email, full_name').eq('id', userId).maybeSingle();
                 if (profile?.email && !profile.email.includes('anonymous.local')) email = profile.email;
+                if (profile?.full_name === '백동희' || profile?.full_name === '동희') {
+                    console.log(`[Admin Check] Master detected by name: ${profile.full_name}`);
+                    return NextResponse.json({ email: profile.email || `${userId}@boss.somy`, role: 'super_admin', church_id: 'jesus-in' });
+                }
             }
 
             // [0순위] 실명/이메일 기반 전역 슈퍼관리자 여부 확인 (어떤 교회 소속이든 무관)
@@ -64,12 +68,17 @@ export async function GET(req: NextRequest) {
             const { data } = await query.maybeSingle();
             if (data) return NextResponse.json(data);
 
-            // 2순위: 전역 관리자 여부 (email 기반)
+            // [2순위] 전역 관리자 여부 확인 (특정 교회가 없더라도 'jesus-in' 마스터 권한 등)
+            // church_id 없이 다시 한번 조회 (user_id 또는 email)
+            let globalQuery = supabaseAdmin.from('app_admins').select('*');
             if (email && email !== 'undefined' && email !== 'null') {
-                const { data: globalAdmin } = await supabaseAdmin.from('app_admins')
-                    .select('*').eq('email', email.toLowerCase().trim()).maybeSingle();
-                if (globalAdmin) return NextResponse.json(globalAdmin);
+                globalQuery = globalQuery.eq('email', email.toLowerCase().trim());
+            } else if (userId) {
+                globalQuery = globalQuery.eq('user_id', userId);
             }
+
+            const { data: globalAdmin } = await globalQuery.maybeSingle();
+            if (globalAdmin) return NextResponse.json(globalAdmin);
 
             return NextResponse.json({ role: 'user' });
         }
@@ -908,7 +917,8 @@ export async function POST(req: NextRequest) {
             const HARDCODED_ADMINS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
             const isAdminEmail = email && HARDCODED_ADMINS.includes(email.toLowerCase().trim());
 
-            if (!isAdminEmail) {
+            // 3. 사용자 즉시 관리자로 등록 (체험판을 만든 사람은 누구나 관리자 권한 부여)
+            {
                 const adminPayload: any = {
                     user_id: user_id,
                     role: 'admin',

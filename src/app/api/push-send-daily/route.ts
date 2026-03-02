@@ -22,25 +22,29 @@ export async function GET(req: NextRequest) {
         // 보안을 위한 간단한 시크릿 체크 (헤더나 쿼리스트링)
         const { searchParams } = new URL(req.url);
         const secret = searchParams.get('secret');
-        if (secret !== 'somy-push-secret-123') { // 실제 운영시는 더 복잡한 키 권장
+        const churchId = searchParams.get('church_id') || 'jesus-in'; // 기본값 본교회
+
+        if (secret !== 'somy-push-secret-123') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // 1. 오늘 날짜의 큐티 제목 가져오기
+        // 1. 해당 교회의 오늘 날짜 큐티 제목 가져오기
         const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
         const { data: qtData } = await supabaseAdmin
             .from('daily_qt')
             .select('reference')
             .eq('date', today)
-            .single();
+            .eq('church_id', churchId)
+            .maybeSingle();
 
         const messageTitle = '오늘의 큐티말씀이 도착했습니다 🐑';
         const messageBody = qtData ? `오늘의 본문: ${qtData.reference}` : '오늘의 말씀을 묵상하며 하루를 시작해 보세요.';
 
-        // 2. 승인된 성도님들의 ID 목록 먼지 가져오기
+        // 2. 해당 교회의 승인된 성도님들의 ID 목록만 가져오기 (교회간 간섭 방지)
         const { data: approvedProfiles, error: profileError } = await supabaseAdmin
             .from('profiles')
             .select('id')
+            .eq('church_id', churchId)
             .eq('is_approved', true);
 
         if (profileError) throw profileError;
