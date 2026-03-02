@@ -201,9 +201,19 @@ export async function POST(req: NextRequest) {
         .eq('church_id', targetChurchId)
         .maybeSingle();
 
-    // [강력 대응] targetChurchId가 jesus-in인데 DB에서 찾은 church_id와 다르면 절대 중단
-    if (targetChurchId === 'jesus-in' && currentSettings && currentSettings.church_id !== 'jesus-in') {
-        return NextResponse.json({ success: false, error: "보안 오류: 잘못된 교회 ID 매칭" }, { status: 403 });
+    // [핵심 보안] jesus-in(본교회) 보호 및 트라이얼 정보 유입 원천 차단
+    // 1. 요청한 church_id가 jesus-in인데 DB에서 찾은 church_id와 다르면 절대 중단
+    if (targetChurchId === 'jesus-in') {
+        if (currentSettings && currentSettings.church_id !== 'jesus-in') {
+            return NextResponse.json({ success: false, error: "보안 오류: 잘못된 교회 ID 매칭" }, { status: 403 });
+        }
+    }
+
+    // 2. [강력 대응] 체험판 요청인데 ID가 1이거나 jesus-in을 건드리려 하면 즉시 차단
+    if (targetChurchId !== 'jesus-in') {
+        if (currentSettings?.id === 1 || currentSettings?.church_id === 'jesus-in') {
+            return NextResponse.json({ success: false, error: "보안 오류: 체험판은 메인 데이터를 수정할 수 없습니다." }, { status: 403 });
+        }
     }
 
     let encodedPlan = (cleanPlan || 'free').split('|')[0];
@@ -246,16 +256,17 @@ export async function POST(req: NextRequest) {
         today_book_image_url
     };
 
-    if (currentSettings) {
+    // [최후의 보루] ID 매칭 강제화
+    if (targetChurchId === 'jesus-in') {
+        baseData.id = 1; // 예수인교회는 무조건 ID 1 고정
+    } else if (currentSettings) {
+        // 이미 존재하는 트라이얼인 경우 해당 ID 유지 (단, 1번은 절대 안됨)
+        if (currentSettings.id === 1) {
+            return NextResponse.json({ success: false, error: "데이터 무결성 오류" }, { status: 403 });
+        }
         baseData.id = currentSettings.id;
-    } else if (targetChurchId === 'jesus-in') {
-        baseData.id = 1;
     }
-
-    // [보안] 체험판 업데이트 시 jesus-in의 ID(1)를 사용하는 것을 강제 차단
-    if (targetChurchId !== 'jesus-in' && baseData.id === 1) {
-        delete baseData.id; // 새 레코드로 생성되도록 유도
-    }
+    // id가 없는 경우는 신규 트라이얼이므로 자동 생성되게 둠
 
     // 1차 시도: 모든 컬럼 포함하여 저장
     const { error: upsertError } = await supabaseAdmin

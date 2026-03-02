@@ -406,7 +406,7 @@ export default function App() {
     const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
     const [churchId, setChurchId] = useState('');
     // [보안/개선] adminInfo가 일시적으로 null일 때도 톱니바퀴가 사라지지 않도록 하드코딩된 마스터 체크 추가
-    const MASTER_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
+    const MASTER_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao_4761026797.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
     const isHardcodedAdmin = !!user && !!user.email && MASTER_EMAILS.includes(user.email.toLowerCase().trim());
     const isMasterName = !!user && (user.user_metadata?.full_name === '백동희' || user.user_metadata?.name === '백동희' || profileName === '백동희');
 
@@ -2217,6 +2217,19 @@ export default function App() {
                                 backdropFilter: 'blur(10px)'
                             }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    {churchId && churchId.startsWith('trial-') && (
+                                        <span style={{
+                                            background: 'linear-gradient(45deg, #FF3D00, #FF7043)',
+                                            color: 'white',
+                                            fontSize: '8px',
+                                            padding: '2px 6px',
+                                            borderRadius: '6px',
+                                            fontWeight: 900,
+                                            marginRight: '4px',
+                                            boxShadow: '0 2px 4px rgba(255,61,0,0.3)',
+                                            letterSpacing: '0.5px'
+                                        }}>TRIAL</span>
+                                    )}
                                     {isSuperAdmin ? (
                                         <span style={{ background: '#333', color: 'white', fontSize: '9px', padding: '1px 5px', borderRadius: '4px', fontWeight: 900 }}>슈퍼관리자</span>
                                     ) : isAdmin ? (
@@ -2226,11 +2239,25 @@ export default function App() {
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     {isAdmin && (
-                                        <button
-                                            onClick={() => setView('admin')}
-                                            style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
-                                            title="관리자 센터"
-                                        >⚙️</button>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            {churchId && churchId.startsWith('trial-') && (
+                                                <button
+                                                    onClick={() => {
+                                                        localStorage.removeItem('church_id');
+                                                        sessionStorage.removeItem('church_id');
+                                                        window.location.href = '/';
+                                                    }}
+                                                    style={{ background: '#FF3D00', color: 'white', border: 'none', borderRadius: '12px', padding: '4px 10px', fontSize: '10px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 8px rgba(255,61,0,0.2)' }}
+                                                >
+                                                    🏠 메인교회로
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => setView('admin')}
+                                                style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
+                                                title="관리자 센터"
+                                            >⚙️</button>
+                                        </div>
                                     )}
                                     <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontWeight: 600, fontSize: '11px', padding: 0 }}>로그아웃</button>
                                 </div>

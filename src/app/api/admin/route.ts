@@ -939,10 +939,14 @@ export async function POST(req: NextRequest) {
                     const { data: currentProf } = await supabaseAdmin.from('profiles').select('church_id').eq('id', user_id).maybeSingle();
                     const churchToSet = (currentProf?.church_id && !currentProf.church_id.startsWith('trial-')) ? currentProf.church_id : trialChurchId;
 
+                    // [보안] 트라이얼 생성 시 마스터의 이름을 '트라이얼 관리자'로 덮어쓰지 않도록 보호
+                    const { data: profileCheck } = await supabaseAdmin.from('profiles').select('full_name, email').eq('id', user_id).maybeSingle();
+                    const finalProfileName = (profileCheck?.full_name && !profileCheck.full_name.includes('트라이얼')) ? profileCheck.full_name : (name || '트라이얼 관리자');
+
                     await supabaseAdmin.from('profiles').upsert({
                         id: user_id,
-                        full_name: name || '트라이얼 관리자',
-                        email: email || `${user_id}@trial.somy`,
+                        full_name: finalProfileName,
+                        email: profileCheck?.email || email || `${user_id}@trial.somy`,
                         church_id: churchToSet,
                         is_approved: true
                     }, { onConflict: 'id' });
