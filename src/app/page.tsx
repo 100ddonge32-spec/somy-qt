@@ -1165,8 +1165,9 @@ export default function App() {
             if (!cId) return;
             console.log(`[Reactive Settings] Loading for: ${cId}`);
 
-            // [방어] 교회 전환 시 이전 데이터의 잔상을 즉시 제거 (교차 오염 방지)
-            setChurchSettings((prev: any) => ({ ...prev, loading: true }));
+            // [방어] 교회 전환 시 이전 데이터의 잔상을 즉시 제거 (교차 오염 방지 핵심)
+            // '...prev'를 사용하지 않고 상태를 완전히 비워야 ID(id:1 등)가 섞이지 않습니다.
+            setChurchSettings({ loading: true } as any);
 
             try {
                 const r = await fetch(`/api/settings?church_id=${cId}`, { cache: 'no-store' });
@@ -1860,6 +1861,11 @@ export default function App() {
                 ...settingsForm,   // 수정된 기본 설정으로 덮어쓰기
                 church_id: churchId
             };
+
+            // [보안] 체험판인 경우 본교회 ID(1) 유입을 원천 차단
+            if (churchId && churchId.startsWith('trial-')) {
+                delete (fullPayload as any).id;
+            }
 
             const res = await fetch('/api/settings', {
                 method: 'POST',
