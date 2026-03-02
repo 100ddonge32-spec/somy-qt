@@ -2404,49 +2404,69 @@ export default function App() {
                                         {isDirectLoggingIn ? '정보 확인 중...' : '교인 정보로 바로 시작하기'}
                                     </button>
 
-                                    <div style={{ marginTop: '20px', borderTop: '1px dashed #EEE', paddingTop: '20px' }}>
-                                        <div style={{ fontSize: '13px', color: '#999', marginBottom: '12px' }}>성도 관리, 통계, 설교 등록이 궁금하다면?</div>
-                                        <button
-                                            onClick={handleTrialCreation}
-                                            disabled={isDirectLoggingIn}
-                                            style={{
-                                                width: '100%',
-                                                padding: '18px',
-                                                background: 'linear-gradient(135deg, #1A5D55 0%, #0D2E2B 100%)',
-                                                color: 'white',
-                                                border: 'none',
-                                                borderRadius: '16px',
-                                                fontSize: '16px',
-                                                fontWeight: 800,
-                                                cursor: 'pointer',
-                                                boxShadow: '0 8px 20px rgba(26,93,85,0.25)',
-                                                marginBottom: '10px',
-                                                position: 'relative',
-                                                overflow: 'hidden'
-                                            }}>
-                                            {isDirectLoggingIn ? '🛠️ 전용 체험판 세팅 중...' : '👑 관리자 대시보드 체험하기'}
-                                            {!isDirectLoggingIn && <div style={{ position: 'absolute', top: '0', right: '0', background: '#FFD700', color: '#000', fontSize: '9px', padding: '2px 6px', fontWeight: 900 }}>HOT</div>}
-                                        </button>
-                                        <div style={{ fontSize: '11px', color: '#B8924A', marginBottom: '16px', fontWeight: 700 }}>✨ 가상 성도 30명, 통계 데이터가 즉시 생성됩니다.</div>
+                                    <div style={{ marginTop: '30px', borderTop: '1px solid #EEE', paddingTop: '25px', textAlign: 'left' }}>
+                                        <div style={{ fontSize: '14px', fontWeight: 900, color: '#333', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <span style={{ fontSize: '18px' }}>💎</span> 소미 100% 체험하기
+                                        </div>
 
-                                        <button
-                                            onClick={() => {
-                                                setChurchId('demo');
-                                                setView('home');
-                                            }}
-                                            style={{
-                                                width: '100%',
-                                                padding: '12px',
-                                                background: 'white',
-                                                color: '#888',
-                                                border: '1px solid #EEE',
-                                                borderRadius: '14px',
-                                                fontSize: '13px',
-                                                fontWeight: 700,
-                                                cursor: 'pointer'
-                                            }}>
-                                            가볍게 공식 데모 둘러보기
-                                        </button>
+                                        {/* 그룹 1: 교회 관리자용 */}
+                                        <div style={{ background: '#F0F8F7', padding: '16px', borderRadius: '20px', marginBottom: '14px', border: '1px solid #D1EAE7' }}>
+                                            <div style={{ fontSize: '11.5px', color: '#1A5D55', fontWeight: 800, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.8 }}>
+                                                🏢 목사님 및 관리 임직원용
+                                            </div>
+                                            <button
+                                                onClick={handleTrialCreation}
+                                                disabled={isDirectLoggingIn}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '16px',
+                                                    background: 'linear-gradient(135deg, #1A5D55 0%, #0D2E2B 100%)',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '14px',
+                                                    fontSize: '15px',
+                                                    fontWeight: 800,
+                                                    cursor: 'pointer',
+                                                    boxShadow: '0 8px 15px rgba(26,93,85,0.2)',
+                                                    position: 'relative',
+                                                    overflow: 'hidden'
+                                                }}>
+                                                {isDirectLoggingIn ? '🛠️ 체험판 세팅 중...' : '👑 관리자 대시보드 체험하기'}
+                                                {!isDirectLoggingIn && <div style={{ position: 'absolute', top: '0', right: '0', background: '#FFD700', color: '#000', fontSize: '9px', padding: '2px 6px', fontWeight: 900 }}>추천</div>}
+                                            </button>
+                                            <div style={{ fontSize: '10.5px', color: '#5C7A77', marginTop: '10px', lineHeight: 1.5, wordBreak: 'keep-all' }}>
+                                                성도 관리, 통계, AI 설교 요약 등 <b>관리자 전용 기능</b>을<br />가상 성도 30명과 함께 실시간으로 테스트합니다.
+                                            </div>
+                                        </div>
+
+                                        {/* 그룹 2: 일반 성도용 */}
+                                        <div style={{ background: '#FFF9F0', padding: '16px', borderRadius: '20px', border: '1px solid #F5E0BB' }}>
+                                            <div style={{ fontSize: '11.5px', color: '#B8924A', fontWeight: 800, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.8 }}>
+                                                📱 일반 성도 및 방문자용
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    setChurchId('demo');
+                                                    setView('home');
+                                                }}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '16px',
+                                                    background: 'linear-gradient(135deg, #B8924A 0%, #8B6E3F 100%)',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '14px',
+                                                    fontSize: '15px',
+                                                    fontWeight: 800,
+                                                    cursor: 'pointer',
+                                                    boxShadow: '0 8px 15px rgba(184,146,74,0.2)'
+                                                }}>
+                                                ✨ 공식 데모교회 구경하기
+                                            </button>
+                                            <div style={{ fontSize: '10.5px', color: '#8B6E3F', marginTop: '10px', lineHeight: 1.5, wordBreak: 'keep-all' }}>
+                                                이미 세팅이 끝난 <b>소미의 완성된 모습</b>을 확인합니다.<br />별도 절차 없이 성도 입장에서 즉시 둘러볼 수 있습니다.
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* [보안 강화] 슈퍼관리자 및 공식 관리자 전용 입구 */}
