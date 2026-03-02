@@ -143,14 +143,29 @@ export async function POST(req: NextRequest) {
     // [보안] jesus-in이나 정식 교회 설정에 트라이얼 정보가 덮어씌워지는 것 방지
     let cleanPlan = plan;
     let cleanName = church_name;
+    let cleanSubtitle = app_subtitle;
+    let cleanColumnTitle = pastor_column_title;
+    let cleanColumnContent = pastor_column_content;
+
     if (targetChurchId === 'jesus-in') {
+        const trialKeywords = ['(체험판)', '체험용', '트라이얼', 'demo', '샘플', '가상 성도'];
+
+        // 1. 이름 및 부제목 보호
+        if (trialKeywords.some(k => church_name?.includes(k))) cleanName = '예수인교회';
+        if (trialKeywords.some(k => app_subtitle?.includes(k))) cleanSubtitle = '함께 성장하는 영적 공동체';
+
+        // 2. 칼럼 제목 및 내용 보호 (더미 데이터 유입 차단)
+        if (trialKeywords.some(k => pastor_column_title?.includes(k)) || pastor_column_title?.includes('오늘의 묵상 칼럼')) {
+            cleanColumnTitle = '🙏 오늘의 목양 메시지';
+        }
+        if (trialKeywords.some(k => pastor_column_content?.includes(k)) || pastor_column_content?.includes('소미와 함께')) {
+            cleanColumnContent = '반갑습니다. 예수인교회 성도님들을 주님의 이름으로 축복합니다.';
+        }
+
+        // 3. 플랜 요금제 보호
         if (plan?.includes('trial')) {
-            // jesus-in인데 trial 정보가 들어왔다면 메타데이터 제거 후 프리미엄 복구
             cleanPlan = plan.split('|').filter((p: string) => !p.startsWith('trial') && !p.startsWith('expires:') && !p.startsWith('usage:') && !p.startsWith('limit:')).join('|');
             if (!cleanPlan || cleanPlan === '') cleanPlan = 'premium';
-        }
-        if (church_name?.includes('(체험판)')) {
-            cleanName = church_name.replace('(체험판)', '').trim();
         }
     }
 
@@ -177,8 +192,8 @@ export async function POST(req: NextRequest) {
     if (allow_member_edit) encodedPlan += '|member_edit_on';
     if (event_poster_visible) encodedPlan += '|poster_on';
     if (event_poster_url) encodedPlan += `|poster_url:${event_poster_url}`;
-    if (pastor_column_title) encodedPlan += `|column_title:${encodeURIComponent(pastor_column_title)}`;
-    if (pastor_column_content) encodedPlan += `|column_content:${encodeURIComponent(pastor_column_content)}`;
+    if (cleanColumnTitle) encodedPlan += `|column_title:${encodeURIComponent(cleanColumnTitle)}`;
+    if (cleanColumnContent) encodedPlan += `|column_content:${encodeURIComponent(cleanColumnContent)}`;
 
     // 설교 요약 필드도 인코딩하여 저장 (컬럼 누락 시 백업용)
     if (manual_sermon_url) encodedPlan += `|m_sermon_url:${encodeURIComponent(manual_sermon_url)}`;
@@ -192,7 +207,7 @@ export async function POST(req: NextRequest) {
         church_name: cleanName,
         church_logo_url,
         church_url,
-        app_subtitle,
+        app_subtitle: cleanSubtitle,
         plan: encodedPlan,
         community_visible: community_visible ?? true,
         sermon_url,

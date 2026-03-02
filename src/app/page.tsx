@@ -980,6 +980,7 @@ export default function App() {
                         const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id');
                         if (!hasSpecificChurchUrl) {
                             setChurchId(syncData.church_id);
+                            // 정식 교인 소속은 localStorage에 영구보관
                             localStorage.setItem('church_id', syncData.church_id);
                         }
                     }
@@ -1163,6 +1164,10 @@ export default function App() {
             const cId = churchId;
             if (!cId) return;
             console.log(`[Reactive Settings] Loading for: ${cId}`);
+
+            // [방어] 교회 전환 시 이전 데이터의 잔상을 즉시 제거 (교차 오염 방지)
+            setChurchSettings((prev: any) => ({ ...prev, loading: true }));
+
             try {
                 const r = await fetch(`/api/settings?church_id=${cId}`, { cache: 'no-store' });
                 const { settings } = await r.json();
@@ -1367,20 +1372,29 @@ export default function App() {
     useEffect(() => {
         setIsMounted(true);
 
-        // ✅ URL 파라미터 또는 localStorage에서 교회 ID 읽어오기
+        // ✅ URL 파라미터 또는 저장장치에서 교회 ID 읽어오기
         const params = new URLSearchParams(window.location.search);
         const churchFromUrl = params.get('church') || params.get('church_id');
+
+        // 체험판(trial-)은 sessionStorage(세션 종료 시 삭제)에, 정식 교회는 localStorage에 우선 보관
+        const churchFromSession = typeof window !== 'undefined' ? sessionStorage.getItem('church_id') : null;
         const churchFromLocal = typeof window !== 'undefined' ? localStorage.getItem('church_id') : null;
 
         if (churchFromUrl) {
             setChurchId(churchFromUrl);
-            localStorage.setItem('church_id', churchFromUrl);
+            if (churchFromUrl.startsWith('trial-')) {
+                sessionStorage.setItem('church_id', churchFromUrl);
+            } else {
+                localStorage.setItem('church_id', churchFromUrl);
+            }
             console.log(`[Initialize] Church set from URL: ${churchFromUrl}`);
+        } else if (churchFromSession && churchFromSession.startsWith('trial-')) {
+            setChurchId(churchFromSession);
+            console.log(`[Initialize] Church set from SessionStorage (Trial): ${churchFromSession}`);
         } else if (churchFromLocal) {
             setChurchId(churchFromLocal);
             console.log(`[Initialize] Church set from LocalStorage: ${churchFromLocal}`);
         } else {
-            // 기본값
             setChurchId('jesus-in');
         }
 
