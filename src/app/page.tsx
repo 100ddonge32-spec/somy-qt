@@ -410,9 +410,10 @@ export default function App() {
     const isHardcodedAdmin = !!user && !!user.email && MASTER_EMAILS.includes(user.email.toLowerCase().trim());
     const isMasterName = !!user && (user.user_metadata?.full_name === '백동희' || user.user_metadata?.name === '백동희' || profileName === '백동희');
 
+    // [전략] 마스터이거나 adminInfo에 권한이 있으면 관리자로 인정
     const isAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin' || adminInfo.role === 'sub_admin' || adminInfo.role === 'admin'));
     const isSuperAdmin = isHardcodedAdmin || isMasterName || adminInfo?.role === 'super_admin';
-    const isMainAdmin = !!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin' || adminInfo.role === 'admin');
+    const isMainAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin' || adminInfo.role === 'admin'));
     const [editingPostId, setEditingPostId] = useState<any>(null);
     const [editContent, setEditContent] = useState("");
     const [editingCommentId, setEditingCommentId] = useState<any>(null);
@@ -980,7 +981,14 @@ export default function App() {
                 });
                 if (syncRes.ok) {
                     const syncData = await syncRes.json();
-                    setIsApproved(!!syncData.is_approved);
+
+                    // [핵심] 마스터 관리자는 서버 응답과 무관하게 항상 승인된 상태로 간주 (권한 잠김 방지)
+                    if (isHardcodedAdmin || isMasterName) {
+                        setIsApproved(true);
+                    } else {
+                        setIsApproved(!!syncData.is_approved);
+                    }
+
                     if (syncData.church_id) {
                         const urlParams = new URLSearchParams(window.location.search);
                         const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id');
@@ -1010,8 +1018,8 @@ export default function App() {
                 return;
             }
 
-            // 프로필이 있을 때 상태 업데이트
-            setIsApproved(!!data.is_approved);
+            // 프로필이 있을 때 상태 업데이트 (마스터는 항상 승인됨)
+            setIsApproved((isHardcodedAdmin || isMasterName) ? true : !!data.is_approved);
             if (data.church_id) {
                 const urlParams = new URLSearchParams(window.location.search);
                 const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id');
@@ -1822,6 +1830,11 @@ export default function App() {
         setChurchSettings(blank);
         setSettingsForm(blank);
         setShowEventPopup(false);
+
+        // [세션 초기화] 로그아웃 시 캐시된 교회 정보를 완전히 삭제하여 체험판이 잔상처럼 남는 현상 해결
+        localStorage.removeItem('church_id');
+        sessionStorage.removeItem('church_id');
+
         setView("home");
     };
 
@@ -2362,7 +2375,7 @@ export default function App() {
                                 <span>←</span> 나가기
                             </button>
                         )}
-                        <a href={churchSettings.church_url} target="_blank" rel="noopener noreferrer" style={{
+                        <a href={churchId && churchId.startsWith('trial-') ? undefined : churchSettings.church_url} target="_blank" rel="noopener noreferrer" style={{
                             textDecoration: "none",
                             display: "flex",
                             flexDirection: "column",
@@ -2563,7 +2576,7 @@ export default function App() {
                                 </div>
                             </div>
 
-                        ) : !isApproved && !isAdmin && churchId !== 'demo' ? (
+                        ) : !isApproved && !isAdmin && !isSuperAdmin && churchId !== 'demo' ? (
                             <div style={{ background: '#FFFDE7', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', border: '1px solid #FFF59D', textAlign: 'center' }}>
                                 <div style={{ fontSize: '40px', marginBottom: '15px' }}>🔒</div>
                                 {showVerification ? (
