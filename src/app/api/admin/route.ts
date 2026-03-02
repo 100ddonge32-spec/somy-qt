@@ -45,7 +45,8 @@ export async function GET(req: NextRequest) {
             if (email && email !== 'undefined' && email !== 'null') {
                 const formattedEmail = email.toLowerCase().trim();
                 if (HARDCODED_ADMINS.includes(formattedEmail)) {
-                    return NextResponse.json({ email: formattedEmail, role: 'super_admin', church_id: 'jesus-in' });
+                    // [핵심] 슈퍼어드민은 요청한 church_id가 있다면 그 context를 유지해줌
+                    return NextResponse.json({ email: formattedEmail, role: 'super_admin', church_id: churchId || 'jesus-in' });
                 }
             }
 
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest) {
             if (email && email !== 'undefined' && email !== 'null') {
                 const formattedEmail = email.toLowerCase().trim();
                 if (HARDCODED_ADMINS.includes(formattedEmail) && (churchId === 'jesus-in' || !churchId)) {
-                    return NextResponse.json({ email: formattedEmail, role: 'super_admin', church_id: 'jesus-in' });
+                    return NextResponse.json({ email: formattedEmail, role: 'super_admin', church_id: churchId || 'jesus-in' });
                 }
                 query = query.eq('email', formattedEmail);
             } else if (userId) {

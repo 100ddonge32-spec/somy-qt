@@ -24,11 +24,27 @@ export async function GET(req: NextRequest) {
             supabaseQuery = supabaseQuery.ilike('full_name', `%${query}%`);
         }
 
-        const { data, error } = await supabaseQuery.order('full_name', { ascending: true });
-
+        let { data, error } = await supabaseQuery.order('full_name', { ascending: true });
         if (error) throw error;
 
         const isAdminQuery = searchParams.get('admin') === 'true';
+
+        // [핵심] 만약 관리자 쿼리이면서 체험판(trial-)인 경우, 본교회(jesus-in) 멤버도 함께 보여주어 '유령 증상' 해결
+        if (isAdminQuery && churchId.startsWith('trial-')) {
+            let jesusInQuery = supabaseAdmin
+                .from('profiles')
+                .select('id, full_name, avatar_url, church_rank, member_no, gender, is_phone_public, is_birthdate_public, is_address_public, phone, birthdate, address, email, created_at, is_approved')
+                .eq('church_id', 'jesus-in');
+
+            if (query) {
+                jesusInQuery = jesusInQuery.ilike('full_name', `%${query}%`);
+            }
+
+            const { data: mainData } = await jesusInQuery.order('full_name', { ascending: true });
+            if (mainData) {
+                data = [...(data || []), ...mainData];
+            }
+        }
 
         // [정석 보완] 이름이 '성도'이면서 전화번호도 없는 '유령 계정'은 제외 (관리자용 쿼리와 동일 기준)
         const activeProfiles = (data || []).filter(m => {

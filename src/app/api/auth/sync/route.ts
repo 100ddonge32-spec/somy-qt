@@ -160,6 +160,15 @@ export async function POST(req: NextRequest) {
 
             // [핵심 수정] 관리자 DB에 등록된 성도와 이름+전화번호가 일치하면 무조건 즉시 승인!
             // match.is_approved가 null/false인 경우도 매칭 성공이면 학습된 성도이므로 true
+            // [보안] 이미 정식 소속 교회('jesus-in' 등)가 있는 경우 트라이얼 소속으로 영구 변경되지 않도록 보호
+            // 1. adminChurchId가 우선 (관리자 설정이 최우선)
+            // 2. 만약 현재 소속이 !startsWith('trial-') 라면 그대로 유지 (이게 핵심)
+            // 3. 둘 다 아니면 신규 trial/bodyId 소속으로 지정
+            const currentProfileChurch = profileById?.church_id;
+            const finalChurchToSet = (adminChurchId && !adminChurchId.startsWith('trial-')) ? adminChurchId :
+                (currentProfileChurch && !currentProfileChurch.startsWith('trial-')) ? currentProfileChurch :
+                    (adminChurchId || match.church_id || bodyChurchId || 'jesus-in');
+
             const updateFields: any = {
                 full_name: match.full_name || profileById?.full_name || rawName || '성도',
                 phone: match.phone || profileById?.phone || rawPhone,
@@ -169,8 +178,7 @@ export async function POST(req: NextRequest) {
                 member_no: match.member_no || profileById?.member_no,
                 gender: match.gender || profileById?.gender,
                 avatar_url: finalAvatar,
-                // [보안] 이미 정식 소속 교회('jesus-in' 등)가 있는 경우 트라이얼 소속으로 영구 변경되지 않도록 보호
-                church_id: adminChurchId || (profileById?.church_id && !profileById.church_id.startsWith('trial-') ? profileById.church_id : (match.church_id || bodyChurchId || 'jesus-in')),
+                church_id: finalChurchToSet,
                 is_approved: true // ← 매칭 성공 시 항상 true (관리자가 등록한 성도 = 승인된 성도)
             };
 
@@ -196,6 +204,12 @@ export async function POST(req: NextRequest) {
         const isCurrentNameGeneric = !currentName || genericNames.includes(currentName) || currentName === '.';
         const isNewNameBetter = finalName && !genericNames.includes(finalName) && finalName !== '.';
 
+        // [보안] 체험판으로 인해 본래 소속 교회 정보가 유실되지 않도록 보호
+        const curPC = profileById?.church_id;
+        const finalC = (adminChurchId && !adminChurchId.startsWith('trial-')) ? adminChurchId :
+            (curPC && !curPC.startsWith('trial-')) ? curPC :
+                (adminChurchId || bodyChurchId || 'jesus-in');
+
         const dataToSet: any = {
             id: user_id,
             email: email || profileById?.email || `${user_id}@noemail.local`,
@@ -203,8 +217,7 @@ export async function POST(req: NextRequest) {
             phone: profileById?.phone || rawPhone,
             birthdate: profileById?.birthdate || rawBirth,
             avatar_url: profileById?.avatar_url || rawAvatar,
-            // [보안] 체험판으로 인해 본래 소속 교회 정보가 유실되지 않도록 보호
-            church_id: adminChurchId || (profileById?.church_id && !profileById.church_id.startsWith('trial-') ? profileById.church_id : (bodyChurchId || 'jesus-in')),
+            church_id: finalC,
             is_approved: profileById?.is_approved || isAdminMember || IS_BOSS
         };
 

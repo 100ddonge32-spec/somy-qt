@@ -405,8 +405,13 @@ export default function App() {
     const [profileBirthdate, setProfileBirthdate] = useState<string | null>(null);
     const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
     const [churchId, setChurchId] = useState('');
-    const isAdmin = !!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin' || adminInfo.role === 'sub_admin' || adminInfo.role === 'admin');
-    const isSuperAdmin = adminInfo?.role === 'super_admin';
+    // [보안/개선] adminInfo가 일시적으로 null일 때도 톱니바퀴가 사라지지 않도록 하드코딩된 마스터 체크 추가
+    const MASTER_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
+    const isHardcodedAdmin = !!user && !!user.email && MASTER_EMAILS.includes(user.email.toLowerCase().trim());
+    const isMasterName = !!user && (user.user_metadata?.full_name === '백동희' || user.user_metadata?.name === '백동희' || profileName === '백동희');
+
+    const isAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin' || adminInfo.role === 'sub_admin' || adminInfo.role === 'admin'));
+    const isSuperAdmin = isHardcodedAdmin || isMasterName || adminInfo?.role === 'super_admin';
     const isMainAdmin = !!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin' || adminInfo.role === 'admin');
     const [editingPostId, setEditingPostId] = useState<any>(null);
     const [editContent, setEditContent] = useState("");
