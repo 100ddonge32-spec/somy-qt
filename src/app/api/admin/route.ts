@@ -28,13 +28,21 @@ export async function GET(req: NextRequest) {
             const userId = searchParams.get('user_id');
             let email = searchParams.get('email');
 
-            // 슈퍼어드민 리스트
-            const HARDCODED_ADMINS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com").toLowerCase().split(',').map(e => e.trim());
+            // 슈퍼어드민 리스트 (본계정)
+            const HARDCODED_ADMINS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
 
             // 익명 유저 이메일 보완
             if (userId && (!email || email.includes('anonymous.local') || email === 'null' || email === 'undefined')) {
                 const { data: profile } = await supabaseAdmin.from('profiles').select('email').eq('id', userId).maybeSingle();
                 if (profile?.email && !profile.email.includes('anonymous.local')) email = profile.email;
+            }
+
+            // [0순위] 실명/이메일 기반 전역 슈퍼관리자 여부 확인 (어떤 교회 소속이든 무관)
+            if (email && email !== 'undefined' && email !== 'null') {
+                const formattedEmail = email.toLowerCase().trim();
+                if (HARDCODED_ADMINS.includes(formattedEmail)) {
+                    return NextResponse.json({ email: formattedEmail, role: 'super_admin', church_id: 'jesus-in' });
+                }
             }
 
             // 1순위: 특정 교회 소속 관리자 여부 (userId 또는 email)
