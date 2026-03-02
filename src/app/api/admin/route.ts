@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
                 if (profile?.email && !profile.email.includes('anonymous.local')) email = profile.email;
                 if (profile?.full_name === '백동희' || profile?.full_name === '동희') {
                     console.log(`[Admin Check] Master detected by name: ${profile.full_name}`);
-                    return NextResponse.json({ email: profile.email || `${userId}@boss.somy`, role: 'super_admin', church_id: 'jesus-in' });
+                    return NextResponse.json({ email: profile.email || `${userId}@boss.somy`, role: 'super_admin', church_id: churchId || 'jesus-in' });
                 }
             }
 
@@ -68,11 +68,14 @@ export async function GET(req: NextRequest) {
             const { data } = await query.maybeSingle();
             if (data) return NextResponse.json(data);
 
-            // [2순위] 전역 관리자 여부 확인 (특정 교회가 없더라도 'jesus-in' 마스터 권한 등)
-            // church_id 없이 다시 한번 조회 (user_id 또는 email)
+            // 2순위: 전역 관리자 여부 (이메일 및 user_id)
             let globalQuery = supabaseAdmin.from('app_admins').select('*');
             if (email && email !== 'undefined' && email !== 'null') {
-                globalQuery = globalQuery.eq('email', email.toLowerCase().trim());
+                const formattedEmail = email.toLowerCase().trim();
+                if (HARDCODED_ADMINS.includes(formattedEmail)) {
+                    return NextResponse.json({ email: formattedEmail, role: 'super_admin', church_id: churchId || 'jesus-in' });
+                }
+                globalQuery = globalQuery.eq('email', formattedEmail);
             } else if (userId) {
                 globalQuery = globalQuery.eq('user_id', userId);
             }
@@ -918,33 +921,32 @@ export async function POST(req: NextRequest) {
             const isAdminEmail = email && HARDCODED_ADMINS.includes(email.toLowerCase().trim());
 
             // 3. 사용자 즉시 관리자로 등록 (체험판을 만든 사람은 누구나 관리자 권한 부여)
-            {
-                const adminPayload: any = {
-                    user_id: user_id,
-                    role: 'admin',
-                    church_id: trialChurchId,
-                    email: email ? email.toLowerCase().trim() : `${user_id}@trial.somy`
-                };
-
-                // [전략 1] 이메일 기준 upsert
-                const { error: err1 } = await supabaseAdmin.from('app_admins').upsert(adminPayload, { onConflict: 'email' });
-
-                // [전략 2] 만약 user_id 컬럼이 있고 유니크 키라면 user_id 기준 재시도
-                if (err1) {
-                    await supabaseAdmin.from('app_admins').upsert(adminPayload, { onConflict: 'user_id' });
-                }
-
-                // 4. 프로필 즉시 승인 처리
-                await supabaseAdmin.from('profiles').upsert({
-                    id: user_id,
-                    full_name: name || '트라이얼 관리자',
-                    email: email || `${user_id}@trial.somy`,
-                    church_id: trialChurchId,
-                    is_approved: true
-                }, { onConflict: 'id' });
-
-                // 5. 샘플 공지사항 및 더미 데이터 추가 (개별 에러 핸들링으로 하나라도 성공하게)
+            // [보안] 슈퍼어드민(Master)은 이미 전능한 권한이 있으므로 DB에 트라이얼 관리자로 중복 등록하지 않음 (본교회 관리자 정보 보호)
+            if (!isAdminEmail) {
                 try {
+                    const adminPayload: any = {
+                        user_id: user_id,
+                        role: 'admin',
+                        church_id: trialChurchId,
+                        email: email ? email.toLowerCase().trim() : `${user_id}@trial.somy`
+                    };
+
+                    // [전략 1] 이메일 기준 upsert (이메일이 유니크 키일 확률이 높음)
+                    await supabaseAdmin.from('app_admins').upsert(adminPayload, { onConflict: 'email' });
+
+                    // 4. 프로필 즉시 승인 처리 (정식 교인인 경우 이동하지 않고 정보만 업데이트)
+                    const { data: currentProf } = await supabaseAdmin.from('profiles').select('church_id').eq('id', user_id).maybeSingle();
+                    const churchToSet = (currentProf?.church_id && !currentProf.church_id.startsWith('trial-')) ? currentProf.church_id : trialChurchId;
+
+                    await supabaseAdmin.from('profiles').upsert({
+                        id: user_id,
+                        full_name: name || '트라이얼 관리자',
+                        email: email || `${user_id}@trial.somy`,
+                        church_id: churchToSet,
+                        is_approved: true
+                    }, { onConflict: 'id' });
+
+                    // 5. 샘플 공지사항 및 더미 데이터 추가
                     await supabaseAdmin.from('announcements').insert([
                         { church_id: trialChurchId, title: '트라이얼 시작을 환영합니다! 🎉', content: '관리자 센터에서는 교회의 성도 명단을 업로드하고, 공지사항을 등록하며, 큐티왕 통계를 관리할 수 있습니다.', author_name: '소미 도우미' },
                         { church_id: trialChurchId, title: '관리자님, 이렇게 활용해 보세요 💡', content: '1. 하단 탭의 관리자 센터를 클릭합니다. \n2. 설정에서 교회 이름을 바꿔봅니다. \n3. 성도 명단에서 더미 데이터들을 관리해 보세요.', author_name: '소미 관리자' }
@@ -968,20 +970,15 @@ export async function POST(req: NextRequest) {
                     }
                     await supabaseAdmin.from('profiles').insert(dummyMembers);
 
-                    // [더미 데이터 생성] 샘플 커뮤니티 글
+                    // 샘플 커뮤니티 글
                     await supabaseAdmin.from('community_posts').insert([
-                        { church_id: trialChurchId, user_id: user_id, author_name: '철수(더미)', content: '오늘 말씀 너무 좋네요! 다들 은계되셨나요? 🙏', is_private: false },
+                        { church_id: trialChurchId, user_id: user_id, author_name: '철수(더미)', content: '오늘 말씀 너무 좋네요! 다들 은혜되셨나요? 🙏', is_private: false },
                         { church_id: trialChurchId, user_id: user_id, author_name: '영희(더미)', content: '우리 교회가 소미를 도입해서 너무 기쁩니다. 화이팅!', is_private: false }
                     ]);
 
-                    // [더미 데이터 생성] 샘플 상담 요청
-                    await supabaseAdmin.from('counseling_requests').insert([
-                        { church_id: trialChurchId, user_id: user_id, user_name: '지은(더미)', title: '가족 관계를 위한 기도 부탁드립니다.', content: '요즘 부모님과의 관계가 소원하여 마음이 무겁습니다. 지혜를 주시도록 기도 부탁드려요.', status: 'pending' }
-                    ]);
                 } catch (seedError) {
                     console.error("[Trial Seeding Error] Some data might be missing:", seedError);
                 }
-
             }
 
             return NextResponse.json({ success: true, church_id: trialChurchId });

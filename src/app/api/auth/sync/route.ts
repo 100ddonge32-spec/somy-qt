@@ -169,7 +169,8 @@ export async function POST(req: NextRequest) {
                 member_no: match.member_no || profileById?.member_no,
                 gender: match.gender || profileById?.gender,
                 avatar_url: finalAvatar,
-                church_id: adminChurchId || match.church_id || bodyChurchId || profileById?.church_id || 'jesus-in',
+                // [보안] 이미 정식 소속 교회('jesus-in' 등)가 있는 경우 트라이얼 소속으로 영구 변경되지 않도록 보호
+                church_id: adminChurchId || (profileById?.church_id && !profileById.church_id.startsWith('trial-') ? profileById.church_id : (match.church_id || bodyChurchId || 'jesus-in')),
                 is_approved: true // ← 매칭 성공 시 항상 true (관리자가 등록한 성도 = 승인된 성도)
             };
 
@@ -202,7 +203,8 @@ export async function POST(req: NextRequest) {
             phone: profileById?.phone || rawPhone,
             birthdate: profileById?.birthdate || rawBirth,
             avatar_url: profileById?.avatar_url || rawAvatar,
-            church_id: adminChurchId || bodyChurchId || profileById?.church_id || 'jesus-in',
+            // [보안] 체험판으로 인해 본래 소속 교회 정보가 유실되지 않도록 보호
+            church_id: adminChurchId || (profileById?.church_id && !profileById.church_id.startsWith('trial-') ? profileById.church_id : (bodyChurchId || 'jesus-in')),
             is_approved: profileById?.is_approved || isAdminMember || IS_BOSS
         };
 
