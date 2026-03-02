@@ -14,15 +14,29 @@ export async function POST(req: NextRequest) {
     if (!url || !key) return NextResponse.json({ error: 'Missing Supabase keys' }, { status: 500 });
 
     try {
-        const { user_id, email, name: rawName, avatar_url: rawAvatar, phone: rawPhone, birthdate: rawBirth } = await req.json();
+        const { user_id, email, name: rawName, avatar_url: rawAvatar, phone: rawPhone, birthdate: rawBirth, church_id: bodyChurchId } = await req.json();
         if (!user_id) return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
 
-        console.log(`[Sync] TargetID: ${user_id}, Email: ${email}, Name: ${rawName}, Phone: ${rawPhone}, Birth: ${rawBirth}`);
+        console.log(`[Sync] TargetID: ${user_id}, Email: ${email}, Name: ${rawName}, Church: ${bodyChurchId}`);
 
         let isAdminMember = false;
-        if (email) {
-            const { data: adminCheck } = await supabaseAdmin.from('app_admins').select('*').eq('email', email.toLowerCase().trim()).single();
-            if (adminCheck) isAdminMember = true;
+        let adminChurchId = null;
+
+        // 0. 관리자 테이블에서 먼저 권한 확인 (이메일 및 user_id)
+        let adminCheckTerm = null;
+        if (email && !email.includes('anonymous.local')) {
+            const { data } = await supabaseAdmin.from('app_admins').select('*').eq('email', email.toLowerCase().trim()).maybeSingle();
+            adminCheckTerm = data;
+        }
+        if (!adminCheckTerm && user_id) {
+            const { data } = await supabaseAdmin.from('app_admins').select('*').eq('user_id', user_id).maybeSingle();
+            adminCheckTerm = data;
+        }
+
+        if (adminCheckTerm) {
+            isAdminMember = true;
+            adminChurchId = adminCheckTerm.church_id;
+            console.log(`[Sync] Admin detected: role=${adminCheckTerm.role}, church=${adminChurchId}`);
         }
 
         const IS_BOSS = rawName?.trim() === '백동희' || rawName?.trim() === '동희';
@@ -155,7 +169,7 @@ export async function POST(req: NextRequest) {
                 member_no: match.member_no || profileById?.member_no,
                 gender: match.gender || profileById?.gender,
                 avatar_url: finalAvatar,
-                church_id: match.church_id || profileById?.church_id || 'jesus-in',
+                church_id: adminChurchId || match.church_id || bodyChurchId || profileById?.church_id || 'jesus-in',
                 is_approved: true // ← 매칭 성공 시 항상 true (관리자가 등록한 성도 = 승인된 성도)
             };
 
@@ -181,15 +195,15 @@ export async function POST(req: NextRequest) {
         const isCurrentNameGeneric = !currentName || genericNames.includes(currentName) || currentName === '.';
         const isNewNameBetter = finalName && !genericNames.includes(finalName) && finalName !== '.';
 
-        const dataToSet = {
+        const dataToSet: any = {
             id: user_id,
             email: email || profileById?.email || `${user_id}@noemail.local`,
             full_name: (isCurrentNameGeneric && isNewNameBetter) ? finalName : (currentName || finalName),
             phone: profileById?.phone || rawPhone,
             birthdate: profileById?.birthdate || rawBirth,
             avatar_url: profileById?.avatar_url || rawAvatar,
-            church_id: profileById?.church_id || 'jesus-in',
-            is_approved: profileById?.is_approved || isAdminMember || IS_BOSS  // [변경] 명시적 권한 있을 때만 승인
+            church_id: adminChurchId || bodyChurchId || profileById?.church_id || 'jesus-in',
+            is_approved: profileById?.is_approved || isAdminMember || IS_BOSS
         };
 
         if (profileById) {

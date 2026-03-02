@@ -969,7 +969,8 @@ export default function App() {
                         name: metaName,
                         avatar_url: user.user_metadata?.avatar_url,
                         phone: metaPhone,
-                        birthdate: metaBirth
+                        birthdate: metaBirth,
+                        church_id: churchId
                     })
                 });
                 if (syncRes.ok) {
@@ -1156,7 +1157,7 @@ export default function App() {
             setIsApproved(false);
             setNotifications([]);
         }
-    }, [user]);
+    }, [user, churchId]); // churchId가 바뀌었을 때도 다시 권한 체크
 
     // [김부장의 신의 한 수] 유저의 교회 정보가 확인되면 즉시 해당 교회 설정 로드
     useEffect(() => {
