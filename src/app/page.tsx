@@ -1399,33 +1399,44 @@ export default function App() {
 
         // ✅ URL 파라미터 또는 저장장치에서 교회 ID 읽어오기
         const params = new URLSearchParams(window.location.search);
-        const churchFromUrl = params.get('church') || params.get('church_id');
+        let churchFromUrl = params.get('church') || params.get('church_id');
         const initialView = params.get('view') as any;
+
+        // [신규 기능] URL Path (예: /예수인교회) 지원을 위한 라우팅 확장
+        const pathName = typeof window !== 'undefined' ? window.location.pathname.replace(/^\//, '') : '';
+        if (!churchFromUrl && pathName && pathName !== '') {
+            churchFromUrl = decodeURIComponent(pathName);
+        }
 
         if (initialView) {
             setView(initialView);
         }
 
-        // 체험판(trial-)은 sessionStorage(세션 종료 시 삭제)에, 정식 교회는 localStorage에 우선 보관
+        // ✅ 체험판(trial-)은 sessionStorage(세션 종료 시 삭제)에, 정식 교회는 localStorage에 우선 보관
         const churchFromSession = typeof window !== 'undefined' ? sessionStorage.getItem('church_id') : null;
         const churchFromLocal = typeof window !== 'undefined' ? localStorage.getItem('church_id') : null;
 
-        if (churchFromUrl) {
-            setChurchId(churchFromUrl);
-            if (churchFromUrl.startsWith('trial-')) {
-                sessionStorage.setItem('church_id', churchFromUrl);
+        let resolvedChurch = null;
+        if (churchFromUrl) resolvedChurch = churchFromUrl;
+        else if (churchFromSession && churchFromSession.startsWith('trial-')) resolvedChurch = churchFromSession;
+        else if (churchFromLocal) resolvedChurch = churchFromLocal;
+
+        // [신규 기능] 한글 URL 매핑 (예: https://somy-qt.vercel.app/예수인교회 -> jesus-in 자동 변환)
+        if (resolvedChurch === '예수인교회' || resolvedChurch === encodeURIComponent('예수인교회')) {
+            resolvedChurch = 'jesus-in';
+        }
+
+        if (resolvedChurch) {
+            setChurchId(resolvedChurch);
+            if (resolvedChurch.startsWith('trial-')) {
+                sessionStorage.setItem('church_id', resolvedChurch);
             } else {
-                localStorage.setItem('church_id', churchFromUrl);
+                localStorage.setItem('church_id', resolvedChurch);
             }
-            console.log(`[Initialize] Church set from URL: ${churchFromUrl}`);
-        } else if (churchFromSession && churchFromSession.startsWith('trial-')) {
-            setChurchId(churchFromSession);
-            console.log(`[Initialize] Church set from SessionStorage (Trial): ${churchFromSession}`);
-        } else if (churchFromLocal) {
-            setChurchId(churchFromLocal);
-            console.log(`[Initialize] Church set from LocalStorage: ${churchFromLocal}`);
+            console.log(`[Initialize] Church set: ${resolvedChurch}`);
         } else {
-            setChurchId('jesus-in');
+            // [분리] 최초 메인은 예수인교회가 아닌 소미 플랫폼(somy-main)으로 설정
+            setChurchId('somy-main');
         }
 
         const hasVisited = localStorage.getItem('somy_intro_seen');

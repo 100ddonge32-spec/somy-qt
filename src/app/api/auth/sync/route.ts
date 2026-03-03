@@ -169,11 +169,11 @@ export async function POST(req: NextRequest) {
 
             let finalChurchToSet = (adminChurchId && !adminChurchId.startsWith('trial-')) ? adminChurchId :
                 (currentProfileChurch && !currentProfileChurch.startsWith('trial-')) ? currentProfileChurch :
-                    (match.church_id && !match.church_id.startsWith('trial-') ? match.church_id : (bodyChurchId || 'jesus-in'));
+                    (match.church_id && !match.church_id.startsWith('trial-') ? match.church_id : (bodyChurchId || 'somy-main'));
 
-            // [핵심] 마스터이거나 일반 유저인데 체험판 ID가 지정되려 하면 'jesus-in'으로 강제 전환
+            // [핵심] 마스터이거나 일반 유저인데 체험판 ID가 지정되려 하면 'somy-main'으로 강제 전환
             if (finalChurchToSet.startsWith('trial-') && (IS_GLOBAL_MASTER || !isAdminMember)) {
-                finalChurchToSet = (currentProfileChurch && !currentProfileChurch.startsWith('trial-')) ? currentProfileChurch : 'jesus-in';
+                finalChurchToSet = (currentProfileChurch && !currentProfileChurch.startsWith('trial-')) ? currentProfileChurch : 'somy-main';
             }
 
             const updateFields: any = {
@@ -217,11 +217,11 @@ export async function POST(req: NextRequest) {
 
         let finalC = (adminChurchId && !adminChurchId.startsWith('trial-')) ? adminChurchId :
             (curPC && !curPC.startsWith('trial-')) ? curPC :
-                (bodyChurchId || 'jesus-in');
+                (bodyChurchId || 'somy-main');
 
         // [핵심] 마스터(목사님)나 일반 성도는 DB에 절대로 체험판 ID를 저장하지 않음 (메인이 0순위)
         if (finalC.startsWith('trial-') && (IS_GLOBAL_M || !isAdminMember)) {
-            finalC = (curPC && !curPC.startsWith('trial-')) ? curPC : 'jesus-in';
+            finalC = (curPC && !curPC.startsWith('trial-')) ? curPC : 'somy-main';
         }
 
         const dataToSet: any = {
@@ -246,7 +246,7 @@ export async function POST(req: NextRequest) {
             const hasRealInfo = (rawName && !isSystemGeneratedName && !genericNames.includes(rawName)) || (rawPhone && rawPhone.length > 5);
             if (isAnonymous && !hasRealInfo) {
                 console.log(`[Sync] Skipping profile creation for generic/anonymous user: ${email}`);
-                return NextResponse.json({ status: 'visitor', is_approved: false, church_id: 'jesus-in' });
+                return NextResponse.json({ status: 'visitor', is_approved: false, church_id: 'somy-main' });
             }
             await supabaseAdmin.from('profiles').insert([dataToSet]);
             return NextResponse.json({ ...dataToSet, status: 'created' });

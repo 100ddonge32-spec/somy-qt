@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
                 if (profile?.email && !profile.email.includes('anonymous.local')) email = profile.email;
                 if (profile?.full_name === '백동희' || profile?.full_name === '동희') {
                     console.log(`[Admin Check] Master detected by name: ${profile.full_name}`);
-                    return NextResponse.json({ email: profile.email || `${userId}@boss.somy`, role: 'super_admin', church_id: churchId || 'jesus-in' });
+                    return NextResponse.json({ email: profile.email || `${userId}@boss.somy`, role: 'super_admin', church_id: churchId || 'somy-main' });
                 }
             }
 
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
                 const formattedEmail = email.toLowerCase().trim();
                 if (HARDCODED_ADMINS.includes(formattedEmail)) {
                     // [핵심] 슈퍼어드민은 요청한 church_id가 있다면 그 context를 유지해줌
-                    return NextResponse.json({ email: formattedEmail, role: 'super_admin', church_id: churchId || 'jesus-in' });
+                    return NextResponse.json({ email: formattedEmail, role: 'super_admin', church_id: churchId || 'somy-main' });
                 }
             }
 
@@ -56,8 +56,8 @@ export async function GET(req: NextRequest) {
 
             if (email && email !== 'undefined' && email !== 'null') {
                 const formattedEmail = email.toLowerCase().trim();
-                if (HARDCODED_ADMINS.includes(formattedEmail) && (churchId === 'jesus-in' || !churchId)) {
-                    return NextResponse.json({ email: formattedEmail, role: 'super_admin', church_id: churchId || 'jesus-in' });
+                if (HARDCODED_ADMINS.includes(formattedEmail) && (churchId === 'somy-main' || !churchId)) {
+                    return NextResponse.json({ email: formattedEmail, role: 'super_admin', church_id: churchId || 'somy-main' });
                 }
                 query = query.eq('email', formattedEmail);
             } else if (userId) {
@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
             if (email && email !== 'undefined' && email !== 'null') {
                 const formattedEmail = email.toLowerCase().trim();
                 if (HARDCODED_ADMINS.includes(formattedEmail)) {
-                    return NextResponse.json({ email: formattedEmail, role: 'super_admin', church_id: churchId || 'jesus-in' });
+                    return NextResponse.json({ email: formattedEmail, role: 'super_admin', church_id: churchId || 'somy-main' });
                 }
                 globalQuery = globalQuery.eq('email', formattedEmail);
             } else if (userId) {
@@ -108,7 +108,7 @@ export async function GET(req: NextRequest) {
             if (error) throw error;
             const stats: { [key: string]: number } = {};
             profiles?.forEach(p => {
-                const cid = p.church_id || 'jesus-in';
+                const cid = p.church_id || 'somy-main';
                 stats[cid] = (stats[cid] || 0) + 1;
             });
             return NextResponse.json(stats);
@@ -734,7 +734,7 @@ export async function POST(req: NextRequest) {
             const { error } = await supabaseAdmin
                 .from('profiles')
                 .delete()
-                .eq('church_id', church_id || 'jesus-in');
+                .eq('church_id', church_id || 'somy-main');
             if (error) throw error;
             return NextResponse.json({ success: true });
         }

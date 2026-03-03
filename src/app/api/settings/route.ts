@@ -26,6 +26,23 @@ export async function GET(req: NextRequest) {
         .eq('church_id', targetChurchId)
         .maybeSingle();
 
+    // [신규] 'somy-main' 요청 시 데이터가 없으면 즉석 생성 후 반환 (단순 소개 목적)
+    if (!data && targetChurchId === 'somy-main') {
+        const platformData = {
+            church_id: 'somy-main',
+            church_name: '소미 플랫폼',
+            app_subtitle: '교회의 디지털 전환을 돕습니다 (메인 플랫폼)',
+            church_logo_url: '/somy.png',
+            plan: 'premium',
+            community_visible: true,
+            sermon_summary: '소미 플랫폼에 오신 것을 환영합니다! \n\n이곳은 플랫폼 소개를 위한 메인 페이지입니다. 성도님들께서는 원하시는 교회의 전용 주소로 접속해주세요. (예: 주소창 끝에 /예수인교회 입력)',
+            pastor_column_title: '✨ 환영합니다',
+            pastor_column_content: '여기는 소미 플랫폼 메인입니다. 뒷주소에 자신의 교회 이름을 적어 소속 교회의 전용 화면으로 이동하세요. (슈퍼관리자는 이 화면도 직접 커스텀할 수 있습니다.)'
+        };
+        await supabaseAdmin.from('church_settings').upsert(platformData, { onConflict: 'church_id' });
+        data = platformData as any;
+    }
+
     // 2순위: jesus-in에 한해서는 id=1 레코드를 마지막 보루로 시도 (호환성)
     if (!data && targetChurchId === 'jesus-in') {
         const { data: fallback } = await supabaseAdmin
