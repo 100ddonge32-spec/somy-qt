@@ -82,7 +82,11 @@ export async function GET(req: NextRequest) {
             }
 
             const { data: globalAdmin } = await globalQuery.maybeSingle();
-            if (globalAdmin) return NextResponse.json(globalAdmin);
+            if (globalAdmin) {
+                // [신규 보안 강화] 전역 관리자가 아닌 지역(church) 관리자라면 본인 교회일 때만 권한 부여
+                if (globalAdmin.role === 'super_admin') return NextResponse.json(globalAdmin);
+                if (globalAdmin.church_id === churchId) return NextResponse.json(globalAdmin);
+            }
 
             return NextResponse.json({ role: 'user' });
         }

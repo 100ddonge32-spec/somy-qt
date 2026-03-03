@@ -412,9 +412,9 @@ export default function App() {
 
     // [전략] 마스터이거나, 체험판(샌드박스) 환경이거나, adminInfo에 권한이 있으면 관리자로 인정
     const isTrialEnvironment = typeof churchId === 'string' && churchId.startsWith('trial-');
-    const isAdmin = isHardcodedAdmin || isMasterName || isTrialEnvironment || (!!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin' || adminInfo.role === 'sub_admin' || adminInfo.role === 'admin'));
+    const isAdmin = isHardcodedAdmin || isMasterName || isTrialEnvironment || (!!adminInfo && (adminInfo.role === 'super_admin' || ((adminInfo.role === 'church_admin' || adminInfo.role === 'sub_admin' || adminInfo.role === 'admin') && adminInfo.church_id === churchId)));
     const isSuperAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && adminInfo.role === 'super_admin');
-    const isMainAdmin = isHardcodedAdmin || isMasterName || isTrialEnvironment || (!!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin' || adminInfo.role === 'admin'));
+    const isMainAdmin = isHardcodedAdmin || isMasterName || isTrialEnvironment || (!!adminInfo && (adminInfo.role === 'super_admin' || ((adminInfo.role === 'church_admin' || adminInfo.role === 'admin') && adminInfo.church_id === churchId)));
     const [editingPostId, setEditingPostId] = useState<any>(null);
     const [editContent, setEditContent] = useState("");
     const [editingCommentId, setEditingCommentId] = useState<any>(null);
