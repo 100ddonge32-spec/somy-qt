@@ -1867,27 +1867,27 @@ export default function App() {
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
-        setChurchId('');
-        const blank = {
-            church_name: CHURCH_NAME,
-            church_logo_url: CHURCH_LOGO,
-            church_url: CHURCH_URL,
-            sermon_url: "",
-            manual_sermon_url: "",
-            app_subtitle: APP_SUBTITLE,
-            plan: 'free',
-            community_visible: true,
-            allow_member_edit: false,
-            sermon_summary: '', sermon_q1: '', sermon_q2: '', sermon_q3: '',
-            event_poster_url: '', event_poster_visible: false
-        };
-        setChurchSettings(blank);
-        setSettingsForm(blank);
+
+        // [수정] 로그아웃 시 예수인교회(blank)로 돌아가서 UI가 왜곡되는 현상(시각적 오염)을 방지
+        // 대신 공식 플랫폼 메인으로 안전하게 초기화합니다.
+        setChurchId('somy-main');
+        setChurchSettings({ loading: true } as any);
+        setSettingsForm({ loading: true } as any);
         setShowEventPopup(false);
 
         // [세션 초기화] 로그아웃 시 캐시된 교회 정보를 완전히 삭제하여 체험판이 잔상처럼 남는 현상 해결
         localStorage.removeItem('church_id');
         sessionStorage.removeItem('church_id');
+
+        setProfileName(null);
+        setAdminInfo(null);
+        setIsApproved(false);
+
+        // URL 클리어 시도 (히스토리 스택 방지)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('church_id') || urlParams.has('church')) {
+            window.history.replaceState({}, '', '/');
+        }
 
         setView("home");
     };

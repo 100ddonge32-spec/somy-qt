@@ -185,13 +185,15 @@ export async function GET(req: NextRequest) {
                         await supabaseAdmin.from('profiles').delete().eq('id', match.id);
                     }
                 } else {
-                    // 관리자 신규 프로필 생성
+                    // 관리자 신규 프로필 생성 (하드코딩된 예수인교회 대신 실제 관리자 정보 참조)
+                    const { data: fallbackAdminData } = await supabaseAdmin.from('app_admins').select('church_id').eq('email', syntheticEmail).maybeSingle();
+
                     await supabaseAdmin.from('profiles').insert({
                         id: supabaseUser.id,
                         full_name: nickname,
                         avatar_url: profileImage,
                         email: syntheticEmail,
-                        church_id: 'jesus-in',
+                        church_id: fallbackAdminData?.church_id ?? 'somy-main', // 동적 매핑
                         is_approved: true,  // 관리자는 항상 승인
                     });
                 }
