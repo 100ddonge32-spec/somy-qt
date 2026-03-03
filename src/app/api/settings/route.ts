@@ -207,10 +207,34 @@ export async function POST(req: NextRequest) {
     const isGlobalMaster = (requesterProfile?.email && HARDCODED_ADMINS.includes(requesterProfile.email.toLowerCase())) || (adminCheck?.role === 'super_admin');
 
     // 4. 권한 검증: 전역 마스터이거나, 해당 교회의 담당 관리자여야 함
+    // [강화] 전역 마스터는 어떤 교회든 관리할 수 있어야 함
     if (!isGlobalMaster) {
-        if (!adminCheck || adminCheck.church_id?.toLowerCase() !== targetChurchId?.toLowerCase()) {
-            console.error(`[Security Alert] Unauthorized settings update attempt. Requester: ${requester_id}, Target: ${targetChurchId}, UserChurch: ${adminCheck?.church_id}`);
-            return NextResponse.json({ success: false, error: "이 교회의 설정을 변경할 권한이 없습니다." }, { status: 403 });
+        // [백업] adminCheck가 없더라도 이메일로 다시 한번 확인
+        let finalAdminCheck = adminCheck;
+        if (!finalAdminCheck && requesterProfile?.email) {
+            const { data: emailMatch } = await supabaseAdmin
+                .from('app_admins')
+                .select('*')
+                .eq('email', requesterProfile.email.toLowerCase().trim())
+                .maybeSingle();
+            finalAdminCheck = emailMatch;
+        }
+
+        // 체험판인 경우: 만약 요청자가 마스터 리스트에 있다면 무조건 허용
+        const isTrial = targetChurchId?.toLowerCase().startsWith('trial-');
+
+        if (!finalAdminCheck || finalAdminCheck.church_id?.toLowerCase() !== targetChurchId?.toLowerCase()) {
+            // [최종 구제] 하드코딩된 관리자 이메일과 대조 (isGlobalMaster가 email 누락 등으로 실패했을 경우 대비)
+            const requesterMail = requesterProfile?.email?.toLowerCase().trim();
+            const isIncludedMail = requesterMail && HARDCODED_ADMINS.includes(requesterMail);
+
+            if (!isIncludedMail) {
+                const reason = !finalAdminCheck ? "관리자 레코드 없음" :
+                    finalAdminCheck.church_id?.toLowerCase() !== targetChurchId?.toLowerCase() ? `교회 불일치(${finalAdminCheck.church_id} vs ${targetChurchId})` :
+                        "알 수 없는 권한 오류";
+                console.error(`[Security Alert] Unauthorized settings update attempt. Requester: ${requester_id}, Email: ${requesterMail}, Target: ${targetChurchId}, Reason: ${reason}`);
+                return NextResponse.json({ success: false, error: `권한이 없습니다: ${reason}` }, { status: 403 });
+            }
         }
     }
 
