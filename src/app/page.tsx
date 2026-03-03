@@ -2257,7 +2257,18 @@ export default function App() {
                                         }}>TRIAL</span>
                                     )}
                                     {isSuperAdmin ? (
-                                        <span style={{ background: '#333', color: 'white', fontSize: '9px', padding: '1px 5px', borderRadius: '4px', fontWeight: 900 }}>슈퍼관리자</span>
+                                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                            <span style={{ background: '#333', color: 'white', fontSize: '9px', padding: '2px 5px', borderRadius: '4px', fontWeight: 900 }}>슈퍼관리자</span>
+                                            <button
+                                                onClick={() => {
+                                                    const targetPath = churchId === 'somy-main' ? '예수인교회' : 'somy-main';
+                                                    window.location.href = `/${targetPath}`;
+                                                }}
+                                                style={{ background: '#1A5D55', color: 'white', border: 'none', borderRadius: '4px', fontSize: '9px', fontWeight: 900, cursor: 'pointer', padding: '2px 5px', transition: 'all 0.2s' }}
+                                            >
+                                                {churchId === 'somy-main' ? '⛪ 본교회로 이동' : '🌐 플랫폼 메인 관리'}
+                                            </button>
+                                        </div>
                                     ) : isAdmin ? (
                                         <span style={{ background: '#666', color: 'white', fontSize: '9px', padding: '1px 5px', borderRadius: '4px', fontWeight: 900 }}>관리자</span>
                                     ) : null}
