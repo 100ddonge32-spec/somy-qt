@@ -167,14 +167,20 @@ export async function POST(req: NextRequest) {
             const currentProfileChurch = profileById?.church_id;
             const IS_GLOBAL_MASTER = IS_BOSS || (adminCheckTerm?.role === 'super_admin');
 
-            let finalChurchToSet = (adminChurchId && !adminChurchId.startsWith('trial-')) ? adminChurchId :
+            // [분리 원칙] 프로필의 영구 소속(DB저장용)과 현재 접속 컨텍스트(응답용) 결정
+            // 1. DB에 저장될 영구 소속 (체험판은 영구 소속이 될 수 없음)
+            let permanentChurch = (adminChurchId && !adminChurchId.startsWith('trial-')) ? adminChurchId :
                 (currentProfileChurch && !currentProfileChurch.startsWith('trial-')) ? currentProfileChurch :
-                    (match.church_id && !match.church_id.startsWith('trial-') ? match.church_id : (bodyChurchId || 'somy-main'));
+                    (match && match.church_id && !match.church_id.startsWith('trial-') ? match.church_id : 'somy-main');
 
-            // [핵심] 마스터이거나 일반 유저인데 체험판 ID가 지정되려 하면 'somy-main'으로 강제 전환
-            if (finalChurchToSet.startsWith('trial-') && (IS_GLOBAL_MASTER || !isAdminMember)) {
-                finalChurchToSet = (currentProfileChurch && !currentProfileChurch.startsWith('trial-')) ? currentProfileChurch : 'somy-main';
+            // [추가] 마스터 어드민(목사님)은 매칭 결과와 상관없이 본교 소속 유지
+            if (IS_BOSS || (adminCheckTerm?.role === 'super_admin' && !adminCheckTerm?.church_id?.startsWith('trial-'))) {
+                permanentChurch = 'jesus-in';
             }
+
+            // 2. 현재 앱 세션이 유지해야 할 컨텍스트 (응답용)
+            // 명시적으로 체험판에 접속 중이라면(bodyChurchId), 프로필 소속과 무관하게 체험판을 유지하게 응답합니다.
+            let contextChurch = (bodyChurchId && bodyChurchId.startsWith('trial-')) ? bodyChurchId : permanentChurch;
 
             const updateFields: any = {
                 full_name: match.full_name || profileById?.full_name || rawName || '성도',
@@ -185,20 +191,22 @@ export async function POST(req: NextRequest) {
                 member_no: match.member_no || profileById?.member_no,
                 gender: match.gender || profileById?.gender,
                 avatar_url: finalAvatar,
-                church_id: finalChurchToSet,
-                is_approved: true // ← 매칭 성공 시 항상 true (관리자가 등록한 성도 = 승인된 성도)
+                church_id: permanentChurch, // DB에는 영구 소속 저장
+                is_approved: true
             };
+
+            // 응답에는 현재 세션 컨텍스트(체험판 등)를 담아 전달
+            const responseData = { ...updateFields, church_id: contextChurch };
 
             if (profileById) {
                 await supabaseAdmin.from('profiles').update(updateFields).eq('id', user_id);
                 if (match.id !== user_id) {
                     await supabaseAdmin.from('profiles').delete().eq('id', match.id);
                 }
-                // name 필드도 함께 반환 (result.name 호환성 유지)
-                return NextResponse.json({ ...updateFields, name: updateFields.full_name, status: 'merged' });
+                return NextResponse.json({ ...responseData, name: responseData.full_name, status: 'merged' });
             } else {
-                const newProfile = { ...updateFields, id: user_id, email: email || match.email };
-                await supabaseAdmin.from('profiles').insert([newProfile]);
+                const newProfile = { ...responseData, id: user_id, email: email || match.email };
+                await supabaseAdmin.from('profiles').insert([updateFields]); // DB에는 permanentChurch가 담긴 updateFields 저장
                 if (match.id !== user_id) {
                     await supabaseAdmin.from('profiles').delete().eq('id', match.id);
                 }
@@ -211,18 +219,16 @@ export async function POST(req: NextRequest) {
         const isCurrentNameGeneric = !currentName || genericNames.includes(currentName) || currentName === '.';
         const isNewNameBetter = finalName && !genericNames.includes(finalName) && finalName !== '.';
 
-        // [보안] 체험판으로 인해 본래 소속 교회 정보가 유실되지 않도록 보호
+        // 2. [변경] 프로필 영구 소속과 현재 컨텍스트 분리
         const curPC = profileById?.church_id;
-        const IS_GLOBAL_M = IS_BOSS || (adminCheckTerm?.role === 'super_admin');
+        let pChurch = (adminChurchId && !adminChurchId.startsWith('trial-')) ? adminChurchId :
+            (curPC && !curPC.startsWith('trial-')) ? curPC : 'somy-main';
 
-        let finalC = (adminChurchId && !adminChurchId.startsWith('trial-')) ? adminChurchId :
-            (curPC && !curPC.startsWith('trial-')) ? curPC :
-                (bodyChurchId || 'somy-main');
-
-        // [핵심] 마스터(목사님)나 일반 성도는 DB에 절대로 체험판 ID를 저장하지 않음 (메인이 0순위)
-        if (finalC.startsWith('trial-') && (IS_GLOBAL_M || !isAdminMember)) {
-            finalC = (curPC && !curPC.startsWith('trial-')) ? curPC : 'somy-main';
+        if (IS_BOSS || (adminCheckTerm?.role === 'super_admin' && !adminCheckTerm?.church_id?.startsWith('trial-'))) {
+            pChurch = 'jesus-in';
         }
+
+        let cContext = (bodyChurchId && bodyChurchId.startsWith('trial-')) ? bodyChurchId : pChurch;
 
         const dataToSet: any = {
             id: user_id,
@@ -231,13 +237,15 @@ export async function POST(req: NextRequest) {
             phone: profileById?.phone || rawPhone,
             birthdate: profileById?.birthdate || rawBirth,
             avatar_url: profileById?.avatar_url || rawAvatar,
-            church_id: finalC,
+            church_id: pChurch, // DB에는 영구 소속
             is_approved: profileById?.is_approved || isAdminMember || IS_BOSS
         };
 
+        const resData = { ...dataToSet, church_id: cContext }; // 응답에는 현재 컨텍스트
+
         if (profileById) {
             await supabaseAdmin.from('profiles').update(dataToSet).eq('id', user_id);
-            return NextResponse.json({ ...dataToSet, status: 'updated' });
+            return NextResponse.json({ ...resData, status: 'updated' });
         } else {
             const isAnonymous = !email ||
                 email.includes('anonymous.local') ||
@@ -249,7 +257,7 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ status: 'visitor', is_approved: false, church_id: 'somy-main' });
             }
             await supabaseAdmin.from('profiles').insert([dataToSet]);
-            return NextResponse.json({ ...dataToSet, status: 'created' });
+            return NextResponse.json({ ...resData, status: 'created' });
         }
 
     } catch (err: any) {

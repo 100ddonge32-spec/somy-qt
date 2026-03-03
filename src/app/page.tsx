@@ -998,8 +998,10 @@ export default function App() {
                         // 정식 교인 소속은 localStorage에 영구보관
                         if (isHardcodedAdmin || isMasterName) {
                             // [수정] 마스터 관리자가 체험판(trial-)에 접속했을 때 jesus-in으로 튕겨나가는 현상 해결
-                            // URL에 체험판 ID가 있으면 플랫폼 메인이 아닌 해당 체험판을 유지하도록 합니다.
-                            let safeChurch = hasSpecificChurchUrl ? hasSpecificChurchUrl : (syncData.church_id && !syncData.church_id.startsWith('trial-')) ? syncData.church_id : 'somy-main';
+                            // URL에 체험판 ID가 있거나, 현재 이미 체험판 컨텍스트인 경우 이를 유지하도록 합니다.
+                            let safeChurch = hasSpecificChurchUrl ? hasSpecificChurchUrl :
+                                (churchId && churchId.startsWith('trial-')) ? churchId :
+                                    (syncData.church_id && !syncData.church_id.startsWith('trial-')) ? syncData.church_id : 'somy-main';
                             if (safeChurch === '예수인교회' || safeChurch === encodeURIComponent('예수인교회')) safeChurch = 'jesus-in';
 
                             setChurchId(safeChurch);
@@ -1046,6 +1048,9 @@ export default function App() {
 
                     if (hasSpecificChurchUrl) {
                         safeChurch = hasSpecificChurchUrl;
+                    } else if (churchId && churchId.startsWith('trial-')) {
+                        // 현재 상태가 체험판이면 유지 (매우 중요)
+                        safeChurch = churchId;
                     } else if (localTarget === 'somy-main') {
                         safeChurch = 'somy-main';
                     } else if (localTarget === 'jesus-in') {
@@ -2034,6 +2039,11 @@ export default function App() {
                 pastor_column_title: newTitle,
                 pastor_column_content: newContent
             };
+
+            // [보안] 체험판인 경우 본교회 ID(1) 유입을 원천 차단
+            if (churchId && churchId.startsWith('trial-')) {
+                delete (updatedPayload as any).id;
+            }
 
             const saveRes = await fetch('/api/settings', {
                 method: 'POST',

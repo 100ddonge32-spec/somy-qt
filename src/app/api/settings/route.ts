@@ -293,14 +293,18 @@ export async function POST(req: NextRequest) {
         sermon_url: cleanSermonUrl
     };
 
-    // [최후의 보루] ID 매칭 강제화
+    // [최후의 보루] ID 매칭 강제화 및 교차 오염 원천 차단
     if (targetChurchId === 'jesus-in') {
         safeBaseData.id = 1; // 예수인교회는 무조건 ID 1 고정
     } else if (currentSettings) {
-        if (currentSettings.id === 1) {
-            return NextResponse.json({ success: false, error: "데이터 무결성 오류" }, { status: 403 });
+        // [강력 대응] 체험판이나 신규 교회의 업데이트가 ID 1번(본교)을 건드리는 것을 물리적으로 차단
+        if (currentSettings.id === 1 || currentSettings.church_id === 'jesus-in') {
+            return NextResponse.json({ success: false, error: "보안 정책 위반: 메인 데이터 접근 거부" }, { status: 403 });
         }
         safeBaseData.id = currentSettings.id;
+    } else {
+        // [신규] currentSettings가 없으면 새로운 레코드이므로 ID를 절대 포함하지 않음 (ID 1 탈취 방지)
+        delete safeBaseData.id;
     }
 
     const advancedData = {
