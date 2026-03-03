@@ -1038,7 +1038,19 @@ export default function App() {
 
                 // [궁극의 탈출구] 마스터는 체험판을 제외한 다른 정식 경로(플랫폼 메인 포함)로는 자유롭게 이동 가능
                 if (isHardcodedAdmin || isMasterName) {
-                    let safeChurch = (hasSpecificChurchUrl && !hasSpecificChurchUrl.startsWith('trial-')) ? hasSpecificChurchUrl : (data.church_id && !data.church_id.startsWith('trial-')) ? data.church_id : 'somy-main';
+                    const localTarget = typeof window !== 'undefined' ? localStorage.getItem('church_id') : null;
+                    let safeChurch = 'somy-main';
+
+                    if (hasSpecificChurchUrl && !hasSpecificChurchUrl.startsWith('trial-')) {
+                        safeChurch = hasSpecificChurchUrl;
+                    } else if (localTarget === 'somy-main') {
+                        safeChurch = 'somy-main'; // 명시적인 플랫폼 메인 이동 의도 존중
+                    } else if (localTarget === 'jesus-in') {
+                        safeChurch = 'jesus-in';
+                    } else if (data.church_id && !data.church_id.startsWith('trial-')) {
+                        safeChurch = data.church_id;
+                    }
+
                     if (safeChurch === '예수인교회' || safeChurch === encodeURIComponent('예수인교회')) safeChurch = 'jesus-in';
 
                     setChurchId(safeChurch);
@@ -1067,7 +1079,8 @@ export default function App() {
                 checkNewContent();
 
                 if (memberList.length === 0) {
-                    fetch(`/api/members?church_id=${data.church_id || 'jesus-in'}`)
+                    const fetchTargetChurch = (typeof window !== 'undefined' && localStorage.getItem('church_id')) || data.church_id || 'jesus-in';
+                    fetch(`/api/members?church_id=${fetchTargetChurch}`)
                         .then(r => r.ok ? r.json() : [])
                         .then(members => { if (Array.isArray(members)) setMemberList(members); })
                         .catch(err => console.error("멤버 목록 로딩 실패:", err));
@@ -1091,7 +1104,8 @@ export default function App() {
                         setAdminInfo(data);
                         console.log("관리자 정보 확인됨, 상세 성도 명단 로딩...");
                         // 관리자인 경우 즉시 상세 정보를 포함한 전체 명단을 가져와서 '등록일', '승인상태' 누락 방지
-                        fetch(`/api/admin?action=list_members&church_id=${data.church_id || 'jesus-in'}`)
+                        const adminFetchTarget = (typeof window !== 'undefined' && localStorage.getItem('church_id')) || data.church_id || 'jesus-in';
+                        fetch(`/api/admin?action=list_members&church_id=${adminFetchTarget}`)
                             .then(r => r.ok ? r.json() : [])
                             .then(members => { if (Array.isArray(members)) setMemberList(members); })
                             .catch(e => console.error("관리자용 명단 로딩 실패:", e));
