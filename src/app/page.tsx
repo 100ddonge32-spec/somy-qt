@@ -1387,7 +1387,7 @@ export default function App() {
             const res = await fetch('/api/admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'delete_admin', target_email: email })
+                body: JSON.stringify({ action: 'delete_admin', target_email: email, requester_id: user?.id })
             });
             const data = await res.json();
             if (res.ok) {

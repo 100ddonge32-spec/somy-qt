@@ -192,11 +192,12 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: false, error: "권한이 없습니다. (No Requester ID)" }, { status: 401 });
         }
 
-        const { data: adminCheck } = await supabaseAdmin
+        const { data: adminsForRequester } = await supabaseAdmin
             .from('app_admins')
             .select('*')
-            .eq('user_id', requester_id)
-            .maybeSingle();
+            .eq('user_id', requester_id);
+
+        const adminCheck = adminsForRequester?.find(a => a.role === 'super_admin') || adminsForRequester?.[0];
 
         const { data: requesterProfile } = await supabaseAdmin
             .from('profiles')
