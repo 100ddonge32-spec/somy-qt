@@ -195,6 +195,15 @@ export async function POST(req: NextRequest) {
         .from('app_admins')
         .select('*')
         .eq('user_id', requester_id)
+        .ilike('church_id', targetChurchId) // 해당 교회에 대한 권한이 있는지 직접 타겟팅
+        .maybeSingle();
+
+    // [추가] 마스터 권한은 특정 교회가 아닌 전역 권한이므로 별도 조회
+    const { data: masterCheck } = await supabaseAdmin
+        .from('app_admins')
+        .select('*')
+        .eq('user_id', requester_id)
+        .eq('role', 'super_admin')
         .maybeSingle();
 
     // 3. 마스터 관리자(목사님) 여부 확인 (전역 권한)
@@ -204,23 +213,35 @@ export async function POST(req: NextRequest) {
         .eq('id', requester_id)
         .maybeSingle();
 
-    const isGlobalMaster = (requesterProfile?.email && HARDCODED_ADMINS.includes(requesterProfile.email.toLowerCase())) || (adminCheck?.role === 'super_admin');
+    const isGlobalMaster = (requesterProfile?.email && HARDCODED_ADMINS.includes(requesterProfile.email.toLowerCase())) || (masterCheck?.role === 'super_admin') || (adminCheck?.role === 'super_admin');
 
     // 4. 권한 검증: 전역 마스터이거나, 해당 교회의 담당 관리자여야 함
     // [강화] 전역 마스터는 어떤 교회든 관리할 수 있어야 함
     if (!isGlobalMaster) {
         // [백업] adminCheck가 없더라도 이메일로 다시 한번 확인
         let finalAdminCheck = adminCheck;
+
         if (!finalAdminCheck && requesterProfile?.email) {
             const { data: emailMatch } = await supabaseAdmin
                 .from('app_admins')
                 .select('*')
                 .eq('email', requesterProfile.email.toLowerCase().trim())
+                .ilike('church_id', targetChurchId) // 해당 교회 매칭
                 .maybeSingle();
             finalAdminCheck = emailMatch;
         }
 
-        // 체험판인 경우: 만약 요청자가 마스터 리스트에 있다면 무조건 허용
+        // [최종 구제] 유저 ID로 다시 한번만 전체 권한 조회 (role이 super_admin인지 확인용)
+        if (!finalAdminCheck) {
+            const { data: anyAdmin } = await supabaseAdmin
+                .from('app_admins')
+                .select('*')
+                .eq('user_id', requester_id)
+                .limit(1)
+                .maybeSingle();
+            finalAdminCheck = anyAdmin;
+        }
+
         const isTrial = targetChurchId?.toLowerCase().startsWith('trial-');
 
         if (!finalAdminCheck || finalAdminCheck.church_id?.toLowerCase() !== targetChurchId?.toLowerCase()) {
