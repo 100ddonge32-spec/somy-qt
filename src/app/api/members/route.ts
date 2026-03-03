@@ -15,6 +15,10 @@ export async function GET(req: NextRequest) {
     const churchId = searchParams.get('church_id') || '';
 
     try {
+        if (churchId === 'somy-main') {
+            return NextResponse.json([]); // 플랫폼 메인은 주소록 기능이 없으므로 항상 0명 반환
+        }
+
         let supabaseQuery = supabaseAdmin
             .from('profiles')
             .select('id, full_name, avatar_url, church_rank, member_no, gender, is_phone_public, is_birthdate_public, is_address_public, phone, birthdate, address, email, created_at, is_approved')

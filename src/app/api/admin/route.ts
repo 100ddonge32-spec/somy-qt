@@ -90,6 +90,12 @@ export async function GET(req: NextRequest) {
         // [2] 성도 목록 조회
         if (action === 'list_members') {
             if (!churchId) return NextResponse.json({ error: 'Church ID required' }, { status: 400 });
+
+            // [신규] 플랫폼 메인(somy-main)은 관리할 실질적인 '소속 성도' 개념이 없으므로 항상 0명 반환 (오염된 데이터 초기화)
+            if (churchId === 'somy-main') {
+                return NextResponse.json([]);
+            }
+
             let { data, error } = await supabaseAdmin.from('profiles').select('*').eq('church_id', churchId).order('created_at', { ascending: false });
             if (error) throw error;
 
