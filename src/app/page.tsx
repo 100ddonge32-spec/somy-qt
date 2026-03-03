@@ -2516,75 +2516,70 @@ export default function App() {
                     <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%", maxWidth: "340px", animation: "fade-in 1.4s ease-out", paddingBottom: "20px" }}>
                         {!user && churchId !== 'demo' ? (
                             <div style={{ background: 'white', padding: '30px', borderRadius: '32px', boxShadow: '0 15px 50px rgba(0,0,0,0.1)', border: '1px solid #F0ECE4', textAlign: 'center' }}>
-                                {churchId === 'somy-main' ? (
-                                    <div style={{ marginBottom: '25px', textAlign: 'center', animation: 'fade-in 0.8s ease' }}>
-                                        <div style={{ fontSize: '22px', fontWeight: 900, color: '#1A5D55', marginBottom: '12px' }}>AI 스마트 교적 & 목회 비서</div>
-                                        <div style={{ fontSize: '14px', color: '#666', lineHeight: 1.6 }}>소미 플랫폼에 오신 것을 환영합니다.<br />1초 만에 우리 교회의 스마트 앱을 체험해 보세요!</div>
+                                <div style={{ marginBottom: '25px', textAlign: 'center', animation: 'fade-in 0.8s ease' }}>
+                                    <div style={{ fontSize: '22px', fontWeight: 900, color: '#1A5D55', marginBottom: '12px' }}>우리 교회 스마트 앱 시작 ⛪</div>
+                                    <div style={{ fontSize: '13px', color: '#666', lineHeight: 1.6 }}>
+                                        {churchId === 'somy-main'
+                                            ? '이미 등록된 성도님은 성함과 번호를 입력해 주세요.'
+                                            : '교회에서 등록한 정보를 입력하시면 즉시 시작됩니다.'}
                                     </div>
-                                ) : (
-                                    <>
-                                        <div style={{ fontSize: '20px', fontWeight: 900, color: '#333', marginBottom: '8px' }}>우리 교회 성도 로그인 ✨</div>
-                                        <div style={{ fontSize: '13px', color: '#888', marginBottom: '28px', lineHeight: 1.5 }}>관리자가 등록한 정보를 입력하시면<br />별도의 승인 없이 바로 시작됩니다.</div>
-                                    </>
-                                )}
+                                </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    {churchId !== 'somy-main' && (
-                                        <>
-                                            <div style={{ textAlign: 'left' }}>
-                                                <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>성함</label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="실명을 입력하세요 (예: 홍길동)"
-                                                    value={loginName}
-                                                    onChange={(e) => setLoginName(e.target.value)}
-                                                    style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '15px', outline: 'none', background: '#FAFAFA', boxSizing: 'border-box' }}
-                                                />
-                                            </div>
-                                            <div style={{ textAlign: 'left' }}>
-                                                <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>전화번호 (010-0000-0000)</label>
-                                                <input
-                                                    type="tel"
-                                                    placeholder="숫자만 입력해 주세요"
-                                                    value={loginPhoneTail}
-                                                    onChange={(e) => setLoginPhoneTail(e.target.value.replace(/[^0-9]/g, ''))}
-                                                    style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '15px', outline: 'none', background: '#FAFAFA', boxSizing: 'border-box' }}
-                                                />
-                                            </div>
-                                            <div style={{ textAlign: 'left' }}>
-                                                <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>생년월일 (8자리: 19900101)</label>
-                                                <input
-                                                    type="tel"
-                                                    maxLength={8}
-                                                    placeholder="19900101"
-                                                    value={loginBirthdate}
-                                                    onChange={(e) => setLoginBirthdate(e.target.value.replace(/[^0-9]/g, ''))}
-                                                    style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '15px', outline: 'none', background: '#FAFAFA', boxSizing: 'border-box' }}
-                                                />
-                                            </div>
+                                    <>
+                                        <div style={{ textAlign: 'left' }}>
+                                            <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>성함</label>
+                                            <input
+                                                type="text"
+                                                placeholder="실명을 입력하세요 (예: 홍길동)"
+                                                value={loginName}
+                                                onChange={(e) => setLoginName(e.target.value)}
+                                                style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '15px', outline: 'none', background: '#FAFAFA', boxSizing: 'border-box' }}
+                                            />
+                                        </div>
+                                        <div style={{ textAlign: 'left' }}>
+                                            <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>전화번호 (010-0000-0000)</label>
+                                            <input
+                                                type="tel"
+                                                placeholder="숫자만 입력해 주세요"
+                                                value={loginPhoneTail}
+                                                onChange={(e) => setLoginPhoneTail(e.target.value.replace(/[^0-9]/g, ''))}
+                                                style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '15px', outline: 'none', background: '#FAFAFA', boxSizing: 'border-box' }}
+                                            />
+                                        </div>
+                                        <div style={{ textAlign: 'left' }}>
+                                            <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>생년월일 (8자리: 19900101)</label>
+                                            <input
+                                                type="tel"
+                                                maxLength={8}
+                                                placeholder="19900101"
+                                                value={loginBirthdate}
+                                                onChange={(e) => setLoginBirthdate(e.target.value.replace(/[^0-9]/g, ''))}
+                                                style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '15px', outline: 'none', background: '#FAFAFA', boxSizing: 'border-box' }}
+                                            />
+                                        </div>
 
-                                            <button
-                                                onClick={handleDirectLogin}
-                                                disabled={isDirectLoggingIn}
-                                                style={{
-                                                    marginTop: '10px',
-                                                    width: '100%',
-                                                    padding: '18px',
-                                                    background: (loginName && loginPhoneTail.length >= 4) ? '#333' : '#AAA',
-                                                    color: 'white',
-                                                    border: 'none',
-                                                    borderRadius: '18px',
-                                                    fontSize: '16px',
-                                                    fontWeight: 800,
-                                                    cursor: (loginName && loginPhoneTail.length >= 4) ? 'pointer' : 'default',
-                                                    boxShadow: (loginName && loginPhoneTail.length >= 4) ? '0 10px 20px rgba(0,0,0,0.15)' : 'none',
-                                                    transition: 'all 0.3s'
-                                                }}
-                                            >
-                                                {isDirectLoggingIn ? '정보 확인 중...' : '교인 정보로 바로 시작하기'}
-                                            </button>
-                                        </>
-                                    )}
+                                        <button
+                                            onClick={handleDirectLogin}
+                                            disabled={isDirectLoggingIn}
+                                            style={{
+                                                marginTop: '10px',
+                                                width: '100%',
+                                                padding: '18px',
+                                                background: (loginName && loginPhoneTail.length >= 4) ? '#333' : '#AAA',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '18px',
+                                                fontSize: '16px',
+                                                fontWeight: 800,
+                                                cursor: (loginName && loginPhoneTail.length >= 4) ? 'pointer' : 'default',
+                                                boxShadow: (loginName && loginPhoneTail.length >= 4) ? '0 10px 20px rgba(0,0,0,0.15)' : 'none',
+                                                transition: 'all 0.3s'
+                                            }}
+                                        >
+                                            {isDirectLoggingIn ? '정보 확인 중...' : '교인 정보로 바로 시작하기'}
+                                        </button>
+                                    </>
 
                                     <div style={{ marginTop: churchId !== 'somy-main' ? '30px' : '0', borderTop: churchId !== 'somy-main' ? '1px solid #EEE' : 'none', paddingTop: churchId !== 'somy-main' ? '25px' : '0', textAlign: 'left' }}>
                                         <div style={{ fontSize: '14px', fontWeight: 900, color: '#333', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '6px' }}>

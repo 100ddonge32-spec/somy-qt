@@ -33,16 +33,13 @@ export async function POST(req: NextRequest) {
         const inputNameClean = name.replace(/\s+/g, '').toLowerCase();
         const inputPhone = (phoneTail || '').replace(/[^0-9]/g, '');
         const inputBirth = (birthdate || '').replace(/[^0-9]/g, '');
-        const targetChurchId = church_id || 'jesus-in';
-
-        // ─── 1단계: 관리자가 업로드한 DB에서 이름으로 후보군 검색 ───────────────
-        // church_id가 있으면 해당 교회만, 없으면 전체 검색 (보안상 church_id 필수 권장)
+        // [수정] 만약 church_id가 없거나 somy-main(플랫폼)인 경우, 전역 검색을 허용하여 소속 교회를 찾아줍니다.
         let baseQuery = supabaseAdmin
             .from('profiles')
             .select('*')
             .or(`full_name.ilike.%${name.trim()}%`);
 
-        if (church_id) {
+        if (church_id && church_id !== 'somy-main') {
             baseQuery = baseQuery.eq('church_id', church_id);
         }
 
@@ -149,7 +146,7 @@ export async function POST(req: NextRequest) {
                 success: true,
                 status: 'linked',
                 name: match.full_name,
-                church_id: (match.church_id && !match.church_id.startsWith('trial-')) ? match.church_id : targetChurchId,
+                church_id: match.church_id || 'somy-main', // 매칭된 실제 교회의 식별자를 반환
                 is_approved: true
             });
         }
