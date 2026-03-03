@@ -20,8 +20,14 @@ export async function GET(req: NextRequest) {
 
     const targetChurchId = churchId;
 
+    const noCacheHeaders = {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+    };
+
     if (!targetChurchId) {
-        return NextResponse.json({ settings: null });
+        return NextResponse.json({ settings: null }, { headers: noCacheHeaders });
     }
 
     // [신규] 'somy-main' 요청 시 절대적으로 하드코딩된 플랫폼 전용 소개 설정 반환 (DB 오염 원천 차단)
@@ -39,7 +45,7 @@ export async function GET(req: NextRequest) {
             manual_sermon_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' // Easter egg or platform promo URL
         };
         // DB에 저장하지 않고 바로 반환 (항상 깨끗한 상태 유지)
-        return NextResponse.json({ settings: platformData });
+        return NextResponse.json({ settings: platformData }, { headers: noCacheHeaders });
     }
 
     // 1순위: church_id로 검색
@@ -139,7 +145,7 @@ export async function GET(req: NextRequest) {
         }
     }
 
-    return NextResponse.json({ settings: data });
+    return NextResponse.json({ settings: data }, { headers: noCacheHeaders });
 }
 
 export async function POST(req: NextRequest) {

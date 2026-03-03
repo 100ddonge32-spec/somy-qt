@@ -913,7 +913,7 @@ export default function App() {
             setHasNewThanksgiving(!!(isLatestThanksToday || isLatestThanksUnseen));
 
             // 3. 설교 업데이트
-            const r = await fetch(`/api/settings?church_id=${cId}`);
+            const r = await fetch(`/api/settings?church_id=${cId}`, { cache: 'no-store' });
             const { settings } = await r.json();
             if (settings) {
                 const updatedAt = new Date(settings.updated_at || settings.created_at);
@@ -2305,20 +2305,7 @@ export default function App() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     {isAdmin && (
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            {churchId && churchId.startsWith('trial-') && (
-                                                <button
-                                                    onClick={() => {
-                                                        localStorage.removeItem('church_id');
-                                                        sessionStorage.removeItem('church_id');
-                                                        // URL에 남아있는 파라미터까지 완전히 제거하고 히스토리 스택 초기화 (뒤로가기 방지)
-                                                        window.history.replaceState({}, '', '/');
-                                                        window.location.replace('/');
-                                                    }}
-                                                    style={{ background: '#FF3D00', color: 'white', border: 'none', borderRadius: '12px', padding: '4px 10px', fontSize: '10px', fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 8px rgba(255,61,0,0.2)' }}
-                                                >
-                                                    🏠 메인교회로
-                                                </button>
-                                            )}
+
                                             <button
                                                 onClick={() => setView('admin')}
                                                 style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
