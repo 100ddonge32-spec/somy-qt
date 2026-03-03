@@ -209,8 +209,9 @@ export async function POST(req: NextRequest) {
         // [예외] 'create_trial' 액션은 신규 가입자도 수행할 수 있으므로 권한 체크 제외 (단, 본교 데이터를 건드리는 것은 아님)
         if (!isGlobalMaster && action !== 'create_trial') {
             // 해당 교회의 관리자 권한이 있는지 확인
-            const targetCid = church_id || body.target_church_id;
-            if (!adminCheck || (targetCid && adminCheck.church_id !== targetCid)) {
+            const targetCid = (church_id || body.target_church_id || '').toLowerCase();
+            const userCid = (adminCheck?.church_id || '').toLowerCase();
+            if (!adminCheck || (targetCid && userCid !== targetCid)) {
                 return NextResponse.json({ success: false, error: "이 작업을 수행할 권한이 없습니다." }, { status: 403 });
             }
         }

@@ -208,8 +208,8 @@ export async function POST(req: NextRequest) {
 
     // 4. 권한 검증: 전역 마스터이거나, 해당 교회의 담당 관리자여야 함
     if (!isGlobalMaster) {
-        if (!adminCheck || adminCheck.church_id !== targetChurchId) {
-            console.error(`[Security Alert] Unauthorized settings update attempt. Requester: ${requester_id}, Target: ${targetChurchId}`);
+        if (!adminCheck || adminCheck.church_id?.toLowerCase() !== targetChurchId?.toLowerCase()) {
+            console.error(`[Security Alert] Unauthorized settings update attempt. Requester: ${requester_id}, Target: ${targetChurchId}, UserChurch: ${adminCheck?.church_id}`);
             return NextResponse.json({ success: false, error: "이 교회의 설정을 변경할 권한이 없습니다." }, { status: 403 });
         }
     }

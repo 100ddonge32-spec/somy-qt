@@ -6819,7 +6819,7 @@ export default function App() {
                                     const res = await fetch('/api/admin', {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ action: 'update_member', user_id: m.id, update_data: updateData })
+                                        body: JSON.stringify({ action: 'update_member', user_id: m.id, update_data: updateData, requester_id: user?.id })
                                     });
                                     if (res.ok) {
                                         setMemberList((prev: any[]) => prev.map((item: any) => item.id === m.id ? { ...item, ...updateData } : item));
@@ -6942,7 +6942,7 @@ export default function App() {
                                 const res = await fetch('/api/admin', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ action: 'add_member', member_data: memberData })
+                                    body: JSON.stringify({ action: 'add_member', member_data: memberData, requester_id: user?.id })
                                 });
                                 if (res.ok) {
                                     const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
@@ -7069,15 +7069,16 @@ export default function App() {
                                         body: JSON.stringify({
                                             action: 'update_member',
                                             user_id: mergeDestinationId,
-                                            update_data: updateData
+                                            update_data: updateData,
+                                            requester_id: user?.id
                                         })
                                     });
 
                                     if (res.ok) {
-                                        await fetch('/api/admin', {
+                                        const res = await fetch('/api/admin', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ action: 'delete_member', user_id: mergeTarget.id })
+                                            body: JSON.stringify({ action: 'delete_members', ids: [mergeTarget.id], church_id: churchId, requester_id: user?.id })
                                         });
 
                                         alert('통합 완료되었습니다! ✨');
@@ -7820,7 +7821,7 @@ export default function App() {
                                                             <button
                                                                 onClick={async () => {
                                                                     if (window.confirm('정말 모든 성도 데이터를 삭제하시겠습니까?')) {
-                                                                        const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_all_members', church_id: churchId }) });
+                                                                        const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_all_members', church_id: churchId, requester_id: user?.id }) });
                                                                         if (res.ok) { setMemberList([]); alert('삭제 완료'); }
                                                                     }
                                                                 }}
@@ -7832,7 +7833,7 @@ export default function App() {
                                                                     onClick={async () => {
                                                                         if (window.confirm('입력된 모든 성도를 승인 완료 상태로 만들까요?')) {
                                                                             try {
-                                                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_approve_unverified', church_id: churchId }) });
+                                                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_approve_unverified', church_id: churchId, requester_id: user?.id }) });
                                                                                 if (res.ok) {
                                                                                     const info = await res.json();
                                                                                     alert(`${info.count}명의 성도가 승인되었습니다! 🎉`);
@@ -7852,7 +7853,7 @@ export default function App() {
                                                                     onClick={async () => {
                                                                         if (window.confirm("'성도', '사용자' 처럼 이름이 없는 유령 계정들만 골라 삭제할까요?")) {
                                                                             try {
-                                                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_junk_members', church_id: churchId }) });
+                                                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_junk_members', church_id: churchId, requester_id: user?.id }) });
                                                                                 if (res.ok) {
                                                                                     const info = await res.json();
                                                                                     alert(`${info.count}개의 유령 계정이 정리되었습니다. 🧹`);
@@ -7872,7 +7873,7 @@ export default function App() {
                                                                     onClick={async () => {
                                                                         if (window.confirm('모든 미인증 성도를 임시 대기 상태로 되돌릴까요?')) {
                                                                             try {
-                                                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reset_unverified_status', church_id: churchId }) });
+                                                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reset_unverified_status', church_id: churchId, requester_id: user?.id }) });
                                                                                 if (res.ok) {
                                                                                     const info = await res.json();
                                                                                     alert(`${info.count}명이 대기 상태로 변경되었습니다.`);
@@ -8067,7 +8068,7 @@ export default function App() {
                                                                     if (pendingIds.length === 0) { alert('선택한 성도 중 승인 대기자가 없습니다.'); return; }
                                                                     if (window.confirm(`선택한 ${pendingIds.length}명의 성도를 일괄 승인하시겠습니까?`)) {
                                                                         try {
-                                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_approve_users', ids: pendingIds, approve: true }) });
+                                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_approve_users', ids: pendingIds, approve: true, church_id: churchId, requester_id: user?.id }) });
                                                                             if (res.ok) {
                                                                                 alert('선택한 성도가 모두 승인되었습니다! 🎉');
                                                                                 setSelectedMemberIds([]);
@@ -8088,7 +8089,7 @@ export default function App() {
                                                                     if (approvedIds.length === 0) { alert('선택한 성도 중 이미 승인된 분이 없습니다.'); return; }
                                                                     if (window.confirm(`선택한 ${approvedIds.length}명의 승인을 취소하시겠습니까?`)) {
                                                                         try {
-                                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_approve_users', ids: approvedIds, approve: false }) });
+                                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_approve_users', ids: approvedIds, approve: false, church_id: churchId, requester_id: user?.id }) });
                                                                             if (res.ok) {
                                                                                 alert('승인이 취소되었습니다.');
                                                                                 setSelectedMemberIds([]);
@@ -8107,7 +8108,7 @@ export default function App() {
                                                                     if (selectedMemberIds.length === 0) { alert('삭제할 성도를 먼저 선택해주세요.'); return; }
                                                                     if (window.confirm(`선택한 ${selectedMemberIds.length}명을 삭제하시겠습니까?`)) {
                                                                         try {
-                                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_delete_members', ids: selectedMemberIds }) });
+                                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_delete_members', ids: selectedMemberIds, church_id: churchId, requester_id: user?.id }) });
                                                                             if (res.ok) {
                                                                                 alert('삭제되었습니다.');
                                                                                 setSelectedMemberIds([]);
@@ -8253,7 +8254,7 @@ export default function App() {
                                                                             <button
                                                                                 onClick={async () => {
                                                                                     if (window.confirm(`${member.full_name} 성도를 승인하시겠습니까?`)) {
-                                                                                        const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve_user', user_id: member.id, is_approved: true }) });
+                                                                                        const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve_user', user_id: member.id, is_approved: true, church_id: churchId, requester_id: user?.id }) });
                                                                                         if (res.ok) {
                                                                                             setMemberList(prev => prev.map(m => m.id === member.id ? { ...m, is_approved: true } : m));
                                                                                             alert(`${member.full_name} 성도가 승인되었습니다. 🎉`);
@@ -8268,7 +8269,7 @@ export default function App() {
                                                                         {member.is_new_login && (
                                                                             <button
                                                                                 onClick={async () => {
-                                                                                    const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_new_login', user_id: member.id }) });
+                                                                                    const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_new_login', user_id: member.id, requester_id: user?.id }) });
                                                                                     if (res.ok) {
                                                                                         setMemberList(prev => prev.map(m => m.id === member.id ? { ...m, is_new_login: false } : m));
                                                                                     }
@@ -8297,7 +8298,7 @@ export default function App() {
                                                                         <button
                                                                             onClick={async () => {
                                                                                 if (window.confirm(`${member.full_name} 성도를 삭제하시겠습니까?`)) {
-                                                                                    const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_member', user_id: member.id, church_id: churchId }) });
+                                                                                    const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_member', user_id: member.id, church_id: churchId, requester_id: user?.id }) });
                                                                                     if (res.ok) setMemberList(prev => prev.filter(m => m.id !== member.id));
                                                                                 }
                                                                             }}
