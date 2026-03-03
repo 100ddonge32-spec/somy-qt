@@ -413,7 +413,7 @@ export default function App() {
     // [전략] 마스터이거나, 체험판(샌드박스) 환경이거나, adminInfo에 권한이 있으면 관리자로 인정
     const isTrialEnvironment = typeof churchId === 'string' && churchId.startsWith('trial-');
     const isAdmin = isHardcodedAdmin || isMasterName || isTrialEnvironment || (!!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin' || adminInfo.role === 'sub_admin' || adminInfo.role === 'admin'));
-    const isSuperAdmin = isHardcodedAdmin || isMasterName || isTrialEnvironment || (!!adminInfo && adminInfo.role === 'super_admin');
+    const isSuperAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && adminInfo.role === 'super_admin');
     const isMainAdmin = isHardcodedAdmin || isMasterName || isTrialEnvironment || (!!adminInfo && (adminInfo.role === 'super_admin' || adminInfo.role === 'church_admin' || adminInfo.role === 'admin'));
     const [editingPostId, setEditingPostId] = useState<any>(null);
     const [editContent, setEditContent] = useState("");
@@ -2929,94 +2929,92 @@ export default function App() {
 
 
                                 {/* 책 추천 & 담임목사 칼럼 (2열 레이아웃) */}
-                                {churchId !== 'somy-main' && (
-                                    <div style={{
-                                        display: 'grid',
-                                        gridTemplateColumns: '1fr 1fr',
-                                        gap: '12px',
-                                        width: '100%',
-                                        marginTop: '8px',
-                                        animation: 'fade-in 1s ease-out'
-                                    }}>
-                                        {/* 이달의 책 추천 카드 */}
-                                        <div onClick={() => setView('book')} className="sub-action-button" style={{
-                                            background: 'linear-gradient(135deg, #FFF 0%, #FAFAFA 100%)',
-                                            borderRadius: '24px',
-                                            padding: '16px 20px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '15px',
-                                            cursor: 'pointer',
-                                            boxShadow: '0 8px 25px rgba(0,0,0,0.04)',
-                                            border: '1px solid #F0ECE4',
-                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                            flexDirection: 'column',
-                                            textAlign: 'center',
-                                            minHeight: '140px',
-                                            justifyContent: 'center'
-                                        }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.08)'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.04)'; }}>
-                                            <div style={{ width: '40px', height: '56px', background: '#F5F5F3', borderRadius: '6px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', flexShrink: 0 }}>
-                                                {churchSettings.today_book_image_url ? (
-                                                    <img src={churchSettings.today_book_image_url} alt="책" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                ) : (
-                                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📚</div>
-                                                )}
-                                            </div>
-                                            <div>
-                                                <div className="label" style={{ fontSize: '13px', color: '#D4AF37', fontWeight: 800, marginBottom: '2px', wordBreak: 'keep-all' }}>이달의 추천도서</div>
-                                                <div style={{ fontSize: '14px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', width: '100%', lineHeight: 1.2 }}>{churchSettings.today_book_title || '추천 도서'}</div>
-                                            </div>
-                                        </div>
-
-                                        {/* 담임목사 칼럼 카드 */}
-                                        <div onClick={() => setView('pastorColumn')} className="sub-action-button" style={{
-                                            background: 'linear-gradient(135deg, #FFF 0%, #FDF8F0 100%)',
-                                            borderRadius: '24px',
-                                            padding: '16px 20px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '15px',
-                                            cursor: 'pointer',
-                                            boxShadow: '0 8px 25px rgba(0,0,0,0.04)',
-                                            border: '1px solid #F0ECE4',
-                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                            flexDirection: 'column',
-                                            textAlign: 'center',
-                                            position: 'relative',
-                                            minHeight: '140px',
-                                            justifyContent: 'center'
-                                        }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.08)'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.04)'; }}>
-                                            <div style={{ width: '40px', height: '56px', background: '#FFFDF7', borderRadius: '6px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', border: '1px solid #FAF0D7' }}>✍️</div>
-                                            <div>
-                                                <div className="label" style={{ fontSize: '13px', color: '#B8924A', fontWeight: 800, marginBottom: '2px', wordBreak: 'keep-all' }}>담임목사 칼럼</div>
-                                                <div style={{ fontSize: '14px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', width: '100%', lineHeight: 1.2 }}>{churchSettings.pastor_column_title || '오늘의 칼럼'}</div>
-                                            </div>
-                                            {!churchSettings.pastor_column_content && (
-                                                <div
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleGenerateColumn();
-                                                    }}
-                                                    style={{
-                                                        position: 'absolute',
-                                                        inset: 0,
-                                                        background: 'rgba(255,255,255,0.7)',
-                                                        backdropFilter: 'blur(2px)',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        borderRadius: '24px',
-                                                        zIndex: 10
-                                                    }}
-                                                >
-                                                    <div style={{ background: '#333', color: 'white', padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 700, boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
-                                                        {isGeneratingColumn ? '생성 중...' : '✨ AI 자동 생성'}
-                                                    </div>
-                                                </div>
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '1fr 1fr',
+                                    gap: '12px',
+                                    width: '100%',
+                                    marginTop: '8px',
+                                    animation: 'fade-in 1s ease-out'
+                                }}>
+                                    {/* 이달의 책 추천 카드 */}
+                                    <div onClick={() => setView('book')} className="sub-action-button" style={{
+                                        background: 'linear-gradient(135deg, #FFF 0%, #FAFAFA 100%)',
+                                        borderRadius: '24px',
+                                        padding: '16px 20px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '15px',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 8px 25px rgba(0,0,0,0.04)',
+                                        border: '1px solid #F0ECE4',
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        flexDirection: 'column',
+                                        textAlign: 'center',
+                                        minHeight: '140px',
+                                        justifyContent: 'center'
+                                    }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.08)'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.04)'; }}>
+                                        <div style={{ width: '40px', height: '56px', background: '#F5F5F3', borderRadius: '6px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', flexShrink: 0 }}>
+                                            {churchSettings.today_book_image_url ? (
+                                                <img src={churchSettings.today_book_image_url} alt="책" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            ) : (
+                                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📚</div>
                                             )}
                                         </div>
+                                        <div>
+                                            <div className="label" style={{ fontSize: '13px', color: '#D4AF37', fontWeight: 800, marginBottom: '2px', wordBreak: 'keep-all' }}>이달의 추천도서</div>
+                                            <div style={{ fontSize: '14px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', width: '100%', lineHeight: 1.2 }}>{churchSettings.today_book_title || '추천 도서'}</div>
+                                        </div>
                                     </div>
-                                )}
+
+                                    {/* 담임목사 칼럼 카드 */}
+                                    <div onClick={() => setView('pastorColumn')} className="sub-action-button" style={{
+                                        background: 'linear-gradient(135deg, #FFF 0%, #FDF8F0 100%)',
+                                        borderRadius: '24px',
+                                        padding: '16px 20px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '15px',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 8px 25px rgba(0,0,0,0.04)',
+                                        border: '1px solid #F0ECE4',
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        flexDirection: 'column',
+                                        textAlign: 'center',
+                                        position: 'relative',
+                                        minHeight: '140px',
+                                        justifyContent: 'center'
+                                    }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.08)'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.04)'; }}>
+                                        <div style={{ width: '40px', height: '56px', background: '#FFFDF7', borderRadius: '6px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', border: '1px solid #FAF0D7' }}>✍️</div>
+                                        <div>
+                                            <div className="label" style={{ fontSize: '13px', color: '#B8924A', fontWeight: 800, marginBottom: '2px', wordBreak: 'keep-all' }}>담임목사 칼럼</div>
+                                            <div style={{ fontSize: '14px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', width: '100%', lineHeight: 1.2 }}>{churchSettings.pastor_column_title || '오늘의 칼럼'}</div>
+                                        </div>
+                                        {!churchSettings.pastor_column_content && (
+                                            <div
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleGenerateColumn();
+                                                }}
+                                                style={{
+                                                    position: 'absolute',
+                                                    inset: 0,
+                                                    background: 'rgba(255,255,255,0.7)',
+                                                    backdropFilter: 'blur(2px)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    borderRadius: '24px',
+                                                    zIndex: 10
+                                                }}
+                                            >
+                                                <div style={{ background: '#333', color: 'white', padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 700, boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+                                                    {isGeneratingColumn ? '생성 중...' : '✨ AI 자동 생성'}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
 
                                 {/* Character Section (오늘의 말씀)을 4개 액션버튼 바로 아래로 이동 */}
                                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", flex: 1, justifyContent: 'center', width: "100%", marginTop: '10px', marginBottom: '10px' }}>
@@ -3060,32 +3058,30 @@ export default function App() {
                                     gap: '10px',
                                     width: '100%'
                                 }}>
-                                    {churchId !== 'somy-main' && (
-                                        <button onClick={() => {
-                                            if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
-                                                playerRef.current.pauseVideo();
-                                                setPlayRequested(false);
-                                            }
-                                            setView('sermon');
-                                            setHasNewSermon(false);
-                                            localStorage.setItem(`last_view_sermon_${churchId}`, Date.now().toString());
-                                        }} className="main-action-button" style={{
-                                            padding: "16px 12px",
-                                            background: "linear-gradient(145deg, #ffffff 0%, #fff4f2 100%)", color: "#BA2D0B",
-                                            fontWeight: 800, fontSize: "15px", borderRadius: "18px",
-                                            border: "1px solid #fcd3c8", cursor: "pointer",
-                                            boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
-                                            display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
-                                            transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                                            position: 'relative', justifyContent: 'flex-start'
-                                        }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                            <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="#FF0000"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" /></svg>
-                                            </div>
-                                            <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>담임목사 설교</span>
-                                            {hasNewSermon && <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px' }}>N</div>}
-                                        </button>
-                                    )}
+                                    <button onClick={() => {
+                                        if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
+                                            playerRef.current.pauseVideo();
+                                            setPlayRequested(false);
+                                        }
+                                        setView('sermon');
+                                        setHasNewSermon(false);
+                                        localStorage.setItem(`last_view_sermon_${churchId}`, Date.now().toString());
+                                    }} className="main-action-button" style={{
+                                        padding: "16px 12px",
+                                        background: "linear-gradient(145deg, #ffffff 0%, #fff4f2 100%)", color: "#BA2D0B",
+                                        fontWeight: 800, fontSize: "15px", borderRadius: "18px",
+                                        border: "1px solid #fcd3c8", cursor: "pointer",
+                                        boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
+                                        display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
+                                        transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                                        position: 'relative', justifyContent: 'flex-start'
+                                    }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                                        <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#FF0000"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" /></svg>
+                                        </div>
+                                        <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>담임목사 설교</span>
+                                        {hasNewSermon && <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px' }}>N</div>}
+                                    </button>
                                     <div style={{ position: 'relative' }}>
                                         <button onClick={async () => {
                                             setView('counseling');
@@ -3190,21 +3186,19 @@ export default function App() {
                                         <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>CCM 듣기</span>
                                     </button>
 
-                                    {churchId !== 'somy-main' && (
-                                        <button onClick={() => setView('memberSearch')} className="main-action-button" style={{
-                                            padding: "16px 12px",
-                                            background: "linear-gradient(145deg, #ffffff 0%, #f1f8f3 100%)", color: "#2E7D32",
-                                            fontWeight: 800, fontSize: "15px", borderRadius: "18px",
-                                            border: "1px solid #C8E6C9", cursor: "pointer",
-                                            boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
-                                            display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
-                                            transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                                            justifyContent: 'flex-start'
-                                        }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                            <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🔎</div>
-                                            <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>성도 주소록</span>
-                                        </button>
-                                    )}
+                                    <button onClick={() => setView('memberSearch')} className="main-action-button" style={{
+                                        padding: "16px 12px",
+                                        background: "linear-gradient(145deg, #ffffff 0%, #f1f8f3 100%)", color: "#2E7D32",
+                                        fontWeight: 800, fontSize: "15px", borderRadius: "18px",
+                                        border: "1px solid #C8E6C9", cursor: "pointer",
+                                        boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
+                                        display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
+                                        transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                                        justifyContent: 'flex-start'
+                                    }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                                        <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🔎</div>
+                                        <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>성도 주소록</span>
+                                    </button>
                                 </div>
 
                                 <button onClick={() => setView('profile')} style={{

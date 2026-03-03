@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+// [중요: 캐시 비활성화] 배포 시 정적 렌더링(Static Generation)으로 인해 이전 데이터가 캐싱되어
+// 예수인교회 정보가 체험판으로 덮어씌워지는 버그(Vercel Build Cache) 원천 차단
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
