@@ -164,6 +164,28 @@ export async function POST(req: NextRequest) {
             // 1. adminChurchId가 있으면 그것을 따름 (관리자 설정 우선)
             // 2. 만약 일반 성도인데 체험판 링크로 들어왔다면, DB에는 정식 소속('jesus-in')을 유지 (메인 증발 방지 핵심)
             // [보안/완벽 분리] 이미 정식 소속('jesus-in')이 있는 경우나 마스터/슈퍼관리자는 절대 체험판 소속으로 바뀌지 않음
+            // [추가] 만약 현재 user_id로는 어드민이 아니지만, 매칭된 profile이 어드민이라면 권한 이관 시도
+            if (!adminCheckTerm) {
+                const { data: matchAdmin } = await supabaseAdmin.from('app_admins')
+                    .select('*')
+                    .or(`user_id.eq.${match.id},email.eq.${match.email}`)
+                    .maybeSingle();
+
+                if (matchAdmin) {
+                    // 권한 이관 (새 닉네임/유저ID 기반)
+                    console.log(`[Sync] Admin Power Transfer: ${matchAdmin.email} -> ${email || user_id}`);
+                    await supabaseAdmin.from('app_admins').upsert({
+                        ...matchAdmin,
+                        user_id: user_id,
+                        email: email || matchAdmin.email
+                    }, { onConflict: 'email' });
+
+                    isAdminMember = true;
+                    adminChurchId = matchAdmin.church_id;
+                    adminCheckTerm = { ...matchAdmin, user_id, email: email || matchAdmin.email };
+                }
+            }
+
             const currentProfileChurch = profileById?.church_id;
             const IS_GLOBAL_MASTER = IS_BOSS || (adminCheckTerm?.role === 'super_admin');
 

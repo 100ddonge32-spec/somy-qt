@@ -110,15 +110,10 @@ export async function GET(req: NextRequest) {
         }
     }
 
-    if (!isAdminUser) {
-        // ★ 관리자가 아닌 일반 성도 → 완전 차단, 유령 계정 생성 없음
-        console.log(`[Kakao] 🚫 관리자 아님 차단: nickname=${nickname}, kakaoId=${kakaoId}`);
-        // 신규 유저면 방금 생성된 auth user 정리 (있을 경우)
-        if (isAlreadyKnownUser) {
-            // 이미 있던 계정이면 삭제하지 않음 (데이터 보호)
-        }
-        return NextResponse.redirect(`${APP_URL}?error=admin_only`);
-    }
+    // ★ 3순위: [임계] 일반 유저도 일단 통과 (로그온 후 프로필 연결 단계에서 처리)
+    // 기존에는 관리자만 카카오 로그인이 가능하게 막았으나, 
+    // 새로운 관리자가 처음 로그인할 때 본인임을 증명할 기회가 없어지는 '닭과 달걀' 문제를 해결하기 위해 개방합니다.
+    console.log(`[Kakao] 로그인 진행: nickname=${nickname}, isAdmin=${isAdminUser}`);
 
     // STEP 3: Supabase Auth 사용자 생성 또는 업데이트 (관리자만 이 지점 도달)
     const { error: createErr } = await supabaseAdmin.auth.admin.createUser({
@@ -179,7 +174,7 @@ export async function GET(req: NextRequest) {
                         id: supabaseUser.id,
                         email: syntheticEmail,
                         avatar_url: match.avatar_url || profileImage,
-                        is_approved: true  // 관리자는 항상 승인
+                        is_approved: isAdminUser  // 관리자만 자동 승인
                     });
                     if (!insertErr && match.id !== supabaseUser.id) {
                         await supabaseAdmin.from('profiles').delete().eq('id', match.id);
@@ -194,7 +189,7 @@ export async function GET(req: NextRequest) {
                         avatar_url: profileImage,
                         email: syntheticEmail,
                         church_id: fallbackAdminData?.church_id ?? 'somy-main', // 동적 매핑
-                        is_approved: true,  // 관리자는 항상 승인
+                        is_approved: isAdminUser,  // 관리자만 자동 승인
                     });
                 }
             }
@@ -205,7 +200,7 @@ export async function GET(req: NextRequest) {
             if (!isManualUpload && profileImage) updateData.avatar_url = profileImage;
             if (profileById.full_name === '성도' && nickname) updateData.full_name = nickname;
             // 관리자는 is_approved 항상 true 보장
-            if (!profileById.is_approved) updateData.is_approved = true;
+            if (!profileById.is_approved && isAdminUser) updateData.is_approved = true;
             if (Object.keys(updateData).length > 0) {
                 await supabaseAdmin.from('profiles').update(updateData).eq('id', supabaseUser.id);
             }
