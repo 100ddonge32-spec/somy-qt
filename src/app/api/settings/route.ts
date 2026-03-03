@@ -172,13 +172,46 @@ export async function POST(req: NextRequest) {
         event_poster_visible,
         pastor_column_title,
         pastor_column_content,
-        church_id: body_church_id
+        church_id: body_church_id,
+        requester_id
     } = body;
 
     const targetChurchId = body_church_id;
 
     if (!targetChurchId) {
         return NextResponse.json({ success: false, error: "church_id가 유효하지 않습니다." }, { status: 400 });
+    }
+
+    // [0순위 보안] 권한 검증 (Gatekeeper Logic)
+    // 1. 슈퍼어드민 리스트 로드
+    const HARDCODED_ADMINS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
+
+    // 2. 요청자 권한 조회
+    if (!requester_id) {
+        return NextResponse.json({ success: false, error: "권한이 없습니다. (No Requester ID)" }, { status: 401 });
+    }
+
+    const { data: adminCheck } = await supabaseAdmin
+        .from('app_admins')
+        .select('*')
+        .eq('user_id', requester_id)
+        .maybeSingle();
+
+    // 3. 마스터 관리자(목사님) 여부 확인 (전역 권한)
+    const { data: requesterProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('email')
+        .eq('id', requester_id)
+        .maybeSingle();
+
+    const isGlobalMaster = (requesterProfile?.email && HARDCODED_ADMINS.includes(requesterProfile.email.toLowerCase())) || (adminCheck?.role === 'super_admin');
+
+    // 4. 권한 검증: 전역 마스터이거나, 해당 교회의 담당 관리자여야 함
+    if (!isGlobalMaster) {
+        if (!adminCheck || adminCheck.church_id !== targetChurchId) {
+            console.error(`[Security Alert] Unauthorized settings update attempt. Requester: ${requester_id}, Target: ${targetChurchId}`);
+            return NextResponse.json({ success: false, error: "이 교회의 설정을 변경할 권한이 없습니다." }, { status: 403 });
+        }
     }
 
     // [보안] jesus-in(본교회) 보호 및 트라이얼 정보 유입 원천 차단

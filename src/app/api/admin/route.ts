@@ -183,7 +183,37 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { action, email, user_id, is_approved, church_id, role } = body;
+        const { action, email, user_id, is_approved, church_id, role, requester_id } = body;
+
+        // [0순위 보안] 권한 검증 (Gatekeeper Logic)
+        const HARDCODED_ADMINS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
+
+        if (!requester_id) {
+            return NextResponse.json({ success: false, error: "권한이 없습니다. (No Requester ID)" }, { status: 401 });
+        }
+
+        const { data: adminCheck } = await supabaseAdmin
+            .from('app_admins')
+            .select('*')
+            .eq('user_id', requester_id)
+            .maybeSingle();
+
+        const { data: requesterProfile } = await supabaseAdmin
+            .from('profiles')
+            .select('email')
+            .eq('id', requester_id)
+            .maybeSingle();
+
+        const isGlobalMaster = (requesterProfile?.email && HARDCODED_ADMINS.includes(requesterProfile.email.toLowerCase())) || (adminCheck?.role === 'super_admin');
+
+        // [예외] 'create_trial' 액션은 신규 가입자도 수행할 수 있으므로 권한 체크 제외 (단, 본교 데이터를 건드리는 것은 아님)
+        if (!isGlobalMaster && action !== 'create_trial') {
+            // 해당 교회의 관리자 권한이 있는지 확인
+            const targetCid = church_id || body.target_church_id;
+            if (!adminCheck || (targetCid && adminCheck.church_id !== targetCid)) {
+                return NextResponse.json({ success: false, error: "이 작업을 수행할 권한이 없습니다." }, { status: 403 });
+            }
+        }
 
         // 관리자 추가
         if (action === 'add_admin') {

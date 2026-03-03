@@ -1779,7 +1779,8 @@ export default function App() {
                     action: 'create_trial',
                     user_id: currentUserId,
                     email: currentUserEmail,
-                    name: '체험용 관리자'
+                    name: '체험용 관리자',
+                    requester_id: currentUserId
                 })
             });
 
@@ -1941,7 +1942,8 @@ export default function App() {
             const fullPayload = {
                 ...churchSettings, // 현재 전체 설정 (설교 데이터 포함)
                 ...settingsForm,   // 수정된 기본 설정으로 덮어쓰기
-                church_id: churchId
+                church_id: churchId,
+                requester_id: user?.id
             };
 
             // [보안] 체험판인 경우 본교회 ID(1) 유입을 원천 차단
@@ -2037,7 +2039,8 @@ export default function App() {
                 ...settingsForm,
                 church_id: churchId,
                 pastor_column_title: newTitle,
-                pastor_column_content: newContent
+                pastor_column_content: newContent,
+                requester_id: user?.id
             };
 
             // [보안] 체험판인 경우 본교회 ID(1) 유입을 원천 차단
