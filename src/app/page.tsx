@@ -997,12 +997,15 @@ export default function App() {
                         const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id') || (pathName !== '' ? pathName : null);
                         // 정식 교인 소속은 localStorage에 영구보관
                         if (isHardcodedAdmin || isMasterName) {
-                            let safeChurch = (hasSpecificChurchUrl && !hasSpecificChurchUrl.startsWith('trial-')) ? hasSpecificChurchUrl : (syncData.church_id && !syncData.church_id.startsWith('trial-')) ? syncData.church_id : 'somy-main';
+                            // [수정] 마스터 관리자가 체험판(trial-)에 접속했을 때 jesus-in으로 튕겨나가는 현상 해결
+                            // URL에 체험판 ID가 있으면 플랫폼 메인이 아닌 해당 체험판을 유지하도록 합니다.
+                            let safeChurch = hasSpecificChurchUrl ? hasSpecificChurchUrl : (syncData.church_id && !syncData.church_id.startsWith('trial-')) ? syncData.church_id : 'somy-main';
                             if (safeChurch === '예수인교회' || safeChurch === encodeURIComponent('예수인교회')) safeChurch = 'jesus-in';
 
                             setChurchId(safeChurch);
                             localStorage.setItem('church_id', safeChurch);
-                            if (hasSpecificChurchUrl && hasSpecificChurchUrl.startsWith('trial-')) window.history.replaceState({}, '', '/');
+                            // 체험판 접속 시 URL 파라미터를 제거하지 않음 (새로고침 시 유지하기 위함)
+                            // if (hasSpecificChurchUrl && hasSpecificChurchUrl.startsWith('trial-')) window.history.replaceState({}, '', '/');
                         } else if (!hasSpecificChurchUrl && (!syncData.church_id.startsWith('trial-'))) {
                             setChurchId(syncData.church_id);
                             localStorage.setItem('church_id', syncData.church_id);
@@ -1036,18 +1039,18 @@ export default function App() {
                 const pathName = rawPathName ? decodeURIComponent(rawPathName) : '';
                 const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id') || (pathName !== '' ? pathName : null);
 
-                // [궁극의 탈출구] 마스터는 체험판을 제외한 다른 정식 경로(플랫폼 메인 포함)로는 자유롭게 이동 가능
+                // [궁극의 탈출구] 마스터는 체험판을 포함한 모든 경로를 자유롭게 이동 가능
                 if (isHardcodedAdmin || isMasterName) {
                     const localTarget = typeof window !== 'undefined' ? localStorage.getItem('church_id') : null;
                     let safeChurch = 'somy-main';
 
-                    if (hasSpecificChurchUrl && !hasSpecificChurchUrl.startsWith('trial-')) {
+                    if (hasSpecificChurchUrl) {
                         safeChurch = hasSpecificChurchUrl;
                     } else if (localTarget === 'somy-main') {
-                        safeChurch = 'somy-main'; // 명시적인 플랫폼 메인 이동 의도 존중
+                        safeChurch = 'somy-main';
                     } else if (localTarget === 'jesus-in') {
                         safeChurch = 'jesus-in';
-                    } else if (data.church_id && !data.church_id.startsWith('trial-')) {
+                    } else if (data.church_id) {
                         safeChurch = data.church_id;
                     }
 
@@ -1056,9 +1059,10 @@ export default function App() {
                     setChurchId(safeChurch);
                     localStorage.setItem('church_id', safeChurch);
 
-                    if (hasSpecificChurchUrl && hasSpecificChurchUrl.startsWith('trial-')) {
-                        window.history.replaceState({}, '', '/');
-                    }
+                    // 체험판에서도 URL을 유지하여 새로고침 시 이탈 방지
+                    // if (hasSpecificChurchUrl && hasSpecificChurchUrl.startsWith('trial-')) {
+                    //     window.history.replaceState({}, '', '/');
+                    // }
                 } else if (!hasSpecificChurchUrl && (!data.church_id.startsWith('trial-'))) {
                     setChurchId(data.church_id);
                     localStorage.setItem('church_id', data.church_id);
@@ -5262,7 +5266,7 @@ export default function App() {
                                 setAdminTab('members');
                                 setShowSettings(true);
                                 try {
-                                    const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                    const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
                                     const data = await r.json();
                                     if (Array.isArray(data)) setMemberList(data);
                                 } catch (e) { }
@@ -5366,7 +5370,7 @@ export default function App() {
                                 setShowSettings(true);
                                 if (memberList.length === 0) {
                                     try {
-                                        const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                        const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
                                         const data = await r.json();
                                         if (Array.isArray(data)) setMemberList(data);
                                     } catch (e) { }
@@ -6796,7 +6800,7 @@ export default function App() {
                             onClick={async () => {
                                 try {
                                     const updateData = {
-                                        church_id: churchId || 'jesus-in',
+                                        church_id: churchId,
                                         ...memberEditForm
                                     };
                                     const res = await fetch('/api/admin', {
@@ -6917,7 +6921,7 @@ export default function App() {
                                     is_birthdate_public: (document.getElementById('add-birth-pub') as HTMLInputElement)?.checked || false,
                                     is_phone_public: (document.getElementById('add-phone-pub') as HTMLInputElement)?.checked || false,
                                     is_address_public: (document.getElementById('add-addr-pub') as HTMLInputElement)?.checked || false,
-                                    church_id: churchId || 'jesus-in',
+                                    church_id: churchId,
                                     created_at: (document.getElementById('add-registered-at') as any)?.value || new Date().toISOString(),
                                     is_approved: true
                                 };
@@ -6928,7 +6932,7 @@ export default function App() {
                                     body: JSON.stringify({ action: 'add_member', member_data: memberData })
                                 });
                                 if (res.ok) {
-                                    const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                    const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
                                     const data = await r.json();
                                     if (Array.isArray(data)) setMemberList(data);
                                     setShowAddMemberModal(false);
@@ -7035,7 +7039,7 @@ export default function App() {
                                 try {
                                     const updateData = {
                                         full_name: mergeTarget.full_name,
-                                        church_id: churchId || 'jesus-in',
+                                        church_id: churchId,
                                         church_rank: mergeTarget.church_rank || '',
                                         phone: mergeTarget.phone || '',
                                         birthdate: mergeTarget.birthdate || '',
@@ -7064,7 +7068,7 @@ export default function App() {
                                         });
 
                                         alert('통합 완료되었습니다! ✨');
-                                        const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                        const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
                                         const data = await r.json();
                                         if (Array.isArray(data)) setMemberList(data);
                                         setShowMergeModal(false);
@@ -7300,7 +7304,7 @@ export default function App() {
                                     <button onClick={async () => {
                                         setAdminTab('members');
                                         try {
-                                            const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                            const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
                                             const data = await r.json();
                                             if (Array.isArray(data)) setMemberList(data);
                                         } catch (e) { }
@@ -7309,7 +7313,7 @@ export default function App() {
                                         setAdminTab('stats');
                                         if (memberList.length === 0) {
                                             try {
-                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
                                                 const data = await r.json();
                                                 if (Array.isArray(data)) setMemberList(data);
                                             } catch (e) { }
@@ -7463,7 +7467,7 @@ export default function App() {
                                                             try {
                                                                 const formData = new FormData();
                                                                 formData.append('file', file);
-                                                                formData.append('church_id', churchId || 'jesus-in');
+                                                                formData.append('church_id', churchId);
                                                                 const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
                                                                 const data = await res.json();
                                                                 if (data.url) {
@@ -7535,7 +7539,7 @@ export default function App() {
                                                                 formData.append('file', file);
                                                                 // churchId가 '예수인교회'와 같은 한글일 경우를 대비해 인코딩하거나 기본값 처리
                                                                 const safeChurchId = churchId ? encodeURIComponent(churchId) : 'jesus-in';
-                                                                formData.append('church_id', churchId || 'jesus-in');
+                                                                formData.append('church_id', churchId);
 
                                                                 const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
                                                                 const data = await res.json();
@@ -7699,7 +7703,7 @@ export default function App() {
                                                                             if (result.success) {
                                                                                 alert(`${result.count}명의 성도 정보가 업데이트 되었습니다! ✅`);
                                                                                 setSelectedUploadFile(null);
-                                                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
                                                                                 const data = await r.json();
                                                                                 if (Array.isArray(data)) setMemberList(data);
                                                                             } else {
@@ -7774,7 +7778,7 @@ export default function App() {
                                                         </button>
                                                         <button
                                                             onClick={async () => {
-                                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
                                                                 if (r.ok) setMemberList(await r.json());
                                                             }}
                                                             style={{ height: '44px', background: '#E3F2FD', color: '#1565C0', border: '1px solid #BBDEFB', borderRadius: '12px', fontSize: '14px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
@@ -7819,7 +7823,7 @@ export default function App() {
                                                                                 if (res.ok) {
                                                                                     const info = await res.json();
                                                                                     alert(`${info.count}명의 성도가 승인되었습니다! 🎉`);
-                                                                                    const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                                    const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
                                                                                     if (r.ok) setMemberList(await r.json());
                                                                                 }
                                                                             } catch (e) { alert('승인 도중 오류가 발생했습니다.'); }
@@ -7839,7 +7843,7 @@ export default function App() {
                                                                                 if (res.ok) {
                                                                                     const info = await res.json();
                                                                                     alert(`${info.count}개의 유령 계정이 정리되었습니다. 🧹`);
-                                                                                    const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                                    const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
                                                                                     if (r.ok) setMemberList(await r.json());
                                                                                 }
                                                                             } catch (e) { alert('정리 도중 오류가 발생했습니다.'); }
@@ -7859,7 +7863,7 @@ export default function App() {
                                                                                 if (res.ok) {
                                                                                     const info = await res.json();
                                                                                     alert(`${info.count}명이 대기 상태로 변경되었습니다.`);
-                                                                                    const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                                    const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
                                                                                     if (r.ok) setMemberList(await r.json());
                                                                                 }
                                                                             } catch (e) { alert('초기화 도중 오류가 발생했습니다.'); }
@@ -8054,7 +8058,7 @@ export default function App() {
                                                                             if (res.ok) {
                                                                                 alert('선택한 성도가 모두 승인되었습니다! 🎉');
                                                                                 setSelectedMemberIds([]);
-                                                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
                                                                                 if (r.ok) setMemberList(await r.json());
                                                                             }
                                                                         } catch (e) { alert('승인 중 오류 발생'); }
@@ -8075,7 +8079,7 @@ export default function App() {
                                                                             if (res.ok) {
                                                                                 alert('승인이 취소되었습니다.');
                                                                                 setSelectedMemberIds([]);
-                                                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
                                                                                 if (r.ok) setMemberList(await r.json());
                                                                             }
                                                                         } catch (e) { alert('처리 중 오류 발생'); }
@@ -8094,7 +8098,7 @@ export default function App() {
                                                                             if (res.ok) {
                                                                                 alert('삭제되었습니다.');
                                                                                 setSelectedMemberIds([]);
-                                                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId || 'jesus-in'}`);
+                                                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
                                                                                 if (r.ok) setMemberList(await r.json());
                                                                             }
                                                                         } catch (e) { alert('삭제 중 오류 발생'); }
@@ -8501,12 +8505,12 @@ export default function App() {
                                                 {/* 🏷️ 내 교회 및 소속 관리자 */}
                                                 <div style={{ background: 'white', padding: '16px', borderRadius: '15px', border: '1px solid #c8e6c9' }}>
                                                     <div style={{ fontSize: '13px', fontWeight: 800, color: '#2e7d32', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                        <span>⛪ 내 교회 소속 관리자 ({allAdminList.filter(a => !a.church_id || a.church_id.toLowerCase() === (churchId || 'jesus-in').toLowerCase()).length})</span>
+                                                        <span>⛪ 내 교회 소속 관리자 ({allAdminList.filter(a => !a.church_id || a.church_id.toLowerCase() === churchId.toLowerCase()).length})</span>
                                                         <button onClick={fetchAllAdmins} style={{ background: '#F5F5F5', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>새로고침</button>
                                                     </div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                        {allAdminList.filter(a => !a.church_id || a.church_id.toLowerCase() === (churchId || 'jesus-in').toLowerCase()).length > 0 ? (
-                                                            allAdminList.filter(a => !a.church_id || a.church_id.toLowerCase() === (churchId || 'jesus-in').toLowerCase()).map((admin: any) => (
+                                                        {allAdminList.filter(a => !a.church_id || a.church_id.toLowerCase() === churchId.toLowerCase()).length > 0 ? (
+                                                            allAdminList.filter(a => !a.church_id || a.church_id.toLowerCase() === churchId.toLowerCase()).map((admin: any) => (
                                                                 <div key={admin.email} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px 12px', borderRadius: '10px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                                                                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center', minWidth: 0, flex: 1 }}>
                                                                         <div style={{ width: '32px', height: '32px', background: '#F5F5F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', overflow: 'hidden', flexShrink: 0 }}>
@@ -8533,10 +8537,10 @@ export default function App() {
 
                                                 {/* 🏷️ 타 교회 및 전체 관리자 */}
                                                 <div style={{ background: '#FDFCFB', padding: '16px', borderRadius: '15px', border: '1px solid #DDD' }}>
-                                                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '12px' }}>🌐 타 교회 및 통합 관리자 ({allAdminList.filter(a => a.church_id && a.church_id.toLowerCase() !== (churchId || 'jesus-in').toLowerCase()).length})</div>
+                                                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '12px' }}>🌐 타 교회 및 통합 관리자 ({allAdminList.filter(a => a.church_id && a.church_id.toLowerCase() !== churchId.toLowerCase()).length})</div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                        {allAdminList.filter(a => a.church_id && a.church_id.toLowerCase() !== (churchId || 'jesus-in').toLowerCase()).length > 0 ? (
-                                                            allAdminList.filter(a => a.church_id && a.church_id.toLowerCase() !== (churchId || 'jesus-in').toLowerCase()).map((admin: any) => (
+                                                        {allAdminList.filter(a => a.church_id && a.church_id.toLowerCase() !== churchId.toLowerCase()).length > 0 ? (
+                                                            allAdminList.filter(a => a.church_id && a.church_id.toLowerCase() !== churchId.toLowerCase()).map((admin: any) => (
                                                                 <div key={admin.email} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px 12px', borderRadius: '10px', border: '1px solid #F0F0F0', opacity: 0.8 }}>
                                                                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center', minWidth: 0, flex: 1 }}>
                                                                         <div style={{ width: '30px', height: '30px', background: '#F5F5F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>'🏢'</div>
