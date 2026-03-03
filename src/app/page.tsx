@@ -992,10 +992,19 @@ export default function App() {
 
                     if (syncData.church_id) {
                         const urlParams = new URLSearchParams(window.location.search);
-                        const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id');
-                        if (!hasSpecificChurchUrl && (!churchId || !churchId.startsWith('trial-'))) {
+                        const rawPathName = window.location.pathname.replace(/^\//, '');
+                        const pathName = rawPathName ? decodeURIComponent(rawPathName) : '';
+                        const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id') || (pathName !== '' ? pathName : null);
+                        // 정식 교인 소속은 localStorage에 영구보관
+                        if (isHardcodedAdmin || isMasterName) {
+                            let safeChurch = (hasSpecificChurchUrl && !hasSpecificChurchUrl.startsWith('trial-')) ? hasSpecificChurchUrl : (syncData.church_id && !syncData.church_id.startsWith('trial-')) ? syncData.church_id : 'somy-main';
+                            if (safeChurch === '예수인교회' || safeChurch === encodeURIComponent('예수인교회')) safeChurch = 'jesus-in';
+
+                            setChurchId(safeChurch);
+                            localStorage.setItem('church_id', safeChurch);
+                            if (hasSpecificChurchUrl && hasSpecificChurchUrl.startsWith('trial-')) window.history.replaceState({}, '', '/');
+                        } else if (!hasSpecificChurchUrl && (!syncData.church_id.startsWith('trial-'))) {
                             setChurchId(syncData.church_id);
-                            // 정식 교인 소속은 localStorage에 영구보관
                             localStorage.setItem('church_id', syncData.church_id);
                         }
                     }
@@ -1023,17 +1032,22 @@ export default function App() {
             setIsApproved((isHardcodedAdmin || isMasterName) ? true : !!data.is_approved);
             if (data.church_id) {
                 const urlParams = new URLSearchParams(window.location.search);
-                const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id');
+                const rawPathName = window.location.pathname.replace(/^\//, '');
+                const pathName = rawPathName ? decodeURIComponent(rawPathName) : '';
+                const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id') || (pathName !== '' ? pathName : null);
 
-                // [궁극의 탈출구] 마스터는 URL에 체험판이 찍혀있든 뭐가 있든 무조건 메인으로 강제 고정
+                // [궁극의 탈출구] 마스터는 체험판을 제외한 다른 정식 경로(플랫폼 메인 포함)로는 자유롭게 이동 가능
                 if (isHardcodedAdmin || isMasterName) {
-                    setChurchId('jesus-in');
-                    localStorage.setItem('church_id', 'jesus-in');
-                    // 주소창 강제 정리 (옵션, 사용자 경험을 위해)
+                    let safeChurch = (hasSpecificChurchUrl && !hasSpecificChurchUrl.startsWith('trial-')) ? hasSpecificChurchUrl : (data.church_id && !data.church_id.startsWith('trial-')) ? data.church_id : 'somy-main';
+                    if (safeChurch === '예수인교회' || safeChurch === encodeURIComponent('예수인교회')) safeChurch = 'jesus-in';
+
+                    setChurchId(safeChurch);
+                    localStorage.setItem('church_id', safeChurch);
+
                     if (hasSpecificChurchUrl && hasSpecificChurchUrl.startsWith('trial-')) {
                         window.history.replaceState({}, '', '/');
                     }
-                } else if (!hasSpecificChurchUrl && (!churchId || !churchId.startsWith('trial-'))) {
+                } else if (!hasSpecificChurchUrl && (!data.church_id.startsWith('trial-'))) {
                     setChurchId(data.church_id);
                     localStorage.setItem('church_id', data.church_id);
                 }

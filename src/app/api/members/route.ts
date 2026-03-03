@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
             let jesusInQuery = supabaseAdmin
                 .from('profiles')
                 .select('id, full_name, avatar_url, church_rank, member_no, gender, is_phone_public, is_birthdate_public, is_address_public, phone, birthdate, address, email, created_at, is_approved')
-                .eq('church_id', 'somy-main');
+                .eq('church_id', 'jesus-in');
 
             if (query) {
                 jesusInQuery = jesusInQuery.ilike('full_name', `%${query}%`);
