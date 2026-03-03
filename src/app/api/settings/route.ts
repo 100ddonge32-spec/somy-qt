@@ -19,15 +19,8 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ settings: null });
     }
 
-    // 1순위: church_id로 검색
-    let { data, error } = await supabaseAdmin
-        .from('church_settings')
-        .select('*')
-        .eq('church_id', targetChurchId)
-        .maybeSingle();
-
-    // [신규] 'somy-main' 요청 시 데이터가 없으면 즉석 생성 후 반환 (단순 소개 목적)
-    if (!data && targetChurchId === 'somy-main') {
+    // [신규] 'somy-main' 요청 시 절대적으로 하드코딩된 플랫폼 전용 소개 설정 반환 (DB 오염 원천 차단)
+    if (targetChurchId === 'somy-main') {
         const platformData = {
             church_id: 'somy-main',
             church_name: '소미 플랫폼',
@@ -37,11 +30,19 @@ export async function GET(req: NextRequest) {
             community_visible: true,
             sermon_summary: '소미 플랫폼에 오신 것을 환영합니다! \n\n이곳은 플랫폼 소개를 위한 메인 페이지입니다. 성도님들께서는 원하시는 교회의 전용 주소로 접속해주세요. (예: 주소창 끝에 /예수인교회 입력)',
             pastor_column_title: '✨ 환영합니다',
-            pastor_column_content: '여기는 소미 플랫폼 메인입니다. 뒷주소에 자신의 교회 이름을 적어 소속 교회의 전용 화면으로 이동하세요. (슈퍼관리자는 이 화면도 직접 커스텀할 수 있습니다.)'
+            pastor_column_content: '여기는 소미 플랫폼 메인입니다. 뒷주소에 자신의 교회 이름을 적어 소속 교회의 전용 화면으로 이동하세요. (슈퍼관리자는 이 화면도 직접 커스텀할 수 있습니다.)',
+            manual_sermon_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' // Easter egg or platform promo URL
         };
-        await supabaseAdmin.from('church_settings').upsert(platformData, { onConflict: 'church_id' });
-        data = platformData as any;
+        // DB에 저장하지 않고 바로 반환 (항상 깨끗한 상태 유지)
+        return NextResponse.json({ settings: platformData });
     }
+
+    // 1순위: church_id로 검색
+    let { data, error } = await supabaseAdmin
+        .from('church_settings')
+        .select('*')
+        .eq('church_id', targetChurchId)
+        .maybeSingle();
 
     // 2순위: jesus-in에 한해서는 id=1 레코드를 마지막 보루로 시도 (호환성)
     if (!data && targetChurchId === 'jesus-in') {
