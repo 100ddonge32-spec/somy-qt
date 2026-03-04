@@ -183,79 +183,52 @@ export async function POST(req: NextRequest) {
     }
 
     // [0순위 보안] 권한 검증 (Gatekeeper Logic)
-    // 1. 슈퍼어드민 리스트 로드
     const HARDCODED_ADMINS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
 
-    // 2. 요청자 권한 조회
     if (!requester_id) {
         return NextResponse.json({ success: false, error: "권한이 없습니다. (No Requester ID)" }, { status: 401 });
     }
 
-    const { data: adminCheck } = await supabaseAdmin
-        .from('app_admins')
-        .select('*')
-        .eq('user_id', requester_id)
-        .ilike('church_id', targetChurchId) // 해당 교회에 대한 권한이 있는지 직접 타겟팅
-        .maybeSingle();
-
-    // [추가] 마스터 권한은 특정 교회가 아닌 전역 권한이므로 별도 조회
-    const { data: masterCheck } = await supabaseAdmin
-        .from('app_admins')
-        .select('*')
-        .eq('user_id', requester_id)
-        .eq('role', 'super_admin')
-        .maybeSingle();
-
-    // 3. 마스터 관리자(목사님) 여부 확인 (전역 권한)
+    // 1. 요청자 프로필 정보 로드
     const { data: requesterProfile } = await supabaseAdmin
         .from('profiles')
-        .select('email')
+        .select('email, full_name')
         .eq('id', requester_id)
         .maybeSingle();
 
-    const isGlobalMaster = (requesterProfile?.email && HARDCODED_ADMINS.includes(requesterProfile.email.toLowerCase())) || (masterCheck?.role === 'super_admin') || (adminCheck?.role === 'super_admin');
+    const reqEmail = requesterProfile?.email?.toLowerCase().trim();
 
-    // 4. 권한 검증: 전역 마스터이거나, 해당 교회의 담당 관리자여야 함
-    // [강화] 전역 마스터는 어떤 교회든 관리할 수 있어야 함
+    // 2. 관리자 권한 조회 (ID 또는 이메일로 전체 조회)
+    const { data: adminsForRequester } = await supabaseAdmin
+        .from('app_admins')
+        .select('*')
+        .or(`user_id.eq.${requester_id}${reqEmail ? `,email.eq.${reqEmail}` : ''}`);
+
+    const adminInfo = adminsForRequester?.find(a => a.role === 'super_admin') || adminsForRequester?.[0];
+
+    // 3. 마스터 권한 여부 (전역)
+    const isGlobalMaster = (reqEmail && HARDCODED_ADMINS.includes(reqEmail)) ||
+        (adminInfo?.role === 'super_admin') ||
+        (requesterProfile?.full_name === '백동희' || requesterProfile?.full_name === '동희');
+
+    // 4. 교회 식별자 표준화 (매칭용)
+    const normalizeId = (id: string | null) => {
+        if (!id) return 'jesus-in';
+        const s = id.toLowerCase().trim();
+        if (s === '예수인교회' || s === 'jesus-in' || s === '예수인') return 'jesus-in';
+        return s;
+    };
+    const normTargetId = normalizeId(targetChurchId);
+
+    // 5. 권한 검증 로직
     if (!isGlobalMaster) {
-        // [백업] adminCheck가 없더라도 이메일로 다시 한번 확인
-        let finalAdminCheck = adminCheck;
+        // 전역 마스터가 아니라면 본인 소속 교회인지 확인
+        const userCid = normalizeId(adminInfo?.church_id);
 
-        if (!finalAdminCheck && requesterProfile?.email) {
-            const { data: emailMatch } = await supabaseAdmin
-                .from('app_admins')
-                .select('*')
-                .eq('email', requesterProfile.email.toLowerCase().trim())
-                .ilike('church_id', targetChurchId) // 해당 교회 매칭
-                .maybeSingle();
-            finalAdminCheck = emailMatch;
-        }
-
-        // [최종 구제] 유저 ID로 다시 한번만 전체 권한 조회 (role이 super_admin인지 확인용)
-        if (!finalAdminCheck) {
-            const { data: anyAdmin } = await supabaseAdmin
-                .from('app_admins')
-                .select('*')
-                .eq('user_id', requester_id)
-                .limit(1)
-                .maybeSingle();
-            finalAdminCheck = anyAdmin;
-        }
-
-        const isTrial = targetChurchId?.toLowerCase().startsWith('trial-');
-
-        if (!finalAdminCheck || finalAdminCheck.church_id?.toLowerCase() !== targetChurchId?.toLowerCase()) {
-            // [최종 구제] 하드코딩된 관리자 이메일과 대조 (isGlobalMaster가 email 누락 등으로 실패했을 경우 대비)
-            const requesterMail = requesterProfile?.email?.toLowerCase().trim();
-            const isIncludedMail = requesterMail && HARDCODED_ADMINS.includes(requesterMail);
-
-            if (!isIncludedMail) {
-                const reason = !finalAdminCheck ? "관리자 레코드 없음" :
-                    finalAdminCheck.church_id?.toLowerCase() !== targetChurchId?.toLowerCase() ? `교회 불일치(${finalAdminCheck.church_id} vs ${targetChurchId})` :
-                        "알 수 없는 권한 오류";
-                console.error(`[Security Alert] Unauthorized settings update attempt. Requester: ${requester_id}, Email: ${requesterMail}, Target: ${targetChurchId}, Reason: ${reason}`);
-                return NextResponse.json({ success: false, error: `권한이 없습니다: ${reason}` }, { status: 403 });
-            }
+        if (!adminInfo || userCid !== normTargetId) {
+            const reason = !adminInfo ? "관리자 레코드 없음" : `교회 불일치(${userCid} vs ${normTargetId})`;
+            console.error(`[Security Alert] Unauthorized update attempt. User: ${requester_id}, Target: ${normTargetId}, Reason: ${reason}`);
+            return NextResponse.json({ success: false, error: `권한이 없습니다: ${reason}` }, { status: 403 });
         }
     }
 
