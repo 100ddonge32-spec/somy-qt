@@ -402,7 +402,12 @@ export async function POST(req: NextRequest) {
             }
 
             // 1. 관리자 권한 부여
-            const adminPayload: any = { email: formattedEmail, role: 'church_admin', church_id: finalChurchId };
+            const adminPayload: any = {
+                email: formattedEmail,
+                role: 'church_admin',
+                church_id: finalChurchId,
+                pin: body.pin || null // [추가] PIN 번호 저장
+            };
 
             let result: any = await supabaseAdmin
                 .from('app_admins')

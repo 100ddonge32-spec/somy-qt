@@ -8786,19 +8786,22 @@ export default function App() {
                                                     <input id="new-admin-phone" placeholder="전화번호" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: '#FAFAFA' }} />
                                                     <input id="new-admin-birthdate" placeholder="생년월일" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: '#FAFAFA' }} />
                                                     <input id="new-admin-church" placeholder="새로 생성할 교회 영문 ID (예: my-church)" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: '#FAFAFA' }} />
+                                                    <input id="new-admin-pin" type="password" placeholder="관리자 PIN (숫자 4자리)" maxLength={4} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: '#FAFAFA' }} />
                                                     <button onClick={async () => {
                                                         const nameEl = document.getElementById('new-admin-name') as HTMLInputElement;
                                                         const phoneEl = document.getElementById('new-admin-phone') as HTMLInputElement;
                                                         const birthEl = document.getElementById('new-admin-birthdate') as HTMLInputElement;
                                                         const cidEl = document.getElementById('new-admin-church') as HTMLInputElement;
+                                                        const pinEl = document.getElementById('new-admin-pin') as HTMLInputElement;
 
                                                         const name = nameEl?.value;
                                                         const phone = phoneEl?.value;
                                                         const birthdate = birthEl?.value;
                                                         const cid = cidEl?.value;
+                                                        const pin = pinEl?.value;
 
-                                                        if (!name || !phone || !birthdate || !cid) {
-                                                            alert('모든 정보를 입력해주세요.');
+                                                        if (!name || !phone || !birthdate || !cid || !pin) {
+                                                            alert('모든 정보를 입력해주세요. (PIN 포함)');
                                                             return;
                                                         }
 
@@ -8806,7 +8809,13 @@ export default function App() {
                                                             const res = await fetch('/api/admin', {
                                                                 method: 'POST',
                                                                 headers: { 'Content-Type': 'application/json' },
-                                                                body: JSON.stringify({ action: 'create_church_admin', name, phone, birthdate, target_church_id: cid })
+                                                                body: JSON.stringify({
+                                                                    action: 'create_church_admin',
+                                                                    name, phone, birthdate,
+                                                                    target_church_id: cid,
+                                                                    pin,
+                                                                    requester_id: user.id
+                                                                })
                                                             });
                                                             const info = await res.json();
                                                             if (res.ok) {
