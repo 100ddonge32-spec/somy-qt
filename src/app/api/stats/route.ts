@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
         // 1. 게시판에서 '묵상나눔(is_qt: true)' 게시글들만 가져오기
         // 이번 달 전체 데이터를 가져와서 서버에서 오늘 참여자와 참여 일수를 계산합니다.
         const { data: posts, error: dbError } = await supabaseAdmin
-            .from('community')
+            .from('community_posts')
             .select('user_id, user_name, avatar_url, created_at, is_qt')
             .eq('church_id', cid)
             .eq('is_qt', true)
