@@ -255,6 +255,7 @@ export async function POST(req: NextRequest) {
         }
 
         // [추가] 관리자가 자신의 소속이 아닌 다른 일반 교회를 고치려고 시도하는 경우 차단
+        // 단, 마스트(isGlobalMaster)는 이미 위에서 통과되었으므로 일반 관리자만 체크합니다.
         if (normalizeId(adminInfo.church_id) !== normTargetId) {
             return NextResponse.json({ success: false, error: "해당 교회의 관리 권한이 없습니다." }, { status: 403 });
         }
@@ -323,8 +324,8 @@ export async function POST(req: NextRequest) {
 
     // [핵심 보안] jesus-in(본교회) 보호 및 트라이얼 정보 유입 원천 차단
     // 1. 요청한 church_id가 jesus-in인데 DB에서 찾은 church_id와 다르면 절대 중단
-    if (targetChurchId === 'jesus-in') {
-        if (currentSettings && currentSettings.church_id !== 'jesus-in') {
+    if (targetChurchId === 'jesus-in' && !isGlobalMaster) {
+        if (currentSettings && normalizeId(currentSettings.church_id) !== 'jesus-in') {
             return NextResponse.json({ success: false, error: "보안 오류: 잘못된 교회 ID 매칭" }, { status: 403 });
         }
     }

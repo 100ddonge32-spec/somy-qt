@@ -1837,10 +1837,13 @@ export default function App() {
         try {
             // [핵심 버그 수정] settingsForm에만 없는 설교 관련 필드를 churchSettings에서 가져와 병합
             // 이렇게 해야 기본 설정 저장 시 설교 요약/질문 내용이 사라지지 않습니다.
+            // [항상 표준화] 교회 ID 정규화 처리
+            const finalChurchId = (churchId === '예수인교회' || churchId === encodeURIComponent('예수인교회')) ? 'jesus-in' : churchId;
+
             const fullPayload = {
                 ...churchSettings, // 현재 전체 설정 (설교 데이터 포함)
                 ...settingsForm,   // 수정된 기본 설정으로 덮어쓰기
-                church_id: churchId,
+                church_id: finalChurchId,
                 requester_id: user?.id,
                 requester_email: user?.email // [추가] 이메일 기반 권한 검증 보완용
             };
