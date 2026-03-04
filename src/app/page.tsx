@@ -3169,7 +3169,7 @@ export default function App() {
                                         const controller = new AbortController();
                                         const timeoutId = setTimeout(() => controller.abort(), 8000);
                                         try {
-                                            const r = await fetch(`/api/stats?church_id=${churchId}`, { signal: controller.signal, cache: 'no-store' });
+                                            const r = await fetch(`/api/stats?church_id=${churchId || 'jesus-in'}&t=${Date.now()}`, { signal: controller.signal, cache: 'no-store' });
                                             clearTimeout(timeoutId);
                                             const data = await r.json();
                                             if (data) {
@@ -3320,7 +3320,7 @@ export default function App() {
                                 user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
                                 avatar_url: user.user_metadata?.avatar_url || null,
                                 content: graceInput,
-                                church_id: churchId,
+                                church_id: churchId || 'jesus-in',
                                 is_private: isPrivatePost,
                                 is_qt: true // ✅ 묵상 기록을 통한 게시글임을 표시
                             })
@@ -3332,17 +3332,36 @@ export default function App() {
                             setIsPrivatePost(false);
 
                             // 2. [핵심] 여기서 즉시 묵상 통계(큐티왕)도 기록! (나중에 '마칠게요' 안 눌러도 기록되게)
-                            await fetch('/api/stats', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    user_id: user.id,
-                                    user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '성도',
-                                    avatar_url: user.user_metadata?.avatar_url || null,
-                                    church_id: churchId,
-                                    answers: answers
-                                }),
-                            });
+                            const recordQtStats = async () => {
+                                try {
+                                    const statsPostRes = await fetch('/api/stats', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            user_id: user.id,
+                                            user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '성도',
+                                            avatar_url: user.user_metadata?.avatar_url || null,
+                                            church_id: churchId || 'jesus-in',
+                                            answers: answers
+                                        }),
+                                    });
+
+                                    if (statsPostRes.ok) {
+                                        console.log("📊 QT completion recorded, refreshing stats...");
+                                        const statsRes = await fetch(`/api/stats?church_id=${churchId || 'jesus-in'}&t=${Date.now()}`, { cache: 'no-store' });
+                                        const statsData = await statsRes.json();
+                                        if (statsData && statsData.today) {
+                                            setStats(statsData);
+                                        }
+                                        setHistory([]);
+                                    }
+                                } catch (e) {
+                                    console.error("통계 기록 중 오류:", e);
+                                }
+                            };
+
+                            // 즉시 기록
+                            await recordQtStats();
                         }
                     } catch (e) {
                         console.error("저장 중 오류 발생:", e);
@@ -3581,7 +3600,7 @@ export default function App() {
                                         const controller = new AbortController();
                                         const timeoutId = setTimeout(() => controller.abort(), 8000);
                                         try {
-                                            const r = await fetch(`/api/stats?church_id=${churchId}`, { signal: controller.signal, cache: 'no-store' });
+                                            const r = await fetch(`/api/stats?church_id=${churchId || 'jesus-in'}&t=${Date.now()}`, { signal: controller.signal, cache: 'no-store' });
                                             clearTimeout(timeoutId);
                                             const data = await r.json();
                                             if (data) {
@@ -3632,7 +3651,7 @@ export default function App() {
                                     return;
                                 }
 
-                                // 큐티 완료 기록
+                                // 큐티 완료 기록 (중복 호출되어도 upsert 처리됨)
                                 if (user) {
                                     try {
                                         const res = await fetch('/api/stats', {
@@ -3642,19 +3661,17 @@ export default function App() {
                                                 user_id: user.id,
                                                 user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '성도',
                                                 avatar_url: user.user_metadata?.avatar_url || null,
-                                                church_id: churchId, // [추가] 교회 ID 명시
-                                                answers: answers // 답변 데이터 포함
+                                                church_id: churchId || 'jesus-in',
+                                                answers: answers
                                             }),
                                         });
 
                                         if (res.ok) {
-                                            // 기록 성공 시 즉시 최신 통계 데이터 로드
-                                            const statsRes = await fetch(`/api/stats?church_id=${churchId}`);
+                                            const statsRes = await fetch(`/api/stats?church_id=${churchId || 'jesus-in'}&t=${Date.now()}`, { cache: 'no-store' });
                                             const statsData = await statsRes.json();
                                             if (statsData && statsData.today) {
                                                 setStats(statsData);
                                             }
-                                            // 히스토리 목록도 초기화 (다시 들어갈 때 최신화되도록)
                                             setHistory([]);
                                         }
                                     } catch (e) {
