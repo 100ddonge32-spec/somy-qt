@@ -3334,26 +3334,34 @@ export default function App() {
                             // 2. [핵심] 여기서 즉시 묵상 통계(큐티왕)도 기록! (나중에 '마칠게요' 안 눌러도 기록되게)
                             const recordQtStats = async () => {
                                 try {
+                                    // [방어] 현재 상태의 churchId가 비어있으면 localStorage나 기본값에서 가져옴
+                                    const effectiveChurchId = churchId || (typeof window !== 'undefined' ? localStorage.getItem('church_id') : null) || 'jesus-in';
+
+                                    console.log(`📊 Attempting to record QT stats for: ${effectiveChurchId}`);
                                     const statsPostRes = await fetch('/api/stats', {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({
                                             user_id: user.id,
                                             user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '성도',
-                                            avatar_url: user.user_metadata?.avatar_url || null,
-                                            church_id: churchId || 'jesus-in',
-                                            answers: answers
+                                            avatar_url: profileAvatar || user.user_metadata?.avatar_url || null,
+                                            church_id: effectiveChurchId,
+                                            answers: answers // 큐티 답변 데이터
                                         }),
                                     });
 
                                     if (statsPostRes.ok) {
-                                        console.log("📊 QT completion recorded, refreshing stats...");
-                                        const statsRes = await fetch(`/api/stats?church_id=${churchId || 'jesus-in'}&t=${Date.now()}`, { cache: 'no-store' });
+                                        const resData = await statsPostRes.json();
+                                        console.log("📊 QT completion recorded:", resData);
+                                        const statsRes = await fetch(`/api/stats?church_id=${effectiveChurchId}&t=${Date.now()}`, { cache: 'no-store' });
                                         const statsData = await statsRes.json();
-                                        if (statsData && statsData.today) {
+                                        if (statsData) {
                                             setStats(statsData);
                                         }
                                         setHistory([]);
+                                    } else {
+                                        const err = await statsPostRes.json();
+                                        console.error("📊 QT stats record failed:", err);
                                     }
                                 } catch (e) {
                                     console.error("통계 기록 중 오류:", e);
@@ -3654,22 +3662,25 @@ export default function App() {
                                 // 큐티 완료 기록 (중복 호출되어도 upsert 처리됨)
                                 if (user) {
                                     try {
+                                        const effectiveChurchId = churchId || (typeof window !== 'undefined' ? localStorage.getItem('church_id') : null) || 'jesus-in';
+                                        console.log(`📊 Finishing QT: Recording stats for ${effectiveChurchId}`);
+
                                         const res = await fetch('/api/stats', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({
                                                 user_id: user.id,
                                                 user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '성도',
-                                                avatar_url: user.user_metadata?.avatar_url || null,
-                                                church_id: churchId || 'jesus-in',
+                                                avatar_url: profileAvatar || user.user_metadata?.avatar_url || null,
+                                                church_id: effectiveChurchId,
                                                 answers: answers
                                             }),
                                         });
 
                                         if (res.ok) {
-                                            const statsRes = await fetch(`/api/stats?church_id=${churchId || 'jesus-in'}&t=${Date.now()}`, { cache: 'no-store' });
+                                            const statsRes = await fetch(`/api/stats?church_id=${effectiveChurchId}&t=${Date.now()}`, { cache: 'no-store' });
                                             const statsData = await statsRes.json();
-                                            if (statsData && statsData.today) {
+                                            if (statsData) {
                                                 setStats(statsData);
                                             }
                                             setHistory([]);
@@ -4082,7 +4093,26 @@ export default function App() {
                                 )}
                             </div>
 
-                            <button onClick={() => setView('home')} style={{ width: '100%', padding: '14px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer', marginBottom: '20px' }}>홈으로 돌아가기</button>
+                            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                                <button
+                                    onClick={async () => {
+                                        setStats(null);
+                                        const controller = new AbortController();
+                                        const timeoutId = setTimeout(() => controller.abort(), 8000);
+                                        const effectiveChurchId = churchId || (typeof window !== 'undefined' ? localStorage.getItem('church_id') : null) || 'jesus-in';
+                                        try {
+                                            const r = await fetch(`/api/stats?church_id=${effectiveChurchId}&t=${Date.now()}`, { signal: controller.signal, cache: 'no-store' });
+                                            clearTimeout(timeoutId);
+                                            const data = await r.json();
+                                            if (data) setStats(data);
+                                        } catch (e) { setStatsError("새로고침 실패"); }
+                                    }}
+                                    style={{ flex: 1, padding: '14px', background: 'white', color: '#333', border: '1px solid #DDD', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' }}
+                                >
+                                    🔄 새로고침
+                                </button>
+                                <button onClick={() => setView('home')} style={{ flex: 2, padding: '14px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' }}>홈으로 돌아가기</button>
+                            </div>
                         </div>
                     )}
                 </div>
