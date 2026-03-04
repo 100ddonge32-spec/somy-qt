@@ -14,7 +14,7 @@ const supabaseAdmin = createClient(
 
 // [표준화] 교회 식별자 정규화 (전역 함수로 분리하여 코드 중복 제거)
 const normalizeId = (id: string | null) => {
-    if (!id) return 'jesus-in';
+    if (!id) return null; // [수정] 기본값 제거 (호출부에서 처리)
     const s = id.toLowerCase().trim();
     if (s === '예수인교회' || s === 'jesus-in' || s === '예수인') return 'jesus-in';
     return s;
@@ -24,7 +24,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const churchId = searchParams.get('church_id');
 
-    const targetChurchId = normalizeId(churchId);
+    // [표준화] 요청받은 아이디 정규화 (기본값 설정)
+    const targetChurchId = normalizeId(churchId) || 'jesus-in';
 
     const noCacheHeaders = {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -209,7 +210,7 @@ export async function POST(req: NextRequest) {
         await supabaseAdmin.from('profiles').update({ email: body_requester_email }).eq('id', requester_id);
     }
 
-    const normTargetId = normalizeId(targetChurchId);
+    const normTargetId = normalizeId(targetChurchId) || 'jesus-in';
 
     // 2. 관리자 권한 조회 (더욱 포괄적이고 안전한 방식)
     // 1) 유저 ID로 찾기
@@ -331,9 +332,10 @@ export async function POST(req: NextRequest) {
         }
     }
 
-    // 2. [핵심 수정] 다른 교회를 고치려는데 ID 1번(메인)이 잡히는 경우 원천 차단
+    // 2. [핵심 수정] 타교회 요청인데 조회된 레코드가 ID 1번(메인)인 경우 원천 차단
     if (normTargetId !== 'jesus-in') {
-        if (currentSettings?.id === 1 || normalizeId(currentSettings?.church_id) === 'jesus-in') {
+        const isActuallyMain = currentSettings?.id === 1 || currentSettings?.church_id === 'jesus-in';
+        if (isActuallyMain) {
             console.error(`[Security Critical] Interception attempt detected! Church ${normTargetId} tried to hit Yesuin record (ID 1).`);
             return NextResponse.json({ success: false, error: "보안 정책 위반: 타교회는 메인 데이터를 수정할 수 없습니다." }, { status: 403 });
         }
