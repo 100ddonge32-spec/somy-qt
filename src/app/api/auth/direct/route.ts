@@ -152,19 +152,25 @@ export async function POST(req: NextRequest) {
                     throw new Error(`프로필 연결 실패: ${upsertError.message || '데이터베이스 오류'}`);
                 }
 
-                // 관리자 권한 이전
+                // 관리자 권한 이전 (강화된 로직)
                 const { data: adminEntries } = await supabaseAdmin.from('app_admins')
                     .select('*')
-                    .or(`user_id.eq.${match.id},email.eq.${match.email || ''}`);
+                    .or(`user_id.eq.${match.id},email.eq.${match.email || 'none'}`);
 
                 if (adminEntries && adminEntries.length > 0) {
                     for (const entry of adminEntries) {
-                        await supabaseAdmin.from('app_admins').upsert({
+                        const updatePayload = {
                             ...entry,
-                            user_id: user_id
-                        }, { onConflict: 'email' });
+                            user_id: user_id // 새로운 UUID로 업데이트
+                        };
+
+                        const { error: adminUpdateErr } = await supabaseAdmin
+                            .from('app_admins')
+                            .upsert(updatePayload, { onConflict: 'email' });
+
+                        if (adminUpdateErr) console.error(`[DirectAuth] 관리자 권한 이전 실패(Email: ${entry.email}):`, adminUpdateErr);
+                        else console.log(`[DirectAuth] 관리자 권한 이전 성공: ${entry.email} -> ${user_id}`);
                     }
-                    console.log(`[DirectAuth] 관리자 권한 이전 완료: ${match.full_name}`);
                 }
 
                 // 기존 프로필 정리 (이관 성공 후에만)

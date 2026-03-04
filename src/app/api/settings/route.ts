@@ -207,27 +207,45 @@ export async function POST(req: NextRequest) {
     };
     const normTargetId = normalizeId(targetChurchId);
 
-    // 2. 관리자 권한 조회 (강화된 조회 방식)
-    console.log(`[Admin Debug] Checking permissions for User: ${requester_id}, Email: ${reqEmail}, TargetChurch: ${normTargetId}`);
+    // 2. 관리자 권한 조회 (더욱 포괄적인 검색)
+    const orFilter = [`user_id.eq.${requester_id}`];
+    if (reqEmail) orFilter.push(`email.eq.${reqEmail}`);
 
-    // 이메일이나 유저 ID 중 하나라도 일치하는 레코드들 모두 가져오기
-    // .or() 내부의 문자열 값에 따옴표를 추가하여 특수문자(콜론 등) 오류 방지
-    const { data: adminsForRequester } = await supabaseAdmin
+    const { data: adminsForRequester, error: adminQueryErr } = await supabaseAdmin
         .from('app_admins')
         .select('*')
-        .or(`user_id.eq."${requester_id}"${reqEmail ? `,email.eq."${reqEmail}"` : ''}`);
+        .or(orFilter.join(','));
 
-    console.log(`[Admin Debug] Found ${adminsForRequester?.length || 0} admin records.`);
+    if (adminQueryErr) console.error("[Admin Debug] Query Error:", adminQueryErr);
 
-    // [핵심 해결] 해당 교회에 대한 레코드를 명확히 매칭하거나 슈퍼어드민 레코드 확인
-    const adminInfo = adminsForRequester?.find(a =>
-        a.role === 'super_admin' || normalizeId(a.church_id) === normTargetId
-    ) || adminsForRequester?.[0];
+    // [핵심 해결] 정확한 매칭 로직
+    // 1. 슈퍼어드민인지 확인
+    const superAdmin = adminsForRequester?.find(a => a.role === 'super_admin');
+    // 2. 현재 요청한 교회(targetChurchId)의 관리자인지 확인
+    const churchAdmin = adminsForRequester?.find(a => normalizeId(a.church_id) === normTargetId);
 
-    // 3. 마스터 권한 여부 (전역)
+    const adminInfo = superAdmin || churchAdmin;
+
+    console.log(`[Admin Debug] User: ${requester_id}, Email: ${reqEmail}, Target: ${normTargetId}, Found: ${adminsForRequester?.length}, Match: ${!!adminInfo}`);
+
+    // 3. 마스터 권한 여부 (전역 - Profile 이름 기반 최후의 보루)
     const isGlobalMaster = (reqEmail && HARDCODED_ADMINS.includes(reqEmail)) ||
-        (adminInfo?.role === 'super_admin') ||
+        (superAdmin?.role === 'super_admin') ||
         (requesterProfile?.full_name === '백동희' || requesterProfile?.full_name === '동희');
+
+    // 5. 권한 검증 로직
+    if (!isGlobalMaster) {
+        if (!adminInfo) {
+            // [구제 로직] 만약 레코드는 있는데 church_id가 pending이거나 비어있다면, 그리고 이 사람이 이 교회의 유일한 생성 관리자라면?
+            // 하지만 보안상 엄격하게 처리하기 위해 이유를 정확히 알림
+            const reason = (adminsForRequester && adminsForRequester.length > 0)
+                ? `등록된 교회가 다릅니다 (보유: ${adminsForRequester.map(a => a.church_id).join(', ')} vs 요청: ${targetChurchId})`
+                : "관리자 record를 찾을 수 없습니다. (ID/이메일 불일치)";
+
+            console.error(`[Security Alert] Access Denied. User: ${requester_id}, Reason: ${reason}`);
+            return NextResponse.json({ success: false, error: `권한이 없습니다: ${reason}` }, { status: 403 });
+        }
+    }
 
     // 5. 권한 검증 로직
     if (!isGlobalMaster) {
