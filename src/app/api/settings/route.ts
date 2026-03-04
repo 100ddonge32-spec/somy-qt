@@ -137,19 +137,7 @@ export async function GET(req: NextRequest) {
             const match = planStr.match(/s_q2:([^|]+)/);
             if (match) data.sermon_q2 = decodeURIComponent(match[1]);
         }
-        if (data.plan) {
-            // [트라이얼 체크] 만료일 및 사용량 파싱 (이름이 'trial'로 시작하는 경우에만)
-            if (planStr.startsWith('trial')) {
-                const expireMatch = planStr.match(/expires:([^|]+)/);
-                const usageMatch = planStr.match(/usage:([^|]+)/);
-                const limitMatch = planStr.match(/limit:([^|]+)/);
-
-                data.trial_expires_at = expireMatch ? expireMatch[1] : null;
-                data.trial_usage_count = usageMatch ? parseInt(usageMatch[1]) : 0;
-                data.trial_usage_limit = limitMatch ? parseInt(limitMatch[1]) : 0;
-            }
-            data.plan = data.plan.split('|')[0]; // 원래 plan 값만 추출 (ui용)
-        }
+        data.plan = data.plan.split('|')[0]; // 원래 plan 값만 추출 (ui용)
     }
 
     return NextResponse.json({ settings: data }, { headers: noCacheHeaders });
@@ -262,11 +250,11 @@ export async function POST(req: NextRequest) {
         }
     }
 
-    // [보안] jesus-in(본교회) 보호 및 트라이얼 정보 유입 원천 차단
-    let cleanPlan = plan;
+    // [보안] 데이터 정교화 (유효성 검사 및 기본값 설정)
+    let cleanPlan = plan || 'free';
     let cleanName = church_name;
-    let cleanSubtitle = app_subtitle;
-    let cleanColumnTitle = pastor_column_title;
+    let cleanSubtitle = app_subtitle || '말씀과 기도로 거룩해지는 공동체';
+    let cleanColumnTitle = pastor_column_title || '🙏 오늘의 목양 메시지';
     let cleanColumnContent = pastor_column_content;
     let cleanLogoUrl = church_logo_url;
     let cleanSermonUrl = sermon_url;
@@ -275,45 +263,9 @@ export async function POST(req: NextRequest) {
     let cleanSermonQ2 = sermon_q2;
     let cleanSermonQ3 = sermon_q3;
 
-    const trialKeywords = ['(체험판)', '체험용', '트라이얼', 'demo', '데모', '샘플', '가상 성도', '가상성도', '오늘의 묵상 칼럼', '소미와 함께', '시작하는 메시지'];
-
     if (targetChurchId === 'jesus-in') {
-        // 1. 이름 및 부제목 보호 (필수)
-        if (!cleanName || trialKeywords.some(k => cleanName.includes(k))) cleanName = '예수인교회';
-        if (!cleanSubtitle || trialKeywords.some(k => cleanSubtitle.includes(k))) cleanSubtitle = '말씀과 기도로 거룩해지는 공동체';
-
-        // 2. 로고 보호 (체험판 전용 로고나 빈 로고 방지)
-        if (!cleanLogoUrl || cleanLogoUrl.includes('trial-') || cleanLogoUrl.includes('placeholder') || cleanLogoUrl.includes('somy.png')) {
-            cleanLogoUrl = 'https://lfjrfyylsxhvwosdpujv.supabase.co/storage/v1/object/public/church-assets/jesus-in-logo.png'; // 본교회 기본 로고 강제 지정
-        }
-
-        // 3. 설교 유튜브 채널 보호 (엉뚱한 실습용 채널 방지)
-        if (!cleanSermonUrl || cleanSermonUrl.length < 5) {
-            cleanSermonUrl = 'UC7-G1K-vN4G6vF_x5Wl9_8A'; // 본교회 기본 채널 ID (예시)
-        }
-
-        // 4. 칼럼 제목 및 내용 보호 (더미 데이터 유입 차단)
-        if (!cleanColumnTitle || trialKeywords.some(k => cleanColumnTitle.includes(k))) {
-            cleanColumnTitle = '🙏 오늘의 목양 메시지';
-        }
-        if (!cleanColumnContent || trialKeywords.some(k => cleanColumnContent.includes(k))) {
-            cleanColumnContent = '반갑습니다. 예수인교회 성도님들을 주님의 이름으로 축복합니다. 소미와 함께 말씀 묵상의 즐거움을 누리시길 기도합니다.';
-        }
-
-        // 5. 설교 요약 및 질문 보호 (체험판 샘플 내용 유입 차단)
-        const sampleSermonTag = '관리자 센터에서 교회의 이름과 설교 영상을 직접 바꿔보세요';
-        if (!cleanSermonSummary || cleanSermonSummary.includes(sampleSermonTag) || trialKeywords.some(k => cleanSermonSummary.includes(k))) {
-            cleanSermonSummary = '성도님들과 함께 나눌 오늘의 말씀 요약을 입력해주세요.';
-            cleanSermonQ1 = '오늘 말씀을 통해 깨달은 점은 무엇인가요?';
-            cleanSermonQ2 = '내 삶에 어떻게 적용할 수 있을까요?';
-            cleanSermonQ3 = '함께 기도하고 싶은 제목을 나누어보세요.';
-        }
-
-        // 6. 플랜 요금제 보호 (체험판 기간 정보가 유입되지 않도록)
-        if (plan?.includes('trial')) {
-            cleanPlan = plan.split('|').filter((p: string) => !p.startsWith('trial') && !p.startsWith('expires:') && !p.startsWith('usage:') && !p.startsWith('limit:')).join('|');
-            if (!cleanPlan || cleanPlan === '') cleanPlan = 'premium';
-        }
+        if (!cleanName) cleanName = '예수인교회';
+        if (!cleanLogoUrl) cleanLogoUrl = 'https://lfjrfyylsxhvwosdpujv.supabase.co/storage/v1/object/public/church-assets/jesus-in-logo.png';
     }
 
     // ✅ DB에서 현재 해당 교회의 실제 ID를 정확히 조회 (교차 업데이트 방지 핵심)
@@ -342,17 +294,6 @@ export async function POST(req: NextRequest) {
     }
 
     let encodedPlan = (cleanPlan || 'free').split('|')[0];
-    const oldPlanStr = currentSettings?.plan || '';
-
-    // 체험판 정보 보존 (체험판인 경우만)
-    if (targetChurchId !== 'jesus-in' && oldPlanStr.includes('trial')) {
-        const expireMatch = oldPlanStr.match(/expires:([^|]+)/);
-        const usageMatch = oldPlanStr.match(/usage:([^|]+)/);
-        const limitMatch = oldPlanStr.match(/limit:([^|]+)/);
-        if (expireMatch) encodedPlan += `|${expireMatch[0]}`;
-        if (usageMatch) encodedPlan += `|${usageMatch[0]}`;
-        if (limitMatch) encodedPlan += `|${limitMatch[0]}`;
-    }
 
     if (allow_member_edit) encodedPlan += '|member_edit_on';
     if (event_poster_visible) encodedPlan += '|poster_on';

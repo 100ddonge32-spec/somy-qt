@@ -412,11 +412,10 @@ export default function App() {
     const isHardcodedAdmin = !!user && !!user.email && MASTER_EMAILS.includes(user.email.toLowerCase().trim());
     const isMasterName = !!user && (user.user_metadata?.full_name === '백동희' || user.user_metadata?.name === '백동희' || profileName === '백동희');
 
-    // [전략] 마스터이거나, 체험판(샌드박스) 환경이거나, adminInfo에 권한이 있으면 관리자로 인정
-    const isTrialEnvironment = typeof churchId === 'string' && churchId.startsWith('trial-');
-    const isAdmin = isHardcodedAdmin || isMasterName || isTrialEnvironment || (!!adminInfo && (adminInfo.role === 'super_admin' || ((adminInfo.role === 'church_admin' || adminInfo.role === 'sub_admin' || adminInfo.role === 'admin') && adminInfo.church_id === churchId)));
+    // [전략] 마스터이거나, adminInfo에 권한이 있으면 관리자로 인정
+    const isAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && (adminInfo.role === 'super_admin' || ((adminInfo.role === 'church_admin' || adminInfo.role === 'sub_admin' || adminInfo.role === 'admin') && adminInfo.church_id === churchId)));
     const isSuperAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && adminInfo.role === 'super_admin');
-    const isMainAdmin = isHardcodedAdmin || isMasterName || isTrialEnvironment || (!!adminInfo && (adminInfo.role === 'super_admin' || ((adminInfo.role === 'church_admin' || adminInfo.role === 'admin') && adminInfo.church_id === churchId)));
+    const isMainAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && (adminInfo.role === 'super_admin' || ((adminInfo.role === 'church_admin' || adminInfo.role === 'admin') && adminInfo.church_id === churchId)));
     const [editingPostId, setEditingPostId] = useState<any>(null);
     const [editContent, setEditContent] = useState("");
     const [editingCommentId, setEditingCommentId] = useState<any>(null);
@@ -471,9 +470,6 @@ export default function App() {
         event_poster_visible: false,
         pastor_column_title: '',
         pastor_column_content: '',
-        trial_expires_at: null,
-        trial_usage_count: 0,
-        trial_usage_limit: 0,
     });
     const [settingsForm, setSettingsForm] = useState<any>({
         church_name: CHURCH_NAME,
@@ -961,13 +957,11 @@ export default function App() {
                 const isAnonymousUser = !user.email || user.email.includes('anonymous.local') || user.is_anonymous;
 
                 const hasRealInfo = (metaName && metaName.length >= 2) || (metaPhone && metaPhone.length > 5);
-                const isTrial = churchId && churchId.startsWith('trial-');
-                if (isAnonymousUser && !hasRealInfo && !isKakaoUser && !isTrial) {
+                if (isAnonymousUser && !hasRealInfo && !isKakaoUser) {
                     setIsApproved(false);
                     setShowVerification(true);
                     return;
                 }
-
                 const syncRes = await fetch(`/api/auth/sync?t=${cacheBuster}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -987,9 +981,7 @@ export default function App() {
                         const pathName = rawPathName ? decodeURIComponent(rawPathName) : '';
                         const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id') || (pathName !== '' ? pathName : null);
 
-                        let safeChurch = hasSpecificChurchUrl ? hasSpecificChurchUrl :
-                            (churchId && churchId.startsWith('trial-')) ? churchId :
-                                (syncData.church_id && !syncData.church_id.startsWith('trial-')) ? syncData.church_id : 'somy-main';
+                        let safeChurch = hasSpecificChurchUrl ? hasSpecificChurchUrl : (syncData.church_id || 'somy-main');
                         if (safeChurch === '예수인교회' || safeChurch === encodeURIComponent('예수인교회')) safeChurch = 'jesus-in';
 
                         setChurchId(safeChurch);
@@ -1013,7 +1005,7 @@ export default function App() {
                 const pathName = rawPathName ? decodeURIComponent(rawPathName) : '';
                 const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id') || (pathName !== '' ? pathName : null);
 
-                if (data.church_id && !hasSpecificChurchUrl && !churchId.startsWith('trial-')) {
+                if (data.church_id && !hasSpecificChurchUrl) {
                     setChurchId(data.church_id);
                     localStorage.setItem('church_id', data.church_id);
                 }
@@ -1356,14 +1348,9 @@ export default function App() {
             setView(initialView);
         }
 
-        // ✅ 체험판(trial-)은 sessionStorage(세션 종료 시 삭제)에, 정식 교회는 localStorage에 우선 보관
-        const churchFromSession = typeof window !== 'undefined' ? sessionStorage.getItem('church_id') : null;
         const churchFromLocal = typeof window !== 'undefined' ? localStorage.getItem('church_id') : null;
 
-        let resolvedChurch = null;
-        if (churchFromUrl) resolvedChurch = churchFromUrl;
-        else if (churchFromSession && churchFromSession.startsWith('trial-')) resolvedChurch = churchFromSession;
-        else if (churchFromLocal) resolvedChurch = churchFromLocal;
+        let resolvedChurch = churchFromUrl || churchFromLocal;
 
         // [신규 기능] 한글 URL 매핑 (예: https://somy-qt.vercel.app/예수인교회 -> jesus-in 자동 변환)
         if (resolvedChurch === '예수인교회' || resolvedChurch === encodeURIComponent('예수인교회')) {
@@ -1372,11 +1359,7 @@ export default function App() {
 
         if (resolvedChurch) {
             setChurchId(resolvedChurch);
-            if (resolvedChurch.startsWith('trial-')) {
-                sessionStorage.setItem('church_id', resolvedChurch);
-            } else {
-                localStorage.setItem('church_id', resolvedChurch);
-            }
+            localStorage.setItem('church_id', resolvedChurch);
             console.log(`[Initialize] Church set: ${resolvedChurch}`);
         } else {
             // [분리] 최초 메인은 예수인교회가 아닌 소미 플랫폼(somy-main)으로 설정
@@ -1671,54 +1654,7 @@ export default function App() {
     };
 
     // [추가] 고유 트라이얼(체험용) 교회 생성 및 진입
-    const handleTrialCreation = async () => {
-        setIsDirectLoggingIn(true);
-        try {
-            // 1. 인증 정보 확인 (있으면 쓰고, 없으면 익명 로그인)
-            let currentUserId = user?.id;
-            let currentUserEmail = user?.email;
 
-            if (!currentUserId) {
-                console.log("[Trial] No session found, signing in anonymously...");
-                const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
-                if (authError) throw authError;
-                currentUserId = authData.user?.id;
-                currentUserEmail = authData.user?.email;
-            }
-
-            if (!currentUserId) throw new Error("사용자 인증에 실패했습니다.");
-
-            // 2. 서버에 트라이얼 교회 생성 요청
-            const res = await fetch('/api/admin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'create_trial',
-                    user_id: currentUserId,
-                    email: currentUserEmail,
-                    name: '체험용 관리자',
-                    requester_id: currentUserId
-                })
-            });
-
-            const result = await res.json();
-            if (res.ok && result.success) {
-                localStorage.setItem('church_id', result.church_id); // 영구 저장
-                setChurchId(result.church_id);
-                setIsApproved(true);
-                setProfileName('체험용 관리자');
-                // 즉시 진입을 위해 강제 리로드 (파라미터 포함, 바로 관리자 센터로 이동)
-                window.location.href = `/?church_id=${result.church_id}&view=admin`;
-            } else {
-                throw new Error(result.error || "트라이얼 생성 중 오류가 발생했습니다.");
-            }
-        } catch (err: any) {
-            console.error("[Trial Error]", err);
-            alert("트라이얼 생성 실패: " + err.message);
-        } finally {
-            setIsDirectLoggingIn(false);
-        }
-    };
 
     const handleLogin = async (provider: 'google' | 'kakao') => {
         alert("카카오톡 로그인은 더 이상 지원되지 않습니다. 성도/관리자 통합 입구(정보 매칭)를 이용해 주세요.");
@@ -1783,7 +1719,7 @@ export default function App() {
         setSettingsForm({ loading: true } as any);
         setShowEventPopup(false);
 
-        // [세션 초기화] 로그아웃 시 캐시된 교회 정보를 완전히 삭제하여 체험판이 잔상처럼 남는 현상 해결
+        // [세션 초기화] 로그아웃 시 캐시된 교회 정보를 완전히 삭제
         localStorage.removeItem('church_id');
         sessionStorage.removeItem('church_id');
 
@@ -1840,18 +1776,14 @@ export default function App() {
             // [항상 표준화] 교회 ID 정규화 처리
             const finalChurchId = (churchId === '예수인교회' || churchId === encodeURIComponent('예수인교회')) ? 'jesus-in' : churchId;
 
+            // 권한 검증용 Payload 구성
             const fullPayload = {
-                ...churchSettings, // 현재 전체 설정 (설교 데이터 포함)
-                ...settingsForm,   // 수정된 기본 설정으로 덮어쓰기
+                ...churchSettings,
+                ...settingsForm,
                 church_id: finalChurchId,
                 requester_id: user?.id,
-                requester_email: user?.email // [추가] 이메일 기반 권한 검증 보완용
+                requester_email: user?.email
             };
-
-            // [보안] 체험판인 경우 본교회 ID(1) 유입을 원천 차단
-            if (churchId && churchId.startsWith('trial-')) {
-                delete (fullPayload as any).id;
-            }
 
             const res = await fetch('/api/settings', {
                 method: 'POST',
@@ -1944,11 +1876,6 @@ export default function App() {
                 pastor_column_content: newContent,
                 requester_id: user?.id
             };
-
-            // [보안] 체험판인 경우 본교회 ID(1) 유입을 원천 차단
-            if (churchId && churchId.startsWith('trial-')) {
-                delete (updatedPayload as any).id;
-            }
 
             const saveRes = await fetch('/api/settings', {
                 method: 'POST',
@@ -2190,19 +2117,6 @@ export default function App() {
                                 backdropFilter: 'blur(10px)'
                             }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    {churchId && churchId.startsWith('trial-') && (
-                                        <span style={{
-                                            background: 'linear-gradient(45deg, #FF3D00, #FF7043)',
-                                            color: 'white',
-                                            fontSize: '8px',
-                                            padding: '2px 6px',
-                                            borderRadius: '6px',
-                                            fontWeight: 900,
-                                            marginRight: '4px',
-                                            boxShadow: '0 2px 4px rgba(255,61,0,0.3)',
-                                            letterSpacing: '0.5px'
-                                        }}>TRIAL</span>
-                                    )}
                                     {isSuperAdmin ? (
                                         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                                             <span style={{ background: '#333', color: 'white', fontSize: '9px', padding: '2px 5px', borderRadius: '4px', fontWeight: 900 }}>슈퍼관리자</span>
@@ -2345,43 +2259,13 @@ export default function App() {
 
                     {/* Church Logo Header */}
                     <div style={{ width: '100%', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        {churchId === 'demo' && (
-                            <button
-                                onClick={() => {
-                                    setChurchId('');
-                                    sessionStorage.removeItem('church_id');
-                                    localStorage.removeItem('church_id');
-                                    // 완전한 초기화를 위해 리로드
-                                    window.location.href = '/';
-                                }}
-                                style={{
-                                    position: 'absolute',
-                                    top: '0',
-                                    left: '20px',
-                                    background: '#F5F5F3',
-                                    border: '1px solid #EEE',
-                                    borderRadius: '12px',
-                                    padding: '8px 12px',
-                                    fontSize: '12px',
-                                    fontWeight: 700,
-                                    color: '#666',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                    zIndex: 10
-                                }}
-                            >
-                                <span>←</span> 나가기
-                            </button>
-                        )}
-                        <a href={churchId && churchId.startsWith('trial-') ? undefined : churchSettings.church_url} target="_blank" rel="noopener noreferrer" style={{
+                        <a href={churchSettings.church_url} target="_blank" rel="noopener noreferrer" style={{
                             textDecoration: "none",
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
                             gap: "8px",
-                            marginTop: "30px", // 겹침 방지를 위해 위쪽 여백 추가
+                            marginTop: "30px",
                             marginBottom: "20px",
                             animation: "fade-in 0.8s ease-out"
                         }}>
@@ -2391,30 +2275,11 @@ export default function App() {
                                 ) : (
                                     <div style={{ fontSize: '24px', fontWeight: 900, color: '#333' }}>{churchId ? churchSettings.church_name : ''}</div>
                                 )}
-                                {(churchId === 'demo' || (churchId && churchId.startsWith('trial-'))) && (
-                                    <div style={{ position: 'absolute', top: '-10px', right: '-30px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '2px 6px', borderRadius: '6px', boxShadow: '0 2px 5px rgba(255,61,0,0.3)' }}>{churchId === 'demo' ? 'DEMO' : 'TRIAL'}</div>
-                                )}
                             </div>
-                            <div style={{ fontSize: "12px", color: (churchId === 'demo' || (churchId && churchId.startsWith('trial-'))) ? "#B8924A" : "#666", letterSpacing: "1px", fontWeight: 700 }}>
-                                {churchId === 'demo' ? "✨ 데모 모드 (공식 샘플)" : (churchId && churchId.startsWith('trial-') ? "✨ 체험 중 (개별 체험판)" : "홈페이지")}
-                            </div>
-                            {churchId && churchId.startsWith('trial-') && churchSettings.trial_expires_at && (
-                                <div style={{
-                                    fontSize: '11px',
-                                    color: '#FF3D00',
-                                    fontWeight: 800,
-                                    background: '#FFF1F0',
-                                    padding: '4px 10px',
-                                    borderRadius: '20px',
-                                    marginTop: '4px',
-                                    border: '1px solid #FFCCC7'
-                                }}>
-                                    📅 {Math.max(0, Math.ceil((new Date(churchSettings.trial_expires_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))}일 남음 | AI {churchSettings.trial_usage_count}/{churchSettings.trial_usage_limit}회
-                                </div>
-                            )}
+                            <div style={{ fontSize: "12px", color: "#666", letterSpacing: "1px", fontWeight: 700 }}>홈페이지</div>
                         </a>
                     </div>
-                    {/* Action Buttons을 최상단으로 옮김 */}
+
                     <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%", maxWidth: "340px", animation: "fade-in 1.4s ease-out", paddingBottom: "20px" }}>
                         {isCheckingAuth ? (
                             <div style={{ padding: '80px 0', textAlign: 'center', background: 'white', borderRadius: '32px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
@@ -2422,7 +2287,7 @@ export default function App() {
                                 <div style={{ fontSize: '15px', color: '#1A5D55', fontWeight: 800 }}>보안 연결 확인 중...</div>
                                 <div style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>잠시만 기다려 주세요.</div>
                             </div>
-                        ) : !user && churchId !== 'demo' ? (
+                        ) : !user ? (
                             <div style={{ background: 'white', padding: '30px', borderRadius: '32px', boxShadow: '0 15px 50px rgba(0,0,0,0.1)', border: '1px solid #F0ECE4', textAlign: 'center' }}>
                                 <div style={{ marginBottom: '25px', textAlign: 'center', animation: 'fade-in 0.8s ease' }}>
                                     <div style={{ fontSize: '22px', fontWeight: 900, color: '#1A5D55', marginBottom: '12px' }}>성도 & 관리자 통합 입장 ⛪</div>
@@ -2433,153 +2298,84 @@ export default function App() {
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    <>
-                                        <div style={{ textAlign: 'left' }}>
-                                            <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>교회 ID (식별자)</label>
-                                            <input
-                                                type="text"
-                                                placeholder="교회 식별 아이디 (예: jesus-in)"
-                                                value={loginChurchId || (churchId !== 'somy-main' ? churchId : '')}
-                                                onChange={(e) => setLoginChurchId(e.target.value)}
-                                                style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '15px', outline: 'none', background: '#FFFDF0', boxSizing: 'border-box', color: '#B8924A', fontWeight: 700 }}
-                                            />
-                                        </div>
-                                        <div style={{ textAlign: 'left' }}>
-                                            <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>성함</label>
-                                            <input
-                                                type="text"
-                                                placeholder="실명을 입력하세요 (예: 홍길동)"
-                                                value={loginName}
-                                                onChange={(e) => setLoginName(e.target.value)}
-                                                style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '15px', outline: 'none', background: '#FAFAFA', boxSizing: 'border-box' }}
-                                            />
-                                        </div>
-                                        <div style={{ textAlign: 'left' }}>
-                                            <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>전화번호 (010-0000-0000)</label>
-                                            <input
-                                                type="tel"
-                                                placeholder="숫자만 입력해 주세요"
-                                                value={loginPhoneTail}
-                                                onChange={(e) => setLoginPhoneTail(e.target.value.replace(/[^0-9]/g, ''))}
-                                                style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '15px', outline: 'none', background: '#FAFAFA', boxSizing: 'border-box' }}
-                                            />
-                                        </div>
-                                        <div style={{ textAlign: 'left' }}>
-                                            <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>생년월일 (8자리: 19900101)</label>
-                                            <input
-                                                type="tel"
-                                                maxLength={8}
-                                                placeholder="19900101"
-                                                value={loginBirthdate}
-                                                onChange={(e) => setLoginBirthdate(e.target.value.replace(/[^0-9]/g, ''))}
-                                                style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '15px', outline: 'none', background: '#FAFAFA', boxSizing: 'border-box' }}
-                                            />
-                                        </div>
-
-                                        {requiresPin && (
-                                            <div style={{ textAlign: 'left', animation: 'fade-in 0.5s ease' }}>
-                                                <label style={{ fontSize: '12px', fontWeight: 800, color: '#D32F2F', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>🔒 관리자 보안 PIN 번호</label>
-                                                <input
-                                                    type="password"
-                                                    maxLength={6}
-                                                    inputMode="numeric"
-                                                    placeholder="보안 PIN 번호 입력"
-                                                    value={loginPin}
-                                                    onChange={(e) => setLoginPin(e.target.value.replace(/[^0-9]/g, ''))}
-                                                    style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #D32F2F', fontSize: '15px', outline: 'none', background: '#FFF5F5', boxSizing: 'border-box', letterSpacing: '8px', textAlign: 'center' }}
-                                                />
-                                                <div style={{ fontSize: '11px', color: '#D32F2F', marginTop: '6px', marginLeft: '4px' }}>관리자 권한 확인을 위해 PIN 번호가 필요합니다.</div>
-                                            </div>
-                                        )}
-
-                                        <button
-                                            onClick={handleDirectLogin}
-                                            disabled={isDirectLoggingIn}
-                                            style={{
-                                                marginTop: '10px',
-                                                width: '100%',
-                                                padding: '18px',
-                                                background: (loginName && loginPhoneTail.length >= 4) ? '#333' : '#AAA',
-                                                color: 'white',
-                                                border: 'none',
-                                                borderRadius: '18px',
-                                                fontSize: '16px',
-                                                fontWeight: 800,
-                                                cursor: (loginName && loginPhoneTail.length >= 4) ? 'pointer' : 'default',
-                                                boxShadow: (loginName && loginPhoneTail.length >= 4) ? '0 10px 20px rgba(0,0,0,0.15)' : 'none',
-                                                transition: 'all 0.3s'
-                                            }}
-                                        >
-                                            {isDirectLoggingIn ? '정보 확인 중...' : '교인 정보로 바로 시작하기'}
-                                        </button>
-                                    </>
-
-                                    <div style={{ marginTop: churchId !== 'somy-main' ? '30px' : '0', borderTop: churchId !== 'somy-main' ? '1px solid #EEE' : 'none', paddingTop: churchId !== 'somy-main' ? '25px' : '0', textAlign: 'left' }}>
-                                        <div style={{ fontSize: '14px', fontWeight: 900, color: '#333', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <span style={{ fontSize: '18px' }}>💎</span> 소미 100% 체험하기
-                                        </div>
-
-                                        {/* 그룹 1: 교회 관리자용 */}
-                                        <div style={{ background: '#F0F8F7', padding: '16px', borderRadius: '20px', marginBottom: '14px', border: '1px solid #D1EAE7' }}>
-                                            <div style={{ fontSize: '11.5px', color: '#1A5D55', fontWeight: 800, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.8 }}>
-                                                🏢 목사님 및 관리 임직원용
-                                            </div>
-                                            <button
-                                                onClick={handleTrialCreation}
-                                                disabled={isDirectLoggingIn}
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '16px',
-                                                    background: 'linear-gradient(135deg, #1A5D55 0%, #0D2E2B 100%)',
-                                                    color: 'white',
-                                                    border: 'none',
-                                                    borderRadius: '14px',
-                                                    fontSize: '15px',
-                                                    fontWeight: 800,
-                                                    cursor: 'pointer',
-                                                    boxShadow: '0 8px 15px rgba(26,93,85,0.2)',
-                                                    position: 'relative',
-                                                    overflow: 'hidden'
-                                                }}>
-                                                {isDirectLoggingIn ? '🛠️ 체험판 세팅 중...' : '👑 관리자 대시보드 체험하기'}
-                                                {!isDirectLoggingIn && <div style={{ position: 'absolute', top: '0', right: '0', background: '#FFD700', color: '#000', fontSize: '9px', padding: '2px 6px', fontWeight: 900 }}>추천</div>}
-                                            </button>
-                                            <div style={{ fontSize: '10.5px', color: '#5C7A77', marginTop: '10px', lineHeight: 1.5, wordBreak: 'keep-all' }}>
-                                                성도 관리, 통계, AI 설교 요약 등 <b>관리자 전용 기능</b>을<br />가상 성도 30명과 함께 실시간으로 테스트합니다.
-                                            </div>
-                                        </div>
-
-                                        {/* 그룹 2: 일반 성도용 */}
-                                        <div style={{ background: '#FFF9F0', padding: '16px', borderRadius: '20px', border: '1px solid #F5E0BB' }}>
-                                            <div style={{ fontSize: '11.5px', color: '#B8924A', fontWeight: 800, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.8 }}>
-                                                📱 일반 성도 및 방문자용
-                                            </div>
-                                            <button
-                                                onClick={() => {
-                                                    setChurchId('demo');
-                                                    setView('home');
-                                                }}
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '16px',
-                                                    background: 'linear-gradient(135deg, #B8924A 0%, #8B6E3F 100%)',
-                                                    color: 'white',
-                                                    border: 'none',
-                                                    borderRadius: '14px',
-                                                    fontSize: '15px',
-                                                    fontWeight: 800,
-                                                    cursor: 'pointer',
-                                                    boxShadow: '0 8px 15px rgba(184,146,74,0.2)'
-                                                }}>
-                                                ✨ 공식 데모교회 구경하기
-                                            </button>
-                                            <div style={{ fontSize: '10.5px', color: '#8B6E3F', marginTop: '10px', lineHeight: 1.5, wordBreak: 'keep-all' }}>
-                                                이미 세팅이 끝난 <b>소미의 완성된 모습</b>을 확인합니다.<br />별도 절차 없이 성도 입장에서 즉시 둘러볼 수 있습니다.
-                                            </div>
-                                        </div>
+                                    <div style={{ textAlign: 'left' }}>
+                                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>교회 ID (식별자)</label>
+                                        <input
+                                            type="text"
+                                            placeholder="교회 식별 아이디 (예: jesus-in)"
+                                            value={loginChurchId || (churchId !== 'somy-main' ? churchId : '')}
+                                            onChange={(e) => setLoginChurchId(e.target.value)}
+                                            style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '15px', outline: 'none', background: '#FFFDF0', boxSizing: 'border-box', color: '#B8924A', fontWeight: 700 }}
+                                        />
+                                    </div>
+                                    <div style={{ textAlign: 'left' }}>
+                                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>성함</label>
+                                        <input
+                                            type="text"
+                                            placeholder="실명을 입력하세요 (예: 홍길동)"
+                                            value={loginName}
+                                            onChange={(e) => setLoginName(e.target.value)}
+                                            style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '15px', outline: 'none', background: '#FAFAFA', boxSizing: 'border-box' }}
+                                        />
+                                    </div>
+                                    <div style={{ textAlign: 'left' }}>
+                                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>전화번호 (010-0000-0000)</label>
+                                        <input
+                                            type="tel"
+                                            placeholder="숫자만 입력해 주세요"
+                                            value={loginPhoneTail}
+                                            onChange={(e) => setLoginPhoneTail(e.target.value.replace(/[^0-9]/g, ''))}
+                                            style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '15px', outline: 'none', background: '#FAFAFA', boxSizing: 'border-box' }}
+                                        />
+                                    </div>
+                                    <div style={{ textAlign: 'left' }}>
+                                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>생년월일 (8자리: 19900101)</label>
+                                        <input
+                                            type="tel"
+                                            maxLength={8}
+                                            placeholder="19900101"
+                                            value={loginBirthdate}
+                                            onChange={(e) => setLoginBirthdate(e.target.value.replace(/[^0-9]/g, ''))}
+                                            style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '15px', outline: 'none', background: '#FAFAFA', boxSizing: 'border-box' }}
+                                        />
                                     </div>
 
-                                    {/* 카카오 버튼 제거 - 성도/관리자 통합 정보매칭 로그인 사용 */}
+                                    {requiresPin && (
+                                        <div style={{ textAlign: 'left', animation: 'fade-in 0.5s ease' }}>
+                                            <label style={{ fontSize: '12px', fontWeight: 800, color: '#D32F2F', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>🔒 관리자 보안 PIN 번호</label>
+                                            <input
+                                                type="password"
+                                                maxLength={6}
+                                                inputMode="numeric"
+                                                placeholder="보안 PIN 번호 입력"
+                                                value={loginPin}
+                                                onChange={(e) => setLoginPin(e.target.value.replace(/[^0-9]/g, ''))}
+                                                style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #D32F2F', fontSize: '15px', outline: 'none', background: '#FFF5F5', boxSizing: 'border-box', letterSpacing: '8px', textAlign: 'center' }}
+                                            />
+                                            <div style={{ fontSize: '11px', color: '#D32F2F', marginTop: '6px', marginLeft: '4px' }}>관리자 권한 확인을 위해 PIN 번호가 필요합니다.</div>
+                                        </div>
+                                    )}
+
+                                    <button
+                                        onClick={handleDirectLogin}
+                                        disabled={isDirectLoggingIn}
+                                        style={{
+                                            marginTop: '10px',
+                                            width: '100%',
+                                            padding: '18px',
+                                            background: (loginName && loginPhoneTail.length >= 4) ? '#333' : '#AAA',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '18px',
+                                            fontSize: '16px',
+                                            fontWeight: 800,
+                                            cursor: (loginName && loginPhoneTail.length >= 4) ? 'pointer' : 'default',
+                                            boxShadow: (loginName && loginPhoneTail.length >= 4) ? '0 10px 20px rgba(0,0,0,0.15)' : 'none',
+                                            transition: 'all 0.3s'
+                                        }}
+                                    >
+                                        {isDirectLoggingIn ? '정보 확인 중...' : '교인 정보로 바로 시작하기'}
+                                    </button>
                                     <div style={{ marginTop: '20px', textAlign: 'center' }}>
                                         <div style={{ fontSize: '11px', color: '#BBB', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                                             <span style={{ fontSize: '14px' }}>🔒</span> 안전한 보안 입구 (성도 및 관리자 자동 인식)
@@ -2587,8 +2383,7 @@ export default function App() {
                                     </div>
                                 </div>
                             </div>
-
-                        ) : (!isApproved && !isAdmin && !isSuperAdmin && churchId !== 'demo') ? (
+                        ) : (!isApproved && !isAdmin && !isSuperAdmin) ? (
                             <div style={{ background: '#FFFDE7', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', border: '1px solid #FFF59D', textAlign: 'center' }}>
                                 <div style={{ fontSize: '40px', marginBottom: '15px' }}>⏳</div>
                                 <div style={{ fontSize: '18px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>자동 승인 대기 중</div>
@@ -3070,7 +2865,7 @@ export default function App() {
                                 </button>
                             </>
                         )}
-                    </div>
+                    </div >
 
                     <div style={{ padding: '0 20px 40px 20px', width: '100%', maxWidth: '360px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
                         <button onClick={() => setView('guide')} style={{
@@ -3115,7 +2910,7 @@ export default function App() {
                             </button>
                         )}
                     </div>
-                </div >
+                </div>
             );
         }
 

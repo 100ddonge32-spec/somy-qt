@@ -190,19 +190,15 @@ export async function POST(req: NextRequest) {
             const IS_GLOBAL_MASTER = IS_BOSS || (adminCheckTerm?.role === 'super_admin');
 
             // [분리 원칙] 프로필의 영구 소속(DB저장용)과 현재 접속 컨텍스트(응답용) 결정
-            // 1. DB에 저장될 영구 소속 (체험판은 영구 소속이 될 수 없음)
-            let permanentChurch = (adminChurchId && !adminChurchId.startsWith('trial-')) ? adminChurchId :
-                (currentProfileChurch && !currentProfileChurch.startsWith('trial-')) ? currentProfileChurch :
-                    (match && match.church_id && !match.church_id.startsWith('trial-') ? match.church_id : 'somy-main');
+            let permanentChurch = adminChurchId || currentProfileChurch || (match && match.church_id ? match.church_id : 'somy-main');
 
             // [추가] 마스터 어드민(목사님)은 매칭 결과와 상관없이 본교 소속 유지
-            if (IS_BOSS || (adminCheckTerm?.role === 'super_admin' && !adminCheckTerm?.church_id?.startsWith('trial-'))) {
+            if (IS_BOSS || (adminCheckTerm?.role === 'super_admin')) {
                 permanentChurch = 'jesus-in';
             }
 
             // 2. 현재 앱 세션이 유지해야 할 컨텍스트 (응답용)
-            // 명시적으로 체험판에 접속 중이라면(bodyChurchId), 프로필 소속과 무관하게 체험판을 유지하게 응답합니다.
-            let contextChurch = (bodyChurchId && bodyChurchId.startsWith('trial-')) ? bodyChurchId : permanentChurch;
+            let contextChurch = bodyChurchId || permanentChurch;
 
             const updateFields: any = {
                 full_name: match.full_name || profileById?.full_name || rawName || '성도',
@@ -250,14 +246,13 @@ export async function POST(req: NextRequest) {
 
         // 2. [변경] 프로필 영구 소속과 현재 컨텍스트 분리
         const curPC = profileById?.church_id;
-        let pChurch = (adminChurchId && !adminChurchId.startsWith('trial-')) ? adminChurchId :
-            (curPC && !curPC.startsWith('trial-')) ? curPC : 'somy-main';
+        let pChurch = adminChurchId || curPC || 'somy-main';
 
-        if (IS_BOSS || (adminCheckTerm?.role === 'super_admin' && !adminCheckTerm?.church_id?.startsWith('trial-'))) {
+        if (IS_BOSS || (adminCheckTerm?.role === 'super_admin')) {
             pChurch = 'jesus-in';
         }
 
-        let cContext = (bodyChurchId && bodyChurchId.startsWith('trial-')) ? bodyChurchId : pChurch;
+        let cContext = bodyChurchId || pChurch;
 
         const dataToSet: any = {
             id: user_id,
