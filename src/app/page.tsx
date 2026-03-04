@@ -3310,6 +3310,7 @@ export default function App() {
 
                 if (user) {
                     try {
+                        // 1. 은혜나눔 게시글 저장 (is_qt: true 추가)
                         const res = await fetch('/api/community', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -3319,16 +3320,32 @@ export default function App() {
                                 avatar_url: user.user_metadata?.avatar_url || null,
                                 content: graceInput,
                                 church_id: churchId,
-                                is_private: isPrivatePost  // ✅ 비공개 여부 전달
+                                is_private: isPrivatePost,
+                                is_qt: true // ✅ 묵상 기록을 통한 게시글임을 표시
                             })
                         });
+
                         if (res.ok) {
                             const newPost = await res.json();
                             setCommunityPosts([newPost, ...communityPosts]);
-                            setIsPrivatePost(false); // 저장 후 초기화
-                            // ✅ 여기서 큐티 관련 입력값들을 비우지 않도록 코드 확인 (유지)
+                            setIsPrivatePost(false);
+
+                            // 2. [핵심] 여기서 즉시 묵상 통계(큐티왕)도 기록! (나중에 '마칠게요' 안 눌러도 기록되게)
+                            await fetch('/api/stats', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    user_id: user.id,
+                                    user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '성도',
+                                    avatar_url: user.user_metadata?.avatar_url || null,
+                                    church_id: churchId,
+                                    answers: answers
+                                }),
+                            });
                         }
-                    } catch (e) { console.error("은혜나눔 저장 실패:", e); }
+                    } catch (e) {
+                        console.error("저장 중 오류 발생:", e);
+                    }
                 }
 
                 setQtStep("pray");
@@ -4386,9 +4403,15 @@ export default function App() {
                                                 {post.avatar_url ? <img src={post.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🐑'}
                                             </div>
                                             <div>
-                                                <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
                                                     {post.user_name}
-                                                    {/* 표 비공개 배지 */}
+                                                    {/* ✅ 묵상나눔 배지 */}
+                                                    {post.is_qt && (
+                                                        <span style={{ fontSize: '10px', background: '#E8F5E9', color: '#2E7D32', padding: '2px 7px', borderRadius: '8px', fontWeight: 700, border: '1px solid #C8E6C9' }}>
+                                                            📖 묵상나눔
+                                                        </span>
+                                                    )}
+                                                    {/* 비공개 배지 */}
                                                     {post.is_private && (
                                                         <span style={{ fontSize: '10px', background: '#F3E5F5', color: '#7B1FA2', padding: '2px 7px', borderRadius: '8px', fontWeight: 700 }}>
                                                             🔒 비공개

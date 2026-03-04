@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { user_id, user_name, avatar_url, content, church_id, is_private } = body;
+        const { user_id, user_name, avatar_url, content, church_id, is_private, is_qt } = body;
         const cid = church_id || 'jesus-in';
 
         const { data, error } = await supabaseAdmin
@@ -54,7 +54,8 @@ export async function POST(req: NextRequest) {
                 avatar_url,
                 content,
                 church_id: cid,
-                is_private: is_private ?? false  // ✅ 비공개 여부 저장
+                is_private: is_private ?? false,  // ✅ 비공개 여부 저장
+                is_qt: is_qt ?? false             // ✅ 묵상나눔 여부 저장
             }])
             .select()
             .single();
