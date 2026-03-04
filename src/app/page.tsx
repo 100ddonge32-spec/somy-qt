@@ -541,6 +541,8 @@ export default function App() {
     const [isDirectLoggingIn, setIsDirectLoggingIn] = useState(false); // ✅ 로그인 처리 중 상태
     const [loginPin, setLoginPin] = useState(""); // ✅ 로그인용 PIN 번호
     const [requiresPin, setRequiresPin] = useState(false); // ✅ PIN 입력 필요 여부
+    const [editingAdminId, setEditingAdminId] = useState<string | null>(null); // ✅ PIN 수정 중인 관리자 ID
+    const [newPinInput, setNewPinInput] = useState(""); // ✅ 신규 PIN 입력값
     const [isLinking, setIsLinking] = useState(false); // ✅ 링크 처리 중 상태
     const dragOffset = useRef({ x: 0, y: 0 });
     const playerRef = useRef<any>(null);
@@ -1401,6 +1403,36 @@ export default function App() {
             }
         } catch (err) {
             alert('삭제 실패');
+        }
+    };
+
+    const handleUpdateAdminPin = async (targetUserId: string, newPin: string) => {
+        if (!newPin || newPin.length !== 6) {
+            alert('PIN 번호는 숫자 6자리여야 합니다.');
+            return;
+        }
+        try {
+            const res = await fetch('/api/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'update_admin_pin',
+                    target_user_id: targetUserId,
+                    new_pin: newPin,
+                    requester_id: user?.id
+                })
+            });
+            if (res.ok) {
+                alert('PIN 번호가 성공적으로 변경되었습니다.');
+                setEditingAdminId(null);
+                setNewPinInput("");
+                fetchAllAdmins();
+            } else {
+                const data = await res.json();
+                alert('변경 실패: ' + data.error);
+            }
+        } catch (err) {
+            alert('PIN 변경 도중 오류가 발생했습니다.');
         }
     };
 
@@ -5250,7 +5282,19 @@ export default function App() {
                             <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#F5F2EA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', margin: '0 auto 16px' }}>👑</div>
                             <div style={{ fontSize: '16px', fontWeight: 800, color: '#333', marginBottom: '4px' }}>{user?.user_metadata?.full_name || '관리자'}님, 반갑습니다. </div>
                             <div style={{ fontSize: '13px', color: '#999', marginBottom: '16px' }}>{user?.email}</div>
-                            <button onClick={handleLogout} style={{ padding: '8px 20px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>시스템 로그아웃</button>
+
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                                <button onClick={handleLogout} style={{ padding: '8px 16px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>시스템 로그아웃</button>
+                                <button
+                                    onClick={() => {
+                                        const pin = prompt('새로운 보안 PIN 번호(6자리 숫자)를 입력하세요.', adminInfo?.pin || '000000');
+                                        if (pin) handleUpdateAdminPin(user?.id || '', pin);
+                                    }}
+                                    style={{ padding: '8px 16px', background: '#FFF5F5', color: '#D32F2F', border: '1px solid #FFEBEE', borderRadius: '12px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                                >
+                                    🔒 PIN 변경
+                                </button>
+                            </div>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', width: '100%' }}>
@@ -8512,21 +8556,44 @@ export default function App() {
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                         {allAdminList.filter(a => !a.church_id || a.church_id.toLowerCase() === churchId.toLowerCase()).length > 0 ? (
                                                             allAdminList.filter(a => !a.church_id || a.church_id.toLowerCase() === churchId.toLowerCase()).map((admin: any) => (
-                                                                <div key={admin.email} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px 12px', borderRadius: '10px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                                                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', minWidth: 0, flex: 1 }}>
-                                                                        <div style={{ width: '32px', height: '32px', background: '#F5F5F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', overflow: 'hidden', flexShrink: 0 }}>
-                                                                            {admin.avatar_url ? <img src={admin.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
-                                                                        </div>
-                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
-                                                                            <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                                {admin.name || (admin.role === 'super_admin' ? '운영자(슈퍼)' : '신규 관리자')}
-                                                                                <span style={{ fontSize: '10px', background: admin.role === 'super_admin' ? '#E3F2FD' : '#F5F5F3', color: admin.role === 'super_admin' ? '#1565C0' : '#888', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>{admin.role === 'super_admin' ? '슈퍼' : '일반'}</span>
+                                                                <div key={admin.email} style={{ display: 'flex', flexDirection: 'column', background: 'white', padding: '12px', borderRadius: '15px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', minWidth: 0, flex: 1 }}>
+                                                                            <div style={{ width: '32px', height: '32px', background: '#F5F5F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', overflow: 'hidden', flexShrink: 0 }}>
+                                                                                {admin.avatar_url ? <img src={admin.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
                                                                             </div>
-                                                                            <div style={{ fontSize: '11px', color: '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{admin.email?.includes('@') ? admin.email : 'ID: ' + (admin.email || admin.id)} | 📍 {admin.church_id || '전체'}</div>
+                                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
+                                                                                <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                                    {admin.name || (admin.role === 'super_admin' ? '운영자(슈퍼)' : '신규 관리자')}
+                                                                                    <span style={{ fontSize: '10px', background: admin.role === 'super_admin' ? '#E3F2FD' : '#F5F5F3', color: admin.role === 'super_admin' ? '#1565C0' : '#888', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>{admin.role === 'super_admin' ? '슈퍼' : '일반'}</span>
+                                                                                </div>
+                                                                                <div style={{ fontSize: '11px', color: '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{admin.email?.includes('@') ? admin.email : 'ID: ' + (admin.email || admin.id)} | 📍 {admin.church_id || '전체'}</div>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div style={{ display: 'flex', gap: '6px' }}>
+                                                                            {admin.email !== user?.email && (
+                                                                                <button onClick={() => handleDeleteAdmin(admin.email)} style={{ background: '#FFF5F5', color: '#C62828', border: '1px solid #FFE3E3', borderRadius: '8px', padding: '6px 10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>삭제</button>
+                                                                            )}
                                                                         </div>
                                                                     </div>
-                                                                    {admin.email !== user?.email && (
-                                                                        <button onClick={() => handleDeleteAdmin(admin.email)} style={{ background: '#FFF5F5', color: '#C62828', border: '1px solid #FFE3E3', borderRadius: '8px', padding: '6px 10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>삭제</button>
+
+                                                                    {/* [추가] 관리자 PIN 확인 및 수정 (슈퍼 관리자 전용) */}
+                                                                    {isSuperAdmin && (
+                                                                        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #EEE', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                            <div style={{ fontSize: '12px', color: '#666', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                <span style={{ fontSize: '14px' }}>🔒</span>
+                                                                                보안 PIN: <strong style={{ color: '#D32F2F', letterSpacing: '1px' }}>{admin.pin || '000000'}</strong>
+                                                                            </div>
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    const pin = prompt(`${admin.name || '해당 관리자'}의 새로운 PIN 번호(6자리 숫자)를 입력하세요.`, admin.pin || '000000');
+                                                                                    if (pin) handleUpdateAdminPin(admin.user_id || admin.id, pin);
+                                                                                }}
+                                                                                style={{ background: '#F5F5F5', border: '1px solid #DDD', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', color: '#666', fontWeight: 700, cursor: 'pointer' }}
+                                                                            >
+                                                                                PIN 수정
+                                                                            </button>
+                                                                        </div>
                                                                     )}
                                                                 </div>
                                                             ))
@@ -8542,15 +8609,35 @@ export default function App() {
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                         {allAdminList.filter(a => a.church_id && a.church_id.toLowerCase() !== churchId.toLowerCase()).length > 0 ? (
                                                             allAdminList.filter(a => a.church_id && a.church_id.toLowerCase() !== churchId.toLowerCase()).map((admin: any) => (
-                                                                <div key={admin.email} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '10px 12px', borderRadius: '10px', border: '1px solid #F0F0F0', opacity: 0.8 }}>
-                                                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', minWidth: 0, flex: 1 }}>
-                                                                        <div style={{ width: '30px', height: '30px', background: '#F5F5F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>'🏢'</div>
-                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
-                                                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#444' }}>{admin.name || (admin.role === 'super_admin' ? '운영자' : '관리자')} <span style={{ fontSize: '9px', color: '#999' }}>({admin.role === 'super_admin' ? '슈퍼' : '일반'})</span></div>
-                                                                            <div style={{ fontSize: '10px', color: '#AAA' }}>⛪ {admin.church_id} 소속</div>
+                                                                <div key={admin.email} style={{ display: 'flex', flexDirection: 'column', background: 'white', padding: '12px', borderRadius: '15px', border: '1px solid #F0F0F0', opacity: 0.9 }}>
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', minWidth: 0, flex: 1 }}>
+                                                                            <div style={{ width: '30px', height: '30px', background: '#F5F5F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>🏢</div>
+                                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
+                                                                                <div style={{ fontSize: '12px', fontWeight: 700, color: '#444' }}>{admin.name || (admin.role === 'super_admin' ? '운영자' : '관리자')} <span style={{ fontSize: '9px', color: '#999' }}>({admin.role === 'super_admin' ? '슈퍼' : '일반'})</span></div>
+                                                                                <div style={{ fontSize: '10px', color: '#AAA' }}>⛪ {admin.church_id} 소속</div>
+                                                                            </div>
                                                                         </div>
+                                                                        <button onClick={() => handleDeleteAdmin(admin.email)} style={{ background: '#F5F5F5', color: '#999', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '10px', cursor: 'pointer' }}>해제</button>
                                                                     </div>
-                                                                    <button onClick={() => handleDeleteAdmin(admin.email)} style={{ background: '#F5F5F5', color: '#999', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '10px', cursor: 'pointer' }}>해제</button>
+
+                                                                    {isSuperAdmin && (
+                                                                        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #EEE', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                            <div style={{ fontSize: '11px', color: '#888', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                                <span>🔒</span>
+                                                                                PIN: <strong style={{ color: '#D32F2F' }}>{admin.pin || '000000'}</strong>
+                                                                            </div>
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    const pin = prompt(`${admin.name || '해당 관리자'}의 새로운 PIN 번호(6자리 숫자)를 입력하세요.`, admin.pin || '000000');
+                                                                                    if (pin) handleUpdateAdminPin(admin.user_id || admin.id, pin);
+                                                                                }}
+                                                                                style={{ background: '#F5F5F5', border: '1px solid #DDD', borderRadius: '4px', padding: '3px 6px', fontSize: '10px', color: '#666', cursor: 'pointer' }}
+                                                                            >
+                                                                                수정
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             ))
                                                         ) : (
