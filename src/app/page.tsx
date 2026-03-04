@@ -1008,8 +1008,12 @@ export default function App() {
 
                 // [버그 수정] 사용자가 특정 교회 주소로 접속 중일 때(URL 기반 churchId 존재 시), 
                 // 프로필에 저장된 소속 교회 정보(data.church_id)가 현재 상태를 덮어씌우지 않도록 방지합니다.
-                // 이렇게 해야 체험판/개별교회 관리자가 예수인교회 설정을 덮어씌우는 현상을 막을 수 있습니다.
-                if (data.church_id && !churchFromUrl && !churchId.startsWith('trial-')) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const rawPathName = window.location.pathname.replace(/^\//, '');
+                const pathName = rawPathName ? decodeURIComponent(rawPathName) : '';
+                const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id') || (pathName !== '' ? pathName : null);
+
+                if (data.church_id && !hasSpecificChurchUrl && !churchId.startsWith('trial-')) {
                     setChurchId(data.church_id);
                     localStorage.setItem('church_id', data.church_id);
                 }

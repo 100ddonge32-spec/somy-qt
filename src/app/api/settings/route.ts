@@ -12,17 +12,18 @@ const supabaseAdmin = createClient(
     { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
+// [표준화] 교회 식별자 정규화 (전역 함수로 분리하여 코드 중복 제거)
+const normalizeId = (id: string | null) => {
+    if (!id) return 'jesus-in';
+    const s = id.toLowerCase().trim();
+    if (s === '예수인교회' || s === 'jesus-in' || s === '예수인') return 'jesus-in';
+    return s;
+};
+
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const churchId = searchParams.get('church_id');
 
-    // [표준화] 교회 식별자 정규화 (예: '예수인교회' -> 'jesus-in')
-    const normalizeId = (id: string | null) => {
-        if (!id) return 'jesus-in';
-        const s = id.toLowerCase().trim();
-        if (s === '예수인교회' || s === 'jesus-in' || s === '예수인') return 'jesus-in';
-        return s;
-    };
     const targetChurchId = normalizeId(churchId);
 
     const noCacheHeaders = {
@@ -208,13 +209,6 @@ export async function POST(req: NextRequest) {
         await supabaseAdmin.from('profiles').update({ email: body_requester_email }).eq('id', requester_id);
     }
 
-    // [재사용] 교회 식별자 표준화 (위 GET 핸들러와 동일한 로직)
-    const normalizeId = (id: string | null) => {
-        if (!id) return 'jesus-in';
-        const s = id.toLowerCase().trim();
-        if (s === '예수인교회' || s === 'jesus-in' || s === '예수인') return 'jesus-in';
-        return s;
-    };
     const normTargetId = normalizeId(targetChurchId);
 
     // 2. 관리자 권한 조회 (더욱 포괄적이고 안전한 방식)
