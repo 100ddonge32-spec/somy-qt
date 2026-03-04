@@ -5362,8 +5362,8 @@ export default function App() {
                 const channelIdMatch = rawUrl.match(/(UC[a-zA-Z0-9_-]{20,})/);
                 if (channelIdMatch) {
                     const channelId = channelIdMatch[1];
-                    const playlistId = 'UU' + channelId.substring(2);
-                    // [변경] 더 안정적인 videoseries 주소 체계 적용
+                    // [개선] UU 대신 UULF 접두사를 사용하여 최신 라이브 및 업로드 대응력을 높임
+                    const playlistId = 'UULF' + channelId.substring(2);
                     return `https://www.youtube.com/embed/videoseries?list=${playlistId}&rel=0`;
                 }
 
