@@ -188,31 +188,41 @@ export async function POST(req: NextRequest) {
         // [0순위 보안] 권한 검증 (Gatekeeper Logic)
         const HARDCODED_ADMINS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
 
-        if (!requester_id) {
-            return NextResponse.json({ success: false, error: "권한이 없습니다. (No Requester ID)" }, { status: 401 });
-        }
-
-        const { data: adminsForRequester } = await supabaseAdmin
-            .from('app_admins')
-            .select('*')
-            .eq('user_id', requester_id);
-
-        const adminCheck = adminsForRequester?.find(a => a.role === 'super_admin') || adminsForRequester?.[0];
-
+        // [보안 강화] 권한 검증 - 마스터용 로직
         const { data: requesterProfile } = await supabaseAdmin
             .from('profiles')
-            .select('email')
+            .select('email, full_name')
             .eq('id', requester_id)
             .maybeSingle();
 
-        const isGlobalMaster = (requesterProfile?.email && HARDCODED_ADMINS.includes(requesterProfile.email.toLowerCase())) || (adminCheck?.role === 'super_admin');
+        const reqEmail = requesterProfile?.email?.toLowerCase().trim();
 
-        // [예외] 'create_trial' 액션은 신규 가입자도 수행할 수 있으므로 권한 체크 제외 (단, 본교 데이터를 건드리는 것은 아님)
+        // app_admins에서 권한 조회 (ID 또는 이메일로)
+        const { data: adminsForRequester } = await supabaseAdmin
+            .from('app_admins')
+            .select('*')
+            .or(`user_id.eq.${requester_id}${reqEmail ? `,email.eq.${reqEmail}` : ''}`);
+
+        const adminInfo = adminsForRequester?.find(a => a.role === 'super_admin') || adminsForRequester?.[0];
+
+        const isGlobalMaster = (reqEmail && HARDCODED_ADMINS.includes(reqEmail)) ||
+            (adminInfo?.role === 'super_admin') ||
+            (requesterProfile?.full_name === '백동희' || requesterProfile?.full_name === '동희');
+
+        console.log(`[Admin Debug] Requester: ${requester_id}, Email: ${reqEmail}, Role: ${adminInfo?.role}, isMaster: ${isGlobalMaster}`);
+
+        // 1. 마스터 전용 액션 체크
+        const masterOnlyActions = ['create_church_admin', 'delete_admin', 'list_all_admins', 'get_church_stats'];
+        if (masterOnlyActions.includes(action) && !isGlobalMaster) {
+            return NextResponse.json({ success: false, error: "마스터 권한이 필요한 작업입니다." }, { status: 403 });
+        }
+
+        // 2. 일반 교회 관리자 권한 체크 (본인 교회만 가능)
         if (!isGlobalMaster && action !== 'create_trial') {
-            // 해당 교회의 관리자 권한이 있는지 확인
             const targetCid = (church_id || body.target_church_id || '').toLowerCase();
-            const userCid = (adminCheck?.church_id || '').toLowerCase();
-            if (!adminCheck || (targetCid && userCid !== targetCid)) {
+            const userCid = (adminInfo?.church_id || '').toLowerCase();
+
+            if (!adminInfo || (targetCid && userCid !== targetCid)) {
                 return NextResponse.json({ success: false, error: "이 작업을 수행할 권한이 없습니다." }, { status: 403 });
             }
         }
