@@ -29,30 +29,36 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
         const churchId = searchParams.get('church_id') || 'jesus-in';
         const today = getKoreaDateString();
-        console.log(`[Stats API] Target Date: ${today}, Church: ${churchId}`);
+        const firstOfMonth = today.slice(0, 7) + '-01';
 
-        // 1. 오늘 참여자 조회 (교회별 격리)
+        // church_id가 문자열 'undefined'나 'null'로 넘어오는 경우를 대비
+        const cid = (churchId === 'undefined' || churchId === 'null' || !churchId) ? 'jesus-in' : churchId;
+
+        console.log(`[Stats API] Target Date: ${today}, Church: ${cid}`);
+
+        // 1. 오늘 참여자 조회
         const todayPromise = supabaseAdmin
             .from('qt_completions')
-            .select('user_name, avatar_url')
+            .select('user_id, user_name, avatar_url')
             .eq('completed_date', today)
-            .eq('church_id', churchId)
+            .eq('church_id', cid)
             .order('created_at', { ascending: true });
 
-        // 2. 이번 달 랭킹 조회 (교회별 격리)
-        const firstOfMonth = today.slice(0, 7) + '-01';
+        // 2. 이번 달 랭킹 조회
+        // lte(today) 대신 오늘 날짜의 23:59:59를 포함하도록 하거나, 
+        // 단순히 gte(firstOfMonth)만 사용 (어차피 미래 데이터는 없으므로)
         const rankingPromise = supabaseAdmin
             .from('qt_completions')
             .select('user_id, user_name, avatar_url')
-            .eq('church_id', churchId)
-            .gte('completed_date', firstOfMonth)
-            .lte('completed_date', today);
+            .eq('church_id', cid)
+            .gte('completed_date', firstOfMonth);
+        // .lte('completed_date', today); // [삭제] 시간대 이슈로 오늘 데이터가 랭킹에서 빠지는 문제 방지
 
         // 3. 전체 통계 (교회별 격리)
         const totalPromise = supabaseAdmin
             .from('qt_completions')
             .select('id', { count: 'exact', head: true })
-            .eq('church_id', churchId);
+            .eq('church_id', cid);
 
         // 모든 쿼리를 병렬로 실행 (속도 향상)
         const [todayRes, rankingRes, totalRes] = await Promise.all([
@@ -116,8 +122,8 @@ export async function POST(req: NextRequest) {
                     user_name: user_name || '성도',
                     avatar_url,
                     completed_date: today,
-                    church_id: church_id || 'jesus-in', // [격리] 교회 ID 저장
-                    answers: answers || [] // 답변 데이터 추가 저장
+                    church_id: church_id || 'jesus-in',
+                    // answers: answers || [] // ✅ DB에 해당 컬럼이 없는 경우 전체 에러가 발생하므로 임시 주석 처리
                 },
                 { onConflict: 'user_id,completed_date' }
             );
