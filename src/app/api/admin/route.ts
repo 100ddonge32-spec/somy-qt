@@ -447,7 +447,8 @@ export async function POST(req: NextRequest) {
                 email: formattedEmail,
                 role: 'church_admin',
                 church_id: finalChurchId,
-                pin: body.pin || null // [추가] PIN 번호 저장
+                pin: body.pin || null, // [추가] PIN 번호 저장
+                user_id: matchedUserId // [추가] user_id 즉시 연결 (매칭성 향상)
             };
 
             let result: any = await supabaseAdmin

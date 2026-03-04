@@ -198,19 +198,6 @@ export async function POST(req: NextRequest) {
 
     const reqEmail = requesterProfile?.email?.toLowerCase().trim();
 
-    // 2. 관리자 권한 조회 (ID 또는 이메일로 전체 조회)
-    const { data: adminsForRequester } = await supabaseAdmin
-        .from('app_admins')
-        .select('*')
-        .or(`user_id.eq.${requester_id}${reqEmail ? `,email.eq.${reqEmail}` : ''}`);
-
-    const adminInfo = adminsForRequester?.find(a => a.role === 'super_admin') || adminsForRequester?.[0];
-
-    // 3. 마스터 권한 여부 (전역)
-    const isGlobalMaster = (reqEmail && HARDCODED_ADMINS.includes(reqEmail)) ||
-        (adminInfo?.role === 'super_admin') ||
-        (requesterProfile?.full_name === '백동희' || requesterProfile?.full_name === '동희');
-
     // 4. 교회 식별자 표준화 (매칭용)
     const normalizeId = (id: string | null) => {
         if (!id) return 'jesus-in';
@@ -219,6 +206,28 @@ export async function POST(req: NextRequest) {
         return s;
     };
     const normTargetId = normalizeId(targetChurchId);
+
+    // 2. 관리자 권한 조회 (강화된 조회 방식)
+    console.log(`[Admin Debug] Checking permissions for User: ${requester_id}, Email: ${reqEmail}, TargetChurch: ${normTargetId}`);
+
+    // 이메일이나 유저 ID 중 하나라도 일치하는 레코드들 모두 가져오기
+    // .or() 내부의 문자열 값에 따옴표를 추가하여 특수문자(콜론 등) 오류 방지
+    const { data: adminsForRequester } = await supabaseAdmin
+        .from('app_admins')
+        .select('*')
+        .or(`user_id.eq."${requester_id}"${reqEmail ? `,email.eq."${reqEmail}"` : ''}`);
+
+    console.log(`[Admin Debug] Found ${adminsForRequester?.length || 0} admin records.`);
+
+    // [핵심 해결] 해당 교회에 대한 레코드를 명확히 매칭하거나 슈퍼어드민 레코드 확인
+    const adminInfo = adminsForRequester?.find(a =>
+        a.role === 'super_admin' || normalizeId(a.church_id) === normTargetId
+    ) || adminsForRequester?.[0];
+
+    // 3. 마스터 권한 여부 (전역)
+    const isGlobalMaster = (reqEmail && HARDCODED_ADMINS.includes(reqEmail)) ||
+        (adminInfo?.role === 'super_admin') ||
+        (requesterProfile?.full_name === '백동희' || requesterProfile?.full_name === '동희');
 
     // 5. 권한 검증 로직
     if (!isGlobalMaster) {
