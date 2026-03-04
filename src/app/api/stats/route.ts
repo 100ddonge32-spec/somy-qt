@@ -34,7 +34,7 @@ const fallbackData = {
 };
 
 export async function GET(req: NextRequest) {
-    console.log("[Stats API] === GET Request Started ===");
+    console.log("[Stats API] === GET Request Started (Automated via Community Board) ===");
     try {
         const { searchParams } = new URL(req.url);
         const rawChurchId = searchParams.get('church_id');
@@ -42,76 +42,85 @@ export async function GET(req: NextRequest) {
         const today = getKoreaDateString();
         const firstOfMonth = today.slice(0, 7) + '-01';
 
-        console.log(`[Stats API] CID: ${cid}, Target: ${today}, Month Start: ${firstOfMonth}`);
+        console.log(`[Stats API] CID: ${cid}, Month Start: ${firstOfMonth}`);
 
-        // 1. 오늘 참여자 조회
-        const { data: todayData, error: todayError } = await supabaseAdmin
-            .from('qt_completions')
-            .select('user_id, user_name, avatar_url')
-            .eq('completed_date', today)
+        // 1. 게시판에서 '묵상나눔(is_qt: true)' 게시글들만 가져오기
+        // 이번 달 전체 데이터를 가져와서 서버에서 오늘 참여자와 참여 일수를 계산합니다.
+        const { data: posts, error: dbError } = await supabaseAdmin
+            .from('community')
+            .select('user_id, user_name, avatar_url, created_at, is_qt')
             .eq('church_id', cid)
-            .order('created_at', { ascending: true });
+            .eq('is_qt', true)
+            .gte('created_at', firstOfMonth + 'T00:00:00Z');
 
-        if (todayError) console.error("[Stats API] Today Query Error:", todayError);
+        if (dbError) throw dbError;
 
-        // 2. 이번 달 랭킹 조회 (전체 교회 데이터도 함께 체크하여 디버깅)
-        const { data: rankingData, error: rankingError } = await supabaseAdmin
-            .from('qt_completions')
-            .select('user_id, user_name, avatar_url, church_id')
-            .gte('completed_date', firstOfMonth);
-        // .eq('church_id', cid); // 랭킹은 일단 전체 가져와서 서버에서 필터링 (디버깅 용이)
+        const allPosts = posts || [];
 
-        if (rankingError) console.error("[Stats API] Ranking Query Error:", rankingError);
+        // 2. 가공 로직
+        const todayMembers: any[] = [];
+        const userStats: Record<string, { name: string; avatar: string | null; dates: Set<string> }> = {};
+        let totalCompletions = 0;
 
-        // 로컬 필터링 및 가공
-        const filteredRanking = (rankingData || []).filter(r => normalizeChurchId(r.church_id) === cid);
+        allPosts.forEach(post => {
+            if (!post.user_id) return;
 
-        const countMap: Record<string, { name: string; avatar: string | null; count: number }> = {};
-        filteredRanking.forEach((row: any) => {
-            if (!row.user_id) return;
-            if (!countMap[row.user_id]) {
-                const name = row.user_name || '성도';
-                countMap[row.user_id] = {
-                    name: name.length > 10 ? name.slice(0, 10) + '...' : name,
-                    avatar: row.avatar_url,
-                    count: 0
+            const postDateFull = new Date(post.created_at);
+            // KST 변환 (UTC + 9)
+            const kstDate = new Date(postDateFull.getTime() + (9 * 60 * 60 * 1000));
+            const dateStr = kstDate.toISOString().split('T')[0];
+
+            // 랭킹용 일수 집계 (날짜별 유니크 체크)
+            if (!userStats[post.user_id]) {
+                userStats[post.user_id] = {
+                    name: post.user_name || '성도',
+                    avatar: post.avatar_url,
+                    dates: new Set<string>()
                 };
             }
-            countMap[row.user_id].count++;
+            userStats[post.user_id].dates.add(dateStr);
+            totalCompletions++; // 이건 전체 게시글 수
+
+            // 오늘 참여자 명단 (중복 방지)
+            if (dateStr === today) {
+                if (!todayMembers.find(m => m.user_id === post.user_id)) {
+                    todayMembers.push({
+                        user_id: post.user_id,
+                        user_name: post.user_name,
+                        avatar_url: post.avatar_url
+                    });
+                }
+            }
         });
 
-        const ranking = Object.values(countMap)
+        // 3. 랭킹 생성 (참여 일수 기준)
+        const ranking = Object.values(userStats)
+            .map(u => ({
+                name: u.name,
+                avatar: u.avatar,
+                count: u.dates.size // '며칠' 참여했는지가 점수가 됩니다.
+            }))
             .sort((a, b) => b.count - a.count)
             .slice(0, 10);
 
-        // 3. 전체 통계 (교회별 격리)
-        const { count: totalCount, error: totalError } = await supabaseAdmin
-            .from('qt_completions')
-            .select('id', { count: 'exact', head: true })
-            .eq('church_id', cid);
-
-        if (totalError) console.error("[Stats API] Total Query Error:", totalError);
-
         const result = {
             today: {
-                count: todayData?.length || 0,
-                members: todayData || [],
+                count: todayMembers.length,
+                members: todayMembers,
             },
             ranking,
-            totalCompletions: totalCount || 0,
+            totalCompletions: ranking.reduce((acc, cur) => acc + cur.count, 0), // 전체 참여 일수 합계
             _debug: {
-                churchDetected: cid,
-                totalRowsInTable: rankingData?.length || 0,
-                koreaTime: today
+                koreaTime: today,
+                postCount: allPosts.length
             }
         };
 
-        console.log(`[Stats API] Success: ${result.today.count} today, ${ranking.length} ranking, ${totalCount} total for ${cid}`);
+        console.log(`[Stats API] Found ${allPosts.length} QT posts. Unique participants: ${ranking.length}`);
         return NextResponse.json(result);
 
     } catch (err: any) {
         console.error('[Stats API] Unexpected Error:', err);
-        // 서버 에러가 나더라도 클라이언트가 멈추지 않게 빈 데이터라도 보냄
         return NextResponse.json({ ...fallbackData, error: err.message });
     }
 }
