@@ -385,14 +385,45 @@ export async function POST(req: NextRequest) {
                     .or(`birthdate.eq.${birthStr},birthdate.eq.${isoBirthdate}`);
 
                 if (searchError) throw searchError;
-                if (!matchedUsers || matchedUsers.length === 0) {
-                    return NextResponse.json({ error: '일치하는 성도 정보를 찾을 수 없습니다. 이름, 번호, 생년월일을 정확히 확인해주세요.' }, { status: 404 });
+
+                if (matchedUsers && matchedUsers.length > 0) {
+                    if (matchedUsers.length > 1) {
+                        return NextResponse.json({ error: '동일한 정보를 가진 성도가 여러 명입니다. 시스템 관리자에게 문의하세요.' }, { status: 400 });
+                    }
+                    targetEmail = matchedUsers[0].email || `${matchedUsers[0].id}@church.local`;
+                    matchedUserId = matchedUsers[0].id;
+                } else {
+                    // [핵심 해결] 일치하는 성도가 없으면 새로 생성 (가계정)
+                    console.log(`[Admin API] No matching user found. Creating new profile for: ${nameStr}`);
+
+                    const cleanPhone = phoneStr.replace(/[^0-9]/g, '');
+                    const formattedPhone = cleanPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+                    let isoBirthdate = birthStr;
+                    if (birthStr.length === 8 && /^\d+$/.test(birthStr)) {
+                        isoBirthdate = birthStr.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
+                    }
+
+                    const { data: newProfile, error: createError } = await supabaseAdmin
+                        .from('profiles')
+                        .insert([{
+                            full_name: nameStr,
+                            phone: formattedPhone,
+                            birthdate: isoBirthdate,
+                            church_id: target_church_id || 'pending',
+                            is_approved: true,
+                            email: `admin_${Date.now()}@somy.local` // 가상 이메일 생성
+                        }])
+                        .select()
+                        .single();
+
+                    if (createError) {
+                        console.error("[Admin API] Profile creation failed:", createError);
+                        throw new Error("신규 관리자 프로필 생성에 실패했습니다: " + createError.message);
+                    }
+
+                    targetEmail = newProfile.email;
+                    matchedUserId = newProfile.id;
                 }
-                if (matchedUsers.length > 1) {
-                    return NextResponse.json({ error: '동일한 정보를 가진 성도가 여러 명입니다. 시스템 관리자에게 문의하세요.' }, { status: 400 });
-                }
-                targetEmail = matchedUsers[0].email || `${matchedUsers[0].id}@church.local`;
-                matchedUserId = matchedUsers[0].id;
             }
 
             if (!targetEmail) {
