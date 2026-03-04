@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-        const { name, phoneTail, birthdate, user_id, church_id } = await req.json();
+        const { name, phoneTail, birthdate, user_id, church_id, pin } = await req.json();
 
         if (!name || !user_id) {
             return NextResponse.json({ error: '필수 정보가 누락되었습니다.' }, { status: 400 });
@@ -33,14 +33,14 @@ export async function POST(req: NextRequest) {
         const inputNameClean = name.replace(/\s+/g, '').toLowerCase();
         const inputPhone = (phoneTail || '').replace(/[^0-9]/g, '');
         const inputBirth = (birthdate || '').replace(/[^0-9]/g, '');
-        // [수정] 만약 church_id가 없거나 somy-main(플랫폼)인 경우, 전역 검색을 허용하여 소속 교회를 찾아줍니다.
+        // [수정] 입력된 교회 ID가 있으면 해당 교회의 정보만 검색 (대소문자 무시)
         let baseQuery = supabaseAdmin
             .from('profiles')
             .select('*')
             .or(`full_name.ilike.%${name.trim()}%`);
 
         if (church_id && church_id !== 'somy-main') {
-            baseQuery = baseQuery.eq('church_id', church_id);
+            baseQuery = baseQuery.ilike('church_id', church_id.trim());
         }
 
         const { data: candidates, error: fetchError } = await baseQuery;
@@ -86,8 +86,37 @@ export async function POST(req: NextRequest) {
             return isNameMatch && isPhoneMatch && isBirthMatch;
         });
 
-        // ─── 3단계: 매칭 성공 → 계정 연결 및 즉시 승인 ──────────────────────
+        // ─── 3단계: 매칭 성공 → 권한 및 보안 PIN 확인 ──────────────────────
         if (match) {
+            // [추가] 관리자 보안 강화 (PIN 번호 확인)
+            const { data: adminCheck } = await supabaseAdmin
+                .from('app_admins')
+                .select('*')
+                .or(`user_id.eq.${match.id},email.eq.${match.email || ''}`)
+                .maybeSingle();
+
+            if (adminCheck) {
+                if (!pin) {
+                    console.log(`[DirectAuth] 관리자 감지 - PIN 요구: ${match.full_name}`);
+                    return NextResponse.json({
+                        success: true,
+                        requires_pin: true,
+                        name: match.full_name,
+                        church_id: match.church_id || church_id
+                    });
+                }
+
+                // PIN 일치 여부 확인 (최초 설정이 안 된 경우 '000000'을 기본값으로 사용)
+                const storedPin = adminCheck.pin || '000000';
+                if (storedPin !== pin) {
+                    return NextResponse.json({
+                        success: false,
+                        error: '보안 PIN 번호가 일치하지 않습니다.'
+                    }, { status: 401 });
+                }
+                console.log(`[DirectAuth] ✅ 관리자 PIN 인증 성공: ${match.full_name}`);
+            }
+
             console.log(`[DirectAuth] ✅ 매칭 성공: ${match.full_name} (기존ID: ${match.id} → 신규ID: ${user_id})`);
 
             const isSameUser = match.id === user_id;

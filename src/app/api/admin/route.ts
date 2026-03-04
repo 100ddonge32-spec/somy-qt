@@ -572,6 +572,21 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true });
         }
 
+        // [신규] 관리자 PIN 번호 변경
+        if (action === 'update_admin_pin') {
+            const { target_user_id, new_pin } = body;
+            if (!target_user_id || !new_pin) throw new Error('대상자 ID 또는 새 PIN 번호가 없습니다.');
+
+            const { data, error } = await supabaseAdmin
+                .from('app_admins')
+                .update({ pin: new_pin })
+                .eq('user_id', target_user_id)
+                .select();
+
+            if (error) throw error;
+            return NextResponse.json({ success: true, data });
+        }
+
         // 성도 승인 처리
         if (action === 'approve_user') {
             const { data, error } = await supabaseAdmin

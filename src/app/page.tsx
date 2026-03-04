@@ -537,7 +537,10 @@ export default function App() {
     const [loginName, setLoginName] = useState(""); // ✅ 로그인용 성함
     const [loginPhoneTail, setLoginPhoneTail] = useState(""); // ✅ 로그인용 전화번호 뒷자리
     const [loginBirthdate, setLoginBirthdate] = useState(""); // ✅ 로그인용 생년월일
+    const [loginChurchId, setLoginChurchId] = useState(""); // ✅ 로그인용 교회 ID
     const [isDirectLoggingIn, setIsDirectLoggingIn] = useState(false); // ✅ 로그인 처리 중 상태
+    const [loginPin, setLoginPin] = useState(""); // ✅ 로그인용 PIN 번호
+    const [requiresPin, setRequiresPin] = useState(false); // ✅ PIN 입력 필요 여부
     const [isLinking, setIsLinking] = useState(false); // ✅ 링크 처리 중 상태
     const dragOffset = useRef({ x: 0, y: 0 });
     const playerRef = useRef<any>(null);
@@ -1698,8 +1701,9 @@ export default function App() {
     }, []);
 
     const handleDirectLogin = async () => {
-        if (!loginName.trim() || !loginPhoneTail.trim()) {
-            alert("성함과 전화번호를 입력해 주세요.");
+        const targetChurch = loginChurchId.trim() || (churchId !== 'somy-main' ? churchId : '');
+        if (!loginName.trim() || !loginPhoneTail.trim() || !targetChurch) {
+            alert("교회 ID, 성함, 전화번호를 모두 입력해 주세요.");
             return;
         }
 
@@ -1726,11 +1730,20 @@ export default function App() {
                     name: loginName.trim(),
                     phoneTail: loginPhoneTail.trim(),
                     birthdate: loginBirthdate.trim(),
-                    church_id: churchId // [추가] 교회 식별자 전달
+                    church_id: loginChurchId.trim() || churchId,
+                    pin: loginPin // [추가] 보안 PIN 번호
                 })
             });
 
             const result = await res.json();
+
+            // [추가] 관리자 보안 PIN 요구 시
+            if (res.ok && result.requires_pin) {
+                setRequiresPin(true);
+                setIsDirectLoggingIn(false);
+                return;
+            }
+
             if (res.ok && result.success) {
                 // [개선] 불필요한 알럿 창 제거 - 로그인 성공 시 즉시 메인으로 진입
                 const { data: { session } } = await supabase.auth.getSession();
@@ -1804,26 +1817,7 @@ export default function App() {
     };
 
     const handleLogin = async (provider: 'google' | 'kakao') => {
-        if (provider === 'kakao') {
-            // Supabase 내장 카카오 OAuth는 account_email을 강제 요청하므로
-            // 카카오 직접 연동으로 우회 (이메일 권한 불필요)
-            const kakaoAuthUrl = new URL('https://kauth.kakao.com/oauth/authorize');
-            kakaoAuthUrl.searchParams.set('client_id', 'c205e6ad80a115b72fc7b53749e204d9');
-            kakaoAuthUrl.searchParams.set('redirect_uri', `${window.location.origin}/api/kakao-callback`);
-            kakaoAuthUrl.searchParams.set('response_type', 'code');
-            kakaoAuthUrl.searchParams.set('scope', 'profile_nickname,profile_image');
-            window.location.href = kakaoAuthUrl.toString();
-            return;
-        }
-        try {
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider,
-                options: { redirectTo: window.location.origin }
-            });
-            if (error) throw error;
-        } catch (err: any) {
-            alert("로그인 중 오류가 발생했어요: " + err.message);
-        }
+        alert("카카오톡 로그인은 더 이상 지원되지 않습니다. 성도/관리자 통합 입구(정보 매칭)를 이용해 주세요.");
     };
 
     const handleVerification = async () => {
@@ -2517,16 +2511,25 @@ export default function App() {
                         {!user && churchId !== 'demo' ? (
                             <div style={{ background: 'white', padding: '30px', borderRadius: '32px', boxShadow: '0 15px 50px rgba(0,0,0,0.1)', border: '1px solid #F0ECE4', textAlign: 'center' }}>
                                 <div style={{ marginBottom: '25px', textAlign: 'center', animation: 'fade-in 0.8s ease' }}>
-                                    <div style={{ fontSize: '22px', fontWeight: 900, color: '#1A5D55', marginBottom: '12px' }}>우리 교회 스마트 앱 시작 ⛪</div>
+                                    <div style={{ fontSize: '22px', fontWeight: 900, color: '#1A5D55', marginBottom: '12px' }}>성도 & 관리자 통합 입장 ⛪</div>
                                     <div style={{ fontSize: '13px', color: '#666', lineHeight: 1.6 }}>
-                                        {churchId === 'somy-main'
-                                            ? '이미 등록된 성도님은 성함과 번호를 입력해 주세요.'
-                                            : '교회에서 등록한 정보를 입력하시면 즉시 시작됩니다.'}
+                                        교회 ID와 등록된 정보를 입력하시면<br />
+                                        관리자 권한까지 즉시 연동됩니다. (카카오 불필요)
                                     </div>
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                     <>
+                                        <div style={{ textAlign: 'left' }}>
+                                            <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>교회 ID (식별자)</label>
+                                            <input
+                                                type="text"
+                                                placeholder="교회 식별 아이디 (예: jesus-in)"
+                                                value={loginChurchId || (churchId !== 'somy-main' ? churchId : '')}
+                                                onChange={(e) => setLoginChurchId(e.target.value)}
+                                                style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '15px', outline: 'none', background: '#FFFDF0', boxSizing: 'border-box', color: '#B8924A', fontWeight: 700 }}
+                                            />
+                                        </div>
                                         <div style={{ textAlign: 'left' }}>
                                             <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>성함</label>
                                             <input
@@ -2558,6 +2561,22 @@ export default function App() {
                                                 style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '15px', outline: 'none', background: '#FAFAFA', boxSizing: 'border-box' }}
                                             />
                                         </div>
+
+                                        {requiresPin && (
+                                            <div style={{ textAlign: 'left', animation: 'fade-in 0.5s ease' }}>
+                                                <label style={{ fontSize: '12px', fontWeight: 800, color: '#D32F2F', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>🔒 관리자 보안 PIN 번호</label>
+                                                <input
+                                                    type="password"
+                                                    maxLength={6}
+                                                    inputMode="numeric"
+                                                    placeholder="보안 PIN 번호 입력"
+                                                    value={loginPin}
+                                                    onChange={(e) => setLoginPin(e.target.value.replace(/[^0-9]/g, ''))}
+                                                    style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #D32F2F', fontSize: '15px', outline: 'none', background: '#FFF5F5', boxSizing: 'border-box', letterSpacing: '8px', textAlign: 'center' }}
+                                                />
+                                                <div style={{ fontSize: '11px', color: '#D32F2F', marginTop: '6px', marginLeft: '4px' }}>관리자 권한 확인을 위해 PIN 번호가 필요합니다.</div>
+                                            </div>
+                                        )}
 
                                         <button
                                             onClick={handleDirectLogin}
@@ -2646,38 +2665,11 @@ export default function App() {
                                         </div>
                                     </div>
 
-                                    {/* [보안 강화] 슈퍼관리자 및 공식 관리자 전용 입구 */}
-                                    <div style={{ margin: '20px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <div style={{ flex: 1, height: '1px', background: '#EEE' }} />
-                                        <span style={{ fontSize: '11px', color: '#AAA', fontWeight: 600 }}>또는 관리자이신가요?</span>
-                                        <div style={{ flex: 1, height: '1px', background: '#EEE' }} />
-                                    </div>
-
-                                    <button
-                                        onClick={() => handleLogin('kakao')}
-                                        style={{
-                                            width: '100%',
-                                            padding: '16px',
-                                            background: '#FEE500', // 카카오 노란색
-                                            color: '#3C1E1E',
-                                            border: 'none',
-                                            borderRadius: '18px',
-                                            fontSize: '15px',
-                                            fontWeight: 800,
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: '10px',
-                                            boxShadow: '0 4px 12px rgba(254, 229, 0, 0.2)'
-                                        }}
-                                    >
-                                        <span style={{ fontSize: '18px' }}>💬</span> 카카오톡으로 관리자 로그인
-                                    </button>
-
-                                    <div style={{ marginTop: '16px', fontSize: '12px', color: '#B8924A', lineHeight: 1.6, background: '#FDF7E7', padding: '12px', borderRadius: '12px', border: '1px solid #F5E0BB' }}>
-                                        🔒 관리자 전용 로그인입니다.<br />
-                                        일반 성도님은 위 칸에 <b>이름·전화번호·생년월일</b>을 입력해 주세요.
+                                    {/* 카카오 버튼 제거 - 성도/관리자 통합 정보매칭 로그인 사용 */}
+                                    <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '11px', color: '#BBB', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                            <span style={{ fontSize: '14px' }}>🔒</span> 안전한 보안 입구 (성도 및 관리자 자동 인식)
+                                        </div>
                                     </div>
                                 </div>
                             </div>
