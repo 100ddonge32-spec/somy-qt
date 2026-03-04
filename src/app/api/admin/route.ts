@@ -183,33 +183,53 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { action, email, user_id, is_approved, church_id, role, requester_id } = body;
+        const { action, email, user_id, is_approved, church_id, role, requester_id, requester_email: body_requester_email } = body;
 
         // [0순위 보안] 권한 검증 (Gatekeeper Logic)
         const HARDCODED_ADMINS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
 
-        // [보안 강화] 권한 검증 - 마스터용 로직
+        if (!requester_id) {
+            return NextResponse.json({ success: false, error: "권한이 없습니다. (No Requester ID)" }, { status: 401 });
+        }
+
+        // 1. 요청자 프로필 정보 로드
         const { data: requesterProfile } = await supabaseAdmin
             .from('profiles')
             .select('email, full_name')
             .eq('id', requester_id)
             .maybeSingle();
 
-        const reqEmail = requesterProfile?.email?.toLowerCase().trim();
+        let reqEmail = (requesterProfile?.email || body_requester_email || '').toLowerCase().trim();
 
-        // app_admins에서 권한 조회 (ID 또는 이메일로)
-        const { data: adminsForRequester } = await supabaseAdmin
-            .from('app_admins')
-            .select('*')
-            .or(`user_id.eq.${requester_id}${reqEmail ? `,email.eq.${reqEmail}` : ''}`);
+        // [보정] 프로필에 이메일이 없는데 클라이언트가 보냈다면 즉시 업데이트 시도
+        if (requester_id && !requesterProfile?.email && body_requester_email) {
+            await supabaseAdmin.from('profiles').update({ email: body_requester_email }).eq('id', requester_id);
+        }
 
-        const adminInfo = adminsForRequester?.find(a => a.role === 'super_admin') || adminsForRequester?.[0];
+        // 2. app_admins에서 권한 조회 (ID 또는 이메일로)
+        const { data: qById } = await supabaseAdmin.from('app_admins').select('*').eq('user_id', requester_id);
+        const { data: qByEmail } = reqEmail ? await supabaseAdmin.from('app_admins').select('*').eq('email', reqEmail) : { data: [] };
+
+        const adminsForRequester = [...(qById || []), ...(qByEmail || [])];
+        const uniqueAdmins = Array.from(new Map(adminsForRequester.map(a => [a.id, a])).values());
+
+        const adminInfo = uniqueAdmins.find(a => a.role === 'super_admin') || uniqueAdmins[0];
+
+        // [핵심 해결] ID 매칭이 안 되어 있다면 이메일 기반으로 찾아와서 user_id를 업데이트 (Self-Healing)
+        if (qByEmail && qByEmail.length > 0 && (!qById || qById.length === 0)) {
+            for (const adm of qByEmail) {
+                if (!adm.user_id || adm.user_id !== requester_id) {
+                    console.log(`[Admin-Fix] Auto-linking admin user_id for: ${adm.email}`);
+                    await supabaseAdmin.from('app_admins').update({ user_id: requester_id }).eq('id', adm.id);
+                }
+            }
+        }
 
         const isGlobalMaster = (reqEmail && HARDCODED_ADMINS.includes(reqEmail)) ||
             (adminInfo?.role === 'super_admin') ||
             (requesterProfile?.full_name === '백동희' || requesterProfile?.full_name === '동희');
 
-        console.log(`[Admin Debug] Requester: ${requester_id}, Email: ${reqEmail}, Role: ${adminInfo?.role}, isMaster: ${isGlobalMaster}`);
+        console.log(`[Admin Debug/API] Requester: ${requester_id}, Email: ${reqEmail}, Role: ${adminInfo?.role}, isMaster: ${isGlobalMaster}`);
 
         // 1. 마스터 전용 액션 체크
         const masterOnlyActions = ['create_church_admin', 'delete_admin', 'list_all_admins', 'get_church_stats'];

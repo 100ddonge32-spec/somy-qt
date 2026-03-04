@@ -406,6 +406,7 @@ export default function App() {
     const [profileBirthdate, setProfileBirthdate] = useState<string | null>(null);
     const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
     const [churchId, setChurchId] = useState('');
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true); // ✅ 권한 확인 중 상태 (깜빡임 방지)
     // [보안/개선] adminInfo가 일시적으로 null일 때도 톱니바퀴가 사라지지 않도록 하드코딩된 마스터 체크 추가
     const MASTER_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao_4761026797.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
     const isHardcodedAdmin = !!user && !!user.email && MASTER_EMAILS.includes(user.email.toLowerCase().trim());
@@ -934,24 +935,22 @@ export default function App() {
         }
     }, [churchId]);
 
-    // 승인 상태 및 교회 정보 체크 함수 (캐시 무시 및 강력한 실시간 체크)
     // 승인 상태 및 교회 정보 체크 (안드로이드/인앱 브라우저 캐시 무시 버전)
     const checkApprovalStatus = useCallback(async (force = false) => {
-        if (!user) return;
+        if (!user) {
+            setIsCheckingAuth(false);
+            return;
+        }
 
         try {
             const cacheBuster = Date.now();
+            if (force) await supabase.auth.refreshSession();
 
-            if (force) {
-                await supabase.auth.refreshSession();
-            }
-
-            // Supabase 쿼리에 유니크한 필터를 섞어 캐시 방지 시도
             const { data, error } = await supabase
                 .from('profiles')
                 .select('is_approved, church_id, full_name, avatar_url, birthdate, phone')
                 .eq('id', user.id)
-                .neq('email', `cache_bust_${cacheBuster}`) // 무의미한 필터로 캐시 무시 유도
+                .neq('email', `cache_bust_${cacheBuster}`)
                 .single();
 
             if (error || !data) {
@@ -961,269 +960,137 @@ export default function App() {
                 const isKakaoUser = user.email?.includes('kakao.somy-qt.local');
                 const isAnonymousUser = !user.email || user.email.includes('anonymous.local') || user.is_anonymous;
 
-                // ★ 핵심: 이름도 전화도 없는 익명 사용자는 sync 호출 차단
-                // (단, 체험판(trial-) 환경인 경우는 허용하여 즉시 진입 유도)
                 const hasRealInfo = (metaName && metaName.length >= 2) || (metaPhone && metaPhone.length > 5);
                 const isTrial = churchId && churchId.startsWith('trial-');
                 if (isAnonymousUser && !hasRealInfo && !isKakaoUser && !isTrial) {
-                    console.log("[checkApprovalStatus] 익명+정보없음 → 로그인 화면 유지 (프로필 미생성)");
                     setIsApproved(false);
                     setShowVerification(true);
                     return;
                 }
 
-                console.log("프로필 없음, 동기화 시도...");
                 const syncRes = await fetch(`/api/auth/sync?t=${cacheBuster}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        user_id: user.id,
-                        email: user.email,
-                        name: metaName,
-                        avatar_url: user.user_metadata?.avatar_url,
-                        phone: metaPhone,
-                        birthdate: metaBirth,
-                        church_id: churchId
+                        user_id: user.id, email: user.email, name: metaName,
+                        avatar_url: user.user_metadata?.avatar_url, phone: metaPhone,
+                        birthdate: metaBirth, church_id: churchId
                     })
                 });
                 if (syncRes.ok) {
                     const syncData = await syncRes.json();
-
-                    // [핵심] 마스터 관리자는 서버 응답과 무관하게 항상 승인된 상태로 간주 (권한 잠김 방지)
-                    if (isHardcodedAdmin || isMasterName) {
-                        setIsApproved(true);
-                    } else {
-                        setIsApproved(!!syncData.is_approved);
-                    }
+                    setIsApproved((isHardcodedAdmin || isMasterName) ? true : !!syncData.is_approved);
 
                     if (syncData.church_id) {
                         const urlParams = new URLSearchParams(window.location.search);
                         const rawPathName = window.location.pathname.replace(/^\//, '');
                         const pathName = rawPathName ? decodeURIComponent(rawPathName) : '';
                         const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id') || (pathName !== '' ? pathName : null);
-                        // 정식 교인 소속은 localStorage에 영구보관
-                        if (isHardcodedAdmin || isMasterName) {
-                            // [수정] 마스터 관리자가 체험판(trial-)에 접속했을 때 jesus-in으로 튕겨나가는 현상 해결
-                            // URL에 체험판 ID가 있거나, 현재 이미 체험판 컨텍스트인 경우 이를 유지하도록 합니다.
-                            let safeChurch = hasSpecificChurchUrl ? hasSpecificChurchUrl :
-                                (churchId && churchId.startsWith('trial-')) ? churchId :
-                                    (syncData.church_id && !syncData.church_id.startsWith('trial-')) ? syncData.church_id : 'somy-main';
-                            if (safeChurch === '예수인교회' || safeChurch === encodeURIComponent('예수인교회')) safeChurch = 'jesus-in';
 
-                            setChurchId(safeChurch);
-                            localStorage.setItem('church_id', safeChurch);
-                            // 체험판 접속 시 URL 파라미터를 제거하지 않음 (새로고침 시 유지하기 위함)
-                            // if (hasSpecificChurchUrl && hasSpecificChurchUrl.startsWith('trial-')) window.history.replaceState({}, '', '/');
-                        } else if (!hasSpecificChurchUrl && (!syncData.church_id.startsWith('trial-'))) {
-                            setChurchId(syncData.church_id);
-                            localStorage.setItem('church_id', syncData.church_id);
-                        }
+                        let safeChurch = hasSpecificChurchUrl ? hasSpecificChurchUrl :
+                            (churchId && churchId.startsWith('trial-')) ? churchId :
+                                (syncData.church_id && !syncData.church_id.startsWith('trial-')) ? syncData.church_id : 'somy-main';
+                        if (safeChurch === '예수인교회' || safeChurch === encodeURIComponent('예수인교회')) safeChurch = 'jesus-in';
+
+                        setChurchId(safeChurch);
+                        localStorage.setItem('church_id', safeChurch);
                     }
-
-                    const sName = syncData.full_name || syncData.name;
-                    if (sName && sName !== '성도' && sName !== '이름 없음' && sName !== '.') {
-                        setProfileName(sName);
-                    } else if (metaName && metaName !== '성도') {
-                        setProfileName(metaName);
+                    setProfileName(syncData.full_name || syncData.name || metaName);
+                    if (syncData.is_approved) {
+                        subscribePush(user.id);
+                        checkNewContent();
                     }
-
-                    if (syncData.avatar_url) setProfileAvatar(syncData.avatar_url);
-                    else if (user.user_metadata?.avatar_url) setProfileAvatar(user.user_metadata.avatar_url);
-
-                    if (syncData.birthdate) setProfileBirthdate(syncData.birthdate);
-                    if (syncData.status === 'visitor' || !syncData.is_approved) {
-                        setShowVerification(true);
-                    }
-                    if (syncData.is_approved) subscribePush(user.id);
                 }
-                return;
-            }
+            } else {
+                setIsApproved((isHardcodedAdmin || isMasterName) ? true : !!data.is_approved);
+                if (data.full_name) setProfileName(data.full_name);
+                if (data.avatar_url) setProfileAvatar(data.avatar_url);
 
-            // 프로필이 있을 때 상태 업데이트 (마스터는 항상 승인됨)
-            setIsApproved((isHardcodedAdmin || isMasterName) ? true : !!data.is_approved);
-            if (data.church_id) {
-                const urlParams = new URLSearchParams(window.location.search);
-                const rawPathName = window.location.pathname.replace(/^\//, '');
-                const pathName = rawPathName ? decodeURIComponent(rawPathName) : '';
-                const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id') || (pathName !== '' ? pathName : null);
-
-                // [궁극의 탈출구] 마스터는 체험판을 포함한 모든 경로를 자유롭게 이동 가능
-                if (isHardcodedAdmin || isMasterName) {
-                    const localTarget = typeof window !== 'undefined' ? localStorage.getItem('church_id') : null;
-                    let safeChurch = 'somy-main';
-
-                    if (hasSpecificChurchUrl) {
-                        safeChurch = hasSpecificChurchUrl;
-                    } else if (churchId && churchId.startsWith('trial-')) {
-                        // 현재 상태가 체험판이면 유지 (매우 중요)
-                        safeChurch = churchId;
-                    } else if (localTarget === 'somy-main') {
-                        safeChurch = 'somy-main';
-                    } else if (localTarget === 'jesus-in') {
-                        safeChurch = 'jesus-in';
-                    } else if (data.church_id) {
-                        safeChurch = data.church_id;
-                    }
-
-                    if (safeChurch === '예수인교회' || safeChurch === encodeURIComponent('예수인교회')) safeChurch = 'jesus-in';
-
-                    setChurchId(safeChurch);
-                    localStorage.setItem('church_id', safeChurch);
-
-                    // 체험판에서도 URL을 유지하여 새로고침 시 이탈 방지
-                    // if (hasSpecificChurchUrl && hasSpecificChurchUrl.startsWith('trial-')) {
-                    //     window.history.replaceState({}, '', '/');
-                    // }
-                } else if (!hasSpecificChurchUrl && (!data.church_id.startsWith('trial-'))) {
+                // [버그 수정] 사용자가 특정 교회 주소로 접속 중일 때(URL 기반 churchId 존재 시), 
+                // 프로필에 저장된 소속 교회 정보(data.church_id)가 현재 상태를 덮어씌우지 않도록 방지합니다.
+                // 이렇게 해야 체험판/개별교회 관리자가 예수인교회 설정을 덮어씌우는 현상을 막을 수 있습니다.
+                if (data.church_id && !churchFromUrl && !churchId.startsWith('trial-')) {
                     setChurchId(data.church_id);
                     localStorage.setItem('church_id', data.church_id);
                 }
-            }
-            if (data.full_name && data.full_name !== '이름 없음' && data.full_name !== '.') {
-                setProfileName(data.full_name);
-            }
 
-            if (data.avatar_url) setProfileAvatar(data.avatar_url);
-            else if (user.user_metadata?.avatar_url) setProfileAvatar(user.user_metadata.avatar_url);
-
-            if (data.birthdate) setProfileBirthdate(data.birthdate);
-
-            if (data.is_approved) {
-                console.log("🎊 승인 확인됨 (서버 최신 데이터)");
-                subscribePush(user.id);
-                checkNewContent();
-
-                if (memberList.length === 0) {
-                    const fetchTargetChurch = (typeof window !== 'undefined' && localStorage.getItem('church_id')) || data.church_id || 'jesus-in';
-                    fetch(`/api/members?church_id=${fetchTargetChurch}`)
-                        .then(r => r.ok ? r.json() : [])
-                        .then(members => { if (Array.isArray(members)) setMemberList(members); })
-                        .catch(err => console.error("멤버 목록 로딩 실패:", err));
+                if (data.is_approved || isHardcodedAdmin || isMasterName) {
+                    subscribePush(user.id);
+                    checkNewContent();
                 }
-            } else {
-                // 미승인 상태 - is_approved=false 이므로 UI가 자동으로 승인 대기 화면을 표시함
-                console.log("⏳ 미승인 상태 - 관리자 승인 대기 중");
             }
         } catch (e) {
-            console.error("승인 체크 에러:", e);
+            console.error("Approval Check Error:", e);
+        } finally {
+            setIsCheckingAuth(false);
         }
-    }, [user, checkNewContent]);
+    }, [user, churchId, isHardcodedAdmin, isMasterName, checkNewContent, subscribePush]);
 
     useEffect(() => {
-        if (user) {
-            // DB 기반 관리자 권한 체크 (현재 교회 ID 포함 필수)
-            fetch(`/api/admin?action=check_admin&email=${user.email}&user_id=${user.id}&church_id=${churchId}`)
-                .then(r => r.ok ? r.json() : null)
-                .then(data => {
-                    if (data && (data.role === 'church_admin' || data.role === 'super_admin' || data.role === 'admin')) {
-                        setAdminInfo(data);
-                        console.log("관리자 정보 확인됨, 상세 성도 명단 로딩...");
-                        // 관리자인 경우 즉시 상세 정보를 포함한 전체 명단을 가져와서 '등록일', '승인상태' 누락 방지
-                        const adminFetchTarget = (typeof window !== 'undefined' && localStorage.getItem('church_id')) || data.church_id || 'jesus-in';
-                        fetch(`/api/admin?action=list_members&church_id=${adminFetchTarget}`)
-                            .then(r => r.ok ? r.json() : [])
-                            .then(members => { if (Array.isArray(members)) setMemberList(members); })
-                            .catch(e => console.error("관리자용 명단 로딩 실패:", e));
-                    } else if (data) {
-                        setAdminInfo(data);
-                    }
-                })
-                .catch(err => console.log("관리자 체크 실패 (조용히 넘어감):", err));
-
-            // 최초 1회 체크 및 동기화
-            checkApprovalStatus();
-
-            // 승인 대기 중일 때 15초마다 자동으로 상태 재확인 & 알림 폴링 (알림 배지 실시간 갱신용)
-            const backgroundPoller = setInterval(() => {
-                checkApprovalStatus();
-
-                // 오늘의 생일 체크 (최초 1회 팝업용)
-                const kstToday = new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString().slice(0, 10);
-                if (kstToday !== birthdayPopupRef.current) {
-                    const todaySolarMMDD = kstToday.slice(5, 10);
-                    const todayLunarMMDD = typeof getLunarTodayMMDD === 'function' ? getLunarTodayMMDD() : null;
-                    const bMembers = memberList.filter(m => {
-                        if (!m?.birthdate) return false;
-                        const bd = String(m.birthdate).slice(5, 10);
-                        return m.is_birthdate_lunar ? (todayLunarMMDD && bd === todayLunarMMDD) : bd === todaySolarMMDD;
-                    });
-                    if (bMembers.length > 0) {
-                        setTodayBirthdayMembers(bMembers);
-                        setShowBirthdayPopup(true);
-                        birthdayPopupRef.current = kstToday;
-                    }
-                }
-
-                fetch(`/api/notifications?user_id=${user.id}`)
-                    .then(r => r.ok ? r.json() : [])
-                    .then(data => {
-                        const prevNotis = notifications;
-                        setNotifications(data);
-
-                        // [자동 팝업 로직] 새로운 읽지 않은 알림이 있는지 확인
-                        const unread = data?.filter((n: any) => !n.is_read) || [];
-                        if (unread.length > 0) {
-                            const latest = unread[0];
-                            if (latest.id !== lastNotifiedId.current) {
-                                lastNotifiedId.current = latest.id;
-                                // 앱 실행 중 새로운 소식이 오면 팝업!
-                                if (prevNotis.length > 0) {
-                                    setShowNotiList(true);
-                                }
-                            }
-                        }
-
-                        if (typeof navigator !== 'undefined' && 'setAppBadge' in navigator && typeof navigator.setAppBadge === 'function') {
-                            const unreadCount = unread.length;
-                            if (unreadCount > 0) navigator.setAppBadge(unreadCount);
-                            else navigator.clearAppBadge();
-                        }
-                    })
-                    .catch(e => { });
-            }, 15000);
-
-            // 알림 최초 1회 로드
-            fetch(`/api/notifications?user_id=${user.id}`)
-                .then(r => r.ok ? r.json() : [])
-                .then(data => {
-                    setNotifications(data);
-                    if (typeof navigator !== 'undefined' && 'setAppBadge' in navigator && typeof navigator.setAppBadge === 'function') {
-                        const unreadCount = data?.filter((n: any) => !n.is_read)?.length || 0;
-                        if (unreadCount > 0) navigator.setAppBadge(unreadCount);
-                        else navigator.clearAppBadge();
-                    }
-                })
-                .catch(err => console.error("알림 로드 실패:", err));
-
-            // [푸시 알림] 서비스 워커 등록 및 구독 처리
-            if ('serviceWorker' in navigator && user) {
-                navigator.serviceWorker.register('/sw.js').then(async (reg) => {
-                    console.log('Service Worker Registered');
-
-                    const subscribeUser = async () => {
-                        await subscribePush(user.id);
-                    };
-
-                    if (Notification.permission === 'default') {
-                        setTimeout(async () => {
-                            if (confirm('알림 신청 시, 오늘의 큐티와 교회 공지를 실시간으로 받아보실 수 있어요! 😊')) {
-                                const permission = await Notification.requestPermission();
-                                if (permission === 'granted') await subscribeUser();
-                            }
-                        }, 3000);
-                    } else if (Notification.permission === 'granted') {
-                        await subscribeUser();
-                    }
-                });
-            }
-
-            return () => clearInterval(backgroundPoller);
-        } else {
+        if (!user) {
+            setIsCheckingAuth(false);
             setAdminInfo(null);
             setIsApproved(false);
-            setNotifications([]);
+            return;
         }
-    }, [user, churchId]); // churchId가 바뀌었을 때도 다시 권한 체크
+
+        // 1. 관리자 권한 정밀 체크
+        fetch(`/api/admin?action=check_admin&email=${user.email}&user_id=${user.id}&church_id=${churchId}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (data && ['church_admin', 'super_admin', 'admin', 'sub_admin'].includes(data.role)) {
+                    setAdminInfo(data);
+                }
+            }).catch(() => { });
+
+        // 2. 알림 초기 로드
+        fetch(`/api/notifications?user_id=${user.id}`)
+            .then(r => r.ok ? r.json() : [])
+            .then(data => {
+                setNotifications(data);
+                if (typeof navigator !== 'undefined' && 'setAppBadge' in navigator && typeof navigator.setAppBadge === 'function') {
+                    const unreadCount = data?.filter((n: any) => !n.is_read)?.length || 0;
+                    if (unreadCount > 0) navigator.setAppBadge(unreadCount);
+                    else navigator.clearAppBadge();
+                }
+            }).catch(() => { });
+
+        // 3. 승인 및 생일 체크 폴링
+        const runPoller = () => {
+            checkApprovalStatus();
+
+            // [생일 팝업 로직 복구]
+            if (memberList.length > 0) {
+                const kstNow = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+                const kstToday = kstNow.toISOString().slice(0, 10);
+                const todaySolarMMDD = kstToday.slice(5, 10);
+                const todayLunarMMDD = typeof getLunarTodayMMDD === 'function' ? getLunarTodayMMDD() : null;
+                const bMembers = memberList.filter(m => {
+                    if (!m?.birthdate) return false;
+                    const bd = String(m.birthdate).slice(5, 10);
+                    return m.is_birthdate_lunar ? (todayLunarMMDD && bd === todayLunarMMDD) : bd === todaySolarMMDD;
+                });
+                if (bMembers.length > 0 && kstToday !== birthdayPopupRef.current) {
+                    setTodayBirthdayMembers(bMembers);
+                    setShowBirthdayPopup(true);
+                    birthdayPopupRef.current = kstToday;
+                }
+            }
+        };
+
+        runPoller();
+        const poller = setInterval(runPoller, 15000);
+
+        // 4. 서비스 워커 등록
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').then(async (reg) => {
+                const permission = await Notification.permission;
+                if (permission === 'granted') await subscribePush(user.id);
+            }).catch(e => console.error("SW Register Error:", e));
+        }
+
+        return () => clearInterval(poller);
+    }, [user, churchId, checkApprovalStatus, subscribePush, memberList]);
 
     // [김부장의 신의 한 수] 유저의 교회 정보가 확인되면 즉시 해당 교회 설정 로드
     useEffect(() => {
@@ -1970,7 +1837,8 @@ export default function App() {
                 ...churchSettings, // 현재 전체 설정 (설교 데이터 포함)
                 ...settingsForm,   // 수정된 기본 설정으로 덮어쓰기
                 church_id: churchId,
-                requester_id: user?.id
+                requester_id: user?.id,
+                requester_email: user?.email // [추가] 이메일 기반 권한 검증 보완용
             };
 
             // [보안] 체험판인 경우 본교회 ID(1) 유입을 원천 차단
@@ -2541,7 +2409,13 @@ export default function App() {
                     </div>
                     {/* Action Buttons을 최상단으로 옮김 */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "14px", width: "100%", maxWidth: "340px", animation: "fade-in 1.4s ease-out", paddingBottom: "20px" }}>
-                        {!user && churchId !== 'demo' ? (
+                        {isCheckingAuth ? (
+                            <div style={{ padding: '80px 0', textAlign: 'center', background: 'white', borderRadius: '32px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
+                                <div style={{ fontSize: '30px', animation: 'bounce 2s infinite', marginBottom: '15px' }}>✨</div>
+                                <div style={{ fontSize: '15px', color: '#1A5D55', fontWeight: 800 }}>보안 연결 확인 중...</div>
+                                <div style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>잠시만 기다려 주세요.</div>
+                            </div>
+                        ) : !user && churchId !== 'demo' ? (
                             <div style={{ background: 'white', padding: '30px', borderRadius: '32px', boxShadow: '0 15px 50px rgba(0,0,0,0.1)', border: '1px solid #F0ECE4', textAlign: 'center' }}>
                                 <div style={{ marginBottom: '25px', textAlign: 'center', animation: 'fade-in 0.8s ease' }}>
                                     <div style={{ fontSize: '22px', fontWeight: 900, color: '#1A5D55', marginBottom: '12px' }}>성도 & 관리자 통합 입장 ⛪</div>
@@ -2707,103 +2581,39 @@ export default function App() {
                                 </div>
                             </div>
 
-                        ) : !isApproved && !isAdmin && !isSuperAdmin && churchId !== 'demo' ? (
+                        ) : (!isApproved && !isAdmin && !isSuperAdmin && churchId !== 'demo') ? (
                             <div style={{ background: '#FFFDE7', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', border: '1px solid #FFF59D', textAlign: 'center' }}>
-                                <div style={{ fontSize: '40px', marginBottom: '15px' }}>🔒</div>
-                                {showVerification ? (
-                                    <div style={{ animation: 'fade-in 0.5s ease-out' }}>
-                                        <div style={{ fontSize: '18px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>기존 성도 정보 연결</div>
-                                        <div style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, marginBottom: '20px' }}>
-                                            교회에 이미 등록된 성도님이신가요?<br />성함과 연락처, 생년월일을 입력하시면 바로 연결됩니다.
-                                        </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
-                                            <input
-                                                type="text"
-                                                placeholder="성함 (예: 홍길동)"
-                                                value={vName}
-                                                onChange={(e) => setVName(e.target.value)}
-                                                style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #DDD', fontSize: '14px' }}
-                                            />
-                                            <input
-                                                type="tel"
-                                                placeholder="연락처 (예: 01012345678)"
-                                                value={vPhone}
-                                                onChange={(e) => setVPhone(e.target.value)}
-                                                style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #DDD', fontSize: '14px' }}
-                                            />
-                                            <input
-                                                type="text"
-                                                inputMode="numeric"
-                                                placeholder="생년월일 6자리 (예: 800101)"
-                                                value={vBirthdate}
-                                                onChange={(e) => setVBirthdate(e.target.value)}
-                                                style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #DDD', fontSize: '14px' }}
-                                            />
-                                        </div>
-                                        <div style={{ display: 'flex', gap: '10px' }}>
-                                            <button
-                                                onClick={() => setShowVerification(false)}
-                                                style={{ flex: 1, padding: '12px', background: '#EEE', color: '#666', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
-                                            >
-                                                취소
-                                            </button>
-                                            <button
-                                                onClick={handleVerification}
-                                                disabled={isLinking}
-                                                style={{ flex: 2, padding: '12px', background: '#333', color: 'white', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', opacity: isLinking ? 0.7 : 1 }}
-                                            >
-                                                {isLinking ? "확인 중..." : "정보 확인 및 연결"}
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div style={{ fontSize: '18px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>{profileName || '성도'}님, 반가워요!</div>
-                                        <div style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, marginBottom: '24px' }}>
-                                            입력하신 정보가 성도 명단과 확인 중입니다.<br />
-                                            이름·전화번호·생년월일이 정확하면 <b>자동으로 승인</b>됩니다.
-                                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', margin: '15px auto 0', border: '2px solid #EEE' }}>
-                                                <img src={SOMY_IMG} alt="소미" style={{ width: '100%', height: '100%', objectFit: "cover" }} />
-                                            </div>
-                                        </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                            <button
-                                                onClick={() => {
-                                                    const btn = document.getElementById('refresh-btn');
-                                                    if (btn) btn.innerText = "상태 확인 중...";
-                                                    checkApprovalStatus(true).finally(() => {
-                                                        if (btn) btn.innerText = "🔄 승인 상태 재확인";
-                                                    });
-                                                }}
-                                                id="refresh-btn"
-                                                style={{ width: '100%', padding: '14px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                                            >
-                                                🔄 승인 상태 재확인
-                                            </button>
-                                            <button
-                                                onClick={() => setShowVerification(true)}
-                                                style={{ width: '100%', padding: '12px', background: 'white', color: '#D4AF37', border: '1px solid #D4AF37', borderRadius: '12px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
-                                            >
-                                                ✏️ 정보를 잘못 입력했나요? 다시 시도
-                                            </button>
-                                            <button
-                                                onClick={handleLogout}
-                                                style={{ width: '100%', padding: '10px', background: 'transparent', color: '#999', border: 'none', fontSize: '13px', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
-                                            >
-                                                다른 계정으로 로그인하기
-                                            </button>
-                                        </div>
-                                    </>
-                                )}
-                                <div style={{ marginTop: '20px', padding: '12px', background: 'rgba(255,255,255,0.5)', borderRadius: '12px', fontSize: '11px', color: '#888', lineHeight: 1.5 }}>
+                                <div style={{ fontSize: '40px', marginBottom: '15px' }}>⏳</div>
+                                <div style={{ fontSize: '18px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>자동 승인 대기 중</div>
+                                <div style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, marginBottom: '24px' }}>
+                                    {profileName || '성도'}님, 반가워요!<br />
+                                    입력하신 정보가 성도 명단과 확인 중입니다.<br />
+                                    잠시 후 자동으로 승인 처리됩니다.
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <button
+                                        onClick={() => {
+                                            const btn = document.getElementById('refresh-btn');
+                                            if (btn) btn.innerText = "상태 확인 중...";
+                                            checkApprovalStatus(true).finally(() => {
+                                                if (btn) btn.innerText = "🔄 승인 상태 재확인";
+                                            });
+                                        }}
+                                        id="refresh-btn"
+                                        style={{ width: '100%', padding: '14px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                    >
+                                        🔄 승인 상태 재확인
+                                    </button>
+                                    <button
+                                        onClick={handleLogout}
+                                        style={{ width: '100%', padding: '10px', background: 'transparent', color: '#999', border: 'none', fontSize: '13px', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+                                    >
+                                        다른 정보로 다시 로그인
+                                    </button>
+                                </div>
+                                <div style={{ marginTop: '20px', padding: '12px', background: 'rgba(0,0,0,0.03)', borderRadius: '12px', fontSize: '11px', color: '#888', lineHeight: 1.5, textAlign: 'left' }}>
                                     💡 <b>안드로이드 카카오톡 사용자 필독</b><br />
-                                    관리자 승인 후에도 이 화면이 보인다면,<br />
-                                    우측 상단 <b>⋮</b> 버튼 → <b>다른 브라우저로 열기</b>를<br />
-                                    선택하시면 즉시 해결됩니다.
-                                    <div style={{ height: '8px' }} />
-                                    📢 <b>아이폰(iOS) 사용자 필독</b><br />
-                                    푸시 알람을 받으려면 하단 <b>공유 버튼</b> 클릭 후<br />
-                                    <b>[홈 화면에 추가]</b>를 하신 다음 실행해 주세요!
+                                    승인 후에도 이 화면이 보인다면, 우측 상단 <b>⋮</b> 버튼 → <b>다른 브라우저로 열기</b>를 선택하세요.
                                 </div>
                             </div>
                         ) : (
@@ -6922,7 +6732,7 @@ export default function App() {
                                     const res = await fetch('/api/admin', {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ action: 'update_member', user_id: m.id, update_data: updateData, requester_id: user?.id })
+                                        body: JSON.stringify({ action: 'update_member', user_id: m.id, update_data: updateData, requester_id: user?.id, requester_email: user?.email })
                                     });
                                     if (res.ok) {
                                         setMemberList((prev: any[]) => prev.map((item: any) => item.id === m.id ? { ...item, ...updateData } : item));
@@ -7045,7 +6855,7 @@ export default function App() {
                                 const res = await fetch('/api/admin', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ action: 'add_member', member_data: memberData, requester_id: user?.id })
+                                    body: JSON.stringify({ action: 'add_member', member_data: memberData, requester_id: user?.id, requester_email: user?.email })
                                 });
                                 if (res.ok) {
                                     const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
@@ -7173,7 +6983,8 @@ export default function App() {
                                             action: 'update_member',
                                             user_id: mergeDestinationId,
                                             update_data: updateData,
-                                            requester_id: user?.id
+                                            requester_id: user?.id,
+                                            requester_email: user?.email
                                         })
                                     });
 
@@ -7181,7 +6992,7 @@ export default function App() {
                                         const res = await fetch('/api/admin', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ action: 'delete_members', ids: [mergeTarget.id], church_id: churchId, requester_id: user?.id })
+                                            body: JSON.stringify({ action: 'delete_members', ids: [mergeTarget.id], church_id: churchId, requester_id: user?.id, requester_email: user?.email })
                                         });
 
                                         alert('통합 완료되었습니다! ✨');
@@ -8171,7 +7982,7 @@ export default function App() {
                                                                     if (pendingIds.length === 0) { alert('선택한 성도 중 승인 대기자가 없습니다.'); return; }
                                                                     if (window.confirm(`선택한 ${pendingIds.length}명의 성도를 일괄 승인하시겠습니까?`)) {
                                                                         try {
-                                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_approve_users', ids: pendingIds, approve: true, church_id: churchId, requester_id: user?.id }) });
+                                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_approve_users', ids: pendingIds, approve: true, church_id: churchId, requester_id: user?.id, requester_email: user?.email }) });
                                                                             if (res.ok) {
                                                                                 alert('선택한 성도가 모두 승인되었습니다! 🎉');
                                                                                 setSelectedMemberIds([]);
@@ -8192,7 +8003,7 @@ export default function App() {
                                                                     if (approvedIds.length === 0) { alert('선택한 성도 중 이미 승인된 분이 없습니다.'); return; }
                                                                     if (window.confirm(`선택한 ${approvedIds.length}명의 승인을 취소하시겠습니까?`)) {
                                                                         try {
-                                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_approve_users', ids: approvedIds, approve: false, church_id: churchId, requester_id: user?.id }) });
+                                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_approve_users', ids: approvedIds, approve: false, church_id: churchId, requester_id: user?.id, requester_email: user?.email }) });
                                                                             if (res.ok) {
                                                                                 alert('승인이 취소되었습니다.');
                                                                                 setSelectedMemberIds([]);
@@ -8211,7 +8022,7 @@ export default function App() {
                                                                     if (selectedMemberIds.length === 0) { alert('삭제할 성도를 먼저 선택해주세요.'); return; }
                                                                     if (window.confirm(`선택한 ${selectedMemberIds.length}명을 삭제하시겠습니까?`)) {
                                                                         try {
-                                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_delete_members', ids: selectedMemberIds, church_id: churchId, requester_id: user?.id }) });
+                                                                            const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_delete_members', ids: selectedMemberIds, church_id: churchId, requester_id: user?.id, requester_email: user?.email }) });
                                                                             if (res.ok) {
                                                                                 alert('삭제되었습니다.');
                                                                                 setSelectedMemberIds([]);
@@ -8357,7 +8168,7 @@ export default function App() {
                                                                             <button
                                                                                 onClick={async () => {
                                                                                     if (window.confirm(`${member.full_name} 성도를 승인하시겠습니까?`)) {
-                                                                                        const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve_user', user_id: member.id, is_approved: true, church_id: churchId, requester_id: user?.id }) });
+                                                                                        const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve_user', user_id: member.id, is_approved: true, church_id: churchId, requester_id: user?.id, requester_email: user?.email }) });
                                                                                         if (res.ok) {
                                                                                             setMemberList(prev => prev.map(m => m.id === member.id ? { ...m, is_approved: true } : m));
                                                                                             alert(`${member.full_name} 성도가 승인되었습니다. 🎉`);
@@ -8401,7 +8212,7 @@ export default function App() {
                                                                         <button
                                                                             onClick={async () => {
                                                                                 if (window.confirm(`${member.full_name} 성도를 삭제하시겠습니까?`)) {
-                                                                                    const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_member', user_id: member.id, church_id: churchId, requester_id: user?.id }) });
+                                                                                    const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_member', user_id: member.id, church_id: churchId, requester_id: user?.id, requester_email: user?.email }) });
                                                                                     if (res.ok) setMemberList(prev => prev.filter(m => m.id !== member.id));
                                                                                 }
                                                                             }}
@@ -8753,7 +8564,7 @@ export default function App() {
                                                             const res = await fetch('/api/admin', {
                                                                 method: 'POST',
                                                                 headers: { 'Content-Type': 'application/json' },
-                                                                body: JSON.stringify({ action: 'add_admin', name, phone, birthdate, church_id: cid, role })
+                                                                body: JSON.stringify({ action: 'add_admin', name, phone, birthdate, church_id: cid, role, requester_id: user?.id, requester_email: user?.email })
                                                             });
                                                             if (res.ok) {
                                                                 alert('성공적으로 관리자 권한을 부여했습니다!');
@@ -8814,7 +8625,8 @@ export default function App() {
                                                                     name, phone, birthdate,
                                                                     target_church_id: cid,
                                                                     pin,
-                                                                    requester_id: user.id
+                                                                    requester_id: user.id,
+                                                                    requester_email: user.email // [추가]
                                                                 })
                                                             });
                                                             const info = await res.json();
@@ -9690,7 +9502,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                                                     const res = await fetch('/api/admin', {
                                                         method: 'POST',
                                                         headers: { 'Content-Type': 'application/json' },
-                                                        body: JSON.stringify({ action: 'update_member', user_id: selectedMember.id, update_data: editForm })
+                                                        body: JSON.stringify({ action: 'update_member', user_id: selectedMember.id, update_data: editForm, requester_id: user?.id, requester_email: user?.email })
                                                     });
                                                     if (res.ok) {
                                                         alert('성도 정보가 수정되었습니다.');

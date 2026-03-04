@@ -206,6 +206,7 @@ export async function POST(req: NextRequest) {
 
             const updateFields: any = {
                 full_name: match.full_name || profileById?.full_name || rawName || '성도',
+                email: email || match.email || profileById?.email, // [★ 수정] 이메일 누락 방지
                 phone: match.phone || profileById?.phone || rawPhone,
                 birthdate: match.birthdate || profileById?.birthdate || rawBirth,
                 address: match.address || profileById?.address,
@@ -217,6 +218,12 @@ export async function POST(req: NextRequest) {
                 is_approved: true
             };
 
+            // [추가] 관리자 테이블의 user_id가 비어있거나 다를 경우 즉시 동기화 (권한 증발 방지 핵심)
+            if (adminCheckTerm && adminCheckTerm.user_id !== user_id) {
+                console.log(`[Sync] Updating app_admins user_id for: ${adminCheckTerm.email} -> ${user_id}`);
+                await supabaseAdmin.from('app_admins').update({ user_id: user_id }).eq('id', adminCheckTerm.id);
+            }
+
             // 응답에는 현재 세션 컨텍스트(체험판 등)를 담아 전달
             const responseData = { ...updateFields, church_id: contextChurch };
 
@@ -227,7 +234,7 @@ export async function POST(req: NextRequest) {
                 }
                 return NextResponse.json({ ...responseData, name: responseData.full_name, status: 'merged' });
             } else {
-                const newProfile = { ...responseData, id: user_id, email: email || match.email };
+                const newProfile = { ...responseData, id: user_id };
                 await supabaseAdmin.from('profiles').insert([updateFields]); // DB에는 permanentChurch가 담긴 updateFields 저장
                 if (match.id !== user_id) {
                     await supabaseAdmin.from('profiles').delete().eq('id', match.id);
@@ -264,6 +271,12 @@ export async function POST(req: NextRequest) {
         };
 
         const resData = { ...dataToSet, church_id: cContext }; // 응답에는 현재 컨텍스트
+
+        // [추가] 관리자 테이블의 user_id 동기화 (매칭되지 않은 신규 프로필 생성 시에도 권한 유지)
+        if (adminCheckTerm && adminCheckTerm.user_id !== user_id) {
+            console.log(`[Sync-New] Updating app_admins user_id for: ${adminCheckTerm.email} -> ${user_id}`);
+            await supabaseAdmin.from('app_admins').update({ user_id: user_id }).eq('id', adminCheckTerm.id);
+        }
 
         if (profileById) {
             await supabaseAdmin.from('profiles').update(dataToSet).eq('id', user_id);

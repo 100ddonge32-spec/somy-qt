@@ -16,9 +16,14 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const churchId = searchParams.get('church_id');
 
-    console.log(`[API Settings] Requesting settings. Fallback strategy active.`);
-
-    const targetChurchId = churchId;
+    // [표준화] 교회 식별자 정규화 (예: '예수인교회' -> 'jesus-in')
+    const normalizeId = (id: string | null) => {
+        if (!id) return 'jesus-in';
+        const s = id.toLowerCase().trim();
+        if (s === '예수인교회' || s === 'jesus-in' || s === '예수인') return 'jesus-in';
+        return s;
+    };
+    const targetChurchId = normalizeId(churchId);
 
     const noCacheHeaders = {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -173,7 +178,8 @@ export async function POST(req: NextRequest) {
         pastor_column_title,
         pastor_column_content,
         church_id: body_church_id,
-        requester_id
+        requester_id,
+        requester_email: body_requester_email // [추가] 클라이언트에서 넘어온 이메일
     } = body;
 
     const targetChurchId = body_church_id;
@@ -196,9 +202,13 @@ export async function POST(req: NextRequest) {
         .eq('id', requester_id)
         .maybeSingle();
 
-    const reqEmail = requesterProfile?.email?.toLowerCase().trim();
+    // [보정] 프로필에 이메일이 없는데 클라이언트가 보냈다면 즉시 업데이트 시도 (동기화 보강)
+    let reqEmail = (requesterProfile?.email || body_requester_email || '').toLowerCase().trim();
+    if (requester_id && !requesterProfile?.email && body_requester_email) {
+        await supabaseAdmin.from('profiles').update({ email: body_requester_email }).eq('id', requester_id);
+    }
 
-    // 4. 교회 식별자 표준화 (매칭용)
+    // [재사용] 교회 식별자 표준화 (위 GET 핸들러와 동일한 로직)
     const normalizeId = (id: string | null) => {
         if (!id) return 'jesus-in';
         const s = id.toLowerCase().trim();
@@ -216,8 +226,6 @@ export async function POST(req: NextRequest) {
     const adminsForRequester = [...(qById || []), ...(qByEmail || [])];
     const uniqueAdmins = Array.from(new Map(adminsForRequester.map(a => [a.id, a])).values());
 
-    console.log(`[Admin Debug] User: ${requester_id}, Email: ${reqEmail}, Found: ${uniqueAdmins.length} unique recs`);
-
     // [핵심 해결] 정확한 매칭 로직
     // 1. 슈퍼어드민인지 확인
     const superAdmin = uniqueAdmins.find(a => a.role === 'super_admin');
@@ -226,22 +234,35 @@ export async function POST(req: NextRequest) {
 
     const adminInfo = superAdmin || churchAdmin;
 
-    console.log(`[Admin Debug] User: ${requester_id}, Email: ${reqEmail}, Target: ${normTargetId}, Found: ${uniqueAdmins.length}, Match: ${!!adminInfo}`);
+    // [추가] 관리자 테이블에 user_id가 매칭되지 않았다면 즉시 업데이트 (다음 요청부터 id 매칭 성공하도록)
+    if (qByEmail && qByEmail.length > 0 && !qById?.length) {
+        for (const adm of qByEmail) {
+            if (!adm.user_id || adm.user_id !== requester_id) {
+                console.log(`[Settings-Fix] Auto-linking admin user_id for: ${adm.email}`);
+                await supabaseAdmin.from('app_admins').update({ user_id: requester_id }).eq('id', adm.id);
+            }
+        }
+    }
 
     // 3. 마스터 권한 여부 (전역 - Profile 이름 기반 최후의 보루)
     const isGlobalMaster = (reqEmail && HARDCODED_ADMINS.includes(reqEmail)) ||
         (superAdmin?.role === 'super_admin') ||
         (requesterProfile?.full_name === '백동희' || requesterProfile?.full_name === '동희');
 
-    // 5. 권한 검증 로직
+    // 5. 권한 검증 로직 (강화: 소속교회 관리자는 자기 교회만 수정 가능)
     if (!isGlobalMaster) {
         if (!adminInfo) {
             const reason = (uniqueAdmins && uniqueAdmins.length > 0)
                 ? `소속 교회 정보가 다릅니다 (보유: ${uniqueAdmins.map(a => a.church_id).join(', ')} / 요청: ${targetChurchId})`
-                : "관리자 권한 정보를 찾을 수 없습니다. [v5] (ID/이메일 매칭 실패)";
+                : `관리자 권한 정보를 찾을 수 없습니다. (ID:${requester_id.substring(0, 5)}... / Email:${reqEmail || 'N/A'})`;
 
             console.error(`[Security Alert] Access Denied. User: ${requester_id}, Email: ${reqEmail}, Target: ${normTargetId}, Reason: ${reason}`);
             return NextResponse.json({ success: false, error: reason }, { status: 403 });
+        }
+
+        // [추가] 관리자가 자신의 소속이 아닌 다른 일반 교회를 고치려고 시도하는 경우 차단
+        if (normalizeId(adminInfo.church_id) !== normTargetId) {
+            return NextResponse.json({ success: false, error: "해당 교회의 관리 권한이 없습니다." }, { status: 403 });
         }
     }
 
