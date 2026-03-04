@@ -8797,7 +8797,7 @@ export default function App() {
                                                         const name = nameEl?.value;
                                                         const phone = phoneEl?.value;
                                                         const birthdate = birthEl?.value;
-                                                        const cid = cidEl?.value;
+                                                        const cid = cidEl?.value?.trim();
                                                         const pin = pinEl?.value;
 
                                                         if (!name || !phone || !birthdate || !cid || !pin) {
@@ -8819,11 +8819,20 @@ export default function App() {
                                                             });
                                                             const info = await res.json();
                                                             if (res.ok) {
-                                                                alert('성공적으로 생성되고 권한이 부여되었습니다!');
+                                                                const shareUrl = `${window.location.origin}/${cid}`;
+                                                                const message = `[SOMY] ${name}님, 교회의 관리자로 지정되셨습니다!\n\n아래 전용 주소로 접속하여 로그인하시면 관리자 기능을 사용하실 수 있습니다.\n\n📍 교회 전용 주소: ${shareUrl}\n🔐 초기 보안 PIN: ${pin}`;
+
+                                                                // 결과를 화면에 표시하기 위해 커스텀 알림 처리
+                                                                if (confirm(`✅ 성공적으로 생성되었습니다!\n\n아래 완성된 링크 정보를 클립보드에 복사하시겠습니까?\n\n${shareUrl}`)) {
+                                                                    navigator.clipboard.writeText(message);
+                                                                    alert('복사되었습니다! 카톡 등으로 전달해 주세요.');
+                                                                }
+
                                                                 if (nameEl) nameEl.value = '';
                                                                 if (phoneEl) phoneEl.value = '';
                                                                 if (birthEl) birthEl.value = '';
                                                                 if (cidEl) cidEl.value = '';
+                                                                if (pinEl) pinEl.value = '';
                                                                 fetchAllAdmins();
                                                             } else {
                                                                 alert('에러: ' + info.error);
