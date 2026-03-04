@@ -3168,7 +3168,7 @@ export default function App() {
                                         const controller = new AbortController();
                                         const timeoutId = setTimeout(() => controller.abort(), 8000);
                                         try {
-                                            const r = await fetch('/api/stats', { signal: controller.signal, cache: 'no-store' });
+                                            const r = await fetch(`/api/stats?church_id=${churchId}`, { signal: controller.signal, cache: 'no-store' });
                                             clearTimeout(timeoutId);
                                             const data = await r.json();
                                             if (data) {
@@ -3563,7 +3563,7 @@ export default function App() {
                                         const controller = new AbortController();
                                         const timeoutId = setTimeout(() => controller.abort(), 8000);
                                         try {
-                                            const r = await fetch('/api/stats', { signal: controller.signal, cache: 'no-store' });
+                                            const r = await fetch(`/api/stats?church_id=${churchId}`, { signal: controller.signal, cache: 'no-store' });
                                             clearTimeout(timeoutId);
                                             const data = await r.json();
                                             if (data) {
@@ -3624,13 +3624,14 @@ export default function App() {
                                                 user_id: user.id,
                                                 user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '성도',
                                                 avatar_url: user.user_metadata?.avatar_url || null,
+                                                church_id: churchId, // [추가] 교회 ID 명시
                                                 answers: answers // 답변 데이터 포함
                                             }),
                                         });
 
                                         if (res.ok) {
                                             // 기록 성공 시 즉시 최신 통계 데이터 로드
-                                            const statsRes = await fetch('/api/stats');
+                                            const statsRes = await fetch(`/api/stats?church_id=${churchId}`);
                                             const statsData = await statsRes.json();
                                             if (statsData && statsData.today) {
                                                 setStats(statsData);
@@ -3926,7 +3927,7 @@ export default function App() {
                             <button onClick={async () => {
                                 if (window.confirm('🚨 정말로 모든 묵상 통계 데이터를 초기화하시겠습니까? 복구할 수 없습니다.')) {
                                     try {
-                                        const res = await fetch('/api/stats', { method: 'DELETE' });
+                                        const res = await fetch(`/api/stats?church_id=${churchId}`, { method: 'DELETE' });
                                         if (res.ok) {
                                             alert('✅ 통계 데이터가 초기화되었습니다.');
                                             setStats(null);
