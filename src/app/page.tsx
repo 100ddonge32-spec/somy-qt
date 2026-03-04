@@ -5362,8 +5362,9 @@ export default function App() {
                 const channelIdMatch = rawUrl.match(/(UC[a-zA-Z0-9_-]{20,})/);
                 if (channelIdMatch) {
                     const channelId = channelIdMatch[1];
-                    // [개선] UU 대신 UULF 접두사를 사용하여 최신 라이브 및 업로드 대응력을 높임
-                    const playlistId = 'UULF' + channelId.substring(2);
+                    // [핵심 변경] UULV 접두사를 사용하여 '가장 최근 라이브/예배'를 1순위로 가져옴
+                    // UU(업로드전체)나 UULF(최근업로드)보다 라이브 예배가 많은 교회에 훨씬 정확합니다.
+                    const playlistId = 'UULV' + channelId.substring(2);
                     return `https://www.youtube.com/embed/videoseries?list=${playlistId}&rel=0`;
                 }
 
