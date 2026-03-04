@@ -316,24 +316,26 @@ export async function POST(req: NextRequest) {
     }
 
     // ✅ DB에서 현재 해당 교회의 실제 ID를 정확히 조회 (교차 업데이트 방지 핵심)
+    // [중요] 반드시 표준화된 ID(normTargetId)를 사용하여 조회해야 데이터 파편화를 막을 수 있습니다.
     const { data: currentSettings } = await supabaseAdmin
         .from('church_settings')
         .select('id, plan, church_id')
-        .eq('church_id', targetChurchId)
+        .eq('church_id', normTargetId)
         .maybeSingle();
 
-    // [핵심 보안] jesus-in(본교회) 보호 및 트라이얼 정보 유입 원천 차단
-    // 1. 요청한 church_id가 jesus-in인데 DB에서 찾은 church_id와 다르면 절대 중단
-    if (targetChurchId === 'jesus-in' && !isGlobalMaster) {
+    // [강력 격리] jesus-in(본교회) 보호 및 트라이얼 정보 유입 원천 차단
+    // 1. 요청한 church_id가 jesus-in인데 DB에서 찾은 church_id와 다르면 절대 중단 (아이디 탈취 방지)
+    if (normTargetId === 'jesus-in' && !isGlobalMaster) {
         if (currentSettings && normalizeId(currentSettings.church_id) !== 'jesus-in') {
             return NextResponse.json({ success: false, error: "보안 오류: 잘못된 교회 ID 매칭" }, { status: 403 });
         }
     }
 
-    // 2. [강력 대응] 체험판 요청인데 ID가 1이거나 jesus-in을 건드리려 하면 즉시 차단
-    if (targetChurchId !== 'jesus-in') {
-        if (currentSettings?.id === 1 || currentSettings?.church_id === 'jesus-in') {
-            return NextResponse.json({ success: false, error: "보안 오류: 체험판은 메인 데이터를 수정할 수 없습니다." }, { status: 403 });
+    // 2. [핵심 수정] 다른 교회를 고치려는데 ID 1번(메인)이 잡히는 경우 원천 차단
+    if (normTargetId !== 'jesus-in') {
+        if (currentSettings?.id === 1 || normalizeId(currentSettings?.church_id) === 'jesus-in') {
+            console.error(`[Security Critical] Interception attempt detected! Church ${normTargetId} tried to hit Yesuin record (ID 1).`);
+            return NextResponse.json({ success: false, error: "보안 정책 위반: 타교회는 메인 데이터를 수정할 수 없습니다." }, { status: 403 });
         }
     }
 
@@ -363,7 +365,7 @@ export async function POST(req: NextRequest) {
     if (cleanSermonQ3) encodedPlan += `|s_q3:${encodeURIComponent(cleanSermonQ3)}`;
 
     const safeBaseData: any = {
-        church_id: targetChurchId,
+        church_id: normTargetId, // [필수] 항상 표준화된 아이디로 저장하여 파편화 방지
         church_name: cleanName,
         church_logo_url: cleanLogoUrl,
         church_url,
@@ -373,17 +375,17 @@ export async function POST(req: NextRequest) {
         sermon_url: cleanSermonUrl
     };
 
-    // [최후의 보루] ID 매칭 강제화 및 교차 오염 원천 차단
-    if (targetChurchId === 'jesus-in') {
+    // [최후의 보루] ID 매칭 강제화 및 물리적 격리
+    if (normTargetId === 'jesus-in') {
         safeBaseData.id = 1; // 예수인교회는 무조건 ID 1 고정
     } else if (currentSettings) {
-        // [강력 대응] 체험판이나 신규 교회의 업데이트가 ID 1번(본교)을 건드리는 것을 물리적으로 차단
-        if (currentSettings.id === 1 || currentSettings.church_id === 'jesus-in') {
-            return NextResponse.json({ success: false, error: "보안 정책 위반: 메인 데이터 접근 거부" }, { status: 403 });
+        // [강력 대응] 다른 교회의 업데이트가 ID 1번을 건드리는 것을 물리적으로 차단 (이중 체크)
+        if (currentSettings.id === 1) {
+            return NextResponse.json({ success: false, error: "보안 정책 위반: 잘못된 ID 타겟팅" }, { status: 403 });
         }
         safeBaseData.id = currentSettings.id;
     } else {
-        // [신규] currentSettings가 없으면 새로운 레코드이므로 ID를 절대 포함하지 않음 (ID 1 탈취 방지)
+        // [신규] currentSettings가 없으면 새로운 레코드이므로 ID를 절대 포함하지 않음
         delete safeBaseData.id;
     }
 
