@@ -208,8 +208,9 @@ export async function POST(req: NextRequest) {
     const normTargetId = normalizeId(targetChurchId);
 
     // 2. 관리자 권한 조회 (더욱 포괄적인 검색)
-    const orFilter = [`user_id.eq.${requester_id}`];
-    if (reqEmail) orFilter.push(`email.eq.${reqEmail}`);
+    // PostgREST .or() 필터에서는 특수문자(., -, @ 등)가 포함된 값은 반드시 따옴표로 감싸야 정확히 작동합니다.
+    const orFilter = [`user_id.eq."${requester_id}"`];
+    if (reqEmail) orFilter.push(`email.eq."${reqEmail}"`);
 
     const { data: adminsForRequester, error: adminQueryErr } = await supabaseAdmin
         .from('app_admins')
@@ -236,26 +237,12 @@ export async function POST(req: NextRequest) {
     // 5. 권한 검증 로직
     if (!isGlobalMaster) {
         if (!adminInfo) {
-            // [구제 로직] 만약 레코드는 있는데 church_id가 pending이거나 비어있다면, 그리고 이 사람이 이 교회의 유일한 생성 관리자라면?
-            // 하지만 보안상 엄격하게 처리하기 위해 이유를 정확히 알림
             const reason = (adminsForRequester && adminsForRequester.length > 0)
-                ? `등록된 교회가 다릅니다 (보유: ${adminsForRequester.map(a => a.church_id).join(', ')} vs 요청: ${targetChurchId})`
-                : "관리자 record를 찾을 수 없습니다. (ID/이메일 불일치)";
+                ? `소속 교회 정보가 다릅니다 (보유: ${adminsForRequester.map(a => a.church_id).join(', ')} / 요청: ${targetChurchId})`
+                : "관리자 권한 정보를 찾을 수 없습니다. (ID/이메일 매칭 실패)";
 
-            console.error(`[Security Alert] Access Denied. User: ${requester_id}, Reason: ${reason}`);
-            return NextResponse.json({ success: false, error: `권한이 없습니다: ${reason}` }, { status: 403 });
-        }
-    }
-
-    // 5. 권한 검증 로직
-    if (!isGlobalMaster) {
-        // 전역 마스터가 아니라면 본인 소속 교회인지 확인
-        const userCid = normalizeId(adminInfo?.church_id);
-
-        if (!adminInfo || userCid !== normTargetId) {
-            const reason = !adminInfo ? "관리자 레코드 없음" : `교회 불일치(${userCid} vs ${normTargetId})`;
-            console.error(`[Security Alert] Unauthorized update attempt. User: ${requester_id}, Target: ${normTargetId}, Reason: ${reason}`);
-            return NextResponse.json({ success: false, error: `권한이 없습니다: ${reason}` }, { status: 403 });
+            console.error(`[Security Alert] Access Denied. User: ${requester_id}, Email: ${reqEmail}, Target: ${normTargetId}, Reason: ${reason}`);
+            return NextResponse.json({ success: false, error: reason }, { status: 403 });
         }
     }
 
