@@ -60,6 +60,7 @@ interface Post {
     comments: Comment[];
     is_private?: boolean; // 비공개 여부
     liker_ids?: string[]; // 좋아요 누른 유저 ID 목록
+    is_qt?: boolean; // ✅ 묵상나눔 여부
 }
 
 interface Notification {
