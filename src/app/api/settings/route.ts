@@ -207,27 +207,26 @@ export async function POST(req: NextRequest) {
     };
     const normTargetId = normalizeId(targetChurchId);
 
-    // 2. 관리자 권한 조회 (더욱 포괄적인 검색)
-    // PostgREST .or() 필터에서는 특수문자(., -, @ 등)가 포함된 값은 반드시 따옴표로 감싸야 정확히 작동합니다.
-    const orFilter = [`user_id.eq."${requester_id}"`];
-    if (reqEmail) orFilter.push(`email.eq."${reqEmail}"`);
+    // 2. 관리자 권한 조회 (더욱 포괄적이고 안전한 방식)
+    // 1) 유저 ID로 찾기
+    const { data: qById } = await supabaseAdmin.from('app_admins').select('*').eq('user_id', requester_id);
+    // 2) 이메일로 찾기 (백업)
+    const { data: qByEmail } = reqEmail ? await supabaseAdmin.from('app_admins').select('*').eq('email', reqEmail) : { data: [] };
 
-    const { data: adminsForRequester, error: adminQueryErr } = await supabaseAdmin
-        .from('app_admins')
-        .select('*')
-        .or(orFilter.join(','));
+    const adminsForRequester = [...(qById || []), ...(qByEmail || [])];
+    const uniqueAdmins = Array.from(new Map(adminsForRequester.map(a => [a.id, a])).values());
 
-    if (adminQueryErr) console.error("[Admin Debug] Query Error:", adminQueryErr);
+    console.log(`[Admin Debug] User: ${requester_id}, Email: ${reqEmail}, Found: ${uniqueAdmins.length} unique recs`);
 
     // [핵심 해결] 정확한 매칭 로직
     // 1. 슈퍼어드민인지 확인
-    const superAdmin = adminsForRequester?.find(a => a.role === 'super_admin');
+    const superAdmin = uniqueAdmins.find(a => a.role === 'super_admin');
     // 2. 현재 요청한 교회(targetChurchId)의 관리자인지 확인
-    const churchAdmin = adminsForRequester?.find(a => normalizeId(a.church_id) === normTargetId);
+    const churchAdmin = uniqueAdmins.find(a => normalizeId(a.church_id) === normTargetId);
 
     const adminInfo = superAdmin || churchAdmin;
 
-    console.log(`[Admin Debug] User: ${requester_id}, Email: ${reqEmail}, Target: ${normTargetId}, Found: ${adminsForRequester?.length}, Match: ${!!adminInfo}`);
+    console.log(`[Admin Debug] User: ${requester_id}, Email: ${reqEmail}, Target: ${normTargetId}, Found: ${uniqueAdmins.length}, Match: ${!!adminInfo}`);
 
     // 3. 마스터 권한 여부 (전역 - Profile 이름 기반 최후의 보루)
     const isGlobalMaster = (reqEmail && HARDCODED_ADMINS.includes(reqEmail)) ||
@@ -237,9 +236,9 @@ export async function POST(req: NextRequest) {
     // 5. 권한 검증 로직
     if (!isGlobalMaster) {
         if (!adminInfo) {
-            const reason = (adminsForRequester && adminsForRequester.length > 0)
-                ? `소속 교회 정보가 다릅니다 (보유: ${adminsForRequester.map(a => a.church_id).join(', ')} / 요청: ${targetChurchId})`
-                : "관리자 권한 정보를 찾을 수 없습니다. (ID/이메일 매칭 실패)";
+            const reason = (uniqueAdmins && uniqueAdmins.length > 0)
+                ? `소속 교회 정보가 다릅니다 (보유: ${uniqueAdmins.map(a => a.church_id).join(', ')} / 요청: ${targetChurchId})`
+                : "관리자 권한 정보를 찾을 수 없습니다. [v5] (ID/이메일 매칭 실패)";
 
             console.error(`[Security Alert] Access Denied. User: ${requester_id}, Email: ${reqEmail}, Target: ${normTargetId}, Reason: ${reason}`);
             return NextResponse.json({ success: false, error: reason }, { status: 403 });

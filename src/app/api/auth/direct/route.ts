@@ -153,12 +153,16 @@ export async function POST(req: NextRequest) {
                 }
 
                 // 관리자 권한 이전 (강화된 로직)
-                const { data: adminEntries } = await supabaseAdmin.from('app_admins')
-                    .select('*')
-                    .or(`user_id.eq.${match.id},email.eq.${match.email || 'none'}`);
+                // 1. 기존 ID로 찾기
+                const { data: adminsById } = await supabaseAdmin.from('app_admins').select('*').eq('user_id', match.id);
+                // 2. 이메일로 찾기 (백업)
+                const { data: adminsByEmail } = match.email ? await supabaseAdmin.from('app_admins').select('*').eq('email', match.email) : { data: [] };
 
-                if (adminEntries && adminEntries.length > 0) {
-                    for (const entry of adminEntries) {
+                const adminEntries = [...(adminsById || []), ...(adminsByEmail || [])];
+                const uniqueEntries = Array.from(new Map(adminEntries.map(a => [a.id, a])).values());
+
+                if (uniqueEntries && uniqueEntries.length > 0) {
+                    for (const entry of uniqueEntries) {
                         const updatePayload = {
                             ...entry,
                             user_id: user_id // 새로운 UUID로 업데이트
