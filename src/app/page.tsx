@@ -8739,99 +8739,74 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
 
     useEffect(() => {
         const loadProfile = async () => {
-            if (!user?.id) return;
+            if (!user?.id) {
+                setIsLoading(false);
+                return;
+            }
             try {
-                // 0. 메타데이터에서 휴대폰 추출
-                const rawMetaPhone = user?.user_metadata?.phone_number || user?.user_metadata?.mobile || '';
+                // 0. 메타데이터 기초 정보 추출
+                const metaNameFull = user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.nickname || user.user_metadata?.preferred_username;
+                const rawMetaPhone = user.user_metadata?.phone_number || user.user_metadata?.mobile || '';
                 let cleanMetaPhone = rawMetaPhone.replace(/[^0-9]/g, '');
                 if (cleanMetaPhone.startsWith('8210')) cleanMetaPhone = '0' + cleanMetaPhone.substring(2);
                 else if (cleanMetaPhone.startsWith('82')) cleanMetaPhone = '0' + cleanMetaPhone.substring(2);
 
-                // ★ 익명+정보없는 사용자는 sync 차단 (성도 유령계정 방지)
-                // [수정] 단, 마스터(백동희)나 관리자는 무조건 통과하도록 예외 처리 추가
-                const metaNameFull = user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.nickname || user.user_metadata?.preferred_username;
                 const MASTER_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com").toLowerCase().split(',').map(e => e.trim());
                 const isMaster = metaNameFull === '백동희' || metaNameFull === '동희' || (user.email && MASTER_EMAILS.includes(user.email.toLowerCase().trim()));
-
                 const isAnon = !user.email || user.email.includes('anonymous.local') || user.is_anonymous;
-                if (isAnon && !metaNameFull && !cleanMetaPhone && !isMaster) {
-                    console.log('[ProfileLoad] 익명+정보없음 → sync 미호출');
-                    return;
+
+                // 1. 서버 측 동기화 API 호출 (Sync)
+                let syncResult: any = null;
+                if (!(isAnon && !metaNameFull && !cleanMetaPhone && !isMaster)) {
+                    try {
+                        const syncRes = await fetch('/api/auth/sync', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                user_id: user.id,
+                                email: user.email,
+                                name: metaNameFull,
+                                avatar_url: user.user_metadata?.avatar_url,
+                                phone: cleanMetaPhone,
+                                church_id: churchId
+                            })
+                        });
+                        if (syncRes.ok) syncResult = await syncRes.json();
+                    } catch (e) { console.error("[Sync Error]", e); }
                 }
 
-                // 1. 서버 측 동기화 API 호출
-                const syncRes = await fetch('/api/auth/sync', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: user.id,
-                        email: user.email,
-                        name: metaNameFull,
-                        avatar_url: user.user_metadata?.avatar_url,
-                        phone: cleanMetaPhone,
-                        church_id: churchId
-                    })
-                });
-                const syncResult = await syncRes.json();
-                console.log("[SyncResult]", syncResult);
+                // 2. 최신 프로필 정보 조회 (Profile API)
+                let dbData: any = null;
+                try {
+                    const profileRes = await fetch(`/api/profile?user_id=${user.id}`);
+                    if (profileRes.ok) dbData = await profileRes.json();
+                } catch (e) { console.error("[Profile Fetch Error]", e); }
 
-                // [최적화] Sync 결과가 있으면 즉시 반영하여 '정보 없음' 깜빡임 방지
-                if (syncResult && (syncResult.full_name || syncResult.name)) {
-                    const resPhone = (syncResult.phone || '').replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
-                    const resName = syncResult.full_name || syncResult.name;
-                    const initialFromSync = {
-                        full_name: resName,
-                        phone: resPhone || syncResult.phone || '',
-                        birthdate: syncResult.birthdate || '',
-                        address: syncResult.address || '',
-                        avatar_url: syncResult.avatar_url || '',
-                        is_phone_public: syncResult.is_phone_public || false,
-                        is_birthdate_public: syncResult.is_birthdate_public || false,
-                        is_birthdate_lunar: syncResult.is_birthdate_lunar || false,
-                        is_address_public: syncResult.is_address_public || false,
-                        created_at: syncResult.created_at || ''
-                    };
-                    setProfileForm(initialFromSync);
-                    setInitialProfile(initialFromSync);
-                }
+                // 3. 데이터 병합 (Priority: Sync Result > DB Data > Metadata)
+                // Sync 결과가 최신 상태를 반영하므로 우선순위를 높게 잡되, DB 데이터와 보완함
+                const finalName = dbData?.full_name || syncResult?.full_name || syncResult?.name || metaNameFull || '';
+                const finalPhone = dbData?.phone || syncResult?.phone || cleanMetaPhone || '';
+                const finalBirth = dbData?.birthdate || syncResult?.birthdate || '';
+                const finalAddress = dbData?.address || syncResult?.address || '';
+                const finalCreated = dbData?.created_at || syncResult?.created_at || '';
 
-                // 2. 최신 프로필 정보 조회
-                const fetchProfile = async () => {
-                    const res = await fetch(`/api/profile?user_id=${user.id}`);
-                    if (!res.ok) return null;
-                    const d = await res.json();
-                    return d;
+                const loadedProfile = {
+                    full_name: finalName,
+                    phone: finalPhone,
+                    birthdate: finalBirth,
+                    address: finalAddress,
+                    avatar_url: dbData?.avatar_url || syncResult?.avatar_url || user?.user_metadata?.avatar_url || '',
+                    is_phone_public: dbData?.is_phone_public ?? syncResult?.is_phone_public ?? false,
+                    is_birthdate_public: dbData?.is_birthdate_public ?? syncResult?.is_birthdate_public ?? false,
+                    is_birthdate_lunar: dbData?.is_birthdate_lunar ?? syncResult?.is_birthdate_lunar ?? false,
+                    is_address_public: dbData?.is_address_public ?? syncResult?.is_address_public ?? false,
+                    created_at: finalCreated
                 };
 
-                let data = await fetchProfile();
-
-                // 데이터 보강 (Sync 결과가 더 있다면 그것으로 대체하지 않고 병합)
-                if (data) {
-                    const formattedDbPhone = (data.phone || '').replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
-                    const finalName = data.full_name || metaNameFull || '';
-
-                    const loadedProfile = {
-                        full_name: finalName,
-                        phone: data.phone || formattedDbPhone || '',
-                        birthdate: data.birthdate || '',
-                        address: data.address || '',
-                        avatar_url: data.avatar_url || user?.user_metadata?.avatar_url || '',
-                        is_phone_public: data.is_phone_public || false,
-                        is_birthdate_public: data.is_birthdate_public || false,
-                        is_birthdate_lunar: data.is_birthdate_lunar || false,
-                        is_address_public: data.is_address_public || false,
-                        created_at: data.created_at || syncResult?.created_at || ''
-                    };
-                    setProfileForm(loadedProfile);
-                    setInitialProfile(JSON.parse(JSON.stringify(loadedProfile)));
-                } else if (syncResult && syncResult.full_name) {
-                    // Sync 결과만 있을 때 (아직 DB 생성이 지연될 경우)
-                    console.log("[ProfileView] Using Sync Result only");
-                } else {
-                    setInitialProfile(initialDefault);
-                }
+                setProfileForm(loadedProfile);
+                setInitialProfile(JSON.parse(JSON.stringify(loadedProfile)));
             } catch (e) {
-                console.error("프로필 로딩 에러:", e);
+                console.error("프로필 로딩 통합 에러:", e);
             } finally {
                 setIsLoading(false);
             }
@@ -8859,7 +8834,7 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
             } else {
                 alert('프로필 정보가 저장되었습니다! ✨');
             }
-            setInitialProfile(JSON.parse(JSON.stringify(profileForm))); // 저장 성공 후 현재 상태를 초기상태로 업데이트 (깊은 복사)
+            setInitialProfile(JSON.parse(JSON.stringify(profileForm)));
             if (profileForm.avatar_url) setProfileAvatar(profileForm.avatar_url);
         } catch (e) {
             alert('저장 실패: ' + (e as Error).message);
@@ -8868,17 +8843,25 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
         }
     };
 
-
-
     if (isLoading) {
         return (
-            <div style={{ padding: '40px', textAlign: 'center', background: 'white', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ width: '40px', height: '40px', border: '3px solid #F3F3F3', borderTop: '3px solid #D4AF37', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                <p style={{ marginTop: '16px', color: '#666', fontSize: '14px' }}>정보를 불러오는 중입니다...</p>
+            <div style={{ padding: '40px', textAlign: 'center', background: '#FDFCFB', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', ...baseFont }}>
+                <div style={{ position: 'relative', width: '80px', height: '80px', marginBottom: '24px' }}>
+                    <div style={{ position: 'absolute', inset: 0, border: '4px solid #F0ECE4', borderRadius: '50%' }} />
+                    <div style={{ position: 'absolute', inset: 0, border: '4px solid transparent', borderTopColor: '#D4AF37', borderRadius: '50%', animation: 'spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite' }} />
+                    <div style={{ position: 'absolute', inset: '15px', background: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}>
+                        <span style={{ fontSize: '24px' }}>👤</span>
+                    </div>
+                </div>
+                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#333', margin: '0 0 8px 0' }}>회원 정보 확인 중</h3>
+                <p style={{ color: '#888', fontSize: '14px', margin: 0 }}>성도님의 소중한 정보를 불러오고 있습니다...</p>
                 <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
             </div>
         );
     }
+
+    const isAnon = !user?.email || user?.email.includes('anonymous.local') || user?.is_anonymous;
+    const isProfileEmpty = !profileForm.full_name || !profileForm.phone;
 
     return (
         <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", padding: "30px 24px", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
@@ -8886,6 +8869,20 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
                 <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
                 <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0 }}>내 프로필 관리</h2>
             </div>
+
+            {/* 💡 안내 메시지 섹션 (정보가 없거나 익명일 경우 노출) */}
+            {(isAnon || isProfileEmpty) && (
+                <div style={{ background: 'linear-gradient(135deg, #FFF9F9 0%, #FFF0F0 100%)', padding: '20px', borderRadius: '24px', border: '1px solid #FFE3E3', marginBottom: '24px', display: 'flex', gap: '15px', alignItems: 'center', boxShadow: '0 4px 15px rgba(211,47,47,0.05)' }}>
+                    <div style={{ fontSize: '28px' }}>📢</div>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#D32F2F', marginBottom: '4px' }}>성도 정보 연결 안내</div>
+                        <p style={{ fontSize: '12.5px', color: '#666', margin: 0, lineHeight: 1.5, wordBreak: 'keep-all' }}>
+                            성함과 연락처를 입력하시면 교회에 등록된 정보와 <strong>자동으로 연결</strong>됩니다. 연결 후에는 상담 및 게시글 정보가 안전하게 보관됩니다.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             <div style={{ background: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', marginBottom: '24px', border: '1px solid #F0ECE4' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '10px' }}>
