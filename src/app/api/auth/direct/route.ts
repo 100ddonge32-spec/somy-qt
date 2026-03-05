@@ -88,33 +88,24 @@ export async function POST(req: NextRequest) {
 
         // ─── 3단계: 매칭 성공 → 권한 및 보안 PIN 확인 ──────────────────────
         if (match) {
-            // [추가] 관리자 보안 강화 (PIN 번호 확인)
+            // ─── [보안 추가] 관리자 PIN 번호 검증 ───
+            // 1. 해당 유저가 관리자인지 확인
             const { data: adminCheck } = await supabaseAdmin
                 .from('app_admins')
-                .select('*')
-                .or(`user_id.eq.${match.id},email.eq.${match.email || ''}`)
+                .select('pin')
+                .or(`user_id.eq.${match.id},email.eq.${match.email}`)
                 .maybeSingle();
 
-            if (adminCheck) {
-                if (!pin) {
-                    console.log(`[DirectAuth] 관리자 감지 - PIN 요구: ${match.full_name}`);
-                    return NextResponse.json({
-                        success: true,
-                        requires_pin: true,
-                        name: match.full_name,
-                        church_id: match.church_id || church_id
-                    });
-                }
-
-                // PIN 일치 여부 확인 (최초 설정이 안 된 경우 '000000'을 기본값으로 사용)
-                const storedPin = adminCheck.pin || '000000';
-                if (storedPin !== pin) {
+            // 2. 관리자인데 PIN이 등록되어 있다면 검증 수행
+            if (adminCheck && adminCheck.pin) {
+                if (!pin || pin.toString() !== adminCheck.pin.toString()) {
+                    console.log(`[DirectAuth] ❌ 관리자 PIN 불일치 - ID: ${match.id}`);
                     return NextResponse.json({
                         success: false,
-                        error: '보안 PIN 번호가 일치하지 않습니다.'
-                    }, { status: 401 });
+                        error: '관리자 보안 인증(PIN)이 일치하지 않습니다. 관리자에게 문의하세요.'
+                    }, { status: 403 });
                 }
-                console.log(`[DirectAuth] ✅ 관리자 PIN 인증 성공: ${match.full_name}`);
+                console.log(`[DirectAuth] 🛡️ 관리자 PIN 인증 성공: ${match.full_name}`);
             }
 
             console.log(`[DirectAuth] ✅ 매칭 성공: ${match.full_name} (기존ID: ${match.id} → 신규ID: ${user_id})`);

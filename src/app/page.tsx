@@ -344,6 +344,21 @@ export default function App() {
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [view, setView] = useState<View>("home");
     const [memberList, setMemberList] = useState<any[]>([]); // ✅ 성도 목록
+
+    // [신의 한 수] 좋아요 명단 및 생일 알림을 위해 성도 기초 정보(이름 등)를 미리 로드합니다.
+    useEffect(() => {
+        if (isApproved && churchId && churchId !== 'somy-main' && memberList.length === 0) {
+            console.log(`[Init] Fetching member profiles for ${churchId} icons/names...`);
+            fetch(`/api/members?church_id=${churchId}`)
+                .then(r => r.ok ? r.json() : [])
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        setMemberList(data);
+                        console.log(`[Init] Loaded ${data.length} member profiles.`);
+                    }
+                }).catch(() => { });
+        }
+    }, [isApproved, churchId, memberList.length]);
     const [showBirthdayPopup, setShowBirthdayPopup] = useState(false); // ✅ 생일 팝업 노출 여부
     const [todayBirthdayMembers, setTodayBirthdayMembers] = useState<any[]>([]); // ✅ 오늘 생일인 성도 목록
     const [messages, setMessages] = useState([
@@ -536,11 +551,9 @@ export default function App() {
     const [loginPhoneTail, setLoginPhoneTail] = useState(""); // ✅ 로그인용 전화번호 뒷자리
     const [loginBirthdate, setLoginBirthdate] = useState(""); // ✅ 로그인용 생년월일
     const [loginChurchId, setLoginChurchId] = useState(""); // ✅ 로그인용 교회 ID
+    const [loginPin, setLoginPin] = useState(""); // ✅ 관리자용 보안 PIN
     const [isDirectLoggingIn, setIsDirectLoggingIn] = useState(false); // ✅ 로그인 처리 중 상태
-    const [loginPin, setLoginPin] = useState(""); // ✅ 로그인용 PIN 번호
-    const [requiresPin, setRequiresPin] = useState(false); // ✅ PIN 입력 필요 여부
-    const [editingAdminId, setEditingAdminId] = useState<string | null>(null); // ✅ PIN 수정 중인 관리자 ID
-    const [newPinInput, setNewPinInput] = useState(""); // ✅ 신규 PIN 입력값
+    const [editingAdminId, setEditingAdminId] = useState<string | null>(null); // ✅ 수정 중인 관리자 ID
     const [isLinking, setIsLinking] = useState(false); // ✅ 링크 처리 중 상태
     const dragOffset = useRef({ x: 0, y: 0 });
     const playerRef = useRef<any>(null);
@@ -1270,37 +1283,6 @@ export default function App() {
         }
     };
 
-    const handleUpdateAdminPin = async (targetUserId: string, newPin: string) => {
-        if (!newPin || newPin.length !== 6) {
-            alert('PIN 번호는 숫자 6자리여야 합니다.');
-            return;
-        }
-        try {
-            const res = await fetch('/api/admin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'update_admin_pin',
-                    target_user_id: targetUserId,
-                    new_pin: newPin,
-                    requester_id: user?.id
-                })
-            });
-            if (res.ok) {
-                alert('PIN 번호가 성공적으로 변경되었습니다.');
-                setEditingAdminId(null);
-                setNewPinInput("");
-                fetchAllAdmins();
-            } else {
-                const data = await res.json();
-                alert('변경 실패: ' + data.error);
-            }
-        } catch (err) {
-            alert('PIN 변경 도중 오류가 발생했습니다.');
-        }
-    };
-
-
     const [history, setHistory] = useState<any[]>([]);
     const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 
@@ -1618,18 +1600,12 @@ export default function App() {
                     phoneTail: loginPhoneTail.trim(),
                     birthdate: loginBirthdate.trim(),
                     church_id: loginChurchId.trim() || churchId,
-                    pin: loginPin // [추가] 보안 PIN 번호
+                    pin: loginPin.trim() // [추가] 관리자 보안 PIN
                 })
             });
 
             const result = await res.json();
 
-            // [추가] 관리자 보안 PIN 요구 시
-            if (res.ok && result.requires_pin) {
-                setRequiresPin(true);
-                setIsDirectLoggingIn(false);
-                return;
-            }
 
             if (res.ok && result.success) {
                 // [개선] 불필요한 알럿 창 제거 - 로그인 성공 시 즉시 메인으로 진입
@@ -2340,21 +2316,18 @@ export default function App() {
                                         />
                                     </div>
 
-                                    {requiresPin && (
-                                        <div style={{ textAlign: 'left', animation: 'fade-in 0.5s ease' }}>
-                                            <label style={{ fontSize: '12px', fontWeight: 800, color: '#D32F2F', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>🔒 관리자 보안 PIN 번호</label>
-                                            <input
-                                                type="password"
-                                                maxLength={6}
-                                                inputMode="numeric"
-                                                placeholder="보안 PIN 번호 입력"
-                                                value={loginPin}
-                                                onChange={(e) => setLoginPin(e.target.value.replace(/[^0-9]/g, ''))}
-                                                style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #D32F2F', fontSize: '15px', outline: 'none', background: '#FFF5F5', boxSizing: 'border-box', letterSpacing: '8px', textAlign: 'center' }}
-                                            />
-                                            <div style={{ fontSize: '11px', color: '#D32F2F', marginTop: '6px', marginLeft: '4px' }}>관리자 권한 확인을 위해 PIN 번호가 필요합니다.</div>
-                                        </div>
-                                    )}
+                                    <div style={{ textAlign: 'left' }}>
+                                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginLeft: '4px', marginBottom: '6px', display: 'block' }}>관리자 보안 PIN (관리자만 입력)</label>
+                                        <input
+                                            type="password"
+                                            maxLength={6}
+                                            placeholder="숫자 4~6자리 (일반 성도는 비워두세요)"
+                                            value={loginPin}
+                                            onChange={(e) => setLoginPin(e.target.value.replace(/[^0-9]/g, ''))}
+                                            style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '1px solid #FFC9C9', fontSize: '15px', outline: 'none', background: '#FFF8F8', boxSizing: 'border-box' }}
+                                        />
+                                    </div>
+
 
                                     <button
                                         onClick={handleDirectLogin}
@@ -4969,15 +4942,6 @@ export default function App() {
 
                             <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
                                 <button onClick={handleLogout} style={{ padding: '8px 16px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>시스템 로그아웃</button>
-                                <button
-                                    onClick={() => {
-                                        const pin = prompt('새로운 보안 PIN 번호(6자리 숫자)를 입력하세요.', adminInfo?.pin || '000000');
-                                        if (pin) handleUpdateAdminPin(user?.id || '', pin);
-                                    }}
-                                    style={{ padding: '8px 16px', background: '#FFF5F5', color: '#D32F2F', border: '1px solid #FFEBEE', borderRadius: '12px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
-                                >
-                                    🔒 PIN 변경
-                                </button>
                             </div>
                         </div>
 
@@ -7040,16 +7004,6 @@ export default function App() {
                                             if (Array.isArray(data)) setMemberList(data);
                                         } catch (e) { }
                                     }} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'members' ? 'white' : 'transparent', boxShadow: adminTab === 'members' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'members' ? '#333' : '#777' }}>👥 성도</button>
-                                    <button onClick={async () => {
-                                        setAdminTab('stats');
-                                        if (memberList.length === 0) {
-                                            try {
-                                                const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
-                                                const data = await r.json();
-                                                if (Array.isArray(data)) setMemberList(data);
-                                            } catch (e) { }
-                                        }
-                                    }} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'stats' ? 'white' : 'transparent', boxShadow: adminTab === 'stats' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'stats' ? '#333' : '#777' }}>📊 통계</button>
                                     {isMainAdmin && (
                                         <button onClick={() => setAdminTab('reset')} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'reset' ? 'white' : 'transparent', boxShadow: adminTab === 'reset' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'reset' ? '#333' : '#777' }}>🗑️ 초기화</button>
                                     )}
@@ -7336,8 +7290,6 @@ export default function App() {
                                             </button>
                                         </div>
                                     </>
-                                ) : adminTab === 'stats' ? (
-                                    <StatsView memberList={memberList} />
                                 ) : adminTab === 'members' ? (
                                     <>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -8263,24 +8215,6 @@ export default function App() {
                                                                         </div>
                                                                     </div>
 
-                                                                    {/* [추가] 관리자 PIN 확인 및 수정 (슈퍼 관리자 전용) */}
-                                                                    {isSuperAdmin && (
-                                                                        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #EEE', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                            <div style={{ fontSize: '12px', color: '#666', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                                <span style={{ fontSize: '14px' }}>🔒</span>
-                                                                                보안 PIN: <strong style={{ color: '#D32F2F', letterSpacing: '1px' }}>{admin.pin || '000000'}</strong>
-                                                                            </div>
-                                                                            <button
-                                                                                onClick={() => {
-                                                                                    const pin = prompt(`${admin.name || '해당 관리자'}의 새로운 PIN 번호(6자리 숫자)를 입력하세요.`, admin.pin || '000000');
-                                                                                    if (pin) handleUpdateAdminPin(admin.user_id || admin.id, pin);
-                                                                                }}
-                                                                                style={{ background: '#F5F5F5', border: '1px solid #DDD', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', color: '#666', fontWeight: 700, cursor: 'pointer' }}
-                                                                            >
-                                                                                PIN 수정
-                                                                            </button>
-                                                                        </div>
-                                                                    )}
                                                                 </div>
                                                             ))
                                                         ) : (
@@ -8307,23 +8241,6 @@ export default function App() {
                                                                         <button onClick={() => handleDeleteAdmin(admin.email)} style={{ background: '#F5F5F5', color: '#999', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '10px', cursor: 'pointer' }}>해제</button>
                                                                     </div>
 
-                                                                    {isSuperAdmin && (
-                                                                        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #EEE', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                            <div style={{ fontSize: '11px', color: '#888', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                                <span>🔒</span>
-                                                                                PIN: <strong style={{ color: '#D32F2F' }}>{admin.pin || '000000'}</strong>
-                                                                            </div>
-                                                                            <button
-                                                                                onClick={() => {
-                                                                                    const pin = prompt(`${admin.name || '해당 관리자'}의 새로운 PIN 번호(6자리 숫자)를 입력하세요.`, admin.pin || '000000');
-                                                                                    if (pin) handleUpdateAdminPin(admin.user_id || admin.id, pin);
-                                                                                }}
-                                                                                style={{ background: '#F5F5F5', border: '1px solid #DDD', borderRadius: '4px', padding: '3px 6px', fontSize: '10px', color: '#666', cursor: 'pointer' }}
-                                                                            >
-                                                                                수정
-                                                                            </button>
-                                                                        </div>
-                                                                    )}
                                                                 </div>
                                                             ))
                                                         ) : (
@@ -8343,6 +8260,7 @@ export default function App() {
                                                     <input id="add-admin-phone" placeholder="전화번호 (예: 01012345678)" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: 'white' }} />
                                                     <input id="add-admin-birthdate" placeholder="생년월일 (예: 1990-01-01)" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: 'white' }} />
                                                     <input id="add-admin-church" placeholder="소속 교회 ID (예: jesus-in)" defaultValue={churchId} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: 'white' }} />
+                                                    <input id="add-admin-pin" placeholder="보안 PIN (4~6자리)" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: 'white' }} />
                                                     <select id="add-admin-role" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: 'white', appearance: 'none', cursor: 'pointer' }}>
                                                         <option value="church_admin">관리자 (상담내역 열람 가능)</option>
                                                         <option value="sub_admin">부관리자 (상담내역 열람 불가)</option>
@@ -8360,6 +8278,7 @@ export default function App() {
                                                         const birthdate = birthEl?.value;
                                                         const cid = cidEl?.value;
                                                         const role = roleEl?.value;
+                                                        const pin = (document.getElementById('add-admin-pin') as HTMLInputElement)?.value;
 
                                                         if (!name || !phone || !birthdate || !cid) { alert('모든 정보를 입력해주세요.'); return; }
 
@@ -8367,7 +8286,7 @@ export default function App() {
                                                             const res = await fetch('/api/admin', {
                                                                 method: 'POST',
                                                                 headers: { 'Content-Type': 'application/json' },
-                                                                body: JSON.stringify({ action: 'add_admin', name, phone, birthdate, church_id: cid, role, requester_id: user?.id, requester_email: user?.email })
+                                                                body: JSON.stringify({ action: 'add_admin', name, phone, birthdate, church_id: cid, role, pin, requester_id: user?.id, requester_email: user?.email })
                                                             });
                                                             if (res.ok) {
                                                                 alert('성공적으로 관리자 권한을 부여했습니다!');
@@ -8400,22 +8319,20 @@ export default function App() {
                                                     <input id="new-admin-phone" placeholder="전화번호" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: '#FAFAFA' }} />
                                                     <input id="new-admin-birthdate" placeholder="생년월일" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: '#FAFAFA' }} />
                                                     <input id="new-admin-church" placeholder="새로 생성할 교회 영문 ID (예: my-church)" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: '#FAFAFA' }} />
-                                                    <input id="new-admin-pin" type="password" placeholder="관리자 PIN (숫자 4자리)" maxLength={4} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: '#FAFAFA' }} />
+                                                    <input id="new-admin-pin" placeholder="보안 PIN (4~6자리)" style={{ padding: '12px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '12px', outline: 'none', background: '#FAFAFA' }} />
                                                     <button onClick={async () => {
                                                         const nameEl = document.getElementById('new-admin-name') as HTMLInputElement;
                                                         const phoneEl = document.getElementById('new-admin-phone') as HTMLInputElement;
                                                         const birthEl = document.getElementById('new-admin-birthdate') as HTMLInputElement;
                                                         const cidEl = document.getElementById('new-admin-church') as HTMLInputElement;
-                                                        const pinEl = document.getElementById('new-admin-pin') as HTMLInputElement;
 
                                                         const name = nameEl?.value;
                                                         const phone = phoneEl?.value;
                                                         const birthdate = birthEl?.value;
                                                         const cid = cidEl?.value?.trim();
-                                                        const pin = pinEl?.value;
 
-                                                        if (!name || !phone || !birthdate || !cid || !pin) {
-                                                            alert('모든 정보를 입력해주세요. (PIN 포함)');
+                                                        if (!name || !phone || !birthdate || !cid) {
+                                                            alert('모든 정보를 입력해주세요.');
                                                             return;
                                                         }
 
@@ -8427,7 +8344,7 @@ export default function App() {
                                                                     action: 'create_church_admin',
                                                                     name, phone, birthdate,
                                                                     target_church_id: cid,
-                                                                    pin,
+                                                                    pin: (document.getElementById('new-admin-pin') as HTMLInputElement)?.value,
                                                                     requester_id: user.id,
                                                                     requester_email: user.email // [추가]
                                                                 })
@@ -8435,7 +8352,7 @@ export default function App() {
                                                             const info = await res.json();
                                                             if (res.ok) {
                                                                 const shareUrl = `${window.location.origin}/${cid}`;
-                                                                const message = `[SOMY] ${name}님, 교회의 관리자로 지정되셨습니다!\n\n아래 전용 주소로 접속하여 로그인하시면 관리자 기능을 사용하실 수 있습니다.\n\n📍 교회 전용 주소: ${shareUrl}\n🔐 초기 보안 PIN: ${pin}`;
+                                                                const message = `[SOMY] ${name}님, 교회의 관리자로 지정되셨습니다!\n\n아래 전용 주소로 접속하여 로그인하시면 관리자 기능을 사용하실 수 있습니다.\n\n📍 교회 전용 주소: ${shareUrl}`;
 
                                                                 // 결과를 화면에 표시하기 위해 커스텀 알림 처리
                                                                 if (confirm(`✅ 성공적으로 생성되었습니다!\n\n아래 완성된 링크 정보를 클립보드에 복사하시겠습니까?\n\n${shareUrl}`)) {
@@ -8447,7 +8364,6 @@ export default function App() {
                                                                 if (phoneEl) phoneEl.value = '';
                                                                 if (birthEl) birthEl.value = '';
                                                                 if (cidEl) cidEl.value = '';
-                                                                if (pinEl) pinEl.value = '';
                                                                 fetchAllAdmins();
                                                             } else {
                                                                 alert('에러: ' + info.error);
@@ -8473,10 +8389,6 @@ export default function App() {
                                                 </div>
                                             </div>
                                         </div>
-                                    </>
-                                ) : adminTab === 'stats' ? (
-                                    <>
-                                        <StatsView memberList={memberList} />
                                     </>
                                 ) : null}
                             </div>
@@ -8555,40 +8467,42 @@ export default function App() {
             }
             {renderInstallGuide()}
             {/* ✅ 맨 위로 가기 버튼 (전체 앱 범용) */}
-            {showScrollTop && (
-                <button
-                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                    style={{
-                        position: 'fixed',
-                        bottom: '100px',
-                        right: '25px',
-                        width: '50px',
-                        height: '50px',
-                        borderRadius: '50%',
-                        background: 'white',
-                        color: '#B8924A',
-                        border: '1px solid #F0ECE4',
-                        boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '24px',
-                        fontWeight: 900,
-                        zIndex: 9999,
-                        cursor: 'pointer',
-                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        animation: 'fade-in-up 0.4s ease-out'
-                    }}
-                >
-                    ↑
-                    <style>{`
+            {
+                showScrollTop && (
+                    <button
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                        style={{
+                            position: 'fixed',
+                            bottom: '100px',
+                            right: '25px',
+                            width: '50px',
+                            height: '50px',
+                            borderRadius: '50%',
+                            background: 'white',
+                            color: '#B8924A',
+                            border: '1px solid #F0ECE4',
+                            boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '24px',
+                            fontWeight: 900,
+                            zIndex: 9999,
+                            cursor: 'pointer',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            animation: 'fade-in-up 0.4s ease-out'
+                        }}
+                    >
+                        ↑
+                        <style>{`
                             @keyframes fade-in-up {
                                 from { opacity: 0; transform: translateY(20px); }
                                 to { opacity: 1; transform: translateY(0); }
                             }
                         `}</style>
-                </button>
-            )}
+                    </button>
+                )
+            }
         </div >
     );
 }
@@ -8611,7 +8525,7 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
     };
 
     const [profileForm, setProfileForm] = useState(initialDefault);
-    const [initialProfile, setInitialProfile] = useState<any>(initialDefault);
+    const [initialProfile, setInitialProfile] = useState(initialDefault as any);
     const [isSavingProfile, setIsSavingProfile] = useState(false);
 
     // 변경사항 체크: 초기값과 현재 폼이 하나라도 다르면 true
@@ -8857,10 +8771,10 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
 // 성도 검색/주소록 컴포넌트
 function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, user, allAdminList, onRefreshAdmins, isAdminsLoading }: any) {
     const [searchTerm, setSearchTerm] = useState("");
-    const [results, setResults] = useState<any[]>([]);
+    const [results, setResults] = useState([] as any[]);
     const [isSearching, setIsSearching] = useState(false);
-    const [selectedMember, setSelectedMember] = useState<any>(null);
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [selectedMember, setSelectedMember] = useState(null as any);
+    const [selectedIds, setSelectedIds] = useState([] as string[]);
     const [adminFilter, setAdminFilter] = useState<"all" | "admin" | "user">("all");
 
     useEffect(() => {
