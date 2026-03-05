@@ -5899,7 +5899,7 @@ export default function App() {
         }
 
         if (view === "profile") {
-            return <ProfileView user={user} supabase={supabase} setView={setView} baseFont={baseFont} allowMemberEdit={churchSettings?.allow_member_edit} setProfileAvatar={setProfileAvatar} isAdmin={isAdmin} />;
+            return <ProfileView user={user} supabase={supabase} setView={setView} baseFont={baseFont} allowMemberEdit={churchSettings?.allow_member_edit} setProfileAvatar={setProfileAvatar} isAdmin={isAdmin} churchId={churchId} />;
         }
 
         if (view === "memberSearch") {
@@ -8715,7 +8715,8 @@ export default function App() {
 // === 독립 컴포넌트 구역 (App 외부에 정의하여 불필요한 리마운트 방지) ===
 
 // 내 프로필 화면 컴포넌트
-function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setProfileAvatar, isAdmin }: any) {
+function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setProfileAvatar, isAdmin, churchId }: any) {
+    const [isLoading, setIsLoading] = useState(true);
     const initialDefault = {
         full_name: user?.user_metadata?.full_name || '',
         phone: '',
@@ -8748,7 +8749,7 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
 
                 // ★ 익명+정보없는 사용자는 sync 차단 (성도 유령계정 방지)
                 // [수정] 단, 마스터(백동희)나 관리자는 무조건 통과하도록 예외 처리 추가
-                const metaNameFull = user.user_metadata?.full_name || user.user_metadata?.name;
+                const metaNameFull = user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.nickname || user.user_metadata?.preferred_username;
                 const MASTER_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com").toLowerCase().split(',').map(e => e.trim());
                 const isMaster = metaNameFull === '백동희' || metaNameFull === '동희' || (user.email && MASTER_EMAILS.includes(user.email.toLowerCase().trim()));
 
@@ -8767,7 +8768,8 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
                         email: user.email,
                         name: metaNameFull,
                         avatar_url: user.user_metadata?.avatar_url,
-                        phone: cleanMetaPhone
+                        phone: cleanMetaPhone,
+                        church_id: churchId
                     })
                 });
                 const syncResult = await syncRes.json();
@@ -8793,28 +8795,23 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
                     setInitialProfile(initialFromSync);
                 }
 
-                // 2. 최신 프로필 정보 조회 (준비될 때까지 잠깐 대기 후 시도)
-                // RLS 이슈 방지를 위해 API를 통한 조회로 변경
+                // 2. 최신 프로필 정보 조회
                 const fetchProfile = async () => {
                     const res = await fetch(`/api/profile?user_id=${user.id}`);
                     if (!res.ok) return null;
-                    return await res.json();
+                    const d = await res.json();
+                    return d;
                 };
 
-                // 첫 시도
                 let data = await fetchProfile();
 
-                // 데이터가 비었거나 필수값이 없으면 1초 후 재시도 (동기화 완료 대기)
-                if (!data || (!data.phone && !data.birthdate && !data.address)) {
-                    await new Promise(r => setTimeout(r, 1000));
-                    data = await fetchProfile();
-                }
-
+                // 데이터 보강 (Sync 결과가 더 있다면 그것으로 대체하지 않고 병합)
                 if (data) {
                     const formattedDbPhone = (data.phone || '').replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+                    const finalName = data.full_name || metaNameFull || '';
 
                     const loadedProfile = {
-                        full_name: data.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || '',
+                        full_name: finalName,
                         phone: data.phone || formattedDbPhone || '',
                         birthdate: data.birthdate || '',
                         address: data.address || '',
@@ -8823,18 +8820,20 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
                         is_birthdate_public: data.is_birthdate_public || false,
                         is_birthdate_lunar: data.is_birthdate_lunar || false,
                         is_address_public: data.is_address_public || false,
-                        created_at: data.created_at || ''
+                        created_at: data.created_at || syncResult?.created_at || ''
                     };
                     setProfileForm(loadedProfile);
-                    setInitialProfile(loadedProfile);
+                    setInitialProfile(JSON.parse(JSON.stringify(loadedProfile)));
+                } else if (syncResult && syncResult.full_name) {
+                    // Sync 결과만 있을 때 (아직 DB 생성이 지연될 경우)
+                    console.log("[ProfileView] Using Sync Result only");
                 } else {
-                    // 데이터가 없는 경우(신규) 초기 기본값을 비교 기준으로 설정
                     setInitialProfile(initialDefault);
                 }
             } catch (e) {
                 console.error("프로필 로딩 에러:", e);
-                // 에러 시에도 최소한의 초기값 설정
-                setInitialProfile({ ...profileForm });
+            } finally {
+                setIsLoading(false);
             }
         };
         loadProfile();
@@ -8868,6 +8867,18 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
             setIsSavingProfile(false);
         }
     };
+
+    const isDirty = JSON.stringify(profileForm) !== JSON.stringify(initialProfile);
+
+    if (isLoading) {
+        return (
+            <div style={{ padding: '40px', textAlign: 'center', background: 'white', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '40px', height: '40px', border: '3px solid #F3F3F3', borderTop: '3px solid #D4AF37', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                <p style={{ marginTop: '16px', color: '#666', fontSize: '14px' }}>정보를 불러오는 중입니다...</p>
+                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+            </div>
+        );
+    }
 
     return (
         <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", padding: "30px 24px", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
