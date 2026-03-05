@@ -8323,23 +8323,23 @@ export default function App() {
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                     {churchStats?.registered?.length > 0 ? (
                                                         churchStats.registered.map((ch: any) => (
-                                                            <div key={ch.church_id} style={{ background: 'rgba(255,255,255,0.7)', padding: '12px', borderRadius: '15px' }}>
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                                        <span style={{ fontSize: '13px', fontWeight: 800, color: '#333' }}>{ch.church_name || ch.church_id}</span>
-                                                                        <span style={{ fontSize: '10px', color: '#888' }}>ID: {ch.church_id} | {ch.plan}</span>
+                                                            <div key={ch.church_id} style={{ background: 'rgba(255,255,255,0.7)', padding: '12px', borderRadius: '15px', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
+                                                                <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                                                                        <span style={{ fontSize: '13px', fontWeight: 800, color: '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ch.church_name || ch.church_id}</span>
+                                                                        <span style={{ fontSize: '10px', color: '#888', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>ID: {ch.church_id} | {ch.plan?.split('|')[0] || 'free'}</span>
                                                                     </div>
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                                        <span style={{ fontSize: '14px', fontWeight: 800, color: '#D4AF37' }}>{ch.count}명</span>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                                                                        <span style={{ fontSize: '13px', fontWeight: 800, color: '#D4AF37', whiteSpace: 'nowrap' }}>{ch.count}명</span>
                                                                         <div style={{ display: 'flex', gap: '4px' }}>
-                                                                            <a href={ch.church_id === 'somy-main' ? '/' : `/?church_id=${ch.church_id}`} target="_blank" title="새 탭에서 보기" style={{ padding: '4px 8px', background: '#E3F2FD', color: '#1565C0', textDecoration: 'none', borderRadius: '6px', fontSize: '10px', fontWeight: 700 }}>조회</a>
+                                                                            <a href={ch.church_id === 'somy-main' ? '/' : `/?church_id=${ch.church_id}`} target="_blank" title="새 탭에서 보기" style={{ padding: '6px 10px', background: '#E3F2FD', color: '#1565C0', textDecoration: 'none', borderRadius: '8px', fontSize: '10px', fontWeight: 800, display: 'inline-block' }}>조회</a>
                                                                             <button onClick={() => {
                                                                                 if (confirm(`${ch.church_id} 교회를 현재 화면에서 관리하시겠습니까?`)) {
                                                                                     window.location.href = ch.church_id === 'somy-main' ? '/' : `/?church_id=${ch.church_id}`;
                                                                                 }
-                                                                            }} title="현재 화면 전환" style={{ padding: '4px 8px', background: '#E8F5E9', color: '#2E7D32', border: 'none', borderRadius: '6px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}>관리</button>
+                                                                            }} style={{ padding: '6px 10px', background: '#E8F5E9', color: '#2E7D32', border: 'none', borderRadius: '8px', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}>관리</button>
                                                                             {ch.church_id !== 'jesus-in' && (
-                                                                                <button onClick={() => handleDeleteChurch(ch.church_id)} style={{ padding: '4px 8px', background: '#FEE', color: '#C62828', border: 'none', borderRadius: '6px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}>삭제</button>
+                                                                                <button onClick={() => handleDeleteChurch(ch.church_id)} style={{ padding: '6px 10px', background: '#FEE', color: '#C62828', border: 'none', borderRadius: '8px', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}>삭제</button>
                                                                             )}
                                                                         </div>
                                                                     </div>
@@ -8357,9 +8357,9 @@ export default function App() {
                                                         <div style={{ fontSize: '12px', fontWeight: 800, color: '#777', marginBottom: '10px' }}>⚠️ 미등록/체험판 데이터 ({churchStats.orphans.length})</div>
                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                             {churchStats.orphans.map((o: any) => (
-                                                                <div key={o.church_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.03)', padding: '8px 12px', borderRadius: '10px' }}>
-                                                                    <div style={{ fontSize: '11px', color: '#666' }}>📍 {o.church_id} <span style={{ opacity: 0.6 }}>({o.count}명)</span></div>
-                                                                    <button onClick={() => handleDeleteChurch(o.church_id)} style={{ padding: '2px 6px', background: 'none', color: '#999', border: 'none', fontSize: '10px', cursor: 'pointer' }}>기록삭제</button>
+                                                                <div key={o.church_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.03)', padding: '10px 14px', borderRadius: '12px' }}>
+                                                                    <div style={{ fontSize: '12px', color: '#666', fontWeight: 600 }}>📍 {o.church_id} <span style={{ opacity: 0.6, fontSize: '10px' }}>({o.count}명)</span></div>
+                                                                    <button onClick={() => handleDeleteChurch(o.church_id)} style={{ padding: '4px 8px', background: 'white', color: '#FF5252', border: '1px solid #FFCDD2', borderRadius: '6px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}>기록삭제</button>
                                                                 </div>
                                                             ))}
                                                         </div>

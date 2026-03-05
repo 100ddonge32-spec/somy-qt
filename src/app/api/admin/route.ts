@@ -1143,21 +1143,34 @@ export async function POST(req: NextRequest) {
         // [추가] 교회 전체 데이터 삭제 (슈퍼관리자)
         if (action === 'delete_church') {
             const { target_church_id } = body;
-            if (!target_church_id || target_church_id === 'jesus-in') {
+            if (!target_church_id || target_church_id === 'jesus-in' || target_church_id === 'jesus-in-church') {
                 throw new Error('삭제할 수 없는 교회거나 식별자가 없습니다.');
             }
 
-            console.log(`[SuperAdmin] DELETING CHURCH: ${target_church_id}`);
+            const normId = normalizeId(target_church_id);
+            console.log(`[SuperAdmin] DELETING CHURCH/ORPHAN: Original=${target_church_id}, Normalized=${normId}`);
 
-            // 1. 교회 설정 삭제
+            // 1. 교회 설정 삭제 (실제 등록된 경우)
             await supabaseAdmin.from('church_settings').delete().eq('church_id', target_church_id);
+            if (normId && normId !== target_church_id) {
+                await supabaseAdmin.from('church_settings').delete().eq('church_id', normId);
+            }
 
             // 2. 해당 교회 관리자들 권한 삭제
             await supabaseAdmin.from('app_admins').delete().eq('church_id', target_church_id);
+            if (normId && normId !== target_church_id) {
+                await supabaseAdmin.from('app_admins').delete().eq('church_id', normId);
+            }
 
-            // 3. 성도들의 church_id 초기화 (완전 삭제는 위험하므로 소속만 'deleted'로 변경하거나 유지)
-            // 여기서는 깔끔하게 'deleted-church' 등으로 마킹하여 목록에서 사라지게 함
-            await supabaseAdmin.from('profiles').update({ church_id: `deleted-${target_church_id}` }).eq('church_id', target_church_id);
+            // 3. 성도들의 church_id 초기화 (가장 중요한 부분 - Orphans 제거 핵심)
+            // 소속을 비우거나(null) 삭제된 태그를 붙여서 필터링되게 함
+            const { error: pErr1 } = await supabaseAdmin.from('profiles').update({ church_id: 'deleted-orphan' }).eq('church_id', target_church_id);
+            if (pErr1) console.error("[Delete Church] Profile update 1 failed:", pErr1.message);
+
+            if (normId && normId !== target_church_id) {
+                const { error: pErr2 } = await supabaseAdmin.from('profiles').update({ church_id: 'deleted-orphan' }).eq('church_id', normId);
+                if (pErr2) console.error("[Delete Church] Profile update 2 failed:", pErr2.message);
+            }
 
             return NextResponse.json({ success: true });
         }
