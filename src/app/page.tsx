@@ -6828,20 +6828,35 @@ export default function App() {
                                     });
 
                                     if (res.ok) {
-                                        const res = await fetch('/api/admin', {
+                                        // 2. 통합된 원본 데이터(관리자 등록본) 삭제
+                                        const delRes = await fetch('/api/admin', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ action: 'delete_members', ids: [mergeTarget.id], church_id: churchId, requester_id: user?.id, requester_email: user?.email })
+                                            body: JSON.stringify({
+                                                action: 'bulk_delete_members',
+                                                ids: [mergeTarget.id],
+                                                church_id: churchId,
+                                                requester_id: user?.id,
+                                                requester_email: user?.email
+                                            })
                                         });
 
-                                        alert('통합 완료되었습니다! ✨');
-                                        const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
-                                        const data = await r.json();
-                                        if (Array.isArray(data)) setMemberList(data);
-                                        setShowMergeModal(false);
-                                        setMergeTarget(null);
-                                        setMergeDestinationId('');
-                                        setMergeSearchKeyword('');
+                                        if (delRes.ok) {
+                                            alert('통합 완료되었습니다! ✨');
+                                            const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
+                                            const data = await r.json();
+                                            if (Array.isArray(data)) setMemberList(data);
+                                            setShowMergeModal(false);
+                                            setMergeTarget(null);
+                                            setMergeDestinationId('');
+                                            setMergeSearchKeyword('');
+                                        } else {
+                                            const errData = await delRes.json();
+                                            alert('데이터 통합(삭제)중 오류: ' + (errData.error || '알 수 없는 오류'));
+                                        }
+                                    } else {
+                                        const errData = await res.json();
+                                        alert('데이터 통합(수정)중 오류: ' + (errData.error || '알 수 없는 오류'));
                                     }
                                 } catch (e) {
                                     alert('오류가 발생했습니다.');

@@ -972,7 +972,7 @@ export async function POST(req: NextRequest) {
         }
 
         // 선택 성도 일괄 삭제
-        if (action === 'bulk_delete_members') {
+        if (action === 'bulk_delete_members' || action === 'delete_members') {
             const { ids } = body;
             if (!ids || !Array.isArray(ids) || ids.length === 0) throw new Error('삭제할 성도 ID 목록이 없습니다.');
 
