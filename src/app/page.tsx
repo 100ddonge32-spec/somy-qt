@@ -5899,7 +5899,7 @@ export default function App() {
         }
 
         if (view === "profile") {
-            return <ProfileView user={user} supabase={supabase} setView={setView} baseFont={baseFont} allowMemberEdit={churchSettings?.allow_member_edit} setProfileAvatar={setProfileAvatar} />;
+            return <ProfileView user={user} supabase={supabase} setView={setView} baseFont={baseFont} allowMemberEdit={churchSettings?.allow_member_edit} setProfileAvatar={setProfileAvatar} isAdmin={isAdmin} />;
         }
 
         if (view === "memberSearch") {
@@ -8715,7 +8715,7 @@ export default function App() {
 // === 독립 컴포넌트 구역 (App 외부에 정의하여 불필요한 리마운트 방지) ===
 
 // 내 프로필 화면 컴포넌트
-function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setProfileAvatar }: any) {
+function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setProfileAvatar, isAdmin }: any) {
     const initialDefault = {
         full_name: user?.user_metadata?.full_name || '',
         phone: '',
@@ -8772,6 +8772,25 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
                 });
                 const syncResult = await syncRes.json();
                 console.log("[SyncResult]", syncResult);
+
+                // [최적화] Sync 결과가 있으면 즉시 반영하여 '정보 없음' 깜빡임 방지
+                if (syncResult && syncResult.full_name) {
+                    const resPhone = (syncResult.phone || '').replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+                    const initialFromSync = {
+                        full_name: syncResult.full_name,
+                        phone: resPhone || syncResult.phone || '',
+                        birthdate: syncResult.birthdate || '',
+                        address: syncResult.address || '',
+                        avatar_url: syncResult.avatar_url || '',
+                        is_phone_public: syncResult.is_phone_public || false,
+                        is_birthdate_public: syncResult.is_birthdate_public || false,
+                        is_birthdate_lunar: syncResult.is_birthdate_lunar || false,
+                        is_address_public: syncResult.is_address_public || false,
+                        created_at: syncResult.created_at || ''
+                    };
+                    setProfileForm(initialFromSync);
+                    setInitialProfile(initialFromSync);
+                }
 
                 // 2. 최신 프로필 정보 조회 (준비될 때까지 잠깐 대기 후 시도)
                 // RLS 이슈 방지를 위해 API를 통한 조회로 변경
@@ -8844,7 +8863,7 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
             } else {
                 alert('프로필 정보가 저장되었습니다! ✨');
             }
-            setInitialProfile(profileForm); // 저장 성공 후 현재 상태를 초기상태로 업데이트
+            setInitialProfile(JSON.parse(JSON.stringify(profileForm))); // 저장 성공 후 현재 상태를 초기상태로 업데이트 (깊은 복사)
             if (profileForm.avatar_url) setProfileAvatar(profileForm.avatar_url);
         } catch (e) {
             alert('저장 실패: ' + (e as Error).message);
@@ -8899,16 +8918,16 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                             <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '0' }}>👤 성함</label>
-                            {!allowMemberEdit && <span style={{ fontSize: '11px', color: '#AAA', fontWeight: 500 }}>수정 불가</span>}
+                            {!(allowMemberEdit || isAdmin) && <span style={{ fontSize: '11px', color: '#AAA', fontWeight: 500 }}>수정 불가</span>}
                         </div>
-                        <input type="text" value={profileForm.full_name} onChange={e => allowMemberEdit && setProfileForm({ ...profileForm, full_name: e.target.value })} readOnly={!allowMemberEdit} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: allowMemberEdit ? '1px solid #D4AF37' : '1px solid #EEE', outline: 'none', background: allowMemberEdit ? 'white' : '#F9F9F9', color: allowMemberEdit ? '#333' : '#999', cursor: allowMemberEdit ? 'text' : 'not-allowed' }} />
+                        <input type="text" value={profileForm.full_name} onChange={e => (allowMemberEdit || isAdmin) && setProfileForm({ ...profileForm, full_name: e.target.value })} readOnly={!(allowMemberEdit || isAdmin)} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: (allowMemberEdit || isAdmin) ? '1px solid #D4AF37' : '1px solid #EEE', outline: 'none', background: (allowMemberEdit || isAdmin) ? 'white' : '#F9F9F9', color: (allowMemberEdit || isAdmin) ? '#333' : '#999', cursor: (allowMemberEdit || isAdmin) ? 'text' : 'not-allowed' }} />
                     </div>
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                             <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '0' }}>📞 전화번호</label>
-                            {!allowMemberEdit && <span style={{ fontSize: '11px', color: '#AAA', fontWeight: 500 }}>수정 불가</span>}
+                            {!(allowMemberEdit || isAdmin) && <span style={{ fontSize: '11px', color: '#AAA', fontWeight: 500 }}>수정 불가</span>}
                         </div>
-                        <input type="tel" value={profileForm.phone} onChange={e => allowMemberEdit && setProfileForm({ ...profileForm, phone: e.target.value })} readOnly={!allowMemberEdit} placeholder="010-0000-0000" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: allowMemberEdit ? '1px solid #D4AF37' : '1px solid #EEE', outline: 'none', background: allowMemberEdit ? 'white' : '#F9F9F9', color: allowMemberEdit ? '#333' : '#999', cursor: allowMemberEdit ? 'text' : 'not-allowed' }} />
+                        <input type="tel" value={profileForm.phone} onChange={e => (allowMemberEdit || isAdmin) && setProfileForm({ ...profileForm, phone: e.target.value })} readOnly={!(allowMemberEdit || isAdmin)} placeholder="010-0000-0000" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: (allowMemberEdit || isAdmin) ? '1px solid #D4AF37' : '1px solid #EEE', outline: 'none', background: (allowMemberEdit || isAdmin) ? 'white' : '#F9F9F9', color: (allowMemberEdit || isAdmin) ? '#333' : '#999', cursor: (allowMemberEdit || isAdmin) ? 'text' : 'not-allowed' }} />
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
                             <input type="checkbox" id="phone_pub" checked={profileForm.is_phone_public} onChange={e => setProfileForm({ ...profileForm, is_phone_public: e.target.checked })} />
                             <label htmlFor="phone_pub" style={{ fontSize: '12px', color: '#888' }}>다른 성도님들께 전화번호를 공개합니다.</label>
@@ -8919,17 +8938,17 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
                             <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '0' }}>🎂 생년월일</label>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 <label style={{ fontSize: '11px', color: '#555', display: 'flex', alignItems: 'center', gap: '4px', cursor: allowMemberEdit ? 'pointer' : 'default' }}>
-                                    <input type="radio" checked={!profileForm.is_birthdate_lunar} onChange={() => allowMemberEdit && setProfileForm({ ...profileForm, is_birthdate_lunar: false })} disabled={!allowMemberEdit} /> 양력
+                                    <input type="radio" checked={!profileForm.is_birthdate_lunar} onChange={() => (allowMemberEdit || isAdmin) && setProfileForm({ ...profileForm, is_birthdate_lunar: false })} disabled={!(allowMemberEdit || isAdmin)} /> 양력
                                 </label>
                                 <label style={{ fontSize: '11px', color: '#555', display: 'flex', alignItems: 'center', gap: '4px', cursor: allowMemberEdit ? 'pointer' : 'default' }}>
-                                    <input type="radio" checked={profileForm.is_birthdate_lunar} onChange={() => allowMemberEdit && setProfileForm({ ...profileForm, is_birthdate_lunar: true })} disabled={!allowMemberEdit} /> 음력
+                                    <input type="radio" checked={profileForm.is_birthdate_lunar} onChange={() => (allowMemberEdit || isAdmin) && setProfileForm({ ...profileForm, is_birthdate_lunar: true })} disabled={!(allowMemberEdit || isAdmin)} /> 음력
                                 </label>
                             </div>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '4px' }}>
                             <span style={{ fontSize: '11px', color: '#E07A5F', fontWeight: 600 }}>{allowMemberEdit ? '정확한 생일을 선택해주세요' : '관리자께 날짜/음력 여부 수정을 요청해주세요'}</span>
                         </div>
-                        <input type="date" value={profileForm.birthdate} onChange={e => allowMemberEdit && setProfileForm({ ...profileForm, birthdate: e.target.value })} readOnly={!allowMemberEdit} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: allowMemberEdit ? '1px solid #D4AF37' : '1px solid #EEE', outline: 'none', background: allowMemberEdit ? 'white' : '#F9F9F9', color: allowMemberEdit ? '#333' : '#999', cursor: allowMemberEdit ? 'text' : 'not-allowed' }} />
+                        <input type="date" value={profileForm.birthdate} onChange={e => (allowMemberEdit || isAdmin) && setProfileForm({ ...profileForm, birthdate: e.target.value })} readOnly={!(allowMemberEdit || isAdmin)} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: (allowMemberEdit || isAdmin) ? '1px solid #D4AF37' : '1px solid #EEE', outline: 'none', background: (allowMemberEdit || isAdmin) ? 'white' : '#F9F9F9', color: (allowMemberEdit || isAdmin) ? '#333' : '#999', cursor: (allowMemberEdit || isAdmin) ? 'text' : 'not-allowed' }} />
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
                             <input type="checkbox" id="birth_pub" checked={profileForm.is_birthdate_public} onChange={e => setProfileForm({ ...profileForm, is_birthdate_public: e.target.checked })} />
                             <label htmlFor="birth_pub" style={{ fontSize: '12px', color: '#888' }}>다른 성도님들께 생일을 공개합니다.</label>
@@ -8945,9 +8964,9 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                             <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '0' }}>🏠 주소</label>
-                            {!allowMemberEdit && <span style={{ fontSize: '11px', color: '#AAA', fontWeight: 500 }}>수정 불가</span>}
+                            {!(allowMemberEdit || isAdmin) && <span style={{ fontSize: '11px', color: '#AAA', fontWeight: 500 }}>수정 불가</span>}
                         </div>
-                        <input type="text" value={profileForm.address} onChange={e => allowMemberEdit && setProfileForm({ ...profileForm, address: e.target.value })} readOnly={!allowMemberEdit} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: allowMemberEdit ? '1px solid #D4AF37' : '1px solid #EEE', outline: 'none', background: allowMemberEdit ? 'white' : '#F9F9F9', color: allowMemberEdit ? '#333' : '#999', cursor: allowMemberEdit ? 'text' : 'not-allowed' }} />
+                        <input type="text" value={profileForm.address} onChange={e => (allowMemberEdit || isAdmin) && setProfileForm({ ...profileForm, address: e.target.value })} readOnly={!(allowMemberEdit || isAdmin)} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: (allowMemberEdit || isAdmin) ? '1px solid #D4AF37' : '1px solid #EEE', outline: 'none', background: (allowMemberEdit || isAdmin) ? 'white' : '#F9F9F9', color: (allowMemberEdit || isAdmin) ? '#333' : '#999', cursor: (allowMemberEdit || isAdmin) ? 'text' : 'not-allowed' }} />
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
                             <input type="checkbox" id="address_pub" checked={profileForm.is_address_public} onChange={e => setProfileForm({ ...profileForm, is_address_public: e.target.checked })} />
                             <label htmlFor="address_pub" style={{ fontSize: '12px', color: '#888' }}>다른 성도님들께 주소를 공개합니다.</label>

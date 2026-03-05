@@ -226,6 +226,14 @@ export async function POST(req: NextRequest) {
             if (profileById) {
                 await supabaseAdmin.from('profiles').update(updateFields).eq('id', user_id);
                 if (match.id !== user_id) {
+                    console.log(`[Sync] Migrating data from old ID ${match.id} to new ID ${user_id}`);
+                    // [데이터 이관] 감사일기, 커뮤니티 게시글 등의 소유권을 신규 ID로 이전하여 데이터 증발 방지
+                    await supabaseAdmin.from('thanksgiving_diaries').update({ user_id: user_id }).eq('user_id', match.id);
+                    await supabaseAdmin.from('thanksgiving_comments').update({ user_id: user_id }).eq('user_id', match.id);
+                    await supabaseAdmin.from('community_posts').update({ user_id: user_id }).eq('user_id', match.id);
+                    await supabaseAdmin.from('community_comments').update({ user_id: user_id }).eq('user_id', match.id);
+                    await supabaseAdmin.from('notifications').update({ user_id: user_id }).eq('user_id', match.id);
+
                     await supabaseAdmin.from('profiles').delete().eq('id', match.id);
                 }
                 return NextResponse.json({ ...responseData, name: responseData.full_name, status: 'merged' });
@@ -233,6 +241,13 @@ export async function POST(req: NextRequest) {
                 const newProfile = { ...responseData, id: user_id };
                 await supabaseAdmin.from('profiles').insert([updateFields]); // DB에는 permanentChurch가 담긴 updateFields 저장
                 if (match.id !== user_id) {
+                    console.log(`[Sync] Migrating data (new profile case) from old ID ${match.id} to new ID ${user_id}`);
+                    await supabaseAdmin.from('thanksgiving_diaries').update({ user_id: user_id }).eq('user_id', match.id);
+                    await supabaseAdmin.from('thanksgiving_comments').update({ user_id: user_id }).eq('user_id', match.id);
+                    await supabaseAdmin.from('community_posts').update({ user_id: user_id }).eq('user_id', match.id);
+                    await supabaseAdmin.from('community_comments').update({ user_id: user_id }).eq('user_id', match.id);
+                    await supabaseAdmin.from('notifications').update({ user_id: user_id }).eq('user_id', match.id);
+
                     await supabaseAdmin.from('profiles').delete().eq('id', match.id);
                 }
                 return NextResponse.json({ ...newProfile, name: newProfile.full_name, status: 'linked' });
