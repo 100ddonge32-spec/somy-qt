@@ -127,20 +127,34 @@ export async function GET(req: NextRequest) {
                 .order('created_at', { ascending: false });
             if (chErr) throw chErr;
 
-            // 2. 전체 성도수 집계
-            const { data: profileCounts, error: pErr } = await supabaseAdmin.from('profiles').select('church_id');
-            if (pErr) throw pErr;
-
+            // 2. 전체 성도수 집계 (1000명 이상 대응을 위한 페이지네이션)
             const countMap: Record<string, number> = {};
-            profileCounts?.forEach(p => {
-                const cid = normalizeId(p.church_id) || 'somy-main';
-                countMap[cid] = (countMap[cid] || 0) + 1;
-            });
+            let batchPage = 0;
+            const batchSize = 1000;
+
+            while (true) {
+                const { data: profileBatch, error: pErr } = await supabaseAdmin.from('profiles')
+                    .select('church_id')
+                    .range(batchPage * batchSize, (batchPage + 1) * batchSize - 1);
+
+                if (pErr) throw pErr;
+                if (!profileBatch || profileBatch.length === 0) break;
+
+                profileBatch.forEach(p => {
+                    const cid = normalizeId(p.church_id) || 'somy-main';
+                    countMap[cid] = (countMap[cid] || 0) + 1;
+                });
+
+                if (profileBatch.length < batchSize) break;
+                batchPage++;
+            }
 
             // 3. 결합 및 보정
             const stats = (churches || []).map(ch => {
                 const normCid = normalizeId(ch.church_id);
-                const effectiveId = (ch.id === 1 || normCid === 'jesus-in') ? 'jesus-in' : normCid;
+                // 예수인교회(ID 1)이거나 식별자가 jesus-in인 경우 통합
+                const isMain = ch.id === 1 || normCid === 'jesus-in';
+                const effectiveId = isMain ? 'jesus-in' : normCid;
 
                 return {
                     id: ch.id,
