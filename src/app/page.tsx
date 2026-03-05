@@ -8837,7 +8837,7 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
             }
         };
         loadProfile();
-    }, [user, supabase]);
+    }, [user, churchId]);
 
     const handleSubmit = async () => {
         if (!user?.id) return;
@@ -8868,7 +8868,7 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
         }
     };
 
-    const isDirty = JSON.stringify(profileForm) !== JSON.stringify(initialProfile);
+
 
     if (isLoading) {
         return (
