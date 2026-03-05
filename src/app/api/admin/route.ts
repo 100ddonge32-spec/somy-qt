@@ -115,7 +115,9 @@ export async function GET(req: NextRequest) {
         // [3] 교회별 통계 (등록된 교회 기준)
         if (action === 'get_church_stats') {
             // 1. 등록된 교회 목록 가져오기 (church_settings 기준)
-            const { data: churches, error: chErr } = await supabaseAdmin.from('church_settings').select('church_id, church_name, plan, created_at').order('created_at', { ascending: false });
+            const { data: churches, error: chErr } = await supabaseAdmin.from('church_settings')
+                .select('id, church_id, church_name, plan, created_at')
+                .order('created_at', { ascending: false });
             if (chErr) throw chErr;
 
             // 2. 전체 성도수 집계
@@ -128,18 +130,22 @@ export async function GET(req: NextRequest) {
                 countMap[cid] = (countMap[cid] || 0) + 1;
             });
 
-            // 3. 결합 (등록되지 않았는데 성도만 있는 유령 아이디들도 파악 가능하도록 합집합 처리 가능하지만, 
-            // 사용자의 요청대로 '등록된 교회' 위주로 정리합니다.
-            const stats = (churches || []).map(ch => ({
-                church_id: ch.church_id,
-                church_name: ch.church_name || ch.church_id,
-                count: countMap[ch.church_id] || 0,
-                plan: ch.plan,
-                created_at: ch.created_at
-            }));
+            // 3. 결합 및 보정
+            const stats = (churches || []).map(ch => {
+                const effectiveId = (ch.id === 1 || ch.church_id === 'jesus-in') ? 'jesus-in' : ch.church_id;
+                return {
+                    id: ch.id,
+                    church_id: effectiveId,
+                    church_name: ch.id === 1 ? (ch.church_name || '예수인교회') : (ch.church_name || ch.church_id),
+                    count: countMap[effectiveId] || 0,
+                    plan: ch.plan,
+                    created_at: ch.created_at
+                };
+            });
 
             // [추가] 등록은 안 되어 있는데 성도 데이터만 있는 아이디들도 'Trial/Orphan' 섹션을 위해 따로 반환
-            const registeredIds = new Set((churches || []).map(c => c.church_id));
+            // (이미 위에서 보정된 jesus-in은 제외)
+            const registeredIds = new Set(stats.map(s => s.church_id));
             const orphans: any[] = [];
             Object.entries(countMap).forEach(([cid, count]) => {
                 if (!registeredIds.has(cid) && cid !== 'somy-main' && cid !== 'jesus-in') {
