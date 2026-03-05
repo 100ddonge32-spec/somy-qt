@@ -2903,7 +2903,7 @@ export default function App() {
                             body: JSON.stringify({
                                 user_id: user.id,
                                 user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
-                                avatar_url: user.user_metadata?.avatar_url || null,
+                                avatar_url: profileAvatar || user.user_metadata?.avatar_url || null, // ✅ profileAvatar 우선 순위
                                 content: graceInput,
                                 church_id: churchId || 'jesus-in',
                                 is_private: isPrivatePost,
@@ -2913,8 +2913,10 @@ export default function App() {
 
                         if (res.ok) {
                             const newPost = await res.json();
-                            setCommunityPosts([newPost, ...communityPosts]);
+                            setCommunityPosts(prev => [newPost, ...prev]); // [안전] prev를 사용하여 최신 상태 유지
+                            setGraceInput(""); // ✅ 등록 성공 시 입력창 비움
                             setIsPrivatePost(false);
+                            alert("은혜가 나눔게시판에 등록되었습니다! ✨");
 
                             // 2. [핵심] 여기서 즉시 묵상 통계(큐티왕)도 기록! (나중에 '마칠게요' 안 눌러도 기록되게)
                             const recordQtStats = async () => {
@@ -2955,9 +2957,14 @@ export default function App() {
 
                             // 즉시 기록
                             await recordQtStats();
+                        } else {
+                            const errData = await res.json().catch(() => ({}));
+                            console.error("게시판 등록 실패:", errData);
+                            alert(`은혜나눔 등록에 실패했습니다: ${errData.error || '알 수 없는 오류'}\n(관리자에게 'community_posts 테이블에 is_qt 컬럼 추가'를 확인해 보세요)`);
                         }
                     } catch (e) {
                         console.error("저장 중 오류 발생:", e);
+                        alert("네트워크 오류로 등록에 실패했습니다.");
                     }
                 }
 
