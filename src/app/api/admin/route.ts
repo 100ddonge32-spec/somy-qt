@@ -401,8 +401,8 @@ export async function POST(req: NextRequest) {
             let error = result.error;
 
             if (error) {
-                console.warn("[Admin API] Failed to add admin with church_id, retrying without it...", error.message);
-                delete adminPayload.church_id;
+                console.warn("[Admin API] Failed to add admin initially (likely user_id FK issue), retrying without user_id...", error.message);
+                delete adminPayload.user_id;
                 const retryResult: any = await supabaseAdmin
                     .from('app_admins')
                     .upsert([adminPayload], { onConflict: 'email' })
@@ -624,11 +624,12 @@ export async function POST(req: NextRequest) {
             let error = result.error;
 
             if (error) {
-                console.warn("[Admin API] Failed to create church admin with church_id, retrying without it...", error.message);
-                const fallbackPayload = { email: formattedEmail, role: 'church_admin' };
+                console.warn("[Admin API] Failed to create church admin initially. Likely user_id foreign key constraint. Retrying without user_id...", error.message);
+                // [수정] church_id가 아니라 문제가 될 확률이 높은 user_id를 버리고 재시도해야 합니다.
+                delete adminPayload.user_id;
                 const retryResult: any = await supabaseAdmin
                     .from('app_admins')
-                    .upsert([fallbackPayload], { onConflict: 'email' })
+                    .upsert([adminPayload], { onConflict: 'email' })
                     .select();
                 if (retryResult.error) throw retryResult.error;
                 data = retryResult.data;
