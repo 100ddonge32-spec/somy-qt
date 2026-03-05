@@ -596,14 +596,20 @@ export async function POST(req: NextRequest) {
                             event_poster_visible: false
                         };
 
-                        await supabaseAdmin
+                        const { error: insertError } = await supabaseAdmin
                             .from('church_settings')
                             .insert([newSetting]);
+
+                        if (insertError) {
+                            console.error("[Admin API] Insert church_settings error:", insertError);
+                            throw new Error(`교회 기초 설정 생성 실패: ${insertError.message}`);
+                        }
                         console.log(`[Admin API] Initialized new church settings for ${finalChurchId}`);
                     }
                 }
-            } catch (setupErr) {
+            } catch (setupErr: any) {
                 console.error("[Admin API] Failed to initialize church settings:", setupErr);
+                return NextResponse.json({ error: `교회 초기 설정(방)을 만드는 중 문제가 발생했습니다: ${setupErr.message}` }, { status: 500 });
             }
 
             // 2. 관리자 권한 부여 (설정값이 생성된 후 실행)
