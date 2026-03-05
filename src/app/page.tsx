@@ -8296,10 +8296,15 @@ export default function App() {
                                                                             <div style={{ width: '30px', height: '30px', background: '#F5F5F5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', flexShrink: 0 }}>🏢</div>
                                                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
                                                                                 <div style={{ fontSize: '12px', fontWeight: 700, color: '#444' }}>{admin.name || (admin.role === 'super_admin' ? '운영자' : '관리자')} <span style={{ fontSize: '9px', color: '#999' }}>({admin.role === 'super_admin' ? '슈퍼' : '일반'})</span></div>
-                                                                                <div style={{ fontSize: '10px', color: '#AAA' }}>⛪ {admin.church_id} 소속</div>
+                                                                                <div style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                                    ⛪ {admin.church_id} 소속
+                                                                                </div>
                                                                             </div>
                                                                         </div>
-                                                                        <button onClick={() => handleDeleteAdmin(admin.email)} style={{ background: '#F5F5F5', color: '#999', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '10px', cursor: 'pointer' }}>해제</button>
+                                                                        <div style={{ display: 'flex', gap: '6px' }}>
+                                                                            <a href={`/?church_id=${admin.church_id}`} target="_blank" style={{ fontSize: '10px', color: '#1565C0', textDecoration: 'none', background: '#E3F2FD', padding: '4px 8px', borderRadius: '6px', fontWeight: 700 }}>이동</a>
+                                                                            <button onClick={() => handleDeleteAdmin(admin.email)} style={{ background: '#FFF5F5', color: '#C62828', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}>삭제</button>
+                                                                        </div>
                                                                     </div>
 
                                                                 </div>
