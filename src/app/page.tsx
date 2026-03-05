@@ -8215,9 +8215,12 @@ export default function App() {
                                                                     </div>
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                                         <span style={{ fontSize: '14px', fontWeight: 800, color: '#D4AF37' }}>{ch.count}명</span>
-                                                                        {ch.church_id !== 'jesus-in' && (
-                                                                            <button onClick={() => handleDeleteChurch(ch.church_id)} style={{ padding: '4px 8px', background: '#FEE', color: '#C62828', border: 'none', borderRadius: '6px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}>삭제</button>
-                                                                        )}
+                                                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                                                            <a href={ch.church_id === 'somy-main' ? '/' : `/?church_id=${ch.church_id}`} target="_blank" style={{ padding: '4px 8px', background: '#E3F2FD', color: '#1565C0', textDecoration: 'none', borderRadius: '6px', fontSize: '10px', fontWeight: 700 }}>이동</a>
+                                                                            {ch.church_id !== 'jesus-in' && (
+                                                                                <button onClick={() => handleDeleteChurch(ch.church_id)} style={{ padding: '4px 8px', background: '#FEE', color: '#C62828', border: 'none', borderRadius: '6px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}>삭제</button>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -8302,7 +8305,7 @@ export default function App() {
                                                                             </div>
                                                                         </div>
                                                                         <div style={{ display: 'flex', gap: '6px' }}>
-                                                                            <a href={`/?church_id=${admin.church_id}`} target="_blank" style={{ fontSize: '10px', color: '#1565C0', textDecoration: 'none', background: '#E3F2FD', padding: '4px 8px', borderRadius: '6px', fontWeight: 700 }}>이동</a>
+                                                                            <a href={(admin.church_id === 'default' || admin.church_id === 'somy-main') ? '/' : `/?church_id=${admin.church_id}`} target="_blank" style={{ fontSize: '10px', color: '#1565C0', textDecoration: 'none', background: '#E3F2FD', padding: '4px 8px', borderRadius: '6px', fontWeight: 700 }}>이동</a>
                                                                             <button onClick={() => handleDeleteAdmin(admin.email)} style={{ background: '#FFF5F5', color: '#C62828', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}>삭제</button>
                                                                         </div>
                                                                     </div>
