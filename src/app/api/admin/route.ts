@@ -17,9 +17,11 @@ webpush.setVapidDetails(
 );
 
 const normalizeId = (id: string | null) => {
-    if (!id) return null;
+    if (!id) return 'jesus-in'; // 빈 값은 기본적으로 메인(예수인교회) 소속으로 간주
     const s = id.toLowerCase().trim();
-    if (s === '예수인교회' || s === 'jesus-in' || s === '예수인' || s === 'jesus') return 'jesus-in';
+    if (s === '예수인교회' || s === 'jesus-in' || s === '예수인' || s === 'jesus' || s === 'default' || s === 'somy-main' || s === '') {
+        return 'jesus-in';
+    }
     return s;
 };
 
@@ -121,38 +123,49 @@ export async function GET(req: NextRequest) {
 
         // [3] 교회별 통계 (등록된 교회 기준)
         if (action === 'get_church_stats') {
+            console.log(`[Admin API] action=get_church_stats triggered by ${searchParams.get('requester_id') || 'unknown'}`);
             // 1. 등록된 교회 목록 가져오기 (church_settings 기준)
             const { data: churches, error: chErr } = await supabaseAdmin.from('church_settings')
                 .select('id, church_id, church_name, plan, created_at')
                 .order('created_at', { ascending: false });
-            if (chErr) throw chErr;
+            if (chErr) {
+                console.error("[Admin API] Failed to fetch churches:", chErr);
+                throw chErr;
+            }
+            console.log(`[Admin API] Found ${churches?.length || 0} registered churches`);
 
             // 2. 전체 성도수 집계 (1000명 이상 대응을 위한 페이지네이션)
             const countMap: Record<string, number> = {};
             let batchPage = 0;
             const batchSize = 1000;
+            let totalProcessed = 0;
 
             while (true) {
                 const { data: profileBatch, error: pErr } = await supabaseAdmin.from('profiles')
                     .select('church_id')
                     .range(batchPage * batchSize, (batchPage + 1) * batchSize - 1);
 
-                if (pErr) throw pErr;
+                if (pErr) {
+                    console.error(`[Admin API] Failed to fetch profiles batch ${batchPage}:`, pErr);
+                    throw pErr;
+                }
                 if (!profileBatch || profileBatch.length === 0) break;
 
+                totalProcessed += profileBatch.length;
                 profileBatch.forEach(p => {
-                    const cid = normalizeId(p.church_id) || 'somy-main';
+                    const cid = normalizeId(p.church_id) || 'jesus-in';
                     countMap[cid] = (countMap[cid] || 0) + 1;
                 });
 
                 if (profileBatch.length < batchSize) break;
                 batchPage++;
             }
+            console.log(`[Admin API] Total profiles processed: ${totalProcessed}`);
+            console.log(`[Admin API] Count map sample:`, Object.entries(countMap).slice(0, 5));
 
             // 3. 결합 및 보정
             const stats = (churches || []).map(ch => {
-                const normCid = normalizeId(ch.church_id);
-                // 예수인교회(ID 1)이거나 식별자가 jesus-in인 경우 통합
+                const normCid = normalizeId(ch.church_id) || 'jesus-in';
                 const isMain = ch.id === 1 || normCid === 'jesus-in';
                 const effectiveId = isMain ? 'jesus-in' : normCid;
 
@@ -160,7 +173,7 @@ export async function GET(req: NextRequest) {
                     id: ch.id,
                     church_id: effectiveId,
                     church_name: ch.id === 1 ? (ch.church_name || '예수인교회') : (ch.church_name || ch.church_id),
-                    count: countMap[effectiveId || ''] || 0,
+                    count: countMap[effectiveId] || 0,
                     plan: ch.plan,
                     created_at: ch.created_at
                 };
@@ -170,11 +183,12 @@ export async function GET(req: NextRequest) {
             const registeredIds = new Set(stats.map(s => s.church_id));
             const orphans: any[] = [];
             Object.entries(countMap).forEach(([cid, count]) => {
-                if (!registeredIds.has(cid) && cid !== 'somy-main' && cid !== 'jesus-in') {
-                    orphans.push({ church_id: cid, church_name: `미등록 교회 (${cid})`, count, is_orphan: true });
+                if (!registeredIds.has(cid) && cid !== 'jesus-in') {
+                    orphans.push({ church_id: cid, church_name: `미등록 데이터 (${cid})`, count, is_orphan: true });
                 }
             });
 
+            console.log(`[Admin API] Returning ${stats.length} registered stats and ${orphans.length} orphans`);
             return NextResponse.json({ registered: stats, orphans });
         }
 
