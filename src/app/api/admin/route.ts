@@ -558,7 +558,55 @@ export async function POST(req: NextRequest) {
                 await supabaseAdmin.from('profiles').update({ church_id: finalChurchId }).eq('email', formattedEmail);
             }
 
-            // 1. 관리자 권한 부여
+            // 1. 해당 교회의 기본 설정값 생성 (선행되어야 함 - 외래키 제약조건 방지)
+            try {
+                // 이미 존재하는지 확인
+                const { data: existingSettings } = await supabaseAdmin
+                    .from('church_settings')
+                    .select('church_id')
+                    .eq('church_id', finalChurchId)
+                    .maybeSingle();
+
+                if (!existingSettings) {
+                    const { data: template } = await supabaseAdmin
+                        .from('church_settings')
+                        .select('*')
+                        .order('id', { ascending: true })
+                        .limit(1)
+                        .maybeSingle();
+
+                    if (template && finalChurchId !== 'jesus-in') {
+                        const { id, created_at, ...cleanTemplate } = template;
+                        const newSetting: any = {
+                            ...cleanTemplate,
+                            church_id: finalChurchId,
+                            church_name: '',
+                            app_subtitle: '',
+                            // 예수인교회 전용 데이터는 초기화하여 '정보가 그대로 넘어가는 문제' 해결
+                            church_logo_url: '',
+                            sermon_url: '',
+                            manual_sermon_url: '',
+                            sermon_summary: '',
+                            sermon_q1: '',
+                            sermon_q2: '',
+                            sermon_q3: '',
+                            pastor_column_title: '',
+                            pastor_column_content: '',
+                            event_poster_url: '',
+                            event_poster_visible: false
+                        };
+
+                        await supabaseAdmin
+                            .from('church_settings')
+                            .insert([newSetting]);
+                        console.log(`[Admin API] Initialized new church settings for ${finalChurchId}`);
+                    }
+                }
+            } catch (setupErr) {
+                console.error("[Admin API] Failed to initialize church settings:", setupErr);
+            }
+
+            // 2. 관리자 권한 부여 (설정값이 생성된 후 실행)
             const adminPayload: any = {
                 email: formattedEmail,
                 role: 'church_admin',
@@ -586,41 +634,6 @@ export async function POST(req: NextRequest) {
                 data = retryResult.data;
             }
 
-            // 2. 해당 교회의 기본 설정값 생성
-            try {
-                const { data: template } = await supabaseAdmin
-                    .from('church_settings')
-                    .select('*')
-                    .order('id', { ascending: true })
-                    .limit(1)
-                    .maybeSingle();
-
-                if (template && finalChurchId !== 'jesus-in') {
-                    const { id, created_at, ...cleanTemplate } = template;
-                    const newSetting: any = {
-                        ...cleanTemplate,
-                        church_id: finalChurchId,
-                        church_name: '',
-                        app_subtitle: '',
-                        // 예수인교회 전용 데이터는 초기화하여 '정보가 그대로 넘어가는 문제' 해결
-                        church_logo_url: '',
-                        sermon_url: '',
-                        manual_sermon_url: '',
-                        sermon_summary: '',
-                        sermon_q1: '',
-                        sermon_q2: '',
-                        sermon_q3: '',
-                        pastor_column_title: '',
-                        pastor_column_content: '',
-                        event_poster_url: '',
-                        event_poster_visible: false
-                    };
-
-                    await supabaseAdmin
-                        .from('church_settings')
-                        .upsert([newSetting], { onConflict: 'church_id' });
-                }
-            } catch (setErr) { console.error("Setting creation failed:", setErr); }
 
             // [알림] 새 교회 관리자로 지정되었음을 알림
             try {

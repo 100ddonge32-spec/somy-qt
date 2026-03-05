@@ -210,8 +210,8 @@ export async function POST(req: NextRequest) {
     const uniqueAdmins = Array.from(new Map(adminsForRequester.map(a => [a.id, a])).values());
 
     // [핵심 해결] 정확한 매칭 로직
-    // 1. 슈퍼어드민인지 확인
-    const superAdmin = uniqueAdmins.find(a => a.role === 'super_admin');
+    // 1. 슈퍼어드민인지 확인 (권한이 super_admin이거나 소속이 기본/메인인 경우 포함)
+    const superAdmin = uniqueAdmins.find(a => a.role === 'super_admin' || ['default', 'somy-main'].includes(a.church_id?.toLowerCase()));
     // 2. 현재 요청한 교회(targetChurchId)의 관리자인지 확인
     const churchAdmin = uniqueAdmins.find(a => normalizeId(a.church_id) === normTargetId);
 
@@ -229,7 +229,7 @@ export async function POST(req: NextRequest) {
 
     // 3. 마스터 권한 여부 (전역 - Profile 이름 기반 최후의 보루)
     const isGlobalMaster = (reqEmail && HARDCODED_ADMINS.includes(reqEmail)) ||
-        (superAdmin?.role === 'super_admin') ||
+        !!superAdmin ||
         (requesterProfile?.full_name === '백동희' || requesterProfile?.full_name === '동희');
 
     // 5. 권한 검증 로직 (강화: 소속교회 관리자는 자기 교회만 수정 가능)
