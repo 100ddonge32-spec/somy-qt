@@ -17,11 +17,20 @@ webpush.setVapidDetails(
     process.env.VAPID_PRIVATE_KEY || 'LAAS6aJenIKYBShIGZsWVKhXNOMKwkuXvpf2NLCGZAI'
 );
 
+const normalizeId = (id: string | null) => {
+    if (!id) return 'jesus-in';
+    const s = id.toLowerCase().trim();
+    if (s === '예수인교회' || s === 'jesus-in' || s === '예수인' || s === 'jesus' || s === 'default' || s === 'somy-main' || s === '') {
+        return 'jesus-in';
+    }
+    return s;
+};
+
 // 게시글 목록 및 댓글 불러오기 (교회별 격리)
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
-        const churchId = searchParams.get('church_id') || 'jesus-in';
+        const churchId = normalizeId(searchParams.get('church_id'));
 
         const { data: posts, error: postsError } = await supabaseAdmin
             .from('thanksgiving_diaries')
@@ -44,7 +53,7 @@ export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
         const { user_id, user_name, avatar_url, content, church_id, is_private } = body;
-        const cid = church_id || 'jesus-in';
+        const cid = normalizeId(church_id);
 
         const { data, error } = await supabaseAdmin
             .from('thanksgiving_diaries')
