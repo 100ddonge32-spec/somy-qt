@@ -162,34 +162,40 @@ export async function GET(req: NextRequest) {
             }
             console.log(`[Admin API] Found ${churches?.length || 0} registered churches`);
 
-            // 2. 전체 성도수 집계 (1000명 이상 대응을 위한 페이지네이션)
+            // 2. 전체 성도수 집계 (Resilient Approach)
             const countMap: Record<string, number> = {};
-            let batchPage = 0;
-            const batchSize = 1000;
-            let totalProcessed = 0;
+            try {
+                let batchPage = 0;
+                const batchSize = 1000;
+                let totalProcessed = 0;
 
-            while (true) {
-                const { data: profileBatch, error: pErr } = await supabaseAdmin.from('profiles')
-                    .select('church_id')
-                    .range(batchPage * batchSize, (batchPage + 1) * batchSize - 1);
+                while (true) {
+                    const { data: profileBatch, error: pErr } = await supabaseAdmin.from('profiles')
+                        .select('church_id')
+                        .range(batchPage * batchSize, (batchPage + 1) * batchSize - 1);
 
-                if (pErr) {
-                    console.error(`[Admin API] Failed to fetch profiles batch ${batchPage}:`, pErr);
-                    throw pErr;
+                    if (pErr) {
+                        console.warn(`[Admin API] Profile count partially failed at batch ${batchPage}:`, pErr.message);
+                        break;
+                    }
+                    if (!profileBatch || profileBatch.length === 0) break;
+
+                    totalProcessed += profileBatch.length;
+                    profileBatch.forEach(p => {
+                        const cid = normalizeId(p.church_id) || 'jesus-in';
+                        countMap[cid] = (countMap[cid] || 0) + 1;
+                    });
+
+                    if (profileBatch.length < batchSize) break;
+                    batchPage++;
+
+                    // Too many profiles prevention (Max 10k for safety in this sync call)
+                    if (batchPage > 10) break;
                 }
-                if (!profileBatch || profileBatch.length === 0) break;
-
-                totalProcessed += profileBatch.length;
-                profileBatch.forEach(p => {
-                    const cid = normalizeId(p.church_id) || 'jesus-in';
-                    countMap[cid] = (countMap[cid] || 0) + 1;
-                });
-
-                if (profileBatch.length < batchSize) break;
-                batchPage++;
+                console.log(`[Admin API] Stats: Processed ${totalProcessed} profiles.`);
+            } catch (err) {
+                console.error("[Admin API] Critical error during profile counting:", err);
             }
-            console.log(`[Admin API] Total profiles processed: ${totalProcessed}`);
-            console.log(`[Admin API] Count map sample:`, Object.entries(countMap).slice(0, 5));
 
             // 3. 결합 및 보정
             const stats = (churches || []).map(ch => {

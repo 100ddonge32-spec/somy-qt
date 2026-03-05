@@ -1271,9 +1271,23 @@ export default function App() {
         }
     };
 
+    const fetchChurchStats = async () => {
+        if (!isSuperAdmin) return;
+        try {
+            const r = await fetch('/api/admin?action=get_church_stats');
+            const data = await r.json();
+            if (data.registered) {
+                setChurchStats(data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch church stats:", err);
+        }
+    };
+
     useEffect(() => {
         if (isSuperAdmin && allAdminList.length === 0) {
             fetchAllAdmins();
+            fetchChurchStats();
         }
     }, [isSuperAdmin]);
 
@@ -5150,7 +5164,7 @@ export default function App() {
                             </button>
 
                             {isSuperAdmin && (
-                                <button onClick={() => { setAdminTab('master'); fetchAllAdmins(); setShowSettings(true); }} style={{ padding: '16px 8px', background: '#FFFDE7', border: '1px solid #FFF176', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <button onClick={() => { setAdminTab('master'); fetchAllAdmins(); fetchChurchStats(); setShowSettings(true); }} style={{ padding: '16px 8px', background: '#FFFDE7', border: '1px solid #FFF176', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
                                     <div style={{ width: '40px', height: '40px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>👑</div>
                                     <div style={{ textAlign: 'center' }}>
                                         <div style={{ fontSize: '12px', fontWeight: 800, color: '#856404', marginBottom: '2px', wordBreak: 'keep-all' }}>마스터</div>
@@ -7066,7 +7080,7 @@ export default function App() {
                                         <button onClick={() => setAdminTab('reset')} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'reset' ? 'white' : 'transparent', boxShadow: adminTab === 'reset' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'reset' ? '#333' : '#777' }}>🗑️ 초기화</button>
                                     )}
                                     {isSuperAdmin && (
-                                        <button onClick={() => { setAdminTab('master'); fetchAllAdmins(); }} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'master' ? 'white' : 'transparent', boxShadow: adminTab === 'master' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'master' ? '#333' : '#777' }}>👑 마스터</button>
+                                        <button onClick={() => { setAdminTab('master'); fetchAllAdmins(); fetchChurchStats(); }} style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, background: adminTab === 'master' ? 'white' : 'transparent', boxShadow: adminTab === 'master' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'master' ? '#333' : '#777' }}>👑 마스터</button>
                                     )}
                                 </div>
                             </div>
@@ -8299,7 +8313,11 @@ export default function App() {
                                                     <button onClick={async () => {
                                                         const r = await fetch('/api/admin?action=get_church_stats');
                                                         const data = await r.json();
-                                                        if (data) setChurchStats(data);
+                                                        if (data.registered) {
+                                                            setChurchStats(data);
+                                                        } else {
+                                                            alert('통계 로드 실패: ' + (data.error || '알 수 없는 오류'));
+                                                        }
                                                     }} style={{ background: 'white', border: '1px solid #E0E0E0', borderRadius: '8px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>새로고침</button>
                                                 </div>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
