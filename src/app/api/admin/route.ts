@@ -154,8 +154,8 @@ export async function GET(req: NextRequest) {
             console.log(`[Admin API] action=get_church_stats triggered by ${searchParams.get('requester_id') || 'unknown'}`);
             // 1. 등록된 교회 목록 가져오기 (church_settings 기준)
             const { data: churches, error: chErr } = await supabaseAdmin.from('church_settings')
-                .select('id, church_id, church_name, plan, created_at')
-                .order('created_at', { ascending: false });
+                .select('id, church_id, church_name, plan')
+                .order('id', { ascending: false });
             if (chErr) {
                 console.error("[Admin API] Failed to fetch churches:", chErr);
                 throw chErr;
@@ -208,8 +208,7 @@ export async function GET(req: NextRequest) {
                     church_id: effectiveId,
                     church_name: ch.id === 1 ? (ch.church_name || '예수인교회') : (ch.church_name || ch.church_id),
                     count: countMap[effectiveId] || 0,
-                    plan: ch.plan,
-                    created_at: ch.created_at
+                    plan: ch.plan
                 };
             });
 
