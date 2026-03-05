@@ -8774,10 +8774,11 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
                 console.log("[SyncResult]", syncResult);
 
                 // [최적화] Sync 결과가 있으면 즉시 반영하여 '정보 없음' 깜빡임 방지
-                if (syncResult && syncResult.full_name) {
+                if (syncResult && (syncResult.full_name || syncResult.name)) {
                     const resPhone = (syncResult.phone || '').replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+                    const resName = syncResult.full_name || syncResult.name;
                     const initialFromSync = {
-                        full_name: syncResult.full_name,
+                        full_name: resName,
                         phone: resPhone || syncResult.phone || '',
                         birthdate: syncResult.birthdate || '',
                         address: syncResult.address || '',
@@ -8810,15 +8811,11 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
                 }
 
                 if (data) {
-                    const rawMetaPhone = user?.user_metadata?.phone_number || user?.user_metadata?.mobile || '';
-                    let cleanMetaPhone = rawMetaPhone.replace(/[^0-9]/g, '');
-                    if (cleanMetaPhone.startsWith('8210')) cleanMetaPhone = '0' + cleanMetaPhone.substring(2);
-                    else if (cleanMetaPhone.startsWith('82')) cleanMetaPhone = '0' + cleanMetaPhone.substring(2);
-                    const formattedMetaPhone = cleanMetaPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+                    const formattedDbPhone = (data.phone || '').replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
 
                     const loadedProfile = {
-                        full_name: data.full_name || user?.user_metadata?.full_name || '',
-                        phone: data.phone || formattedMetaPhone || cleanMetaPhone || '',
+                        full_name: data.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || '',
+                        phone: data.phone || formattedDbPhone || '',
                         birthdate: data.birthdate || '',
                         address: data.address || '',
                         avatar_url: data.avatar_url || user?.user_metadata?.avatar_url || '',

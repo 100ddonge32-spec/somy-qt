@@ -53,6 +53,9 @@ export async function POST(req: NextRequest) {
                 if ('is_birthdate_lunar' in safeMergedData) {
                     delete (safeMergedData as any).is_birthdate_lunar;
                 }
+                // [수정] 시스템 필드 제외
+                delete (safeMergedData as any).created_at;
+
                 if (safeMergedData.birthdate === "") {
                     safeMergedData.birthdate = null;
                 }
@@ -72,6 +75,9 @@ export async function POST(req: NextRequest) {
         if ('is_birthdate_lunar' in safeData) {
             delete (safeData as any).is_birthdate_lunar;
         }
+        // [수정] 시스템 필드인 created_at과 id는 업데이트 대상에서 제외 (타임스탬프 형식 오류 방지)
+        delete (safeData as any).created_at;
+        delete (safeData as any).id;
 
         // 빈 문자열로 날짜가 들어오면 null로 치환 (DB 에러 방지)
         if (safeData.birthdate === "") {

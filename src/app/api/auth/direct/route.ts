@@ -168,6 +168,14 @@ export async function POST(req: NextRequest) {
                     }
                 }
 
+                // [데이터 이관] 게시글, 댓글 등의 소유권을 신규 ID로 이전하여 데이터 증발 방지
+                console.log(`[DirectAuth] Migrating data from ${match.id} to ${user_id}`);
+                await supabaseAdmin.from('thanksgiving_diaries').update({ user_id: user_id }).eq('user_id', match.id);
+                await supabaseAdmin.from('thanksgiving_comments').update({ user_id: user_id }).eq('user_id', match.id);
+                await supabaseAdmin.from('community_posts').update({ user_id: user_id }).eq('user_id', match.id);
+                await supabaseAdmin.from('community_comments').update({ user_id: user_id }).eq('user_id', match.id);
+                await supabaseAdmin.from('notifications').update({ user_id: user_id }).eq('user_id', match.id);
+
                 // 기존 프로필 정리 (이관 성공 후에만)
                 await supabaseAdmin.from('profiles').delete().eq('id', match.id);
             }

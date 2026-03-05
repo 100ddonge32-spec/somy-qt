@@ -211,6 +211,11 @@ export async function POST(req: NextRequest) {
                 gender: match.gender || profileById?.gender,
                 avatar_url: finalAvatar,
                 church_id: permanentChurch, // DB에는 영구 소속 저장
+                is_phone_public: match.is_phone_public || profileById?.is_phone_public || false,
+                is_birthdate_public: match.is_birthdate_public || profileById?.is_birthdate_public || false,
+                is_birthdate_lunar: match.is_birthdate_lunar || profileById?.is_birthdate_lunar || false,
+                is_address_public: match.is_address_public || profileById?.is_address_public || false,
+                created_at: profileById?.created_at || match?.created_at || new Date().toISOString(),
                 is_approved: true
             };
 
