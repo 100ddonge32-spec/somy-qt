@@ -1163,12 +1163,12 @@ export async function POST(req: NextRequest) {
             }
 
             // 3. 성도들의 church_id 초기화 (가장 중요한 부분 - Orphans 제거 핵심)
-            // 소속을 비우거나(null) 삭제된 태그를 붙여서 필터링되게 함
-            const { error: pErr1 } = await supabaseAdmin.from('profiles').update({ church_id: 'deleted-orphan' }).eq('church_id', target_church_id);
+            // 대소문자 구분 없이 처리하기 위해 ilike 사용
+            const { error: pErr1 } = await supabaseAdmin.from('profiles').update({ church_id: 'deleted-orphan' }).ilike('church_id', target_church_id);
             if (pErr1) console.error("[Delete Church] Profile update 1 failed:", pErr1.message);
 
-            if (normId && normId !== target_church_id) {
-                const { error: pErr2 } = await supabaseAdmin.from('profiles').update({ church_id: 'deleted-orphan' }).eq('church_id', normId);
+            if (normId && normId.toLowerCase() !== target_church_id.toLowerCase()) {
+                const { error: pErr2 } = await supabaseAdmin.from('profiles').update({ church_id: 'deleted-orphan' }).ilike('church_id', normId);
                 if (pErr2) console.error("[Delete Church] Profile update 2 failed:", pErr2.message);
             }
 
