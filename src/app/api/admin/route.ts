@@ -92,9 +92,12 @@ export async function GET(req: NextRequest) {
 
             const { data: globalAdmin } = await globalQuery.maybeSingle();
             if (globalAdmin) {
-                // [신규 보안 강화] 전역 관리자가 아닌 지역(church) 관리자라면 본인 교회일 때만 권한 부여
+                // [신규] 보안 강화: 본인 소속 교회가 아니더라도 관리자 정보는 반환 (프론트엔드에서 버튼 노출 판단용)
                 if (globalAdmin.role === 'super_admin') return NextResponse.json(globalAdmin);
                 if (globalAdmin.church_id === churchId) return NextResponse.json(globalAdmin);
+
+                // 소속이 다른 경우 mismatch 플래그와 함께 본인 소속 정보 반환
+                return NextResponse.json({ ...globalAdmin, mismatch: true });
             }
 
             return NextResponse.json({ role: 'user' });

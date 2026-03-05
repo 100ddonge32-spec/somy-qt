@@ -413,10 +413,10 @@ export default function App() {
     const isHardcodedAdmin = !!user && !!user.email && MASTER_EMAILS.includes(user.email.toLowerCase().trim());
     const isMasterName = !!user && (user.user_metadata?.full_name === '백동희' || user.user_metadata?.name === '백동희' || profileName === '백동희');
 
-    // [전략] 마스터이거나, adminInfo에 권한이 있으면 관리자로 인정
-    const isAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && (adminInfo.role === 'super_admin' || ((adminInfo.role === 'church_admin' || adminInfo.role === 'sub_admin' || adminInfo.role === 'admin') && adminInfo.church_id === churchId)));
+    // [전략] 마스터이거나, adminInfo에 권한이 있으면 관리자로 인정 (소속 불일치 시에도 버튼은 보여줌)
+    const isAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && (adminInfo.role === 'super_admin' || ['church_admin', 'sub_admin', 'admin'].includes(adminInfo.role)));
     const isSuperAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && adminInfo.role === 'super_admin');
-    const isMainAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && (adminInfo.role === 'super_admin' || ((adminInfo.role === 'church_admin' || adminInfo.role === 'admin') && adminInfo.church_id === churchId)));
+    const isMainAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && (adminInfo.role === 'super_admin' || ((adminInfo.role === 'church_admin' || adminInfo.role === 'admin') && (adminInfo.church_id === churchId || adminInfo.mismatch))));
     const [editingPostId, setEditingPostId] = useState<any>(null);
     const [editContent, setEditContent] = useState("");
     const [editingCommentId, setEditingCommentId] = useState<any>(null);
@@ -1025,7 +1025,7 @@ export default function App() {
                 const pathName = rawPathName ? decodeURIComponent(rawPathName) : '';
                 const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id') || (pathName !== '' ? pathName : null);
 
-                if (data.church_id && !hasSpecificChurchUrl) {
+                if (data.church_id && !hasSpecificChurchUrl && !isSuperAdmin) {
                     setChurchId(data.church_id);
                     localStorage.setItem('church_id', data.church_id);
                 }
@@ -7066,6 +7066,20 @@ export default function App() {
 
                             {/* 스크롤되는 콘텐츠 영역 */}
                             <div style={{ padding: '20px 28px 28px 28px', overflowY: 'auto', flex: 1 }}>
+                                {adminInfo?.mismatch && !isSuperAdmin && (
+                                    <div style={{ marginBottom: '20px', padding: '15px', background: '#FFF3E0', borderRadius: '15px', border: '1px solid #FFE082', fontSize: '12px', color: '#856404', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                                        <div style={{ wordBreak: 'keep-all', lineHeight: 1.5 }}>
+                                            💡 현재 <b>{churchSettings.church_name}</b> 정보를 보고 계십니다.<br />
+                                            관리자님의 공식 소속은 <b>{adminInfo.church_id}</b>입니다.
+                                        </div>
+                                        <button
+                                            onClick={() => window.location.href = `/?church_id=${adminInfo.church_id}`}
+                                            style={{ padding: '8px 12px', background: '#B8924A', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                                        >
+                                            내 교회로 이동
+                                        </button>
+                                    </div>
+                                )}
 
                                 {adminTab === 'settings' ? (
                                     <>
@@ -8293,7 +8307,12 @@ export default function App() {
                                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                                         <span style={{ fontSize: '14px', fontWeight: 800, color: '#D4AF37' }}>{ch.count}명</span>
                                                                         <div style={{ display: 'flex', gap: '4px' }}>
-                                                                            <a href={ch.church_id === 'somy-main' ? '/' : `/?church_id=${ch.church_id}`} target="_blank" style={{ padding: '4px 8px', background: '#E3F2FD', color: '#1565C0', textDecoration: 'none', borderRadius: '6px', fontSize: '10px', fontWeight: 700 }}>이동</a>
+                                                                            <a href={ch.church_id === 'somy-main' ? '/' : `/?church_id=${ch.church_id}`} target="_blank" title="새 탭에서 보기" style={{ padding: '4px 8px', background: '#E3F2FD', color: '#1565C0', textDecoration: 'none', borderRadius: '6px', fontSize: '10px', fontWeight: 700 }}>조회</a>
+                                                                            <button onClick={() => {
+                                                                                if (confirm(`${ch.church_id} 교회를 현재 화면에서 관리하시겠습니까?`)) {
+                                                                                    window.location.href = ch.church_id === 'somy-main' ? '/' : `/?church_id=${ch.church_id}`;
+                                                                                }
+                                                                            }} title="현재 화면 전환" style={{ padding: '4px 8px', background: '#E8F5E9', color: '#2E7D32', border: 'none', borderRadius: '6px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}>관리</button>
                                                                             {ch.church_id !== 'jesus-in' && (
                                                                                 <button onClick={() => handleDeleteChurch(ch.church_id)} style={{ padding: '4px 8px', background: '#FEE', color: '#C62828', border: 'none', borderRadius: '6px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}>삭제</button>
                                                                             )}
