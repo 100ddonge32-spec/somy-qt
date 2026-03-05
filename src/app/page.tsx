@@ -8747,9 +8747,13 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
                 else if (cleanMetaPhone.startsWith('82')) cleanMetaPhone = '0' + cleanMetaPhone.substring(2);
 
                 // ★ 익명+정보없는 사용자는 sync 차단 (성도 유령계정 방지)
+                // [수정] 단, 마스터(백동희)나 관리자는 무조건 통과하도록 예외 처리 추가
                 const metaNameFull = user.user_metadata?.full_name || user.user_metadata?.name;
+                const MASTER_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com").toLowerCase().split(',').map(e => e.trim());
+                const isMaster = metaNameFull === '백동희' || metaNameFull === '동희' || (user.email && MASTER_EMAILS.includes(user.email.toLowerCase().trim()));
+
                 const isAnon = !user.email || user.email.includes('anonymous.local') || user.is_anonymous;
-                if (isAnon && !metaNameFull && !cleanMetaPhone) {
+                if (isAnon && !metaNameFull && !cleanMetaPhone && !isMaster) {
                     console.log('[ProfileLoad] 익명+정보없음 → sync 미호출');
                     return;
                 }
