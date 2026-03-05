@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     apple: "/somy.png",
     shortcut: "/somy.png",
   },
-  manifest: "/manifest.json",
+  // manifest: "/manifest.json", // 동적 매니페스트 사용을 위해 주석 처리
   openGraph: {
     title: `${appName} - ${churchName}`,
     description: "소미와 함께하는 따뜻한 큐티 시간 🐑",
@@ -60,6 +60,27 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              (function() {
+                try {
+                  const urlParams = new URLSearchParams(window.location.search);
+                  const path = window.location.pathname.replace(/^\\/|\\/$/g, '');
+                  let cid = urlParams.get('church_id') || urlParams.get('church') || path || localStorage.getItem('church_id') || 'jesus-in';
+                  
+                  if (cid === 'somy-main' || cid === 'default' || cid === '') cid = 'jesus-in';
+
+                  const manifestLink = document.createElement('link');
+                  manifestLink.rel = 'manifest';
+                  manifestLink.href = '/api/manifest?church_id=' + encodeURIComponent(cid);
+                  document.head.appendChild(manifestLink);
+                  console.log('Dynamic manifest loaded for:', cid);
+                } catch (e) {
+                  const link = document.createElement('link');
+                  link.rel = 'manifest';
+                  link.href = '/manifest.json';
+                  document.head.appendChild(link);
+                }
+              })();
+
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
                   navigator.serviceWorker.register('/sw.js').then(function(registration) {
