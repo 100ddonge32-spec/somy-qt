@@ -1072,8 +1072,15 @@ export default function App() {
             }).catch(() => { });
 
         // 3. 승인 및 생일 체크 폴링
+        let pollLoopCount = 0;
         const runPoller = () => {
-            checkApprovalStatus();
+            // [💡 Vercel API 호출 폭발(무한 루프) 방지 최적화]
+            // 미승인(대기) 상태일 때는 15초마다 승인 여부를 확인하지만,
+            // 이미 승인된 사용자는 불필요한 서버 호출을 막기 위해 10분(40번째 주기)에 한 번만 실행합니다.
+            if (!isApproved || pollLoopCount % 40 === 0) {
+                checkApprovalStatus();
+            }
+            pollLoopCount++;
 
             // [생일 팝업 로직 복구]
             if (memberList.length > 0) {
@@ -1106,7 +1113,7 @@ export default function App() {
         }
 
         return () => clearInterval(poller);
-    }, [user, churchId, checkApprovalStatus, subscribePush, memberList]);
+    }, [user, churchId, checkApprovalStatus, subscribePush, memberList, isApproved]);
 
     // [김부장의 신의 한 수] 유저의 교회 정보가 확인되면 즉시 해당 교회 설정 로드
     useEffect(() => {
