@@ -577,8 +577,19 @@ export async function POST(req: NextRequest) {
 
                     if (template && finalChurchId !== 'jesus-in') {
                         const { id, created_at, ...cleanTemplate } = template;
+
+                        // [Fix] PostgreSQL Sequence 꼬임 이슈(church_settings_pkey 중복 에러)를 우회하기 위해 가장 높은 ID를 찾아 직접 주입
+                        const { data: maxRecord } = await supabaseAdmin
+                            .from('church_settings')
+                            .select('id')
+                            .order('id', { ascending: false })
+                            .limit(1)
+                            .maybeSingle();
+                        const nextId = (maxRecord?.id || 0) + 1;
+
                         const newSetting: any = {
                             ...cleanTemplate,
+                            id: nextId,
                             church_id: finalChurchId,
                             church_name: '',
                             app_subtitle: '',
