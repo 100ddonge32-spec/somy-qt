@@ -5096,6 +5096,9 @@ export default function App() {
                             <button onClick={async () => {
                                 setAdminTab('stats');
                                 setShowSettings(true);
+                                setIsAdminsLoading(true);
+
+                                // 1. 성도 분포 통계용 (성별, 연령대)
                                 if (memberList.length === 0) {
                                     try {
                                         const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
@@ -5103,6 +5106,18 @@ export default function App() {
                                         if (Array.isArray(data)) setMemberList(data);
                                     } catch (e) { }
                                 }
+
+                                // 2. 큐티 랭킹 통계용
+                                try {
+                                    setStatsError(null);
+                                    const res = await fetch(`/api/stats?church_id=${churchId || 'jesus-in'}&t=${Date.now()}`);
+                                    const data = await res.json();
+                                    if (data) setStats(data);
+                                } catch (e) {
+                                    setStatsError("활동 통계 로딩 실패");
+                                }
+
+                                setIsAdminsLoading(false);
                             }} style={{ padding: '24px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
                                 <div style={{ width: '40px', height: '40px', background: '#FFF3E0', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📊</div>
                                 <div style={{ textAlign: 'center' }}>
@@ -8184,6 +8199,68 @@ export default function App() {
                                                     <div style={{ fontSize: '11px', color: '#999' }}>성도들의 큐티 완료 기록(통계)을 모두 삭제합니다.</div>
                                                 </div>
                                             </div>
+                                        </div>
+                                    </div>
+                                ) : adminTab === 'stats' ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', paddingBottom: '40px' }}>
+                                        {/* (1) 성도 분포 통계 - StatsView 컴포넌트 활용 */}
+                                        <div style={{ background: 'white', padding: '24px', borderRadius: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #EEE' }}>
+                                            <div style={{ fontSize: '15px', fontWeight: 900, color: '#333', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <span style={{ fontSize: '20px' }}>📊</span> 성도 구성 통계
+                                            </div>
+                                            <StatsView memberList={memberList} />
+                                        </div>
+
+                                        {/* (2) 큐티 활동 & 완주 랭킹 */}
+                                        <div style={{ background: 'white', padding: '24px', borderRadius: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #EEE' }}>
+                                            <div style={{ fontSize: '15px', fontWeight: 900, color: '#333', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <span style={{ fontSize: '20px' }}>🏆</span> 이번 달 묵상 참여 현황
+                                            </div>
+
+                                            {statsError ? (
+                                                <div style={{ padding: '40px 20px', textAlign: 'center', color: '#E53935', fontSize: '14px' }}>
+                                                    ⚠️ {statsError}
+                                                </div>
+                                            ) : !stats ? (
+                                                <div style={{ padding: '40px 20px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
+                                                    데이터를 불러오는 중입니다...
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                                    <div style={{ display: 'flex', gap: '12px' }}>
+                                                        <div style={{ flex: 1, background: 'linear-gradient(135deg, #D4AF37, #B8924A)', borderRadius: '16px', padding: '15px', color: 'white', textAlign: 'center' }}>
+                                                            <div style={{ fontSize: '22px', fontWeight: 800 }}>{stats.today.count}</div>
+                                                            <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '4px' }}>오늘 참여</div>
+                                                        </div>
+                                                        <div style={{ flex: 1, background: '#333', borderRadius: '16px', padding: '15px', color: 'white', textAlign: 'center' }}>
+                                                            <div style={{ fontSize: '22px', fontWeight: 800 }}>{stats.totalCompletions}</div>
+                                                            <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '4px' }}>누적 묵상합계</div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div style={{ marginTop: '10px' }}>
+                                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '12px' }}>✨ 이달의 묵상 상위 성도 (TOP 10)</div>
+                                                        {stats.ranking.length === 0 ? (
+                                                            <div style={{ fontSize: '13px', color: '#999', textAlign: 'center', padding: '20px 0' }}>아직 이번 달 기록이 없습니다.</div>
+                                                        ) : (
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                                {stats.ranking.map((r, i) => (
+                                                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: i < 3 ? '#FFFDF0' : '#FAFAFA', borderRadius: '12px', border: '1px solid', borderColor: i < 3 ? '#FFE082' : '#F0F0F0' }}>
+                                                                        <div style={{ width: '24px', textAlign: 'center', fontWeight: 900, fontSize: i < 3 ? '18px' : '14px', color: i === 0 ? '#D4AF37' : '#999' }}>
+                                                                            {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                                                                        </div>
+                                                                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#EEE', overflow: 'hidden' }}>
+                                                                            {r.avatar ? <img src={r.avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>🐑</div>}
+                                                                        </div>
+                                                                        <div style={{ flex: 1, fontSize: '14px', fontWeight: 700, color: '#333' }}>{r.name}</div>
+                                                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#D4AF37' }}>{r.count}회</div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ) : adminTab === 'master' ? (

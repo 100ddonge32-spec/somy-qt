@@ -109,16 +109,41 @@ export async function GET(req: NextRequest) {
                 return NextResponse.json([]);
             }
 
-            let { data, error } = await supabaseAdmin.from('profiles').select('*').eq('church_id', churchId).order('created_at', { ascending: false });
-            if (error) throw error;
+            // [개선] 1000명 이상의 대규모 교회 대응을 위한 페이지네이션 처리
+            let allMembers: any[] = [];
+            let batchPage = 0;
+            const batchSize = 1000;
 
-            if (data) {
-                data = data.filter(m => {
-                    const isGhost = (m.full_name === '성도' || m.full_name === '이름 없음') && !m.phone;
-                    return !isGhost || m.is_approved;
-                });
+            console.log(`[Admin API] action=list_members for church_id=${churchId}`);
+
+            while (true) {
+                const { data: batch, error } = await supabaseAdmin
+                    .from('profiles')
+                    .select('*')
+                    .eq('church_id', churchId)
+                    .order('created_at', { ascending: false })
+                    .range(batchPage * batchSize, (batchPage + 1) * batchSize - 1);
+
+                if (error) {
+                    console.error(`[Admin API] Failed to fetch member batch ${batchPage}:`, error);
+                    throw error;
+                }
+                if (!batch || batch.length === 0) break;
+
+                allMembers = [...allMembers, ...batch];
+                if (batch.length < batchSize) break;
+                batchPage++;
             }
-            return NextResponse.json(data);
+
+            console.log(`[Admin API] Total members fetched for ${churchId}: ${allMembers.length}`);
+
+            // 유령 계정 필터링
+            const filteredMembers = allMembers.filter(m => {
+                const isGhost = (m.full_name === '성도' || m.full_name === '이름 없음') && !m.phone;
+                return !isGhost || m.is_approved;
+            });
+
+            return NextResponse.json(filteredMembers);
         }
 
         // [3] 교회별 통계 (등록된 교회 기준)
