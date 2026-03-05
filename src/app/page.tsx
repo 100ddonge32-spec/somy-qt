@@ -345,20 +345,6 @@ export default function App() {
     const [view, setView] = useState<View>("home");
     const [memberList, setMemberList] = useState<any[]>([]); // ✅ 성도 목록
 
-    // [신의 한 수] 좋아요 명단 및 생일 알림을 위해 성도 기초 정보(이름 등)를 미리 로드합니다.
-    useEffect(() => {
-        if (isApproved && churchId && churchId !== 'somy-main' && memberList.length === 0) {
-            console.log(`[Init] Fetching member profiles for ${churchId} icons/names...`);
-            fetch(`/api/members?church_id=${churchId}`)
-                .then(r => r.ok ? r.json() : [])
-                .then(data => {
-                    if (Array.isArray(data)) {
-                        setMemberList(data);
-                        console.log(`[Init] Loaded ${data.length} member profiles.`);
-                    }
-                }).catch(() => { });
-        }
-    }, [isApproved, churchId, memberList.length]);
     const [showBirthdayPopup, setShowBirthdayPopup] = useState(false); // ✅ 생일 팝업 노출 여부
     const [todayBirthdayMembers, setTodayBirthdayMembers] = useState<any[]>([]); // ✅ 오늘 생일인 성도 목록
     const [messages, setMessages] = useState([
@@ -541,6 +527,27 @@ export default function App() {
     const [submittingUserReplyId, setSubmittingUserReplyId] = useState<string | null>(null);
     const [submittingCommentId, setSubmittingCommentId] = useState<any>(null); // ✅ 댓글 등록 중복 방지
     const [allAdminList, setAllAdminList] = useState<any[]>([]); // ✅ 전체 관리자 목록 (슈퍼관리자용)
+
+    // [신의 한 수] 좋아요 명단 및 생일 알림을 위해 성도 기초 정보(이름 등)를 미리 로드합니다.
+    useEffect(() => {
+        if (isApproved && churchId && churchId !== 'somy-main') {
+            const loadInitMembers = async () => {
+                console.log(`[Init] Fetching member profiles for ${churchId} icons/names...`);
+                try {
+                    const r = await fetch(`/api/members?church_id=${churchId}`);
+                    if (r.ok) {
+                        const data = await r.json();
+                        if (Array.isArray(data)) {
+                            setMemberList(data);
+                            console.log(`[Init] Loaded ${data.length} member profiles.`);
+                        }
+                    }
+                } catch (e) { console.error("성도 정보 초기 로드 실패:", e); }
+            };
+            loadInitMembers();
+        }
+    }, [isApproved, churchId]);
+
     const [isAdminsLoading, setIsAdminsLoading] = useState(false); // ✅ 관리자 목록 로딩 상태
     const [showVerification, setShowVerification] = useState(false); // ✅ 실명 인증 폼 노출 여부
     const [isInApp, setIsInApp] = useState(false); // ✅ 카톡 등 인앱 브라우저 여부
@@ -1879,8 +1886,9 @@ export default function App() {
     const getLikerNames = (likerIds: string[]) => {
         if (!likerIds || !Array.isArray(likerIds) || likerIds.length === 0) return null;
         const names = likerIds.map(id => {
-            const m = memberList.find(member => member.id === id) || allAdminList.find(a => a.id === id);
-            return m?.full_name || null;
+            // memberList에서 먼저 찾고, 없으면 allAdminList(관리자)에서 이름을 찾습니다.
+            const m = memberList.find(member => member.id === id) || allAdminList.find(a => a.id === id || a.user_id === id);
+            return m?.full_name || m?.name || null;
         }).filter(Boolean);
         if (names.length === 0) return null;
         if (names.length <= 3) return names.join(", ") + "님이 좋아합니다";
