@@ -16,6 +16,13 @@ webpush.setVapidDetails(
     process.env.VAPID_PRIVATE_KEY || 'LAAS6aJenIKYBShIGZsWVKhXNOMKwkuXvpf2NLCGZAI'
 );
 
+const normalizeId = (id: string | null) => {
+    if (!id) return null;
+    const s = id.toLowerCase().trim();
+    if (s === '예수인교회' || s === 'jesus-in' || s === '예수인' || s === 'jesus') return 'jesus-in';
+    return s;
+};
+
 // 관리자 권한 및 성도 목록 조회
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
@@ -126,25 +133,26 @@ export async function GET(req: NextRequest) {
 
             const countMap: Record<string, number> = {};
             profileCounts?.forEach(p => {
-                const cid = p.church_id || 'somy-main';
+                const cid = normalizeId(p.church_id) || 'somy-main';
                 countMap[cid] = (countMap[cid] || 0) + 1;
             });
 
             // 3. 결합 및 보정
             const stats = (churches || []).map(ch => {
-                const effectiveId = (ch.id === 1 || ch.church_id === 'jesus-in') ? 'jesus-in' : ch.church_id;
+                const normCid = normalizeId(ch.church_id);
+                const effectiveId = (ch.id === 1 || normCid === 'jesus-in') ? 'jesus-in' : normCid;
+
                 return {
                     id: ch.id,
                     church_id: effectiveId,
                     church_name: ch.id === 1 ? (ch.church_name || '예수인교회') : (ch.church_name || ch.church_id),
-                    count: countMap[effectiveId] || 0,
+                    count: countMap[effectiveId || ''] || 0,
                     plan: ch.plan,
                     created_at: ch.created_at
                 };
             });
 
             // [추가] 등록은 안 되어 있는데 성도 데이터만 있는 아이디들도 'Trial/Orphan' 섹션을 위해 따로 반환
-            // (이미 위에서 보정된 jesus-in은 제외)
             const registeredIds = new Set(stats.map(s => s.church_id));
             const orphans: any[] = [];
             Object.entries(countMap).forEach(([cid, count]) => {
