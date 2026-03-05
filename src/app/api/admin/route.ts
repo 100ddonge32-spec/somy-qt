@@ -112,16 +112,42 @@ export async function GET(req: NextRequest) {
             return NextResponse.json(data);
         }
 
-        // [3] 교회별 통계
+        // [3] 교회별 통계 (등록된 교회 기준)
         if (action === 'get_church_stats') {
-            const { data: profiles, error } = await supabaseAdmin.from('profiles').select('church_id');
-            if (error) throw error;
-            const stats: { [key: string]: number } = {};
-            profiles?.forEach(p => {
+            // 1. 등록된 교회 목록 가져오기 (church_settings 기준)
+            const { data: churches, error: chErr } = await supabaseAdmin.from('church_settings').select('church_id, church_name, plan, created_at').order('created_at', { ascending: false });
+            if (chErr) throw chErr;
+
+            // 2. 전체 성도수 집계
+            const { data: profileCounts, error: pErr } = await supabaseAdmin.from('profiles').select('church_id');
+            if (pErr) throw pErr;
+
+            const countMap: Record<string, number> = {};
+            profileCounts?.forEach(p => {
                 const cid = p.church_id || 'somy-main';
-                stats[cid] = (stats[cid] || 0) + 1;
+                countMap[cid] = (countMap[cid] || 0) + 1;
             });
-            return NextResponse.json(stats);
+
+            // 3. 결합 (등록되지 않았는데 성도만 있는 유령 아이디들도 파악 가능하도록 합집합 처리 가능하지만, 
+            // 사용자의 요청대로 '등록된 교회' 위주로 정리합니다.
+            const stats = (churches || []).map(ch => ({
+                church_id: ch.church_id,
+                church_name: ch.church_name || ch.church_id,
+                count: countMap[ch.church_id] || 0,
+                plan: ch.plan,
+                created_at: ch.created_at
+            }));
+
+            // [추가] 등록은 안 되어 있는데 성도 데이터만 있는 아이디들도 'Trial/Orphan' 섹션을 위해 따로 반환
+            const registeredIds = new Set((churches || []).map(c => c.church_id));
+            const orphans: any[] = [];
+            Object.entries(countMap).forEach(([cid, count]) => {
+                if (!registeredIds.has(cid) && cid !== 'somy-main' && cid !== 'jesus-in') {
+                    orphans.push({ church_id: cid, church_name: `미등록 교회 (${cid})`, count, is_orphan: true });
+                }
+            });
+
+            return NextResponse.json({ registered: stats, orphans });
         }
 
         // [4] 전체 관리자 목록 (Master 전용)
@@ -232,7 +258,7 @@ export async function POST(req: NextRequest) {
         console.log(`[Admin Debug/API] Requester: ${requester_id}, Email: ${reqEmail}, Role: ${adminInfo?.role}, isMaster: ${isGlobalMaster}`);
 
         // 1. 마스터 전용 액션 체크
-        const masterOnlyActions = ['create_church_admin', 'delete_admin', 'list_all_admins', 'get_church_stats'];
+        const masterOnlyActions = ['create_church_admin', 'delete_admin', 'list_all_admins', 'get_church_stats', 'delete_church'];
         if (masterOnlyActions.includes(action) && !isGlobalMaster) {
             return NextResponse.json({ success: false, error: "마스터 권한이 필요한 작업입니다." }, { status: 403 });
         }
@@ -1006,6 +1032,27 @@ export async function POST(req: NextRequest) {
 
             const { error } = await supabaseAdmin.from('qt_completions').delete().eq('church_id', church_id);
             if (error) throw error;
+            return NextResponse.json({ success: true });
+        }
+        // [추가] 교회 전체 데이터 삭제 (슈퍼관리자)
+        if (action === 'delete_church') {
+            const { target_church_id } = body;
+            if (!target_church_id || target_church_id === 'jesus-in') {
+                throw new Error('삭제할 수 없는 교회거나 식별자가 없습니다.');
+            }
+
+            console.log(`[SuperAdmin] DELETING CHURCH: ${target_church_id}`);
+
+            // 1. 교회 설정 삭제
+            await supabaseAdmin.from('church_settings').delete().eq('church_id', target_church_id);
+
+            // 2. 해당 교회 관리자들 권한 삭제
+            await supabaseAdmin.from('app_admins').delete().eq('church_id', target_church_id);
+
+            // 3. 성도들의 church_id 초기화 (완전 삭제는 위험하므로 소속만 'deleted'로 변경하거나 유지)
+            // 여기서는 깔끔하게 'deleted-church' 등으로 마킹하여 목록에서 사라지게 함
+            await supabaseAdmin.from('profiles').update({ church_id: `deleted-${target_church_id}` }).eq('church_id', target_church_id);
+
             return NextResponse.json({ success: true });
         }
 

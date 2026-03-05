@@ -1290,6 +1290,27 @@ export default function App() {
         }
     };
 
+    const handleDeleteChurch = async (cid: string) => {
+        if (!confirm(`[위험] ${cid} 교회의 모든 설정과 관리자 권한을 삭제하시겠습니까?\n성도들의 소속 정보도 초기화됩니다.`)) return;
+        try {
+            const res = await fetch('/api/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'delete_church', target_church_id: cid, requester_id: user?.id })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert('교회 정보가 성공적으로 삭제되었습니다.');
+                // 새로고침 시뮬레이션
+                const r = await fetch('/api/admin?action=get_church_stats');
+                const d = await r.json();
+                if (d) setChurchStats(d);
+            } else {
+                alert('실패: ' + data.error);
+            }
+        } catch (e) { alert('네트워크 오류'); }
+    };
+
     const [history, setHistory] = useState<any[]>([]);
     const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 
@@ -1307,7 +1328,7 @@ export default function App() {
     const [adminTab, setAdminTab] = useState<"settings" | "members" | "master" | "stats" | "reset">("settings");
 
     const [isHistoryMode, setIsHistoryMode] = useState(false);
-    const [churchStats, setChurchStats] = useState<{ [key: string]: number }>({});
+    const [churchStats, setChurchStats] = useState<any>(null); // ✅ { registered: [], orphans: [] }
     const [showAddMemberModal, setShowAddMemberModal] = useState(false);
     const [isBulkProcessing, setIsBulkProcessing] = useState(false);
     const [showMergeModal, setShowMergeModal] = useState(false);
@@ -8176,7 +8197,7 @@ export default function App() {
                                             {/* 교회별 등록 인원 통계 */}
                                             <div style={{ background: '#FFF9C4', padding: '18px', borderRadius: '18px', border: '1px solid #FFF176' }}>
                                                 <div style={{ fontSize: '14px', fontWeight: 800, color: '#333', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <span>⛪ 교회별 등록 성도수</span>
+                                                    <span>⛪ 정식 등록 교회 ({churchStats?.registered?.length || 0})</span>
                                                     <button onClick={async () => {
                                                         const r = await fetch('/api/admin?action=get_church_stats');
                                                         const data = await r.json();
@@ -8184,17 +8205,42 @@ export default function App() {
                                                     }} style={{ background: 'white', border: '1px solid #E0E0E0', borderRadius: '8px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>새로고침</button>
                                                 </div>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                    {Object.keys(churchStats).length > 0 ? (
-                                                        Object.entries(churchStats).map(([cid, count]) => (
-                                                            <div key={cid} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.5)', padding: '8px 12px', borderRadius: '10px' }}>
-                                                                <span style={{ fontSize: '13px', fontWeight: 600, color: '#555' }}>📍 {cid}</span>
-                                                                <span style={{ fontSize: '14px', fontWeight: 800, color: '#D4AF37' }}>{count}명</span>
+                                                    {churchStats?.registered?.length > 0 ? (
+                                                        churchStats.registered.map((ch: any) => (
+                                                            <div key={ch.church_id} style={{ background: 'rgba(255,255,255,0.7)', padding: '12px', borderRadius: '15px' }}>
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                        <span style={{ fontSize: '13px', fontWeight: 800, color: '#333' }}>{ch.church_name || ch.church_id}</span>
+                                                                        <span style={{ fontSize: '10px', color: '#888' }}>ID: {ch.church_id} | {ch.plan}</span>
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                        <span style={{ fontSize: '14px', fontWeight: 800, color: '#D4AF37' }}>{ch.count}명</span>
+                                                                        {ch.church_id !== 'jesus-in' && (
+                                                                            <button onClick={() => handleDeleteChurch(ch.church_id)} style={{ padding: '4px 8px', background: '#FEE', color: '#C62828', border: 'none', borderRadius: '6px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}>삭제</button>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         ))
                                                     ) : (
                                                         <div style={{ fontSize: '12px', color: '#999', textAlign: 'center', padding: '10px' }}>'새로고침'을 눌러 통계를 확인하세요.</div>
                                                     )}
                                                 </div>
+
+                                                {/* 미등록/체험판 데이터 섹션 */}
+                                                {churchStats?.orphans?.length > 0 && (
+                                                    <div style={{ marginTop: '20px', borderTop: '1px dashed #DDD', paddingTop: '15px' }}>
+                                                        <div style={{ fontSize: '12px', fontWeight: 800, color: '#777', marginBottom: '10px' }}>⚠️ 미등록/체험판 데이터 ({churchStats.orphans.length})</div>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                            {churchStats.orphans.map((o: any) => (
+                                                                <div key={o.church_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.03)', padding: '8px 12px', borderRadius: '10px' }}>
+                                                                    <div style={{ fontSize: '11px', color: '#666' }}>📍 {o.church_id} <span style={{ opacity: 0.6 }}>({o.count}명)</span></div>
+                                                                    <button onClick={() => handleDeleteChurch(o.church_id)} style={{ padding: '2px 6px', background: 'none', color: '#999', border: 'none', fontSize: '10px', cursor: 'pointer' }}>기록삭제</button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
 
 
