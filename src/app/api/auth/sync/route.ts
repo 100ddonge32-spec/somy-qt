@@ -258,12 +258,11 @@ export async function POST(req: NextRequest) {
                     await migrateData(match.id, user_id);
                 }
                 return NextResponse.json({ ...responseData, name: responseData.full_name, status: 'merged' });
-            } else {
+            } else { // 1
                 const newProfile = { ...responseData, id: user_id };
                 await supabaseAdmin.from('profiles').insert([updateFields]); // DB에는 permanentChurch가 담긴 updateFields 저장
-                if (match.id !== user_id) {
+                if (match.id !== user_id) { // 2
                     console.log(`[Sync] Migrating data (new profile case) from old ID ${match.id} to new ID ${user_id}`);
-                    // 동일한 데이터 치환 로직 (중복 제거를 위해 migrateData 활용은 위에서 스코프 문제로 반복 작성)
                     // 1. 소유권 이전
                     await supabaseAdmin.from('thanksgiving_diaries').update({ user_id: user_id }).eq('user_id', match.id);
                     await supabaseAdmin.from('thanksgiving_comments').update({ user_id: user_id }).eq('user_id', match.id);
@@ -272,22 +271,22 @@ export async function POST(req: NextRequest) {
                     await supabaseAdmin.from('notifications').update({ user_id: user_id }).eq('user_id', match.id);
 
                     // 2. 좋아요 배열 치환
-                    for (const table of ['community_posts', 'thanksgiving_diaries']) {
+                    for (const table of ['community_posts', 'thanksgiving_diaries']) { // 3
                         const { data: posts } = await supabaseAdmin.from(table).select('id, liker_ids').contains('liker_ids', [match.id]);
-                        if (posts && posts.length > 0) {
-                            for (const post of posts) {
-                                if (post.liker_ids) {
+                        if (posts && posts.length > 0) { // 4
+                            for (const post of posts) { // 5
+                                if (post.liker_ids) { // 6
                                     const newLikes = Array.from(new Set(post.liker_ids.map((id: string) => id === match.id ? user_id : id)));
                                     await supabaseAdmin.from(table).update({ liker_ids: newLikes }).eq('id', post.id);
-                                }
-                            }
-                        }
-                    }
+                                } // 6 close
+                            } // 5 close
+                        } // 4 close
+                    } // 3 close
                     await supabaseAdmin.from('profiles').delete().eq('id', match.id);
-                }
+                } // 2 close
                 return NextResponse.json({ ...newProfile, name: newProfile.full_name, status: 'linked' });
-            }
-        }
+            } // 1 close
+        } // CLOSES `if (match)` FROM LINE 157!!
 
         const finalName = (nameForMatch && !isSystemGeneratedName) ? nameForMatch : (email ? email.split('@')[0] : '성도');
         const currentName = profileById?.full_name;
