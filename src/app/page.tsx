@@ -880,7 +880,7 @@ export default function App() {
     }, [ccmVolume]);
 
     // [이과장의 푸시 엔진] 브라우저 알림 권한을 얻고 서버에 구독 정보를 저장합니다.
-    const subscribePush = async (userId: string) => {
+    const subscribePush = useCallback(async (userId: string) => {
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
         try {
@@ -905,7 +905,7 @@ export default function App() {
         } catch (e) {
             console.error("❌ 푸시 알림 구독 실패:", e);
         }
-    };
+    }, []);
 
     // [이과장의 배지 시스템] 새로운 글이 있는지 시간을 비교하여 N 배지를 결정합니다.
     const fetchCounseling = useCallback(async () => {

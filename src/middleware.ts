@@ -36,7 +36,8 @@ export const config = {
          * - _next/static (정적 파일)
          * - _next/image (이미지 최적화 파일)
          * - favicon.ico (파비콘 파일)
+         * - 기타 최상위 정적 에셋들 (sw.js, png, svg 등)
          */
-        '/((?!api|_next/static|_next/image|favicon.ico).*)',
+        '/((?!api|_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.json|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico)).*)',
     ],
 };
