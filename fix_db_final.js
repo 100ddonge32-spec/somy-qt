@@ -38,11 +38,15 @@ async function run() {
             console.log(`Merging ${p.id} into ${targetUserId}`);
 
             // 1. 소유권 이전
+            console.log(`Transferring ownership for ${p.id}...`);
             await supabaseAdmin.from('thanksgiving_diaries').update({ user_id: targetUserId }).eq('user_id', p.id);
             await supabaseAdmin.from('thanksgiving_comments').update({ user_id: targetUserId }).eq('user_id', p.id);
             await supabaseAdmin.from('community_posts').update({ user_id: targetUserId }).eq('user_id', p.id);
             await supabaseAdmin.from('community_comments').update({ user_id: targetUserId }).eq('user_id', p.id);
             await supabaseAdmin.from('notifications').update({ user_id: targetUserId }).eq('user_id', p.id);
+            await supabaseAdmin.from('qt_completions').update({ user_id: targetUserId }).eq('user_id', p.id);
+            await supabaseAdmin.from('counseling_requests').update({ user_id: targetUserId }).eq('user_id', p.id);
+            await supabaseAdmin.from('push_subscriptions').update({ user_id: targetUserId }).eq('user_id', p.id);
 
             // 2. 좋아요 배열 치환
             for (const table of ['community_posts', 'thanksgiving_diaries']) {
@@ -75,6 +79,8 @@ async function run() {
                 await supabaseAdmin.from('community_posts').update({ user_id: targetUserId }).eq('user_id', p.id);
                 await supabaseAdmin.from('community_comments').update({ user_id: targetUserId }).eq('user_id', p.id);
                 await supabaseAdmin.from('notifications').update({ user_id: targetUserId }).eq('user_id', p.id);
+                await supabaseAdmin.from('qt_completions').update({ user_id: targetUserId }).eq('user_id', p.id);
+                await supabaseAdmin.from('counseling_requests').update({ user_id: targetUserId }).eq('user_id', p.id);
                 await supabaseAdmin.from('profiles').delete().eq('id', p.id);
             }
         }
