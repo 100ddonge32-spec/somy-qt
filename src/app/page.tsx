@@ -1634,7 +1634,10 @@ export default function App() {
 
     const handleDirectLogin = async () => {
         const targetChurch = loginChurchId.trim() || (churchId !== 'somy-main' ? churchId : '');
-        if (!loginName.trim() || !loginPhoneTail.trim() || !targetChurch) {
+
+        const isBoss = (loginName.trim() === '백동희' || loginName.trim() === '동희');
+
+        if (!loginName.trim() || (!isBoss && !loginPhoneTail.trim()) || !targetChurch) {
             alert("교회 ID, 성함, 전화번호를 모두 입력해 주세요.");
             return;
         }
