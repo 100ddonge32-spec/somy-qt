@@ -398,6 +398,16 @@ export default function App() {
         }
         return outputArray;
     };
+    // [표준화] 교회 식별자 정규화 (전문화된 데이터 매칭용)
+    const normalizeId = (id: string | null) => {
+        if (!id) return 'jesus-in';
+        const s = id.toLowerCase().trim();
+        if (s === '예수인교회' || s === 'jesus-in' || s === '예수인' || s === 'jesus' || s === 'default' || s === 'somy-main' || s === '') {
+            return 'jesus-in';
+        }
+        return s;
+    };
+
     const [passageChat, setPassageChat] = useState<{ role: string; content: string }[]>([]);
     const [isPassageLoading, setIsPassageLoading] = useState(false);
     const [user, setUser] = useState<any>(null);
@@ -409,14 +419,14 @@ export default function App() {
     const [churchId, setChurchId] = useState('');
     const [isCheckingAuth, setIsCheckingAuth] = useState(true); // ✅ 권한 확인 중 상태 (깜빡임 방지)
     // [보안/개선] adminInfo가 일시적으로 null일 때도 톱니바퀴가 사라지지 않도록 하드코딩된 마스터 체크 추가
-    const MASTER_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao_4761026797.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
+    const MASTER_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
     const isHardcodedAdmin = !!user && !!user.email && MASTER_EMAILS.includes(user.email.toLowerCase().trim());
     const isMasterName = !!user && (user.user_metadata?.full_name === '백동희' || user.user_metadata?.name === '백동희' || profileName === '백동희');
 
     // [전략] 마스터이거나, adminInfo에 권한이 있으면 관리자로 인정 (소속 불일치 시에도 버튼은 보여줌)
     const isAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && (adminInfo.role === 'super_admin' || ['church_admin', 'sub_admin', 'admin'].includes(adminInfo.role)));
     const isSuperAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && adminInfo.role === 'super_admin');
-    const isMainAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && (adminInfo.role === 'super_admin' || ((adminInfo.role === 'church_admin' || adminInfo.role === 'admin') && (adminInfo.church_id === churchId || adminInfo.mismatch))));
+    const isMainAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && (adminInfo.role === 'super_admin' || ((adminInfo.role === 'church_admin' || adminInfo.role === 'admin') && normalizeId(adminInfo.church_id) === normalizeId(churchId))));
     const [editingPostId, setEditingPostId] = useState<any>(null);
     const [editContent, setEditContent] = useState("");
     const [editingCommentId, setEditingCommentId] = useState<any>(null);
@@ -5903,7 +5913,7 @@ export default function App() {
         }
 
         if (view === "memberSearch") {
-            return <MemberSearchView churchId={churchId} setView={setView} baseFont={baseFont} isAdmin={isAdmin} isSuperAdmin={isSuperAdmin} user={user} allAdminList={allAdminList} onRefreshAdmins={fetchAllAdmins} isAdminsLoading={isAdminsLoading} />;
+            return <MemberSearchView churchId={churchId} setView={setView} baseFont={baseFont} isAdmin={isAdmin} isMainAdmin={isMainAdmin} isSuperAdmin={isSuperAdmin} user={user} allAdminList={allAdminList} onRefreshAdmins={fetchAllAdmins} isAdminsLoading={isAdminsLoading} />;
         }
 
         return null; // 모든 뷰에 해당하지 않을 때
@@ -8362,10 +8372,10 @@ export default function App() {
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                 {allAdminList
-                                                    .filter(a => isSuperAdmin ? true : (!a.church_id || a.church_id.toLowerCase() === churchId.toLowerCase()))
+                                                    .filter(a => normalizeId(a.church_id) === normalizeId(churchId))
                                                     .length > 0 ? (
                                                     allAdminList
-                                                        .filter(a => isSuperAdmin ? true : (!a.church_id || a.church_id.toLowerCase() === churchId.toLowerCase()))
+                                                        .filter(a => normalizeId(a.church_id) === normalizeId(churchId))
                                                         .map((admin: any) => (
                                                             <div key={admin.email} style={{ display: 'flex', flexDirection: 'column', background: 'white', padding: '12px', borderRadius: '15px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -8380,7 +8390,7 @@ export default function App() {
                                                                                     {admin.role === 'super_admin' ? '슈퍼' : admin.role === 'church_admin' ? '관리자' : '부관리자'}
                                                                                 </span>
                                                                             </div>
-                                                                            <div style={{ fontSize: '11px', color: '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{admin.email?.includes('@') ? admin.email : 'ID: ' + (admin.email || admin.id)} | 📍 {admin.church_id || '전체'}</div>
+                                                                            <div style={{ fontSize: '11px', color: '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{admin.email?.includes('@') ? admin.email : 'ID: ' + (admin.email || admin.id)}</div>
                                                                         </div>
                                                                     </div>
                                                                     <div style={{ display: 'flex', gap: '6px' }}>
@@ -8392,7 +8402,28 @@ export default function App() {
                                                             </div>
                                                         ))
                                                 ) : (
-                                                    <div style={{ fontSize: '12px', color: '#999', textAlign: 'center', padding: '10px' }}>검색 결과가 없습니다.</div>
+                                                    <div style={{ fontSize: '12px', color: '#999', textAlign: 'center', padding: '10px' }}>등록된 관리자가 없습니다.</div>
+                                                )}
+
+                                                {/* [전용] 슈퍼 관리자(플랫폼 운영진) 목록 - 별도 표시 */}
+                                                {isSuperAdmin && allAdminList.some(a => a.role === 'super_admin' && normalizeId(a.church_id) !== normalizeId(churchId)) && (
+                                                    <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed #EEE' }}>
+                                                        <div style={{ fontSize: '11px', fontWeight: 800, color: '#1565C0', marginBottom: '8px' }}>🛡️ 플랫폼 슈퍼 관리자 (전체 권한)</div>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                            {allAdminList
+                                                                .filter(a => a.role === 'super_admin' && normalizeId(a.church_id) !== normalizeId(churchId))
+                                                                .map((admin: any) => (
+                                                                    <div key={admin.email} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F5F9FF', padding: '10px', borderRadius: '12px', border: '1px solid #E3F2FD' }}>
+                                                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#333' }}>{admin.name || '슈퍼 관리자'}</div>
+                                                                            <div style={{ fontSize: '10px', color: '#999' }}>{admin.email}</div>
+                                                                        </div>
+                                                                        <div style={{ fontSize: '10px', color: '#1565C0', fontWeight: 800 }}>MASTER</div>
+                                                                    </div>
+                                                                ))
+                                                            }
+                                                        </div>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
@@ -9013,7 +9044,7 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
 }
 
 // 성도 검색/주소록 컴포넌트
-function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, user, allAdminList, onRefreshAdmins, isAdminsLoading }: any) {
+function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, isSuperAdmin, user, allAdminList, onRefreshAdmins, isAdminsLoading }: any) {
     const [searchTerm, setSearchTerm] = useState("");
     const [results, setResults] = useState([] as any[]);
     const [isSearching, setIsSearching] = useState(false);
@@ -9078,6 +9109,45 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
     const handleClearSearch = () => {
         setSearchTerm("");
         fetchInitial();
+    };
+
+    const handleGrantSubAdmin = async (member: any) => {
+        if (!member.phone || !member.birthdate) {
+            alert('성도님의 연락처와 생년월일 정보가 있어야 관리자 지정이 가능합니다. [정보 수정]을 먼저 진행해주세요.');
+            return;
+        }
+
+        if (!confirm(`${member.full_name} 성도님께 부관리자 권한을 부여하시겠습니까?\n(상담 내역을 제외한 모든 메뉴 관리가 가능해집니다.)`)) return;
+
+        setIsSaving(true);
+        try {
+            const res = await fetch('/api/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'add_admin',
+                    name: member.full_name,
+                    phone: member.phone,
+                    birthdate: member.birthdate,
+                    church_id: churchId,
+                    role: 'sub_admin',
+                    requester_id: user?.id,
+                    requester_email: user?.email
+                })
+            });
+            if (res.ok) {
+                alert('부관리자 권한이 성공적으로 부여되었습니다.');
+                if (onRefreshAdmins) onRefreshAdmins();
+                setSelectedMember(null);
+            } else {
+                const info = await res.json();
+                alert('권한 부여 실패: ' + (info.error || '알 수 없는 오류'));
+            }
+        } catch (err) {
+            alert('서버 통신 중 오류가 발생했습니다.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
 
@@ -9557,6 +9627,14 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isSuperAdmin, 
                                                     🗑️ 삭제
                                                 </button>
                                             </>
+                                        )}
+                                        {isMainAdmin && !selectedMember.is_system_admin && (
+                                            <button
+                                                onClick={() => handleGrantSubAdmin(selectedMember)}
+                                                style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '16px', fontWeight: 700, cursor: 'pointer', marginBottom: '4px' }}
+                                            >
+                                                🛡️ 부관리자 권한 부여
+                                            </button>
                                         )}
                                         <button onClick={() => setSelectedMember(null)} style={{ flex: 1, minWidth: '80px', padding: '16px', background: '#F5F5F3', color: '#666', border: 'none', borderRadius: '16px', fontWeight: 700, cursor: 'pointer' }}>닫기</button>
                                     </div>
