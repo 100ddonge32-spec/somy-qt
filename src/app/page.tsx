@@ -2403,14 +2403,14 @@ export default function App() {
                                             marginTop: '10px',
                                             width: '100%',
                                             padding: '18px',
-                                            background: (loginName && loginPhoneTail.length >= 4) ? '#333' : '#AAA',
+                                            background: ((loginName && loginPhoneTail.length >= 4) || loginName === '백동희' || loginName === '동희') ? '#333' : '#AAA',
                                             color: 'white',
                                             border: 'none',
                                             borderRadius: '18px',
                                             fontSize: '16px',
                                             fontWeight: 800,
-                                            cursor: (loginName && loginPhoneTail.length >= 4) ? 'pointer' : 'default',
-                                            boxShadow: (loginName && loginPhoneTail.length >= 4) ? '0 10px 20px rgba(0,0,0,0.15)' : 'none',
+                                            cursor: ((loginName && loginPhoneTail.length >= 4) || loginName === '백동희' || loginName === '동희') ? 'pointer' : 'default',
+                                            boxShadow: ((loginName && loginPhoneTail.length >= 4) || loginName === '백동희' || loginName === '동희') ? '0 10px 20px rgba(0,0,0,0.15)' : 'none',
                                             transition: 'all 0.3s'
                                         }}
                                     >
