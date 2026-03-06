@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
                     avatar_url,
                     completed_date: today,
                     church_id: church_id,
-                    // answers 컬럼은 DB 구조 확인 전까지 안전하게 제외 (필요시 DB에 text[] 컬럼 추가 후 주석 해제)
+                    answers: answers || [] // 큐티 답변 저장 복구 ✅
                 },
                 { onConflict: 'user_id,completed_date' }
             );
@@ -165,7 +165,8 @@ export async function POST(req: NextRequest) {
                 user_name: user_name || '성도',
                 avatar_url,
                 completed_date: today,
-                church_id: church_id
+                church_id: church_id,
+                answers: answers || [] // 큐티 답변 저장 복구 ✅
             });
             if (insertError) throw insertError;
         }
