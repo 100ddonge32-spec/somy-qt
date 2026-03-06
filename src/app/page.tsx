@@ -1348,6 +1348,8 @@ export default function App() {
 
     const [history, setHistory] = useState<any[]>([]);
     const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+    const [historyViewType, setHistoryViewType] = useState<"calendar" | "list">("calendar");
+    const [calendarDate, setCalendarDate] = useState<Date>(new Date());
 
     const fetchHistory = async () => {
         if (!user) return;
@@ -4834,59 +4836,133 @@ export default function App() {
                     </div>
 
                     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '100px' }}>
-                        {isHistoryLoading ? (
-                            <div style={{ textAlign: 'center', padding: '100px 0', color: '#999' }}>기록을 불러오는 중입니다... 🐑</div>
-                        ) : history.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '100px 0', color: '#999' }}>아직 저장된 묵상이 없어요. <br />오늘의 큐티를 시작해보세요!</div>
-                        ) : (
-                            history.map((h, idx) => (
-                                <div key={idx} style={{ background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: '1px solid #F0ECE4' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#B8924A' }}>
-                                            {new Date(h.completed_date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
-                                        </div>
-                                        <div style={{ fontSize: '12px', background: '#E8F5E9', padding: '4px 10px', borderRadius: '12px', color: '#2E7D32', fontWeight: 600 }}>완료 ✅</div>
-                                    </div>
 
-                                    <div style={{ marginBottom: '15px' }}>
-                                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            📖 {h.daily_qt?.reference || "오늘의 말씀 묵상"}
-                                        </div>
-                                        {h.daily_qt?.passage ? (
-                                            <p style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                                {h.daily_qt.passage.split('|||')[0].substring(0, 100)}...
-                                            </p>
-                                        ) : (
-                                            <p style={{ fontSize: '13px', color: '#999', fontStyle: 'italic', margin: 0 }}>
-                                                기록된 말씀 본문이 없습니다.
-                                            </p>
-                                        )}
-                                    </div>
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                            <button onClick={() => setHistoryViewType('calendar')} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #E0E0E0', background: historyViewType === 'calendar' ? '#333' : 'white', color: historyViewType === 'calendar' ? '#FFF' : '#666', fontWeight: 700, fontSize: '14px', transition: 'all 0.2s', boxShadow: historyViewType === 'calendar' ? '0 4px 10px rgba(0,0,0,0.1)' : 'none' }}>📅 캘린더 보기</button>
+                            <button onClick={() => setHistoryViewType('list')} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #E0E0E0', background: historyViewType === 'list' ? '#333' : 'white', color: historyViewType === 'list' ? '#FFF' : '#666', fontWeight: 700, fontSize: '14px', transition: 'all 0.2s', boxShadow: historyViewType === 'list' ? '0 4px 10px rgba(0,0,0,0.1)' : 'none' }}>📝 목록 보기</button>
+                        </div>
 
-                                    <button onClick={() => {
-                                        const qt = h.daily_qt;
-                                        if (qt) {
-                                            const { fullPassage, interpretation } = parsePassage(qt.passage);
-                                            setQtData({
-                                                date: new Date(qt.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
-                                                reference: qt.reference,
-                                                fullPassage,
-                                                interpretation,
-                                                verse: fullPassage.split('\n')[0],
-                                                questions: [qt.question1, qt.question2, qt.question3].filter(Boolean),
-                                                prayer: qt.prayer,
-                                            });
-                                            setAnswers(h.answers || []);
-                                            setIsHistoryMode(true);
-                                            setQtStep('read');
-                                            setView('qt');
-                                        }
-                                    }} style={{ width: '100%', marginTop: '5px', padding: '12px', background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '12px', color: '#666', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                                        전체 내용 다시보기
-                                    </button>
+                        {historyViewType === 'calendar' && (
+                            <div style={{ background: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', border: '1px solid #F0ECE4', marginBottom: '10px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                                    <button onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1))} style={{ background: '#F8F8F8', border: 'none', width: '36px', height: '36px', borderRadius: '50%', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>◀</button>
+                                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#333' }}>{calendarDate.getFullYear()}년 {calendarDate.getMonth() + 1}월</div>
+                                    <button onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1))} style={{ background: '#F8F8F8', border: 'none', width: '36px', height: '36px', borderRadius: '50%', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>▶</button>
                                 </div>
-                            ))
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center', fontWeight: 700, fontSize: '13px', color: '#999', marginBottom: '15px' }}>
+                                    <div style={{ color: '#E53935' }}>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div style={{ color: '#1E88E5' }}>토</div>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
+                                    {Array.from({ length: new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 1).getDay() }).map((_, i) => <div key={`empty-${i}`} />)}
+                                    {Array.from({ length: new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 0).getDate() }).map((_, i) => {
+                                        const day = i + 1;
+                                        const qtRecord = history.find(h => {
+                                            const hDate = new Date(h.completed_date);
+                                            return hDate.getFullYear() === calendarDate.getFullYear() && hDate.getMonth() === calendarDate.getMonth() && hDate.getDate() === day;
+                                        });
+                                        const isToday = new Date().getDate() === day && new Date().getMonth() === calendarDate.getMonth() && new Date().getFullYear() === calendarDate.getFullYear();
+
+                                        return (
+                                            <div key={day}
+                                                onClick={() => {
+                                                    if (qtRecord?.daily_qt) {
+                                                        const qt = qtRecord.daily_qt;
+                                                        const { fullPassage, interpretation } = parsePassage(qt.passage);
+                                                        setQtData({
+                                                            date: new Date(qt.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
+                                                            reference: qt.reference,
+                                                            fullPassage,
+                                                            interpretation,
+                                                            verse: fullPassage.split('\n')[0],
+                                                            questions: [qt.question1, qt.question2, qt.question3].filter(Boolean),
+                                                            prayer: qt.prayer,
+                                                        });
+                                                        setAnswers(qtRecord.answers || []);
+                                                        setIsHistoryMode(true);
+                                                        setView("qt");
+                                                    }
+                                                }}
+                                                style={{
+                                                    aspectRatio: '1/1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                                    fontSize: '15px', fontWeight: isToday || qtRecord ? 800 : 500, borderRadius: '50%', cursor: qtRecord ? 'pointer' : 'default',
+                                                    background: qtRecord ? '#E8F5E9' : (isToday ? '#FFF3E0' : 'transparent'),
+                                                    color: qtRecord ? '#2E7D32' : (new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day).getDay() === 0 ? '#E53935' : new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day).getDay() === 6 ? '#1E88E5' : '#444'),
+                                                    border: isToday ? '2px solid #FF9800' : (qtRecord ? '2px solid #81C784' : '2px solid transparent'),
+                                                    boxShadow: qtRecord ? '0 2px 5px rgba(46,125,50,0.2)' : 'none',
+                                                    transition: 'all 0.2s', position: 'relative'
+                                                }}>
+                                                {day}
+                                                {qtRecord && <div style={{ position: 'absolute', bottom: '2px', width: '4px', height: '4px', background: '#2E7D32', borderRadius: '50%' }} />}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginTop: '20px', fontSize: '11px', color: '#888' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#E8F5E9', border: '1px solid #81C784' }}></div> 묵상 완료</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', border: '2px solid #FF9800' }}></div> 오늘</div>
+                                </div>
+                            </div>
                         )}
+
+                        {(historyViewType === 'list') && (
+                            <>
+                                {isHistoryLoading ? (
+                                    <div style={{ textAlign: 'center', padding: '100px 0', color: '#999' }}>기록을 불러오는 중입니다... 🐑</div>
+                                ) : history.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '100px 0', color: '#999' }}>아직 저장된 묵상이 없어요. <br />오늘의 큐티를 시작해보세요!</div>
+                                ) : (
+                                    history.map((h, idx) => (
+                                        <div key={idx} style={{ background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: '1px solid #F0ECE4' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                                                <div style={{ fontSize: '15px', fontWeight: 800, color: '#B8924A' }}>
+                                                    {new Date(h.completed_date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
+                                                </div>
+                                                <div style={{ fontSize: '12px', background: '#E8F5E9', padding: '4px 10px', borderRadius: '12px', color: '#2E7D32', fontWeight: 600 }}>완료 ✅</div>
+                                            </div>
+
+                                            <div style={{ marginBottom: '15px' }}>
+                                                <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    📖 {h.daily_qt?.reference || "오늘의 말씀 묵상"}
+                                                </div>
+                                                {h.daily_qt?.passage ? (
+                                                    <p style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                        {h.daily_qt.passage.split('|||')[0].substring(0, 100)}...
+                                                    </p>
+                                                ) : (
+                                                    <p style={{ fontSize: '13px', color: '#999', fontStyle: 'italic', margin: 0 }}>
+                                                        기록된 말씀 본문이 없습니다.
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <button onClick={() => {
+                                                const qt = h.daily_qt;
+                                                if (qt) {
+                                                    const { fullPassage, interpretation } = parsePassage(qt.passage);
+                                                    setQtData({
+                                                        date: new Date(qt.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
+                                                        reference: qt.reference,
+                                                        fullPassage,
+                                                        interpretation,
+                                                        verse: fullPassage.split('\n')[0],
+                                                        questions: [qt.question1, qt.question2, qt.question3].filter(Boolean),
+                                                        prayer: qt.prayer,
+                                                    });
+                                                    setAnswers(h.answers || []);
+                                                    setIsHistoryMode(true);
+                                                    setQtStep('read');
+                                                    setView('qt');
+                                                }
+                                            }} style={{ width: '100%', marginTop: '5px', padding: '12px', background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '12px', color: '#666', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                                                전체 내용 다시보기
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
+                            </>
+                        )}
+                    </div>
+                    <div style={{ padding: '0 20px 40px 20px', display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '100px' }}>
                         <button onClick={() => setView('home')} style={{ marginTop: '10px', width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 돌아가기</button>
                     </div>
                 </div>
