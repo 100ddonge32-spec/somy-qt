@@ -8,45 +8,78 @@ const APP_URL = "https://somy-qt.vercel.app";
 const churchName = process.env.NEXT_PUBLIC_CHURCH_NAME || "";
 const appName = process.env.NEXT_PUBLIC_APP_NAME || "소미 QT";
 
-export const metadata: Metadata = {
-  title: churchName ? `${appName} - ${churchName}` : appName,
-  description: "소미와 함께하는 따뜻한 큐티 시간 🐑",
-  themeColor: "#D4AF37",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: appName,
-  },
-  icons: {
-    icon: "/somy.png",
-    apple: "/somy.png",
-    shortcut: "/somy.png",
-  },
-  // manifest: "/manifest.json", // 동적 매니페스트 사용을 위해 주석 처리
-  openGraph: {
-    title: `${appName} - ${churchName}`,
-    description: "소미와 함께하는 따뜻한 큐티 시간 🐑",
-    url: APP_URL,
-    siteName: `${appName}`,
-    images: [
-      {
-        url: `${APP_URL}/og-image.png`,
-        width: 1200,
-        height: 630,
-        alt: "소미 큐티 챗봇 - 성경과 함께하는 양 캐릭터",
-      },
-    ],
-    type: "website",
-    locale: "ko_KR",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `${appName} - ${churchName}`,
-    description: "소미와 함께하는 따뜻한 큐티 시간 🐑",
-    images: [`${APP_URL}/og-image.png`],
-  },
-};
+import { headers } from "next/headers";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
+
+export async function generateMetadata(): Promise<Metadata> {
+  const headersList = headers();
+  const cid = headersList.get('x-church-id') || 'jesus-in';
+
+  const appName = process.env.NEXT_PUBLIC_APP_NAME || "소미 QT";
+  let churchName = "";
+  let description = "소미와 함께하는 따뜻한 큐티 시간 🐑";
+  let ogImage = `${APP_URL}/og-image.png`;
+
+  if (cid === 'jesus-in' || cid === 'default') {
+    churchName = process.env.NEXT_PUBLIC_CHURCH_NAME || "예수인교회";
+  } else {
+    try {
+      const { data: settings } = await supabaseAdmin
+        .from('church_settings')
+        .select('church_name, app_subtitle, church_logo_url')
+        .eq('church_id', cid)
+        .maybeSingle();
+
+      if (settings) {
+        churchName = settings.church_name;
+        if (settings.app_subtitle) description = settings.app_subtitle;
+        if (settings.church_logo_url) ogImage = settings.church_logo_url;
+      }
+    } catch (e) {
+      console.error('Metadata fetch error:', e);
+    }
+  }
+
+  const fullTitle = churchName ? `${appName} - ${churchName}` : appName;
+
+  return {
+    title: fullTitle,
+    description: description,
+    themeColor: "#D4AF37",
+    viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: appName,
+    },
+    icons: {
+      icon: "/somy.png",
+      apple: "/somy.png",
+      shortcut: "/somy.png",
+    },
+    openGraph: {
+      title: fullTitle,
+      description: description,
+      url: APP_URL,
+      siteName: appName,
+      images: [{ url: ogImage }],
+      type: "website",
+      locale: "ko_KR",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: fullTitle,
+      description: description,
+      images: [ogImage],
+    },
+  };
+}
 
 export default function RootLayout({
   children,
