@@ -333,7 +333,7 @@ export async function POST(req: NextRequest) {
         console.log(`[Admin Debug/API] Requester: ${requester_id}, Email: ${reqEmail}, Role: ${adminInfo?.role}, isMaster: ${isGlobalMaster}`);
 
         // 1. 마스터 전용 액션 체크
-        const masterOnlyActions = ['create_church_admin', 'delete_admin', 'list_all_admins', 'get_church_stats', 'delete_church'];
+        const masterOnlyActions = ['create_church_admin', 'delete_admin', 'list_all_admins', 'get_church_stats', 'delete_church', 'update_admin_pin'];
         if (masterOnlyActions.includes(action) && !isGlobalMaster) {
             return NextResponse.json({ success: false, error: "마스터 권한이 필요한 작업입니다." }, { status: 403 });
         }
@@ -771,19 +771,25 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true });
         }
 
-        // [신규] 관리자 PIN 번호 변경
+        // [신규] 관리자 PIN 번호 변경 (Master 전용)
         if (action === 'update_admin_pin') {
-            const { target_user_id, new_pin } = body;
-            if (!target_user_id || !new_pin) throw new Error('대상자 ID 또는 새 PIN 번호가 없습니다.');
+            const { target_email, target_user_id, new_pin } = body;
+            if ((!target_email && !target_user_id) || !new_pin) throw new Error('대상자 식별 정보 또는 새 PIN 번호가 없습니다.');
 
-            const { data, error } = await supabaseAdmin
-                .from('app_admins')
-                .update({ pin: new_pin })
-                .eq('user_id', target_user_id)
-                .select();
+            console.log(`[Admin PIN Update] Requester: ${reqEmail}, Target: ${target_email || target_user_id}`);
 
-            if (error) throw error;
-            return NextResponse.json({ success: true, data });
+            let query = supabaseAdmin.from('app_admins').update({ pin: new_pin });
+
+            if (target_email) {
+                query = query.eq('email', target_email.toLowerCase().trim());
+            } else {
+                query = query.eq('user_id', target_user_id);
+            }
+
+            const { data, error: pinErr } = await query.select();
+
+            if (pinErr) throw pinErr;
+            return NextResponse.json({ success: true, count: data?.length || 0 });
         }
 
         // 성도 승인 처리

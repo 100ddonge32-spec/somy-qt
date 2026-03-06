@@ -8391,6 +8391,44 @@ export default function App() {
                                                                                 </span>
                                                                             </div>
                                                                             <div style={{ fontSize: '11px', color: '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{admin.email?.includes('@') ? admin.email : 'ID: ' + (admin.email || admin.id)}</div>
+                                                                            {isSuperAdmin && (
+                                                                                <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                                    <div style={{ fontSize: '11px', color: '#1565C0', fontWeight: 700, background: '#E3F2FD', padding: '2px 6px', borderRadius: '4px' }}>
+                                                                                        PIN: {admin.pin || '미지정'}
+                                                                                    </div>
+                                                                                    <button
+                                                                                        onClick={async () => {
+                                                                                            const newPin = prompt(`${admin.name || admin.email} 관리자의 새 PIN 번호를 입력하세요 (4~6자리):`, admin.pin || "");
+                                                                                            if (newPin === null) return;
+                                                                                            if (!newPin || newPin.length < 4) { alert("PIN 번호는 4자리 이상이어야 합니다."); return; }
+                                                                                            try {
+                                                                                                const res = await fetch('/api/admin', {
+                                                                                                    method: 'POST',
+                                                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                                                    body: JSON.stringify({
+                                                                                                        action: 'update_admin_pin',
+                                                                                                        target_email: admin.email,
+                                                                                                        target_user_id: admin.user_id,
+                                                                                                        new_pin: newPin,
+                                                                                                        requester_id: user?.id,
+                                                                                                        requester_email: user?.email
+                                                                                                    })
+                                                                                                });
+                                                                                                if (res.ok) {
+                                                                                                    alert("PIN 번호가 성공적으로 변경되었습니다.");
+                                                                                                    fetchAllAdmins();
+                                                                                                } else {
+                                                                                                    const err = await res.json();
+                                                                                                    alert("변경 실패: " + (err.error || "알 수 없는 오류"));
+                                                                                                }
+                                                                                            } catch (e) { alert("서버 통신 오류"); }
+                                                                                        }}
+                                                                                        style={{ fontSize: '10px', background: 'none', border: '1px solid #CCC', borderRadius: '4px', padding: '2px 5px', cursor: 'pointer', color: '#666' }}
+                                                                                    >
+                                                                                        변경
+                                                                                    </button>
+                                                                                </div>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                     <div style={{ display: 'flex', gap: '6px' }}>
@@ -8667,7 +8705,8 @@ export default function App() {
                             </div>
                         </div>
                     </div>
-                )}
+                )
+            }
 
             {renderMemberEditModal()}
             {renderAddMemberModal()}
