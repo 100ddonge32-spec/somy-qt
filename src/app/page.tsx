@@ -473,6 +473,8 @@ export default function App() {
         sermon_q1: '',
         sermon_q2: '',
         sermon_q3: '',
+        today_verse_text: '',
+        today_verse_ref: '',
         custom_ccm_list: [],
         today_book_title: '',
         today_book_description: '',
@@ -496,6 +498,8 @@ export default function App() {
         sermon_q1: '',
         sermon_q2: '',
         sermon_q3: '',
+        today_verse_text: '',
+        today_verse_ref: '',
         custom_ccm_list: [],
         today_book_title: '',
         today_book_description: '',
@@ -1856,9 +1860,12 @@ export default function App() {
         if (isGeneratingColumn) return;
         setIsGeneratingColumn(true);
         try {
-            const verse = getGraceVerse();
+            const autoVerse = getGraceVerse();
+            const verseText = churchSettings.today_verse_text || autoVerse.verse;
+            const verseRef = churchSettings.today_verse_text ? churchSettings.today_verse_ref || '직접 입력' : `${autoVerse.book} ${autoVerse.ref}`;
+
             // ✅ 프롬프트를 더 풍성하고 깊이 있게 수정
-            const prompt = `당신은 ${settingsForm.church_name || CHURCH_NAME}의 담임목사입니다. 오늘의 말씀 [${verse.book} ${verse.ref}: ${verse.verse}]을 바탕으로 성도들에게 깊은 위로와 영적 도전을 주는 '담임목사 칼럼'을 작성해주세요. 
+            const prompt = `당신은 ${settingsForm.church_name || CHURCH_NAME}의 담임목사입니다. 오늘의 말씀 [${verseRef}: ${verseText}]을 바탕으로 성도들에게 깊은 위로와 영적 도전을 주는 '담임목사 칼럼'을 작성해주세요. 
 
 [작성 가이드라인]
 1. 분량: 약 500자 내외로 풍성하게 작성하세요.
@@ -2703,7 +2710,11 @@ export default function App() {
                                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", flex: 1, justifyContent: 'center', width: "100%", marginTop: '10px', marginBottom: '10px' }}>
                                     <div style={{ background: "rgba(255, 255, 255, 0.9)", borderRadius: "24px", padding: "24px", width: "100%", maxWidth: "320px", boxShadow: "0 10px 30px rgba(0,0,0,0.06)", border: "1px solid #F0ECE4", animation: "fade-in 0.8s ease-out", display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', textAlign: 'left', backdropFilter: 'blur(10px)', userSelect: 'none' }}>
                                         {(() => {
-                                            const graceVerse = getGraceVerse();
+                                            const autoVerse = getGraceVerse();
+                                            const isCustom = !!churchSettings?.today_verse_text;
+                                            const verseText = isCustom ? churchSettings.today_verse_text : autoVerse.verse;
+                                            const verseBook = isCustom ? '' : autoVerse.book;
+                                            const verseRef = isCustom ? (churchSettings.today_verse_ref || '') : autoVerse.ref;
                                             return (
                                                 <>
                                                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
@@ -2711,9 +2722,9 @@ export default function App() {
                                                         <span style={{ fontSize: "15px", fontWeight: 800, color: "#9E7B31", letterSpacing: '-0.2px' }}>오늘의 말씀</span>
                                                     </div>
                                                     <div style={{ position: 'relative', padding: '0 4px' }}>
-                                                        <p className="verse-text" style={{ position: 'relative', zIndex: 1, fontSize: "15px", color: "#444", lineHeight: 1.8, margin: "0 0 16px 0", fontWeight: 500, wordBreak: 'keep-all', textAlign: 'center' }}>"{graceVerse.verse}"</p>
+                                                        <p className="verse-text" style={{ position: 'relative', zIndex: 1, fontSize: "15px", color: "#444", lineHeight: 1.8, margin: "0 0 16px 0", fontWeight: 500, wordBreak: 'keep-all', textAlign: 'center' }}>"{verseText}"</p>
                                                     </div>
-                                                    <p style={{ fontSize: "13px", color: "#B8924A", fontWeight: 700, margin: 0, textAlign: 'right' }}>— {graceVerse.book} {graceVerse.ref} <span style={{ fontSize: '10px', color: '#CCC', fontWeight: 400 }}>(개역한글)</span></p>
+                                                    <p style={{ fontSize: "13px", color: "#B8924A", fontWeight: 700, margin: 0, textAlign: 'right' }}>— {verseBook} {verseRef} {!isCustom && <span style={{ fontSize: '10px', color: '#CCC', fontWeight: 400 }}>(개역한글)</span>}</p>
 
                                                     <div style={{ width: '100%', height: '1px', background: 'repeating-linear-gradient(to right, #EEEEEE 0, #EEEEEE 4px, transparent 4px, transparent 8px)', margin: '20px 0' }} />
 
@@ -3476,31 +3487,35 @@ export default function App() {
                             </button>
 
                             <button onClick={async () => {
-                                const gv = getGraceVerse();
+                                const autoVerse = getGraceVerse();
+                                const isCustom = !!churchSettings?.today_verse_text;
+                                const _ref = isCustom ? (churchSettings.today_verse_ref || '기타') : `${autoVerse.book} ${autoVerse.ref}`;
+                                const _passage = isCustom ? churchSettings.today_verse_text : autoVerse.verse;
+
                                 setAiLoading(true);
                                 try {
                                     // 본문은 있으니 질문/기도문만 생성 요청
                                     const res = await fetch('/api/qt-generate', {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ reference: `${gv.book} ${gv.ref}`, passage: gv.verse })
+                                        body: JSON.stringify({ reference: _ref, passage: _passage })
                                     });
                                     const data = await res.json();
                                     setQtForm({
                                         ...qtForm,
-                                        reference: `${gv.book} ${gv.ref}`,
-                                        passage: gv.verse,
+                                        reference: _ref,
+                                        passage: _passage,
                                         question1: data.question1 || '',
                                         question2: data.question2 || '',
                                         question3: data.question3 || '',
                                         prayer: data.prayer || '',
                                     });
                                 } catch {
-                                    setQtForm({ ...qtForm, reference: `${gv.book} ${gv.ref}`, passage: gv.verse });
+                                    setQtForm({ ...qtForm, reference: _ref, passage: _passage });
                                     alert('말씀은 불러왔으나 질문 생성에 실패했습니다.');
                                 } finally { setAiLoading(false); }
                             }} disabled={aiLoading} style={{ width: '100%', padding: '12px', background: '#F5F2EA', color: '#B8924A', border: '1px solid #B8924A', borderRadius: '10px', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
-                                🛳️ 네비게이토 은혜 말씀 불러오기
+                                🛳️ {churchSettings?.today_verse_text ? '설정된 오늘의 말씀 불러오기' : '네비게이토 은혜 말씀 불러오기'}
                             </button>
 
                             <p style={{ fontSize: '11px', color: '#999', marginTop: '8px', textAlign: 'center' }}>
@@ -7397,6 +7412,18 @@ export default function App() {
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                         <input type="text" value={settingsForm.pastor_column_title || ''} onChange={e => setSettingsForm({ ...settingsForm, pastor_column_title: e.target.value })} placeholder="칼럼 제목" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
                                                         <textarea value={settingsForm.pastor_column_content || ''} onChange={e => setSettingsForm({ ...settingsForm, pastor_column_content: e.target.value })} placeholder="칼럼 내용 (직접 입력 또는 AI 생성)" style={{ width: '100%', minHeight: '100px', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px', resize: 'none', lineHeight: 1.6 }} />
+                                                    </div>
+                                                </div>
+
+                                                {/* ✅ 오늘의 말씀 개별 설정 추가 */}
+                                                <div style={{ marginTop: '10px', padding: '15px', background: '#F8F9FA', borderRadius: '15px', border: '1px solid #E9ECEF' }}>
+                                                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        📖 오늘의 말씀 커스텀 (옵션)
+                                                    </div>
+                                                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>* 비워두면 추천 말씀이 매일 자동 생성됩니다. 직접 입력 시 해당 말씀이 고정 노출됩니다.</div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                        <input type="text" value={settingsForm.today_verse_text || ''} onChange={e => setSettingsForm({ ...settingsForm, today_verse_text: e.target.value })} placeholder="예: 여호와는 나의 목자시니..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
+                                                        <input type="text" value={settingsForm.today_verse_ref || ''} onChange={e => setSettingsForm({ ...settingsForm, today_verse_ref: e.target.value })} placeholder="출처 (예: 시편 23:1)" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
                                                     </div>
                                                 </div>
                                             </div>

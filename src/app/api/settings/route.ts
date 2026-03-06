@@ -137,6 +137,17 @@ export async function GET(req: NextRequest) {
             const match = planStr.match(/s_q2:([^|]+)/);
             if (match) data.sermon_q2 = decodeURIComponent(match[1]);
         }
+
+        // 7. 오늘의 말씀 커스텀 필드
+        if (!data.today_verse_text && planStr.includes('tv_text:')) {
+            const match = planStr.match(/tv_text:([^|]+)/);
+            if (match) data.today_verse_text = decodeURIComponent(match[1]);
+        }
+        if (!data.today_verse_ref && planStr.includes('tv_ref:')) {
+            const match = planStr.match(/tv_ref:([^|]+)/);
+            if (match) data.today_verse_ref = decodeURIComponent(match[1]);
+        }
+
         data.plan = data.plan.split('|')[0]; // 원래 plan 값만 추출 (ui용)
     }
 
@@ -167,6 +178,8 @@ export async function POST(req: NextRequest) {
         event_poster_visible,
         pastor_column_title,
         pastor_column_content,
+        today_verse_text, // [추가] 커스텀 오늘의 말씀 텍스트
+        today_verse_ref,  // [추가] 커스텀 오늘의 말씀 구절
         church_id: body_church_id,
         requester_id,
         requester_email: body_requester_email // [추가] 클라이언트에서 넘어온 이메일
@@ -256,6 +269,8 @@ export async function POST(req: NextRequest) {
     let cleanSubtitle = app_subtitle || '말씀과 기도로 거룩해지는 공동체';
     let cleanColumnTitle = pastor_column_title || '🙏 오늘의 목양 메시지';
     let cleanColumnContent = pastor_column_content;
+    let cleanTodayVerseText = today_verse_text;
+    let cleanTodayVerseRef = today_verse_ref;
     let cleanLogoUrl = church_logo_url;
     let cleanSermonUrl = sermon_url;
     let cleanSermonSummary = sermon_summary;
@@ -306,6 +321,9 @@ export async function POST(req: NextRequest) {
     if (cleanSermonQ1) encodedPlan += `|s_q1:${encodeURIComponent(cleanSermonQ1)}`;
     if (cleanSermonQ2) encodedPlan += `|s_q2:${encodeURIComponent(cleanSermonQ2)}`;
     if (cleanSermonQ3) encodedPlan += `|s_q3:${encodeURIComponent(cleanSermonQ3)}`;
+
+    if (cleanTodayVerseText) encodedPlan += `|tv_text:${encodeURIComponent(cleanTodayVerseText)}`;
+    if (cleanTodayVerseRef) encodedPlan += `|tv_ref:${encodeURIComponent(cleanTodayVerseRef)}`;
 
     const safeBaseData: any = {
         church_id: normTargetId, // [필수] 항상 표준화된 아이디로 저장하여 파편화 방지
