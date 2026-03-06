@@ -70,20 +70,21 @@ export async function GET(req: NextRequest) {
             const kstDate = new Date(postDateFull.getTime() + (9 * 60 * 60 * 1000));
             const dateStr = kstDate.toISOString().split('T')[0];
 
-            // 랭킹용 일수 집계 (날짜별 유니크 체크)
-            if (!userStats[post.user_id]) {
-                userStats[post.user_id] = {
+            // 랭킹용 일수 집계 (날짜별 동일 인물 체크: 이름을 키로 사용해 중복 계정 자연 통합)
+            const statKey = post.user_name || post.user_id;
+            if (!userStats[statKey]) {
+                userStats[statKey] = {
                     name: post.user_name || '성도',
                     avatar: post.avatar_url,
                     dates: new Set<string>()
                 };
             }
-            userStats[post.user_id].dates.add(dateStr);
+            userStats[statKey].dates.add(dateStr);
             totalCompletions++; // 이건 전체 게시글 수
 
             // 오늘 참여자 명단 (중복 방지)
             if (dateStr === today) {
-                if (!todayMembers.find(m => m.user_id === post.user_id)) {
+                if (!todayMembers.find(m => (m.user_name || m.user_id) === statKey)) {
                     todayMembers.push({
                         user_id: post.user_id,
                         user_name: post.user_name,
