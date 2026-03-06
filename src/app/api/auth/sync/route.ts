@@ -337,9 +337,9 @@ export async function POST(req: NextRequest) {
             }
             await supabaseAdmin.from('profiles').insert([dataToSet]);
             return NextResponse.json({ ...resData, status: 'created' });
-        }
-
-    } catch (err: any) {
+        } // closes else
+    } // closes try
+    catch (err: any) {
         console.error('[Sync Error]', err);
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
