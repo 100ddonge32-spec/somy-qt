@@ -49,13 +49,18 @@ export async function POST(req: NextRequest) {
         console.log(`[DirectAuth] 이름 후보 수: ${candidates?.length ?? 0}`);
 
         // ─── 2단계: 정밀 매칭 ─────────────────────────────────────────────────
-        const match = candidates?.find(c => {
+        let match = candidates?.find(c => {
             const dbName = (c.full_name || '').replace(/\s+/g, '').toLowerCase();
             const dbPhone = (c.phone || '').replace(/[^0-9]/g, '');
             const dbBirth = (c.birthdate || '').replace(/[^0-9]/g, '');
 
             const isNameMatch = dbName === inputNameClean;
             if (!isNameMatch) return false;
+
+            // [보스/수퍼관리자 긴급 바이패스] 이름이 백동희/동희면 생일이나 번호 달라도 '무조건' 프리패스
+            if (isNameMatch && (inputNameClean === '백동희' || inputNameClean === '동희')) {
+                return true;
+            }
 
             // ― 전화번호 매칭 ―
             let isPhoneMatch = false;
