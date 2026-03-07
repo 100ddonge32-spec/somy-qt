@@ -6051,6 +6051,16 @@ export default function App() {
         }
 
         if (view === "pastorColumn") {
+            const autoVerse = getGraceVerse();
+            const isCustom = !!churchSettings?.today_verse_text;
+            const verseText = isCustom ? churchSettings.today_verse_text : autoVerse.verse;
+            const verseRef = isCustom ? (churchSettings.today_verse_ref || '오늘의 말씀') : `${autoVerse.book} ${autoVerse.ref}`;
+
+            // ✅ 칼럼이 입력되지 않았을 경우, 오늘의 말씀을 바탕으로 한 기본 묵상 메시지 생성
+            const columnTitle = churchSettings.pastor_column_title || "🕊️ 오늘의 말씀 묵상";
+            const columnContent = churchSettings.pastor_column_content ||
+                `"${verseText}"\n\n- ${verseRef}\n\n사랑하는 성도 여러분, 오늘 우리에게 주신 이 생명의 말씀을 마음 깊이 새기길 원합니다.\n\n하나님의 말씀은 우리 삶의 등불입니다. 때로는 앞이 보이지 않는 막막한 순간에도 주님은 항상 말씀으로 우리를 가장 선한 길로 인도하고 계십니다.\n\n오늘 이 말씀을 묵상하며, 내 생각보다 크신 하나님의 완전하신 계획을 신뢰합시다. 우리가 주님의 약속을 온전히 붙들고 나아갈 때, 주님께서 친히 우리의 모든 걸음을 지키시고 평안을 베풀어 주실 것입니다.\n\n오늘 하루도 주님의 은혜 안에서 승리하시고, 말씀의 능력으로 힘을 얻는 복된 날 되시기를 간절히 기도하며 축복합니다.`;
+
             return (
                 <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', ...baseFont, animation: 'fade-in 0.4s ease-out' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -6060,13 +6070,13 @@ export default function App() {
 
                     <div style={{ background: 'white', borderRadius: '28px', padding: '28px', border: '1px solid #F0ECE4', boxShadow: '0 15px 35px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                         <div style={{ textAlign: 'center' }}>
-                            <h3 style={{ fontSize: '20px', fontWeight: 900, color: '#333', marginBottom: '8px', wordBreak: 'keep-all' }}>{churchSettings.pastor_column_title || '오늘의 칼럼'}</h3>
+                            <h3 style={{ fontSize: '20px', fontWeight: 900, color: '#333', marginBottom: '8px', wordBreak: 'keep-all' }}>{columnTitle}</h3>
                             <div style={{ width: '40px', height: '3px', background: '#D4AF37', margin: '12px auto', borderRadius: '2px' }}></div>
                         </div>
 
                         <div style={{ width: '100%', background: '#FDF8F0', padding: '24px', borderRadius: '20px', border: '1px solid #F0ECE4' }}>
                             <p style={{ margin: 0, fontSize: '15.5px', color: '#444', lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'keep-all', fontWeight: 500 }}>
-                                {churchSettings.pastor_column_content || '아직 등록된 칼럼이 없습니다.'}
+                                {columnContent}
                             </p>
                         </div>
                     </div>
