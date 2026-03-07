@@ -68,7 +68,7 @@ interface Notification {
     user_id: string;
     actor_name: string;
     type: string;
-    post_id: number;
+    post_id: any;
     is_read: boolean;
     created_at: string;
 }
@@ -377,8 +377,8 @@ export default function App() {
     const [newAnnouncementContent, setNewAnnouncementContent] = useState("");
 
     const [lastToggleTime, setLastToggleTime] = useState(0); // 이중 트리거 방지용
-    const [commentInputs, setCommentInputs] = useState<{ [key: number]: string }>({});
-    const [commentPrivateStates, setCommentPrivateStates] = useState<{ [key: number]: boolean }>({});
+    const [commentInputs, setCommentInputs] = useState<{ [key: string]: string }>({});
+    const [commentPrivateStates, setCommentPrivateStates] = useState<{ [key: string]: boolean }>({});
     const [passageInput, setPassageInput] = useState("");
     const [fontScale, setFontScale] = useState(1);
 
