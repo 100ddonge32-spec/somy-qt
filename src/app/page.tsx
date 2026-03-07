@@ -2883,7 +2883,7 @@ export default function App() {
 
                                     <button onClick={() => {
                                         setView('history');
-                                        fetchHistory();
+                                        if (user?.id) fetchHistory(user.id);
                                     }} className="main-action-button" style={{
                                         padding: "16px 12px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f1f8f3 100%)", color: "#507558",
@@ -3379,7 +3379,7 @@ export default function App() {
                                             if (statsData) {
                                                 setStats(statsData);
                                             }
-                                            setHistory([]);
+                                            if (user?.id) fetchHistory(user.id);
                                         }
                                     } catch (e) {
                                         console.error("통계 기록 중 오류:", e);
@@ -4912,6 +4912,7 @@ export default function App() {
                                                         });
                                                         setAnswers(qtRecord.answers || []);
                                                         setIsHistoryMode(true);
+                                                        setQtStep('read');
                                                         setView("qt");
                                                     } else if (qtRecord) {
                                                         // 본문 데이터가 없어도 질문/답변은 보여주기
@@ -4982,35 +4983,38 @@ export default function App() {
                                                 )}
                                             </div>
 
-                                            <button onClick={() => {
-                                                const qt = h.daily_qt;
-                                                if (qt) {
-                                                    const { fullPassage, interpretation } = parsePassage(qt.passage);
-                                                    setQtData({
-                                                        date: new Date(qt.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
-                                                        reference: qt.reference,
-                                                        fullPassage,
-                                                        interpretation,
-                                                        verse: (fullPassage || "").split('\n')[0],
-                                                        questions: [qt.question1, qt.question2, qt.question3].filter(Boolean),
-                                                        prayer: qt.prayer,
-                                                    });
-                                                } else {
-                                                    setQtData({
-                                                        date: new Date(h.completed_date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
-                                                        reference: "말씀 정보 없음",
-                                                        fullPassage: "기록된 말씀 본문이 없습니다.",
-                                                        interpretation: "본문 해설이 없습니다.",
-                                                        verse: "기록된 말씀이 없습니다.",
-                                                        questions: ["질문 1", "질문 2", "질문 3"],
-                                                        prayer: "",
-                                                    });
-                                                }
-                                                setAnswers(h.answers || []);
-                                                setIsHistoryMode(true);
-                                                setQtStep('read');
-                                                setView('qt');
-                                            }} style={{ width: '100%', marginTop: '5px', padding: '12px', background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '12px', color: '#666', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                                            <button
+                                                onClick={() => {
+                                                    const qt = h.daily_qt;
+                                                    if (qt) {
+                                                        const { fullPassage, interpretation } = parsePassage(qt.passage);
+                                                        setQtData({
+                                                            date: new Date(qt.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
+                                                            reference: qt.reference,
+                                                            fullPassage,
+                                                            interpretation,
+                                                            verse: (fullPassage || "").split('\n')[0],
+                                                            questions: [qt.question1, qt.question2, qt.question3].filter(Boolean),
+                                                            prayer: qt.prayer,
+                                                        });
+                                                    } else {
+                                                        setQtData({
+                                                            date: new Date(h.completed_date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
+                                                            reference: "말씀 정보 없음",
+                                                            fullPassage: "기록된 말씀 본문이 없습니다.",
+                                                            interpretation: "본문 해설이 없습니다.",
+                                                            verse: "기록된 말씀이 없습니다.",
+                                                            questions: ["질문 1", "질문 2", "질문 3"],
+                                                            prayer: "",
+                                                        });
+                                                    }
+                                                    setAnswers(h.answers || []);
+                                                    setIsHistoryMode(true);
+                                                    setQtStep('read');
+                                                    setView('qt');
+                                                }}
+                                                style={{ width: '100%', marginTop: '5px', padding: '12px', background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '12px', color: '#666', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                                            >
                                                 전체 내용 다시보기
                                             </button>
                                         </div>
