@@ -61,6 +61,9 @@ interface Post {
     is_private?: boolean; // 비공개 여부
     liker_ids?: string[]; // 좋아요 누른 유저 ID 목록
     is_qt?: boolean; // ✅ 묵상나눔 여부
+    full_name?: string; // profile join 시 name
+    title?: string;
+    comment_count?: number;
 }
 
 interface Notification {
@@ -1363,7 +1366,7 @@ export default function App() {
         finally { setIsHistoryLoading(false); }
     };
     const [settingsSaving, setSettingsSaving] = useState(false);
-    const [adminTab, setAdminTab] = useState<"settings" | "members" | "master" | "stats" | "reset" | "admins">("settings");
+    const [adminTab, setAdminTab] = useState<"settings" | "members" | "master" | "stats" | "reset" | "admins" | "community" | "thanksgiving">("settings");
 
     const [isHistoryMode, setIsHistoryMode] = useState(false);
     const [churchStats, setChurchStats] = useState<any>(null); // ✅ { registered: [], orphans: [] }
@@ -1413,6 +1416,17 @@ export default function App() {
             // [분리] 최초 메인은 예수인교회가 아닌 소미 플랫폼(somy-main)으로 설정
             setChurchId('somy-main');
         }
+
+        // [쾌속 입장] 저장된 로그인 정보 불러오기
+        const savedName = localStorage.getItem('login_name');
+        const savedPhone = localStorage.getItem('login_phone_tail');
+        const savedBirth = localStorage.getItem('login_birthdate');
+        const savedPin = localStorage.getItem('login_pin');
+
+        if (savedName) setLoginName(savedName);
+        if (savedPhone) setLoginPhoneTail(savedPhone);
+        if (savedBirth) setLoginBirthdate(savedBirth);
+        if (savedPin) setLoginPin(savedPin);
 
         const hasVisited = localStorage.getItem('somy_intro_seen');
         if (!hasVisited) {
@@ -1681,8 +1695,19 @@ export default function App() {
                 const { data: { session } } = await supabase.auth.getSession();
                 setUser(session?.user ?? null);
 
-                if (result.church_id) setChurchId(result.church_id);
-                if (result.name) setProfileName(result.name);
+                if (result.church_id) {
+                    setChurchId(result.church_id);
+                    localStorage.setItem('church_id', result.church_id);
+                }
+                if (result.name) {
+                    setProfileName(result.name);
+                    localStorage.setItem('login_name', loginName.trim());
+                }
+
+                // 정보 자동 저장 (다음 접속 시 편리함 제공)
+                localStorage.setItem('login_phone_tail', loginPhoneTail.trim());
+                localStorage.setItem('login_birthdate', loginBirthdate.trim());
+                if (loginPin.trim()) localStorage.setItem('login_pin', loginPin.trim());
 
                 // 상태 체크 후 내부 로직에 의해 자동으로 메인 화면으로 이동됨
                 checkApprovalStatus(true);
@@ -7241,7 +7266,7 @@ export default function App() {
                             {/* 고정되는 헤더 영역 */}
                             <div style={{ padding: '28px 28px 15px 28px', flexShrink: 0, borderBottom: '1px solid #F0F0F0', zIndex: 10 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>⚙️ {adminTab === 'settings' ? '교회 설정' : adminTab === 'members' ? '성도 관리' : adminTab === 'stats' ? '활동 통계' : adminTab === 'admins' ? '권한 관리' : adminTab === 'reset' ? '데이터 초기화' : '슈퍼 관리'}</h2>
+                                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>⚙️ {adminTab === 'settings' ? '교회 설정' : adminTab === 'members' ? '성도 관리' : adminTab === 'community' ? '은혜나눔 관리' : adminTab === 'thanksgiving' ? '감사일기 관리' : adminTab === 'stats' ? '활동 통계' : adminTab === 'admins' ? '권한 관리' : adminTab === 'reset' ? '데이터 초기화' : '슈퍼 관리'}</h2>
                                     <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
                                 </div>
 
@@ -7267,6 +7292,24 @@ export default function App() {
                                         } catch (e) { }
                                         setIsAdminsLoading(false);
                                     }} style={{ flex: '0 0 auto', padding: '8px 12px', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 600, background: adminTab === 'stats' ? 'white' : 'transparent', boxShadow: adminTab === 'stats' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'stats' ? '#333' : '#777', whiteSpace: 'nowrap' }}>📊 통계</button>
+
+                                    <button onClick={async () => {
+                                        setAdminTab('community');
+                                        try {
+                                            const res = await fetch(`/api/community?church_id=${churchId}`);
+                                            const data = await res.json();
+                                            if (Array.isArray(data)) setCommunityPosts(data);
+                                        } catch (e) { }
+                                    }} style={{ flex: '0 0 auto', padding: '8px 12px', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 600, background: adminTab === 'community' ? 'white' : 'transparent', boxShadow: adminTab === 'community' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'community' ? '#333' : '#777', whiteSpace: 'nowrap' }}>💬 은혜</button>
+
+                                    <button onClick={async () => {
+                                        setAdminTab('thanksgiving');
+                                        try {
+                                            const res = await fetch(`/api/thanksgiving?church_id=${churchId}`);
+                                            const data = await res.json();
+                                            if (Array.isArray(data)) setThanksgivingDiaries(data);
+                                        } catch (e) { }
+                                    }} style={{ flex: '0 0 auto', padding: '8px 12px', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 600, background: adminTab === 'thanksgiving' ? 'white' : 'transparent', boxShadow: adminTab === 'thanksgiving' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'thanksgiving' ? '#333' : '#777', whiteSpace: 'nowrap' }}>📔 감사</button>
                                     {isMainAdmin && (
                                         <button onClick={() => { setAdminTab('admins'); fetchAllAdmins(); }} style={{ flex: '0 0 auto', padding: '8px 12px', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 600, background: adminTab === 'admins' ? 'white' : 'transparent', boxShadow: adminTab === 'admins' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'admins' ? '#333' : '#777', whiteSpace: 'nowrap' }}>🔐 권한</button>
                                     )}
