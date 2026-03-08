@@ -1884,8 +1884,8 @@ export default function App() {
                 ...churchSettings,
                 ...settingsForm,
                 church_id: finalChurchId,
-                requester_id: user?.id,
-                requester_email: user?.email
+                requester_id: (user as any)?.id,
+                requester_email: (user as any)?.email
             };
 
             const res = await fetch('/api/settings', {
@@ -4122,7 +4122,7 @@ export default function App() {
                                     </div>
                                 )}
                             </div>
-                            <button onClick={handleBack} style={{ background: "#F5F5F5", border: "none", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "18px", cursor: "pointer", color: '#333' }}>✕</button>
+                            <button onClick={handleBack} style={{ background: "#F5F5F5", border: "none", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "18px", cursor: "pointer", color: '#333' }}>X</button>
                         </div>
                     </div>
 
@@ -4681,7 +4681,7 @@ export default function App() {
                                     </div>
                                 )}
                             </div>
-                            <button onClick={handleBack} style={{ background: "#FDF0E3", border: "none", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "18px", cursor: "pointer", color: '#333' }}>✕</button>
+                            <button onClick={handleBack} style={{ background: "#FDF0E3", border: "none", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "18px", cursor: "pointer", color: '#333' }}>X</button>
                         </div>
                     </div>
 
@@ -5219,7 +5219,7 @@ export default function App() {
                     }}>
                         <button onClick={handleBack} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
                         <div style={{ fontWeight: 800, color: "#333", fontSize: "15px", flex: 1 }}>⚙️ 교회 관리자 센터</div>
-                        <button onClick={handleBack} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>✕</button>
+                        <button onClick={handleBack} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>X</button>
                     </div>
 
                     <>
@@ -5659,8 +5659,8 @@ export default function App() {
                     sermon_q1: sermonManageForm.q1,
                     sermon_q2: sermonManageForm.q2,
                     sermon_q3: sermonManageForm.q3,
-                    requester_id: user?.id,
-                    requester_email: user?.email
+                    requester_id: (user as any)?.id,
+                    requester_email: (user as any)?.email
                 };
 
                 const res = await fetch('/api/settings', {
@@ -5684,7 +5684,7 @@ export default function App() {
                     <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
                         <button onClick={() => setView('admin')} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
                         <div style={{ fontWeight: 800, fontSize: "16px", color: '#333', flex: 1 }}>🎙️ 설교 자동 요약봇</div>
-                        <button onClick={() => setView('admin')} style={{ background: "#F5F5F5", border: "none", borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333' }}>✕</button>
+                        <button onClick={() => setView('admin')} style={{ background: "#F5F5F5", border: "none", borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333' }}>X</button>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -6248,7 +6248,7 @@ export default function App() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
                     <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
                     <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0, flex: 1 }}>소미 활용 가이드</h2>
-                    <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>✕</button>
+                    <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>X</button>
                 </div>
 
                 {/* 메인 배너 */}
@@ -7695,8 +7695,8 @@ export default function App() {
                                                         const updatedForm = {
                                                             ...settingsForm,
                                                             allow_member_edit: newVal,
-                                                            requester_id: user?.id,
-                                                            requester_email: user?.email
+                                                            requester_id: (user as any)?.id,
+                                                            requester_email: (user as any)?.email
                                                         };
                                                         setSettingsForm(prev => ({ ...prev, allow_member_edit: newVal }));
 
@@ -9334,7 +9334,7 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
                 <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
                 <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0, flex: 1 }}>내 프로필 관리</h2>
-                <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>✕</button>
+                <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>X</button>
             </div>
 
             {/* ✅ 알림 설정 섹션 추가 */}
