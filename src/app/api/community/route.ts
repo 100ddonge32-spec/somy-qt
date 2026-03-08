@@ -14,7 +14,7 @@ const supabaseAdmin = createClient(
 webpush.setVapidDetails(
     'mailto:pastorbaek@kakao.com',
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BCpTn0SHIYSZzjST5xxL1Cv9svmlp3f9Xmvt9FSALBvo4QwLQCBlo_mu4ThoMHgINRmAk4c9sxwVwI2QtDyHr1I',
-    process.env.VAPID_PRIVATE_KEY || 'LAAS6aJenIKYBShIGZsWVKhXNOMKwkuXvpf2NLCGZAI'
+    process.env.VAPID_PRIVATE_KEY || ''
 );
 
 // 게시글 목록 및 댓글 불러오기 (교회별 격리)
