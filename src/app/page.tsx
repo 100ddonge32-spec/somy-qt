@@ -205,7 +205,7 @@ const EventPosterPopup = ({ imageUrl, onClose }: { imageUrl: string, onClose: ()
                         <button onClick={onClose} style={{ background: '#D4AF37', border: 'none', color: 'white', padding: '6px 20px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>닫기</button>
                     </div>
                 </div>
-                <button onClick={onClose} style={{ position: 'absolute', top: '-15px', right: '-15px', width: '36px', height: '36px', background: 'white', borderRadius: '50%', border: 'none', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 5px 15px rgba(0,0,0,0.1)', cursor: 'pointer' }}>✕</button>
+                <button onClick={onClose} style={{ position: 'absolute', top: '-15px', right: '-15px', width: '36px', height: '36px', background: 'white', borderRadius: '50%', border: 'none', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 5px 15px rgba(0,0,0,0.1)', cursor: 'pointer' }}>X</button>
             </div>
         </div>
     );
@@ -4344,7 +4344,7 @@ export default function App() {
                                                                             <button onClick={() => { setEditingCommentId(comment.id); setEditCommentContent(comment.content); setIsEditPrivate(!!comment.is_private); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#B8924A', padding: 0, fontWeight: 600 }}>수정</button>
                                                                         )}
                                                                         {(isAdmin || user?.id === comment.user_id || user?.id === post.user_id) && editingCommentId !== comment.id && (
-                                                                            <button onClick={() => handleDeleteComment(post.id, comment.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>✕</button>
+                                                                            <button onClick={() => handleDeleteComment(post.id, comment.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>X</button>
                                                                         )}
                                                                     </span>
                                                                 </div>
@@ -4837,7 +4837,7 @@ export default function App() {
                                                                             <button onClick={() => { setEditingCommentId(comment.id); setEditCommentContent(comment.content); setIsEditPrivate(!!comment.is_private); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#B8924A', padding: 0, fontWeight: 600 }}>수정</button>
                                                                         )}
                                                                         {(isAdmin || user?.id === comment.user_id || user?.id === diary.user_id) && editingCommentId !== comment.id && (
-                                                                            <button onClick={() => handleDeleteThanksgivingComment(diary.id, comment.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>✕</button>
+                                                                            <button onClick={() => handleDeleteThanksgivingComment(diary.id, comment.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>X</button>
                                                                         )}
                                                                     </span>
                                                                 </div>
@@ -6741,7 +6741,7 @@ export default function App() {
                 <div style={{ background: 'white', borderRadius: '24px', padding: '24px', width: '100%', maxWidth: '420px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', animation: 'modal-up 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                         <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>📝 성도 정보 상세 수정</h3>
-                        <button onClick={() => { setSelectedMemberForEdit(null); setMemberEditForm(null); }} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
+                        <button onClick={() => { setSelectedMemberForEdit(null); setMemberEditForm(null); }} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>X</button>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px', position: 'relative' }}>
@@ -6887,7 +6887,7 @@ export default function App() {
                 <div style={{ background: 'white', borderRadius: '24px', padding: '30px', width: '100%', maxWidth: '400px', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', animation: 'modal-up 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                         <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>👤 성도 개별 추가</h3>
-                        <button onClick={() => setShowAddMemberModal(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
+                        <button onClick={() => setShowAddMemberModal(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>X</button>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                         <div style={{ display: 'flex', gap: '10px' }}>
@@ -7017,7 +7017,7 @@ export default function App() {
                             <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>🔗 성도 데이터 통합</h3>
                             <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#888' }}>관리자 등록 정보를 실제 가입 계정으로 옮깁니다.</p>
                         </div>
-                        <button onClick={() => { setShowMergeModal(false); setMergeTarget(null); setMergeSearchKeyword(''); }} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
+                        <button onClick={() => { setShowMergeModal(false); setMergeTarget(null); setMergeSearchKeyword(''); }} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>X</button>
                     </div>
 
                     <div style={{ background: '#F9F7F2', padding: '15px', borderRadius: '15px', marginBottom: '20px', border: '1px solid #E4DCCF' }}>
@@ -7041,7 +7041,7 @@ export default function App() {
                                     onClick={() => setMergeSearchKeyword('')}
                                     style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', color: '#999', cursor: 'pointer', fontSize: '12px' }}
                                 >
-                                    ✕
+                                    X
                                 </button>
                             )}
                         </div>
@@ -7263,7 +7263,7 @@ export default function App() {
                         boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
                         border: '2px solid white',
                     }}
-                >✕</div>
+                >X</div>
 
                 {/* 1. 스크린 영역 */}
                 <div
@@ -7361,7 +7361,7 @@ export default function App() {
                             <div style={{ padding: '28px 28px 15px 28px', flexShrink: 0, borderBottom: '1px solid #F0F0F0', zIndex: 10 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                                     <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>⚙️ {adminTab === 'settings' ? '교회 설정' : adminTab === 'members' ? '성도 관리' : adminTab === 'community' ? '은혜나눔 관리' : adminTab === 'thanksgiving' ? '감사일기 관리' : adminTab === 'stats' ? '활동 통계' : adminTab === 'admins' ? '권한 관리' : adminTab === 'reset' ? '데이터 초기화' : '슈퍼 관리'}</h2>
-                                    <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>✕</button>
+                                    <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>X</button>
                                 </div>
 
                                 {/* 설정 탭 메뉴 */}
@@ -7592,7 +7592,7 @@ export default function App() {
                                                                 <div style={{ fontSize: '11px', color: '#007AFF', fontWeight: 700 }}>포스터가 등록되었습니다.</div>
                                                                 <div style={{ fontSize: '10px', color: '#999' }}>상단 스위치를 켜면 성도들에게 팝업이 노출됩니다.</div>
                                                             </div>
-                                                            <button onClick={() => setSettingsForm({ ...settingsForm, event_poster_url: '' })} style={{ background: 'none', border: 'none', color: '#FF5252', fontSize: '16px', cursor: 'pointer' }}>✕</button>
+                                                            <button onClick={() => setSettingsForm({ ...settingsForm, event_poster_url: '' })} style={{ background: 'none', border: 'none', color: '#FF5252', fontSize: '16px', cursor: 'pointer' }}>X</button>
                                                         </div>
                                                     )}
                                                 </div>
@@ -7800,7 +7800,7 @@ export default function App() {
                                                             <div style={{ padding: '10px', background: '#FFF9C4', borderRadius: '10px', border: '1px solid #FFF176', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                                 <div style={{ fontSize: '12px', color: '#856404', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
                                                                     📄 {selectedUploadFile.name}
-                                                                    <span onClick={() => setSelectedUploadFile(null)} style={{ cursor: 'pointer', color: '#999' }}>✕</span>
+                                                                    <span onClick={() => setSelectedUploadFile(null)} style={{ cursor: 'pointer', color: '#999' }}>X</span>
                                                                 </div>
                                                                 <button
                                                                     disabled={isMemberUploading}
@@ -8037,7 +8037,7 @@ export default function App() {
                                                             style={{ border: 'none', outline: 'none', fontSize: '13px', flex: 1, width: '100%' }}
                                                         />
                                                         {adminMemberSearchTerm && (
-                                                            <button onClick={() => setAdminMemberSearchTerm('')} style={{ background: 'none', border: 'none', color: '#AAA', cursor: 'pointer', fontSize: '12px' }}>✕</button>
+                                                            <button onClick={() => setAdminMemberSearchTerm('')} style={{ background: 'none', border: 'none', color: '#AAA', cursor: 'pointer', fontSize: '12px' }}>X</button>
                                                         )}
                                                     </div>
 
@@ -9123,7 +9123,7 @@ export default function App() {
                                         boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
                                     }}
                                 >
-                                    ✕ 닫기
+                                    X 닫기
                                 </button>
                             </div>
                         </div>
@@ -9711,7 +9711,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
                                 onClick={handleClearSearch}
                                 style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: '#F5F5F5', border: 'none', borderRadius: '50%', width: '20px', height: '20px', fontSize: '10px', color: '#999', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             >
-                                ✕
+                                X
                             </button>
                         )}
                     </div>
