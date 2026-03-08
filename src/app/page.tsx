@@ -3516,7 +3516,7 @@ export default function App() {
                     });
                     const data = await res.json();
                     if (data.question1) {
-                        setQtForm(prev => ({
+                        setQtForm((prev: any) => ({
                             ...prev,
                             interpretation: data.interpretation || '',
                             question1: data.question1,
@@ -5635,7 +5635,7 @@ export default function App() {
                     if (data.error) {
                         alert("AI 생성 실패: " + data.error);
                     } else {
-                        setSermonManageForm(prev => ({
+                        setSermonManageForm((prev: any) => ({
                             ...prev,
                             summary: data.summary || '',
                             q1: data.question1 || '',
@@ -5690,8 +5690,8 @@ export default function App() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                         <div>
                             <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                                <button onClick={() => setSermonManageForm(prev => ({ ...prev, inputType: 'text' }))} style={{ flex: 1, padding: '10px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, border: 'none', background: sermonManageForm.inputType === 'text' ? '#333' : '#F5F5F5', color: sermonManageForm.inputType === 'text' ? 'white' : '#666', cursor: 'pointer' }}>📝 설교 원고 입력</button>
-                                <button onClick={() => setSermonManageForm(prev => ({ ...prev, inputType: 'video' }))} style={{ flex: 1, padding: '10px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, border: 'none', background: sermonManageForm.inputType === 'video' ? '#D4AF37' : '#F5F5F5', color: sermonManageForm.inputType === 'video' ? 'white' : '#666', cursor: 'pointer' }}>🎥 유튜브 자동 요약</button>
+                                <button onClick={() => setSermonManageForm((prev: any) => ({ ...prev, inputType: 'text' }))} style={{ flex: 1, padding: '10px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, border: 'none', background: sermonManageForm.inputType === 'text' ? '#333' : '#F5F5F5', color: sermonManageForm.inputType === 'text' ? 'white' : '#666', cursor: 'pointer' }}>📝 설교 원고 입력</button>
+                                <button onClick={() => setSermonManageForm((prev: any) => ({ ...prev, inputType: 'video' }))} style={{ flex: 1, padding: '10px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, border: 'none', background: sermonManageForm.inputType === 'video' ? '#D4AF37' : '#F5F5F5', color: sermonManageForm.inputType === 'video' ? 'white' : '#666', cursor: 'pointer' }}>🎥 유튜브 자동 요약</button>
                             </div>
 
                             {sermonManageForm.inputType === 'text' ? (
@@ -5699,7 +5699,7 @@ export default function App() {
                                     <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>📝 설교 원고 (또는 핵심 메모)</label>
                                     <textarea
                                         value={sermonManageForm.script}
-                                        onChange={e => setSermonManageForm(prev => ({ ...prev, script: e.target.value }))}
+                                        onChange={e => setSermonManageForm((prev: any) => ({ ...prev, script: e.target.value }))}
                                         placeholder="여기에 설교 원고 전체나 핵심 메모를 붙여넣으세요..."
                                         style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', minHeight: '150px', outline: 'none', resize: 'vertical' }}
                                     />
@@ -5710,7 +5710,7 @@ export default function App() {
                                     <input
                                         type="text"
                                         value={sermonManageForm.videoUrl}
-                                        onChange={e => setSermonManageForm(prev => ({ ...prev, videoUrl: e.target.value }))}
+                                        onChange={e => setSermonManageForm((prev: any) => ({ ...prev, videoUrl: e.target.value }))}
                                         placeholder="예: https://youtu.be/..."
                                         style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', outline: 'none', marginBottom: '10px' }}
                                     />
@@ -5727,26 +5727,26 @@ export default function App() {
                             <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>📖 설교 요약</label>
                             <textarea
                                 value={sermonManageForm.summary}
-                                onChange={e => setSermonManageForm(prev => ({ ...prev, summary: e.target.value }))}
+                                onChange={e => setSermonManageForm((prev: any) => ({ ...prev, summary: e.target.value }))}
                                 style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', minHeight: '100px', outline: 'none', marginBottom: '10px' }}
                             />
 
                             <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>💬 나눔 질문 1</label>
                             <input
                                 value={sermonManageForm.q1}
-                                onChange={e => setSermonManageForm(prev => ({ ...prev, q1: e.target.value }))}
+                                onChange={e => setSermonManageForm((prev: any) => ({ ...prev, q1: e.target.value }))}
                                 style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', outline: 'none', marginBottom: '10px' }}
                             />
                             <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>💬 나눔 질문 2</label>
                             <input
                                 value={sermonManageForm.q2}
-                                onChange={e => setSermonManageForm(prev => ({ ...prev, q2: e.target.value }))}
+                                onChange={e => setSermonManageForm((prev: any) => ({ ...prev, q2: e.target.value }))}
                                 style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', outline: 'none', marginBottom: '10px' }}
                             />
                             <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>💬 나눔 질문 3</label>
                             <input
                                 value={sermonManageForm.q3}
-                                onChange={e => setSermonManageForm(prev => ({ ...prev, q3: e.target.value }))}
+                                onChange={e => setSermonManageForm((prev: any) => ({ ...prev, q3: e.target.value }))}
                                 style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '13px', outline: 'none', marginBottom: '10px' }}
                             />
                         </div>
@@ -7698,7 +7698,7 @@ export default function App() {
                                                             requester_id: (user as any)?.id,
                                                             requester_email: (user as any)?.email
                                                         };
-                                                        setSettingsForm(prev => ({ ...prev, allow_member_edit: newVal }));
+                                                        setSettingsForm((prev: any) => ({ ...prev, allow_member_edit: newVal }));
 
                                                         // ✅ 체크 즉시 서버에 자동 저장 시도
                                                         try {
@@ -9408,7 +9408,7 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
                                         const ctx = canvas.getContext('2d');
                                         ctx?.drawImage(img, 0, 0, width, height);
                                         const base64Str = canvas.toDataURL('image/jpeg', 0.8);
-                                        setProfileForm(prev => ({ ...prev, avatar_url: base64Str }));
+                                        setProfileForm((prev: any) => ({ ...prev, avatar_url: base64Str }));
                                     };
                                     img.src = ev.target?.result as string;
                                 };
