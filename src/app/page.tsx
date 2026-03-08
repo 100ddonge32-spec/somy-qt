@@ -2568,8 +2568,8 @@ export default function App() {
                                         <div style={{ background: 'white', padding: '20px', borderRadius: '0 0 20px 20px', border: '1px solid #EEE', borderTop: 'none', boxShadow: '0 10px 20px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
                                             {isAdmin && (
                                                 <div style={{ background: '#F8F9FA', padding: '15px', borderRadius: '12px', border: '1px dashed #CCC', marginBottom: '10px' }}>
-                                                    <input value={newAnnouncementTitle} onChange={e => setNewAnnouncementTitle(e.target.value)} placeholder="공지 제목" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', marginBottom: '8px', fontSize: '14px', outline: 'none' }} />
-                                                    <textarea value={newAnnouncementContent} onChange={e => setNewAnnouncementContent(e.target.value)} placeholder="공지 내용" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', minHeight: '60px', fontSize: '13px', marginBottom: '8px', outline: 'none', resize: 'vertical' }} />
+                                                    <input value={newAnnouncementTitle} onChange={(e: any) => setNewAnnouncementTitle(e.target.value)} placeholder="공지 제목" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', marginBottom: '8px', fontSize: '14px', outline: 'none' }} />
+                                                    <textarea value={newAnnouncementContent} onChange={(e: any) => setNewAnnouncementContent(e.target.value)} placeholder="공지 내용" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', minHeight: '60px', fontSize: '13px', marginBottom: '8px', outline: 'none', resize: 'vertical' }} />
                                                     <button onClick={async () => {
                                                         if (!newAnnouncementTitle.trim() || !newAnnouncementContent.trim()) return;
                                                         try {
@@ -3617,11 +3617,11 @@ export default function App() {
 
                         <div>
                             <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>📅 날짜</label>
-                            <input type="date" value={qtForm.date} onChange={e => setQtForm(p => ({ ...p, date: e.target.value }))} style={inputStyle} />
+                            <input type="date" value={qtForm.date} onChange={(e: any) => setQtForm((p: any) => ({ ...p, date: e.target.value }))} style={inputStyle} />
                         </div>
                         <div>
                             <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>📖 성경 구절 (예: 시편 23:1-3)</label>
-                            <input type="text" value={qtForm.reference} onChange={e => setQtForm(p => ({ ...p, reference: e.target.value }))} placeholder="예: 시편 23:1-3" style={inputStyle} />
+                            <input type="text" value={qtForm.reference} onChange={(e: any) => setQtForm((p: any) => ({ ...p, reference: e.target.value }))} placeholder="예: 시편 23:1-3" style={inputStyle} />
                             <button onClick={async () => {
                                 if (!qtForm.reference) { alert('성경 구절을 먼저 입력해주세요.'); return; }
                                 setAiLoading(true);
@@ -3638,11 +3638,11 @@ export default function App() {
                         </div>
                         <div>
                             <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>📜 성경 본문</label>
-                            <textarea value={qtForm.passage} onChange={e => setQtForm(p => ({ ...p, passage: e.target.value }))} placeholder="위 버튼으로 자동 가져오거나 직접 입력하세요" style={{ ...inputStyle, height: '120px' }} />
+                            <textarea value={qtForm.passage} onChange={(e: any) => setQtForm((p: any) => ({ ...p, passage: e.target.value }))} placeholder="위 버튼으로 자동 가져오거나 직접 입력하세요" style={{ ...inputStyle, height: '120px' }} />
                         </div>
                         <div>
                             <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>💡 본문 해설 (AI 추천 생성을 누르면 자동 채워집니다)</label>
-                            <textarea value={qtForm.interpretation} onChange={e => setQtForm(p => ({ ...p, interpretation: e.target.value }))} placeholder="본문 해설이나 묵상 포인트를 입력하세요" style={{ ...inputStyle, height: '100px' }} />
+                            <textarea value={qtForm.interpretation} onChange={(e: any) => setQtForm((p: any) => ({ ...p, interpretation: e.target.value }))} placeholder="본문 해설이나 묵상 포인트를 입력하세요" style={{ ...inputStyle, height: '100px' }} />
                         </div>
                         <button onClick={handleAiGenerate} disabled={aiLoading} style={{
                             width: '100%', padding: '14px', background: aiLoading ? '#ccc' : 'linear-gradient(135deg, #D4AF37, #B8924A)',
@@ -3656,12 +3656,12 @@ export default function App() {
                         {(['question1', 'question2', 'question3'] as const).map((key, idx) => (
                             <div key={key}>
                                 <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>❓ 묵상 질문 {idx + 1}</label>
-                                <input type="text" value={qtForm[key]} onChange={e => setQtForm(p => ({ ...p, [key]: e.target.value }))} placeholder="묵상 질문을 입력하세요" style={inputStyle} />
+                                <input type="text" value={qtForm[key]} onChange={(e: any) => setQtForm((p: any) => ({ ...p, [key]: e.target.value }))} placeholder="묵상 질문을 입력하세요" style={inputStyle} />
                             </div>
                         ))}
                         <div>
                             <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>🙏 마무리 기도문</label>
-                            <textarea value={qtForm.prayer} onChange={e => setQtForm(p => ({ ...p, prayer: e.target.value }))} placeholder="마무리 기도문을 입력하세요" style={{ ...inputStyle, height: '100px' }} />
+                            <textarea value={qtForm.prayer} onChange={(e: any) => setQtForm((p: any) => ({ ...p, prayer: e.target.value }))} placeholder="마무리 기도문을 입력하세요" style={{ ...inputStyle, height: '100px' }} />
                         </div>
 
                         {/* [추가] 청소년 눈높이 큐티 관리 섹션 */}
@@ -3707,7 +3707,7 @@ export default function App() {
                                 <label style={{ fontSize: '11px', fontWeight: 700, color: '#1565C0', display: 'block', marginBottom: '4px' }}>💡 청년층 맞춤 해설</label>
                                 <textarea
                                     value={qtForm.youthInterpretation}
-                                    onChange={e => setQtForm(p => ({ ...p, youthInterpretation: e.target.value }))}
+                                    onChange={(e: any) => setQtForm((p: any) => ({ ...p, youthInterpretation: e.target.value }))}
                                     placeholder="공란으로 두면 AI가 실시간으로 변환하여 보여주며, 입력하면 이 내용이 우선 적용됩니다."
                                     style={{ ...inputStyle, height: '100px', background: 'white' }}
                                 />
@@ -3716,7 +3716,7 @@ export default function App() {
                             {(['youthQuestion1', 'youthQuestion2', 'youthQuestion3'] as const).map((key, idx) => (
                                 <div key={key} style={{ marginBottom: '8px' }}>
                                     <label style={{ fontSize: '11px', fontWeight: 700, color: '#1565C0', display: 'block', marginBottom: '4px' }}>❓ 청년 맞춤 질문 {idx + 1}</label>
-                                    <input type="text" value={qtForm[key]} onChange={e => setQtForm(p => ({ ...p, [key]: e.target.value }))} placeholder="질문을 입력하세요" style={{ ...inputStyle, background: 'white' }} />
+                                    <input type="text" value={qtForm[key]} onChange={(e: any) => setQtForm((p: any) => ({ ...p, [key]: e.target.value }))} placeholder="질문을 입력하세요" style={{ ...inputStyle, background: 'white' }} />
                                 </div>
                             ))}
                             <div style={{ fontSize: '10px', color: '#64B5F6', marginTop: '6px' }}>
@@ -4366,7 +4366,7 @@ export default function App() {
                                                                             <button onClick={() => handleUpdateComment(post.id, comment.id)} style={{ background: '#333', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>저장</button>
                                                                             <button onClick={() => setEditingCommentId(null)} style={{ background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>취소</button>
                                                                             <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginLeft: 'auto' }}>
-                                                                                <input type="checkbox" checked={isEditPrivate} onChange={e => setIsEditPrivate(e.target.checked)} />
+                                                                                <input type="checkbox" checked={isEditPrivate} onChange={(e: any) => setIsEditPrivate(e.target.checked)} />
                                                                                 <span style={{ fontSize: '11px', color: '#777' }}>비공개</span>
                                                                             </label>
                                                                         </div>
@@ -4853,7 +4853,7 @@ export default function App() {
                                                                             <button onClick={() => handleUpdateThanksgivingComment(diary.id, comment.id)} style={{ background: '#E07A5F', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>저장</button>
                                                                             <button onClick={() => setEditingCommentId(null)} style={{ background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>취소</button>
                                                                             <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginLeft: 'auto' }}>
-                                                                                <input type="checkbox" checked={isEditPrivate} onChange={e => setIsEditPrivate(e.target.checked)} />
+                                                                                <input type="checkbox" checked={isEditPrivate} onChange={(e: any) => setIsEditPrivate(e.target.checked)} />
                                                                                 <span style={{ fontSize: '11px', color: '#777' }}>비공개</span>
                                                                             </label>
                                                                         </div>
@@ -5799,7 +5799,7 @@ export default function App() {
                         {!isMainAdmin && (
                             <div style={{ marginBottom: '30px', background: 'white', padding: '20px', borderRadius: '15px', border: '1px solid #EEE', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
                                 <h3 style={{ fontSize: '15px', marginTop: 0, color: '#333' }}>새 요청 작성하기 <span style={{ fontSize: '12px', color: '#999', fontWeight: 400 }}>(목사님만 볼 수 있습니다)</span></h3>
-                                <textarea value={counselingInput} onChange={e => setCounselingInput(e.target.value)} placeholder="담임목사님께 나누고 싶은 고민이나 기도 제목을 적어주세요. 목사님께서 확인 후 직접 답변해주시며 실시간 알림이 발송됩니다." style={{ width: '100%', padding: '15px', borderRadius: '10px', border: '1px solid #DDD', minHeight: '120px', resize: 'vertical', fontSize: '14px', marginBottom: '10px', outline: 'none' }} />
+                                <textarea value={counselingInput} onChange={(e: any) => setCounselingInput(e.target.value)} placeholder="담임목사님께 나누고 싶은 고민이나 기도 제목을 적어주세요. 목사님께서 확인 후 직접 답변해주시며 실시간 알림이 발송됩니다." style={{ width: '100%', padding: '15px', borderRadius: '10px', border: '1px solid #DDD', minHeight: '120px', resize: 'vertical', fontSize: '14px', marginBottom: '10px', outline: 'none' }} />
                                 <button
                                     disabled={isSubmittingCounseling}
                                     onClick={async () => {
@@ -5860,7 +5860,7 @@ export default function App() {
                                         <div style={{ marginBottom: '15px' }}>
                                             <textarea
                                                 value={editCounselingContent}
-                                                onChange={e => setEditCounselingContent(e.target.value)}
+                                                onChange={(e: any) => setEditCounselingContent(e.target.value)}
                                                 style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '2px solid #B8924A', fontSize: '14px', minHeight: '100px', marginBottom: '8px', outline: 'none' }}
                                             />
                                             <div style={{ display: 'flex', gap: '8px' }}>
@@ -5906,7 +5906,7 @@ export default function App() {
                                                 <div>
                                                     <textarea
                                                         value={editCounselingContent}
-                                                        onChange={e => setEditCounselingContent(e.target.value)}
+                                                        onChange={(e: any) => setEditCounselingContent(e.target.value)}
                                                         style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '2px solid #1A5D55', fontSize: '13px', minHeight: '80px', marginBottom: '5px', outline: 'none' }}
                                                     />
                                                     <div style={{ display: 'flex', gap: '5px', marginBottom: '10px' }}>
@@ -5949,7 +5949,7 @@ export default function App() {
                                                         <div>
                                                             <textarea
                                                                 value={editCounselingContent}
-                                                                onChange={e => setEditCounselingContent(e.target.value)}
+                                                                onChange={(e: any) => setEditCounselingContent(e.target.value)}
                                                                 style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '2px solid #B8924A', fontSize: '13px', minHeight: '80px', marginBottom: '5px', outline: 'none' }}
                                                             />
                                                             <div style={{ display: 'flex', gap: '5px' }}>
@@ -5982,7 +5982,7 @@ export default function App() {
                                                 <div style={{ marginTop: '10px' }}>
                                                     <textarea
                                                         value={userCounselingReplyInput[req.id] || ''}
-                                                        onChange={e => setUserCounselingReplyInput({ ...userCounselingReplyInput, [req.id]: e.target.value })}
+                                                        onChange={(e: any) => setUserCounselingReplyInput((prev: any) => ({ ...prev, [req.id]: e.target.value }))}
                                                         placeholder="목사님 답변에 대한 답글을 남겨주세요."
                                                         style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', minHeight: '60px', fontSize: '13px', marginBottom: '5px', outline: 'none' }}
                                                     />
@@ -6023,7 +6023,7 @@ export default function App() {
                                     ) : isMainAdmin ? (
                                         <div style={{ marginTop: '10px', background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '10px', padding: '10px' }}>
                                             <div style={{ fontSize: '12px', fontWeight: 700, color: '#999', marginBottom: '8px' }}>답변을 등록하면 성도에게 푸시 알림이 즉시 전송됩니다.</div>
-                                            <textarea value={counselingReplyInput[req.id] || ''} onChange={e => setCounselingReplyInput({ ...counselingReplyInput, [req.id]: e.target.value })} placeholder="답변을 작성해주세요." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', minHeight: '80px', fontSize: '13px', marginBottom: '8px', outline: 'none' }} />
+                                            <textarea value={counselingReplyInput[req.id] || ''} onChange={(e: any) => setCounselingReplyInput((prev: any) => ({ ...prev, [req.id]: e.target.value }))} placeholder="답변을 작성해주세요." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', minHeight: '80px', fontSize: '13px', marginBottom: '8px', outline: 'none' }} />
                                             <button
                                                 disabled={submittingReplyId === req.id}
                                                 onClick={async () => {
@@ -6109,7 +6109,7 @@ export default function App() {
                         )}
                     </div>
                     <div style={{ padding: "15px", borderTop: "1px solid #EEE", display: "flex", gap: "10px" }}>
-                        <input type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSend()} placeholder="메시지를 입력하세요..."
+                        <input type="text" value={input} onChange={(e: any) => setInput(e.target.value)} onKeyDown={(e: any) => e.key === "Enter" && handleSend()} placeholder="메시지를 입력하세요..."
                             style={{ flex: 1, padding: "12px 15px", borderRadius: "10px", border: "1px solid #DDD", outline: "none" }} />
                         <button onClick={handleSend} style={{ padding: "12px 20px", background: "#333", color: "white", borderRadius: "10px", border: "none", fontWeight: 700 }}>전송</button>
                     </div>
@@ -7435,30 +7435,30 @@ export default function App() {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                 <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>교회 이름</label>
-                                                <input type="text" value={settingsForm.church_name} onChange={e => setSettingsForm({ ...settingsForm, church_name: e.target.value })} placeholder="앱 메인에 표시될 교회 이름 (예: 샘플교회)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                                <input type="text" value={settingsForm.church_name} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, church_name: e.target.value }))} placeholder="앱 메인에 표시될 교회 이름 (예: 샘플교회)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                 <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>앱 부제목 (슬로건)</label>
-                                                <input type="text" value={settingsForm.app_subtitle} onChange={e => setSettingsForm({ ...settingsForm, app_subtitle: e.target.value })} placeholder="예: 말씀과 기도로 거룩해지는 공동체" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                                <input type="text" value={settingsForm.app_subtitle} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, app_subtitle: e.target.value }))} placeholder="예: 말씀과 기도로 거룩해지는 공동체" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                 <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <span>유튜브 채널 ID (자동 업데이트용)</span>
                                                     <span style={{ fontSize: '10px', color: '#999', fontWeight: 400 }}>예: UC4UTt4...</span>
                                                 </label>
-                                                <input type="text" value={settingsForm.sermon_url} onChange={e => setSettingsForm({ ...settingsForm, sermon_url: e.target.value })} placeholder="유튜브 채널 ID 입력" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                                <input type="text" value={settingsForm.sermon_url} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, sermon_url: e.target.value }))} placeholder="유튜브 채널 ID 입력" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                                             </div>
 
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '12px', background: '#FFFDE7', borderRadius: '12px', border: '1px solid #FFF59D' }}>
                                                 <label style={{ fontSize: '12px', fontWeight: 700, color: '#856404' }}>이번 주 설교 영상 주소 (수동 지정)</label>
-                                                <input type="text" value={settingsForm.manual_sermon_url || ''} onChange={e => setSettingsForm({ ...settingsForm, manual_sermon_url: e.target.value })} placeholder="특정 영상 주소 (입력 시 채널 ID보다 우선 표시)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #FFE082', fontSize: '14px', outline: 'none', background: 'white' }} />
+                                                <input type="text" value={settingsForm.manual_sermon_url || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, manual_sermon_url: e.target.value }))} placeholder="특정 영상 주소 (입력 시 채널 ID보다 우선 표시)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #FFE082', fontSize: '14px', outline: 'none', background: 'white' }} />
                                                 <div style={{ fontSize: '10px', color: '#B8924A' }}>※ '설교 요약/질문 관리'에서 생성 시 자동으로 업데이트됩니다.</div>
                                             </div>
 
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                 <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>로고 이미지</label>
                                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                                    <input type="text" value={settingsForm.church_logo_url} onChange={e => setSettingsForm({ ...settingsForm, church_logo_url: e.target.value })} placeholder="로고 URL 또는 직접 업로드" style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                                    <input type="text" value={settingsForm.church_logo_url} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, church_logo_url: e.target.value }))} placeholder="로고 URL 또는 직접 업로드" style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                                                     <input type="file" id="logo-upload" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
                                                         const file = e.target.files?.[0];
                                                         if (!file) return;
@@ -7494,7 +7494,7 @@ export default function App() {
 
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                 <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>교회 홈페이지/배경 URL</label>
-                                                <input type="text" value={settingsForm.church_url} onChange={e => setSettingsForm({ ...settingsForm, church_url: e.target.value })} placeholder="교회 링크 주소 (선택사항)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                                <input type="text" value={settingsForm.church_url} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, church_url: e.target.value }))} placeholder="교회 링크 주소 (선택사항)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                                             </div>
                                             {/* ✅ 배경음악(CCM) 관리 섹션 추가 */}
                                             <div style={{ marginTop: '10px', padding: '15px', background: '#F5F5F3', borderRadius: '15px', border: '1px solid #EEE' }}>
@@ -7503,10 +7503,10 @@ export default function App() {
                                                 </div>
 
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
-                                                    <input type="text" value={newCcmTitle} onChange={e => setNewCcmTitle(e.target.value)} placeholder="찬양 제목 (예: 은혜로운 찬양)" style={{ padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
-                                                    <input type="text" value={newCcmArtist} onChange={e => setNewCcmArtist(e.target.value)} placeholder="가수/아티스트 (예: 어노인팅)" style={{ padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
+                                                    <input type="text" value={newCcmTitle} onChange={(e: any) => setNewCcmTitle(e.target.value)} placeholder="찬양 제목 (예: 은혜로운 찬양)" style={{ padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
+                                                    <input type="text" value={newCcmArtist} onChange={(e: any) => setNewCcmArtist(e.target.value)} placeholder="가수/아티스트 (예: 어노인팅)" style={{ padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
                                                     <div style={{ display: 'flex', gap: '6px' }}>
-                                                        <input type="text" value={newCcmUrl} onChange={e => setNewCcmUrl(e.target.value)} placeholder="유튜브 주소 (https://...)" style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
+                                                        <input type="text" value={newCcmUrl} onChange={(e: any) => setNewCcmUrl(e.target.value)} placeholder="유튜브 주소 (https://...)" style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
                                                         <button
                                                             onClick={() => {
                                                                 if (!newCcmTitle || !newCcmUrl) { alert('제목과 유튜브 주소를 입력해 주세요!'); return; }
@@ -7552,7 +7552,7 @@ export default function App() {
                                                 <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>🖼️ 행사 포스터 팝업 관리</div>
                                                     <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '6px' }}>
-                                                        <input type="checkbox" checked={settingsForm.event_poster_visible} onChange={e => setSettingsForm({ ...settingsForm, event_poster_visible: e.target.checked })} />
+                                                        <input type="checkbox" checked={settingsForm.event_poster_visible} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, event_poster_visible: e.target.checked }))} />
                                                         <span style={{ fontSize: '11px', fontWeight: 700, color: settingsForm.event_poster_visible ? '#007AFF' : '#999' }}>{settingsForm.event_poster_visible ? '활성' : '비활성'}</span>
                                                     </label>
                                                 </div>
@@ -7602,7 +7602,7 @@ export default function App() {
                                                 </div>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                     <div style={{ display: 'flex', gap: '6px' }}>
-                                                        <input type="text" value={settingsForm.today_book_title || ''} onChange={e => setSettingsForm({ ...settingsForm, today_book_title: e.target.value })} placeholder="추천 도서 제목" style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
+                                                        <input type="text" value={settingsForm.today_book_title || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, today_book_title: e.target.value }))} placeholder="추천 도서 제목" style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
                                                         <button
                                                             disabled={isBookAiLoading}
                                                             onClick={async () => {
@@ -7625,7 +7625,7 @@ export default function App() {
                                                             {isBookAiLoading ? '생성 중...' : 'AI 자동생성'}
                                                         </button>
                                                     </div>
-                                                    <textarea value={settingsForm.today_book_description || ''} onChange={e => setSettingsForm({ ...settingsForm, today_book_description: e.target.value })} placeholder="책 소개 또는 추천사 (직접 입력도 가능)" style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px', resize: 'none' }} />
+                                                    <textarea value={settingsForm.today_book_description || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, today_book_description: e.target.value }))} placeholder="책 소개 또는 추천사 (직접 입력도 가능)" style={{ width: '100%', minHeight: '80px', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px', resize: 'none' }} />
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                         <div style={{ flex: 1, fontSize: '12px', color: '#666' }}>📖 책 이미지 (표지)</div>
                                                         <input type="file" id="book-img-upload" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
@@ -7684,8 +7684,8 @@ export default function App() {
                                                         </button>
                                                     </div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                        <input type="text" value={settingsForm.pastor_column_title || ''} onChange={e => setSettingsForm({ ...settingsForm, pastor_column_title: e.target.value })} placeholder="칼럼 제목" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
-                                                        <textarea value={settingsForm.pastor_column_content || ''} onChange={e => setSettingsForm({ ...settingsForm, pastor_column_content: e.target.value })} placeholder="칼럼 내용 (직접 입력 또는 AI 생성)" style={{ width: '100%', minHeight: '100px', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px', resize: 'none', lineHeight: 1.6 }} />
+                                                        <input type="text" value={settingsForm.pastor_column_title || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, pastor_column_title: e.target.value }))} placeholder="칼럼 제목" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
+                                                        <textarea value={settingsForm.pastor_column_content || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, pastor_column_content: e.target.value }))} placeholder="칼럼 내용 (직접 입력 또는 AI 생성)" style={{ width: '100%', minHeight: '100px', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px', resize: 'none', lineHeight: 1.6 }} />
                                                     </div>
                                                 </div>
 
@@ -7696,8 +7696,8 @@ export default function App() {
                                                     </div>
                                                     <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>* 비워두면 추천 말씀이 매일 자동 생성됩니다. 직접 입력 시 해당 말씀이 고정 노출됩니다.</div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                        <input type="text" value={settingsForm.today_verse_text || ''} onChange={e => setSettingsForm({ ...settingsForm, today_verse_text: e.target.value })} placeholder="예: 여호와는 나의 목자시니..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
-                                                        <input type="text" value={settingsForm.today_verse_ref || ''} onChange={e => setSettingsForm({ ...settingsForm, today_verse_ref: e.target.value })} placeholder="출처 (예: 시편 23:1)" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
+                                                        <input type="text" value={settingsForm.today_verse_text || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, today_verse_text: e.target.value }))} placeholder="예: 여호와는 나의 목자시니..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
+                                                        <input type="text" value={settingsForm.today_verse_ref || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, today_verse_ref: e.target.value }))} placeholder="출처 (예: 시편 23:1)" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
                                                     </div>
                                                 </div>
                                             </div>
