@@ -600,7 +600,7 @@ export default function App() {
 
     const handleNextCcm = useCallback(() => {
         setPlayRequested(true);
-        setCcmIndex(prev => {
+        setCcmIndex((prev: any) => {
             if (activeCcmList.length <= 1) return 0;
             let nextIdx;
             const currentIdx = prev === null ? -1 : prev;
@@ -614,7 +614,7 @@ export default function App() {
 
     const handlePrevCcm = useCallback(() => {
         setPlayRequested(true);
-        setCcmIndex(prev => {
+        setCcmIndex((prev: any) => {
             if (activeCcmList.length <= 1) return 0;
             let nextIdx;
             const currentIdx = prev === null ? -1 : prev;
@@ -1468,7 +1468,7 @@ export default function App() {
 
         // 초기 날짜 설정
         const todayStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
-        setQtData(prev => ({ ...prev, date: todayStr }));
+        setQtData((prev: any) => ({ ...prev, date: todayStr }));
 
         // 글로벌 스타일 동적 주입
         const styleId = 'somy-ipod-styles';
@@ -2056,7 +2056,7 @@ export default function App() {
         if (!query.trim() || isPassageLoading) return;
 
         const userMsg = { role: "user", content: query };
-        setPassageChat(prev => [...prev, userMsg]);
+        setPassageChat((prev: any) => [...prev, userMsg]);
         if (!directInput) setPassageInput("");
         setIsPassageLoading(true);
 
@@ -2073,9 +2073,9 @@ export default function App() {
                 }),
             });
             const data = await response.json();
-            setPassageChat(prev => [...prev, { role: "assistant", content: data.content || data.error }]);
+            setPassageChat((prev: any) => [...prev, { role: "assistant", content: data.content || data.error }]);
         } catch {
-            setPassageChat(prev => [...prev, { role: "assistant", content: "말씀을 묵상하던 중 잠시 문제가 생겼어요 🙏" }]);
+            setPassageChat((prev: any) => [...prev, { role: "assistant", content: "말씀을 묵상하던 중 잠시 문제가 생겼어요 🙏" }]);
         } finally {
             setIsPassageLoading(false);
             if (passageRef.current) {
@@ -3075,7 +3075,7 @@ export default function App() {
 
                         if (res.ok) {
                             const newPost = await res.json();
-                            setCommunityPosts(prev => [newPost, ...prev]); // [안전] prev를 사용하여 최신 상태 유지
+                            setCommunityPosts((prev: any) => [newPost, ...prev]); // [안전] prev를 사용하여 최신 상태 유지
                             setGraceInput(""); // ✅ 등록 성공 시 입력창 비움
                             setIsPrivatePost(false);
                             alert("은혜가 나눔게시판에 등록되었습니다! ✨");
@@ -3896,9 +3896,9 @@ export default function App() {
                     const data = await res.json();
                     if (res.ok) {
                         if (type === 'community') {
-                            setCommunityPosts(prev => prev.map(post => post.id === postId ? { ...post, liker_ids: data.liker_ids } : post));
+                            setCommunityPosts((prev: any) => prev.map((post: any) => post.id === postId ? { ...post, liker_ids: data.liker_ids } : post));
                         } else {
-                            setThanksgivingDiaries(prev => prev.map(diary => diary.id === postId ? { ...diary, liker_ids: data.liker_ids } : diary));
+                            setThanksgivingDiaries((prev: any) => prev.map((diary: any) => diary.id === postId ? { ...diary, liker_ids: data.liker_ids } : diary));
                         }
                     } else {
                         if (data.error?.includes('column "liker_ids"') || data.details?.includes('column "liker_ids"')) {
@@ -3935,7 +3935,7 @@ export default function App() {
                     });
                     if (res.ok) {
                         const newComment = await res.json();
-                        setCommunityPosts(prev => prev.map(post => {
+                        setCommunityPosts((prev: any) => prev.map((post: any) => {
                             if (post.id === postId) {
                                 return {
                                     ...post,
@@ -3944,8 +3944,8 @@ export default function App() {
                             }
                             return post;
                         }));
-                        setCommentInputs(prev => ({ ...prev, [postId]: "" }));
-                        setCommentPrivateStates(prev => ({ ...prev, [postId]: false }));
+                        setCommentInputs((prev: any) => ({ ...prev, [postId]: "" }));
+                        setCommentPrivateStates((prev: any) => ({ ...prev, [postId]: false }));
                     } else {
                         const errData = await res.json().catch(() => ({}));
                         alert("댓글 등록에 실패했어요: " + (errData.error || "알 수 없는 오류"));
@@ -4414,7 +4414,7 @@ export default function App() {
                                                         }}
                                                     />
                                                     <button
-                                                        onClick={() => setCommentPrivateStates(prev => ({ ...prev, [post.id]: !prev[post.id] }))}
+                                                        onClick={() => setCommentPrivateStates((prev: any) => ({ ...prev, [post.id]: !prev[post.id] }))}
                                                         style={{
                                                             background: commentPrivateStates[post.id] ? '#F3E5F5' : '#F5F5F5',
                                                             border: 'none',
@@ -4479,9 +4479,9 @@ export default function App() {
                     const data = await res.json();
                     if (res.ok) {
                         if (type === 'community') {
-                            setCommunityPosts(prev => prev.map(post => post.id === postId ? { ...post, liker_ids: data.liker_ids } : post));
+                            setCommunityPosts((prev: any) => prev.map((post: any) => post.id === postId ? { ...post, liker_ids: data.liker_ids } : post));
                         } else {
-                            setThanksgivingDiaries(prev => prev.map(diary => diary.id === postId ? { ...diary, liker_ids: data.liker_ids } : diary));
+                            setThanksgivingDiaries((prev: any) => prev.map((diary: any) => diary.id === postId ? { ...diary, liker_ids: data.liker_ids } : diary));
                         }
                     } else {
                         if (data.error?.includes('column "liker_ids"') || data.details?.includes('column "liker_ids"')) {
@@ -4517,14 +4517,14 @@ export default function App() {
                     });
                     if (res.ok) {
                         const newComment = await res.json();
-                        setThanksgivingDiaries(prev => prev.map(diary => {
+                        setThanksgivingDiaries((prev: any) => prev.map((diary: any) => {
                             if (diary.id === diaryId) {
                                 return { ...diary, comments: [...(diary.comments || []), newComment] };
                             }
                             return diary;
                         }));
-                        setCommentInputs(prev => ({ ...prev, [diaryId]: "" }));
-                        setCommentPrivateStates(prev => ({ ...prev, [diaryId]: false }));
+                        setCommentInputs((prev: any) => ({ ...prev, [diaryId]: "" }));
+                        setCommentPrivateStates((prev: any) => ({ ...prev, [diaryId]: false }));
                     } else {
                         const errData = await res.json().catch(() => ({}));
                         alert("댓글 등록에 실패했어요: " + (errData.error || "알 수 없는 오류"));
@@ -4548,7 +4548,7 @@ export default function App() {
                     });
                     if (res.ok) {
                         const updatedComment = await res.json();
-                        setThanksgivingDiaries(prev => prev.map(diary => {
+                        setThanksgivingDiaries((prev: any) => prev.map((diary: any) => {
                             if (diary.id === diaryId) {
                                 return {
                                     ...diary,
@@ -4572,7 +4572,7 @@ export default function App() {
                         body: JSON.stringify({ id: commentId })
                     });
                     if (res.ok) {
-                        setThanksgivingDiaries(prev => prev.map(diary => {
+                        setThanksgivingDiaries((prev: any) => prev.map((diary: any) => {
                             if (diary.id === diaryId) {
                                 return { ...diary, comments: (diary.comments || []).filter((c: any) => c.id !== commentId) };
                             }
@@ -4596,7 +4596,7 @@ export default function App() {
                         body: JSON.stringify({ id: diaryId })
                     });
                     if (res.ok) {
-                        setThanksgivingDiaries(prev => prev.filter(diary => diary.id !== diaryId));
+                        setThanksgivingDiaries((prev: any) => prev.filter((diary: any) => diary.id !== diaryId));
                     } else {
                         const errData = await res.json().catch(() => ({}));
                         alert(`삭제 실패: ${errData.error || '알 수 없는 오류'}`);
@@ -4617,7 +4617,7 @@ export default function App() {
                     });
                     if (res.ok) {
                         const updatedDiary = await res.json();
-                        setThanksgivingDiaries(prev => prev.map(diary =>
+                        setThanksgivingDiaries((prev: any) => prev.map((diary: any) =>
                             diary.id === editingPostId ? { ...diary, content: updatedDiary.content } : diary
                         ));
                         setEditingPostId(null);
@@ -4643,7 +4643,7 @@ export default function App() {
                     });
                     if (res.ok) {
                         const newDiary = await res.json();
-                        setThanksgivingDiaries(prev => [newDiary, ...prev]);
+                        setThanksgivingDiaries((prev: any) => [newDiary, ...prev]);
                         setThanksgivingInput("");
                         setIsPrivateThanksgiving(false);
                     }
@@ -4776,7 +4776,7 @@ export default function App() {
                                                         {diary.content}
                                                     </div>
                                                     {(diary.content.split('\n').length > 4 || diary.content.length > 120) && (
-                                                        <button onClick={() => setExpandedPosts(prev => ({ ...prev, [diary.id]: !prev[diary.id] }))} style={{ background: 'none', border: 'none', color: '#E07A5F', fontSize: '13px', padding: '8px 0 0 0', cursor: 'pointer', fontWeight: 600 }}>
+                                                        <button onClick={() => setExpandedPosts((prev: any) => ({ ...prev, [diary.id]: !prev[diary.id] }))} style={{ background: 'none', border: 'none', color: '#E07A5F', fontSize: '13px', padding: '8px 0 0 0', cursor: 'pointer', fontWeight: 600 }}>
                                                             {expandedPosts[diary.id] ? '접기 ▲' : '더보기 ▼'}
                                                         </button>
                                                     )}
@@ -4871,7 +4871,7 @@ export default function App() {
                                                     <textarea
                                                         value={commentInputs[diary.id] || ""}
                                                         onChange={(e) => {
-                                                            setCommentInputs(prev => ({ ...prev, [diary.id]: e.target.value }));
+                                                            setCommentInputs((prev: any) => ({ ...prev, [diary.id]: e.target.value }));
                                                             e.target.style.height = 'auto';
                                                             e.target.style.height = e.target.scrollHeight + 'px';
                                                         }}
@@ -4885,7 +4885,7 @@ export default function App() {
                                                         style={{ flex: 1, padding: '10px 12px', borderRadius: '12px', border: '1px solid #fae1cd', fontSize: '14px', outline: 'none', resize: 'none', height: '40px', minHeight: '40px', maxHeight: '120px', fontFamily: 'inherit', lineHeight: '1.5' }}
                                                     />
                                                     <button
-                                                        onClick={() => setCommentPrivateStates(prev => ({ ...prev, [diary.id]: !prev[diary.id] }))}
+                                                        onClick={() => setCommentPrivateStates((prev: any) => ({ ...prev, [diary.id]: !prev[diary.id] }))}
                                                         style={{ background: commentPrivateStates[diary.id] ? '#FDF0E3' : '#F5F5F5', border: 'none', borderRadius: '10px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '16px', transition: 'all 0.2s' }}
                                                         title={commentPrivateStates[diary.id] ? "비공개" : "공개"}
                                                     >
@@ -5514,7 +5514,7 @@ export default function App() {
                                                     </div>
                                                     <textarea
                                                         value={sermonReflection[`q${idx + 1}` as keyof typeof sermonReflection] as string}
-                                                        onChange={(e) => setSermonReflection(prev => ({ ...prev, [`q${idx + 1}`]: e.target.value }))}
+                                                        onChange={(e) => setSermonReflection((prev: any) => ({ ...prev, [`q${idx + 1}`]: e.target.value }))}
                                                         placeholder="나의 생각이나 결단을 적어보세요..."
                                                         style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EBE4A5', outline: 'none', fontSize: '13px', minHeight: '80px', background: 'white', resize: 'vertical' }}
                                                     />
@@ -5533,12 +5533,12 @@ export default function App() {
                                 <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', marginBottom: '10px' }}>📝 전체적인 은혜 나누기</div>
                                 <textarea
                                     value={sermonReflection.mainGrace}
-                                    onChange={(e) => setSermonReflection(prev => ({ ...prev, mainGrace: e.target.value }))}
+                                    onChange={(e) => setSermonReflection((prev: any) => ({ ...prev, mainGrace: e.target.value }))}
                                     placeholder="전체적으로 깨달은 점, 개인적으로 적용하고 싶은 결단이나 다짐 등을 자유롭게 적어주세요!"
                                     style={{ width: '100%', padding: '15px', borderRadius: '15px', border: '1px solid #E7E7E7', outline: 'none', fontSize: '14px', minHeight: '120px', resize: 'vertical', background: 'white' }}
                                 />
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginTop: '10px', fontSize: '13px', color: '#666' }}>
-                                    <input type="checkbox" checked={sermonReflection.isPrivate} onChange={e => setSermonReflection(prev => ({ ...prev, isPrivate: e.target.checked }))} style={{ width: '16px', height: '16px' }} />
+                                    <input type="checkbox" checked={sermonReflection.isPrivate} onChange={e => setSermonReflection((prev: any) => ({ ...prev, isPrivate: e.target.checked }))} style={{ width: '16px', height: '16px' }} />
                                     나만 보기 (체크 시 게시판에 공개되지 않습니다)
                                 </label>
                             </div>
@@ -8282,9 +8282,9 @@ export default function App() {
                                                                         <div
                                                                             onClick={() => {
                                                                                 if (selectedMemberIds.includes(member.id)) {
-                                                                                    setSelectedMemberIds(prev => prev.filter(id => id !== member.id));
+                                                                                    setSelectedMemberIds((prev: any) => prev.filter((id: any) => id !== member.id));
                                                                                 } else {
-                                                                                    setSelectedMemberIds(prev => [...prev, member.id]);
+                                                                                    setSelectedMemberIds((prev: any) => [...prev, member.id]);
                                                                                 }
                                                                             }}
                                                                             style={{
@@ -8356,7 +8356,7 @@ export default function App() {
                                                                                     if (window.confirm(`${member.full_name} 성도를 승인하시겠습니까?`)) {
                                                                                         const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve_user', user_id: member.id, is_approved: true, church_id: churchId, requester_id: user?.id, requester_email: user?.email }) });
                                                                                         if (res.ok) {
-                                                                                            setMemberList(prev => prev.map(m => m.id === member.id ? { ...m, is_approved: true } : m));
+                                                                                            setMemberList((prev: any) => prev.map((m: any) => m.id === member.id ? { ...m, is_approved: true } : m));
                                                                                             alert(`${member.full_name} 성도가 승인되었습니다. 🎉`);
                                                                                         }
                                                                                     }
@@ -8371,7 +8371,7 @@ export default function App() {
                                                                                 onClick={async () => {
                                                                                     const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear_new_login', user_id: member.id, requester_id: user?.id }) });
                                                                                     if (res.ok) {
-                                                                                        setMemberList(prev => prev.map(m => m.id === member.id ? { ...m, is_new_login: false } : m));
+                                                                                        setMemberList((prev: any) => prev.map((m: any) => m.id === member.id ? { ...m, is_new_login: false } : m));
                                                                                     }
                                                                                 }}
                                                                                 style={{ flex: 1, background: '#E3F2FD', color: '#1971C2', border: '1px solid #BBDEFB', padding: '10px', borderRadius: '12px', fontSize: '11px', fontWeight: 900, cursor: 'pointer' }}
@@ -8419,7 +8419,7 @@ export default function App() {
                                                                             onClick={async () => {
                                                                                 if (window.confirm(`${member.full_name} 성도를 삭제하시겠습니까?`)) {
                                                                                     const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_member', user_id: member.id, church_id: churchId, requester_id: user?.id, requester_email: user?.email }) });
-                                                                                    if (res.ok) setMemberList(prev => prev.filter(m => m.id !== member.id));
+                                                                                    if (res.ok) setMemberList((prev: any) => prev.filter((m: any) => m.id !== member.id));
                                                                                 }
                                                                             }}
                                                                             style={{ background: '#FFF5F5', border: '1px solid #FFE3E3', padding: '10px', borderRadius: '12px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', color: '#E03131' }}
@@ -8462,7 +8462,7 @@ export default function App() {
                                                                                         body: JSON.stringify({ action: 'bulk_update_privacy', field: `is_${type}_public`, value: true, church_id: churchId })
                                                                                     });
                                                                                     if (res.ok) {
-                                                                                        setMemberList(prev => prev.map(m => ({ ...m, [`is_${type}_public`]: true })));
+                                                                                        setMemberList((prev: any) => prev.map((m: any) => ({ ...m, [`is_${type}_public`]: true })));
                                                                                         alert('모두 공개로 변경되었습니다.');
                                                                                     }
                                                                                     setIsBulkProcessing(false);
@@ -8494,7 +8494,7 @@ export default function App() {
                                                                                         body: JSON.stringify({ action: 'bulk_update_privacy', field: `is_${type}_public`, value: false, church_id: churchId })
                                                                                     });
                                                                                     if (res.ok) {
-                                                                                        setMemberList(prev => prev.map(m => ({ ...m, [`is_${type}_public`]: false })));
+                                                                                        setMemberList((prev: any) => prev.map((m: any) => ({ ...m, [`is_${type}_public`]: false })));
                                                                                         alert('모두 비공개로 변경되었습니다.');
                                                                                     }
                                                                                     setIsBulkProcessing(false);
@@ -8555,7 +8555,7 @@ export default function App() {
                                                                                 body: JSON.stringify({ action: 'delete_community_post', post_id: post.id, church_id: churchId, requester_id: user?.id, requester_email: user?.email })
                                                                             });
                                                                             if (res.ok) {
-                                                                                setCommunityPosts(prev => prev.filter(p => p.id !== post.id));
+                                                                                setCommunityPosts((prev: any) => prev.filter((p: any) => p.id !== post.id));
                                                                                 alert('게시글이 삭제되었습니다.');
                                                                             }
                                                                         }
@@ -8612,7 +8612,7 @@ export default function App() {
                                                                                 body: JSON.stringify({ action: 'delete_thanksgiving_diary', diary_id: diary.id, church_id: churchId, requester_id: user?.id, requester_email: user?.email })
                                                                             });
                                                                             if (res.ok) {
-                                                                                setThanksgivingDiaries(prev => prev.filter(d => d.id !== diary.id));
+                                                                                setThanksgivingDiaries((prev: any) => prev.filter((d: any) => d.id !== diary.id));
                                                                                 alert('감사일기가 삭제되었습니다.');
                                                                             }
                                                                         }
@@ -9933,7 +9933,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
                                     <div
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            setSelectedIds(prev => prev.includes(member.id) ? prev.filter(id => id !== member.id) : [...prev, member.id]);
+                                            setSelectedIds((prev: any) => prev.includes(member.id) ? prev.filter((id: any) => id !== member.id) : [...prev, member.id]);
                                         }}
                                         style={{
                                             width: '22px', height: '22px', borderRadius: '7px', border: '2px solid #333',
