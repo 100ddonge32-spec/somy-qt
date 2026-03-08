@@ -18,72 +18,54 @@ try {
 
 const supabase = createClient(supabaseUrl, serviceKey);
 
-async function restoreKakaoPosts() {
-    const targetName = '김은영';
-    const targetPhone = '01083730399';
+async function moveCommunityToThanksgiving() {
+    const targetName = "김은영";
+    const activeUserId = "a09b26f6-ece0-4e86-881b-e8487b704300"; // 김은영 성도님 현재 계정 ID
 
-    console.log(`\n🍑 [카카오 과거 기록 복원 작업] '${targetName}' 성도님 데이터를 추적합니다...`);
+    console.log(`\n🚚 [데이터 이사 작전] '은혜나눔' -> '감사일기'로 글을 옮깁니다...`);
 
-    // 1. 모든 관련 프로필(계정) 흔적 찾기 (이름, 전화번호 검색)
-    const { data: profiles } = await supabase
-        .from('profiles')
+    // 1. 은혜나눔(community_posts)에서 김은영 성도님의 글 10개 가져오기
+    const { data: cPosts, error: cErr } = await supabase
+        .from('community_posts')
         .select('*')
-        .or(`full_name.ilike.%${targetName}%,phone.ilike.%${targetPhone}%,email.ilike.%${targetPhone}%`);
+        .ilike('user_name', `%${targetName}%`);
 
-    if (!profiles || profiles.length === 0) {
-        console.log("❌ 관련 프로필을 찾을 수 없습니다.");
+    if (cErr || !cPosts || cPosts.length === 0) {
+        console.log(`❌ 은혜나눔 게시판에서 '${targetName}' 성도님의 글을 찾지 못했습니다.`);
         return;
     }
 
-    console.log(`✅ 총 ${profiles.length}개의 계정 흔적을 발견했습니다.`);
+    console.log(`✅ 은혜나눔 게시판에서 ${cPosts.length}개의 글을 발견했습니다.`);
 
-    // 현재 사용 중인 계정(이메일이 정상이고 가장 최근 것)과 과거 카카오 계정 구분
-    const activeProfile = profiles.find(p => p.email && !p.email.includes('@church.local') && !p.email.includes('kakao_')) || profiles[0];
-    const allProfileIds = profiles.map(p => p.id);
+    if (process.argv[2] === 'move') {
+        console.log(`\n🚀 이전을 시작합니다...`);
+        let count = 0;
+        for (const post of cPosts) {
+            // 감사일기(thanksgiving_diaries) 형식에 맞게 데이터 준비
+            const { error: insErr } = await supabase
+                .from('thanksgiving_diaries')
+                .insert([{
+                    user_id: activeUserId,
+                    user_name: targetName,
+                    content: post.content,
+                    church_id: post.church_id || 'jesus-in',
+                    created_at: post.created_at, // 예전 날짜 그대로 유지
+                    is_private: post.is_private || false
+                }]);
 
-    console.log(`   - 현재 활성 계정: ${activeProfile.full_name} (${activeProfile.email})`);
-    console.log(`   - ID: ${activeProfile.id}`);
-
-    // 2. 감사일기(thanksgiving_diaries)에서 발견된 모든 ID로 쓴 글 찾기
-    console.log(`\n🔎 감사일기 테이블에서 과거 ID로 작성된 글을 스캔합니다...`);
-    const { data: foundDiaries } = await supabase
-        .from('thanksgiving_diaries')
-        .select('*')
-        .in('user_id', allProfileIds);
-
-    const lostPosts = foundDiaries?.filter(d => d.user_id !== activeProfile.id) || [];
-
-    if (lostPosts.length > 0) {
-        console.log(`\n🎯 드디어 찾았습니다! 카카오 로그인 시 작성했던 '유실된 글' ${lostPosts.length}개를 발견했습니다.`);
-        lostPosts.forEach(d => {
-            console.log(`   - [과거 작성자명: ${d.user_name}] 내용: ${d.content.substring(0, 25)}... (날짜: ${d.created_at})`);
-        });
-
-        if (process.argv[2] === 'fix') {
-            console.log(`\n🔄 복원을 시작합니다. 과거 글의 소유권을 현재 계정으로 통합합니다...`);
-            for (const d of lostPosts) {
-                const { error } = await supabase
-                    .from('thanksgiving_diaries')
-                    .update({
-                        user_id: activeProfile.id,
-                        user_name: targetName // 이름을 현재 정식 성함으로 통일
-                    })
-                    .eq('id', d.id);
-
-                if (error) console.error(`   - 글 ${d.id} 복원 중 오류:`, error.message);
-                else console.log(`   - [복원완료] "${d.content.substring(0, 15)}..."`);
+            if (!insErr) {
+                count++;
+                console.log(`   [완료] ${post.created_at.substring(0, 10)} 글 이전 성공`);
+            } else {
+                console.error(`   [실패] 이전 중 오류:`, insErr.message);
             }
-            console.log(`\n✨ 축하합니다! 모든 카카오 로그인 당시 글들이 현재 계정으로 복원되었습니다.`);
-            console.log(`이제 앱의 '감사일기' 메뉴에서 김은영 성도님의 예전 글들을 모두 확인하실 수 있습니다.`);
-        } else {
-            console.log(`\n💡 이 글들을 지금 바로 복원하시려면 아래 명령어를 입력해주세요:`);
-            console.log(`node check_posts.js fix`);
         }
+        console.log(`\n✨ 총 ${count}개의 글이 '감사일기'로 성공적으로 이사했습니다!`);
+        console.log(`이제 성도님께 앱을 다시 확인해 보시라고 말씀드리면 됩니다.`);
     } else {
-        console.log(`\n😭 안타깝게도 감사일기 테이블에는 과거 ID로 연결된 글이 여전히 발견되지 않습니다.`);
-        console.log(`앞선 조사에서 발견된 '자유게시판'에 있는 10개의 글이 성도님이 찾으시는 그 글들일 가능성이 매우 높습니다.`);
-        console.log(`만약 그 10개의 글을 '감사일기'로 옮기고 싶으시다면 말씀해주세요!`);
+        console.log(`\n💡 이 글들을 지금 바로 감사일기로 옮기시려면 아래 명령어를 입력하세요:`);
+        console.log(`node check_posts.js move`);
     }
 }
 
-restoreKakaoPosts();
+moveCommunityToThanksgiving();
