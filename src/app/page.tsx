@@ -891,6 +891,16 @@ export default function App() {
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
         try {
+            // [핵심] 권한 요청 추가 - 사용자가 명시적으로 허용해야 알림이 옵니다.
+            const permission = await Notification.permission;
+            if (permission === 'default') {
+                const newPermission = await Notification.requestPermission();
+                if (newPermission !== 'granted') return;
+            } else if (permission === 'denied') {
+                alert("알림 권한이 차단되어 있습니다. 브라우저 설정에서 알림을 허용해 주세요.");
+                return;
+            }
+
             const registration = await navigator.serviceWorker.ready;
 
             // [김부장의 팁] 기존 구독이 가끔 꼬이는 경우가 있어, 매번 새로 갱신해 주는 것이 가장 확실합니다.
@@ -903,15 +913,20 @@ export default function App() {
             });
 
             // 모든 푸시 알람 구독은 하나의 API로 통일했습니다.
-            await fetch('/api/push-subscribe', {
+            const res = await fetch('/api/push-subscribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: userId, subscription })
             });
-            console.log("✅ 푸시 알림 서버 등록 완료!");
+
+            if (res.ok) {
+                console.log("✅ 푸시 알림 서버 등록 완료!");
+                return true;
+            }
         } catch (e) {
             console.error("❌ 푸시 알림 구독 실패:", e);
         }
+        return false;
     }, []);
 
     // [이과장의 배지 시스템] 새로운 글이 있는지 시간을 비교하여 N 배지를 결정합니다.
@@ -1097,6 +1112,24 @@ export default function App() {
             if (!isApproved || pollLoopCount % 40 === 0) {
                 checkApprovalStatus();
             }
+
+            // [추가] 실시간 알림 갱신 (15초마다)
+            if (user) {
+                fetch(`/api/notifications?user_id=${user.id}`)
+                    .then(r => r.ok ? r.json() : [])
+                    .then(data => {
+                        if (Array.isArray(data)) {
+                            setNotifications(data);
+                            // 앱 배지 동시 갱신
+                            if (typeof navigator !== 'undefined' && 'setAppBadge' in navigator && typeof navigator.setAppBadge === 'function') {
+                                const unreadCount = data?.filter((n: any) => !n.is_read)?.length || 0;
+                                if (unreadCount > 0) navigator.setAppBadge(unreadCount);
+                                else navigator.clearAppBadge();
+                            }
+                        }
+                    }).catch(() => { });
+            }
+
             pollLoopCount++;
 
             // [생일 팝업 로직 복구]
@@ -6099,6 +6132,162 @@ export default function App() {
         }
 
         if (view === "profile") {
+            const ProfileView = ({ user, setView, baseFont, allowMemberEdit, isAdmin, churchId }: any) => {
+                const [isPushEnabling, setIsPushEnabling] = useState(false);
+
+                return (
+                    <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", padding: "30px 24px", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
+                            <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
+                            <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0 }}>내 프로필 관리</h2>
+                        </div>
+
+                        {/* ✅ 알림 설정 섹션 추가 */}
+                        <div style={{ background: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', marginBottom: '24px', border: '1px solid #F0ECE4' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                                <div style={{ fontSize: '20px' }}>🔔</div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '15px', fontWeight: 800, color: '#333' }}>푸시 알림 설정</div>
+                                    <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>새로운 소식, 댓글, 상담 답변을 폰으로 받아보세요.</div>
+                                </div>
+                            </div>
+                            <button
+                                onClick={async () => {
+                                    setIsPushEnabling(true);
+                                    const success = await subscribePush(user.id);
+                                    if (success) {
+                                        alert("축하합니다! 이제 실시간 알림을 받으실 수 있습니다. ✅");
+                                    } else {
+                                        alert("알림 설정에 실패했습니다. 브라우저의 알림 권한 설정을 확인해 주세요. ⚠️");
+                                    }
+                                    setIsPushEnabling(false);
+                                }}
+                                disabled={isPushEnabling}
+                                style={{
+                                    width: '100%', padding: '14px', background: '#F5F5F5', color: '#333', border: '1px solid #DDD', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px'
+                                }}
+                            >
+                                {isPushEnabling ? '설정 중...' : '📲 핸드폰 알림 활성화 하기'}
+                            </button>
+                        </div>
+
+                        <div style={{ background: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', marginBottom: '24px', border: '1px solid #F0ECE4' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '10px' }}>
+                                    <div style={{ width: 100, height: 100, borderRadius: '50%', background: '#F5F5F3', border: '1px solid #EEE', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                                        {profileForm.avatar_url ? (
+                                            <img src={profileForm.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Profile" />
+                                        ) : (
+                                            <span style={{ fontSize: '30px', color: '#999' }}>👤</span>
+                                        )}
+                                        <input type="file" accept="image/jpeg, image/png, image/jpg" style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            const reader = new FileReader();
+                                            reader.onload = (ev) => {
+                                                const img = new Image();
+                                                img.onload = () => {
+                                                    const canvas = document.createElement('canvas');
+                                                    const MAX_SIZE = 400;
+                                                    let width = img.width;
+                                                    let height = img.height;
+                                                    if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } }
+                                                    else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
+                                                    canvas.width = width;
+                                                    canvas.height = height;
+                                                    const ctx = canvas.getContext('2d');
+                                                    ctx?.drawImage(img, 0, 0, width, height);
+                                                    const base64Str = canvas.toDataURL('image/jpeg', 0.8);
+                                                    setProfileForm(prev => ({ ...prev, avatar_url: base64Str }));
+                                                };
+                                                img.src = ev.target?.result as string;
+                                            };
+                                            reader.readAsDataURL(file);
+                                        }} />
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#888', marginTop: '8px' }}>사진 클릭 시 변경 (JPG/PNG)</div>
+                                </div>
+
+                                <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '0' }}>👤 성함</label>
+                                        {!(allowMemberEdit || isAdmin) && <span style={{ fontSize: '11px', color: '#AAA', fontWeight: 500 }}>수정 불가</span>}
+                                    </div>
+                                    <input type="text" value={profileForm.full_name} onChange={e => (allowMemberEdit || isAdmin) && setProfileForm({ ...profileForm, full_name: e.target.value })} readOnly={!(allowMemberEdit || isAdmin)} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: (allowMemberEdit || isAdmin) ? '1px solid #D4AF37' : '1px solid #EEE', outline: 'none', background: (allowMemberEdit || isAdmin) ? 'white' : '#F9F9F9', color: (allowMemberEdit || isAdmin) ? '#333' : '#999', cursor: (allowMemberEdit || isAdmin) ? 'text' : 'not-allowed' }} />
+                                </div>
+                                <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '0' }}>📞 전화번호</label>
+                                        {!(allowMemberEdit || isAdmin) && <span style={{ fontSize: '11px', color: '#AAA', fontWeight: 500 }}>수정 불가</span>}
+                                    </div>
+                                    <input type="tel" value={profileForm.phone} onChange={e => (allowMemberEdit || isAdmin) && setProfileForm({ ...profileForm, phone: e.target.value })} readOnly={!(allowMemberEdit || isAdmin)} placeholder="010-0000-0000" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: (allowMemberEdit || isAdmin) ? '1px solid #D4AF37' : '1px solid #EEE', outline: 'none', background: (allowMemberEdit || isAdmin) ? 'white' : '#F9F9F9', color: (allowMemberEdit || isAdmin) ? '#333' : '#999', cursor: (allowMemberEdit || isAdmin) ? 'text' : 'not-allowed' }} />
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                                        <input type="checkbox" id="phone_pub" checked={profileForm.is_phone_public} onChange={e => setProfileForm({ ...profileForm, is_phone_public: e.target.checked })} />
+                                        <label htmlFor="phone_pub" style={{ fontSize: '12px', color: '#888' }}>다른 성도님들께 전화번호를 공개합니다.</label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '0' }}>🎂 생년월일</label>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <label style={{ fontSize: '11px', color: '#555', display: 'flex', alignItems: 'center', gap: '4px', cursor: allowMemberEdit ? 'pointer' : 'default' }}>
+                                                <input type="radio" checked={!profileForm.is_birthdate_lunar} onChange={() => (allowMemberEdit || isAdmin) && setProfileForm({ ...profileForm, is_birthdate_lunar: false })} disabled={!(allowMemberEdit || isAdmin)} /> 양력
+                                            </label>
+                                            <label style={{ fontSize: '11px', color: '#555', display: 'flex', alignItems: 'center', gap: '4px', cursor: allowMemberEdit ? 'pointer' : 'default' }}>
+                                                <input type="radio" checked={profileForm.is_birthdate_lunar} onChange={() => (allowMemberEdit || isAdmin) && setProfileForm({ ...profileForm, is_birthdate_lunar: true })} disabled={!(allowMemberEdit || isAdmin)} /> 음력
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '4px' }}>
+                                        <span style={{ fontSize: '11px', color: '#E07A5F', fontWeight: 600 }}>{allowMemberEdit ? '정확한 생일을 선택해주세요' : '관리자께 날짜/음력 여부 수정을 요청해주세요'}</span>
+                                    </div>
+                                    <input type="date" value={profileForm.birthdate} onChange={e => (allowMemberEdit || isAdmin) && setProfileForm({ ...profileForm, birthdate: e.target.value })} readOnly={!(allowMemberEdit || isAdmin)} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: (allowMemberEdit || isAdmin) ? '1px solid #D4AF37' : '1px solid #EEE', outline: 'none', background: (allowMemberEdit || isAdmin) ? 'white' : '#F9F9F9', color: (allowMemberEdit || isAdmin) ? '#333' : '#999', cursor: (allowMemberEdit || isAdmin) ? 'text' : 'not-allowed' }} />
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                                        <input type="checkbox" id="birth_pub" checked={profileForm.is_birthdate_public} onChange={e => setProfileForm({ ...profileForm, is_birthdate_public: e.target.checked })} />
+                                        <label htmlFor="birth_pub" style={{ fontSize: '12px', color: '#888' }}>다른 성도님들께 생일을 공개합니다.</label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '8px' }}>📅 교회 등록일</label>
+                                    <div style={{ padding: '12px', borderRadius: '12px', background: '#F9F9F9', border: '1px solid #EEE', fontSize: '14px', color: '#666' }}>
+                                        {profileForm.created_at ? new Date(profileForm.created_at).toLocaleDateString() : '정보 없음'}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#AAA', marginTop: '4px' }}>등록일 수정을 원하시면 관리자에게 문의해주세요.</div>
+                                </div>
+                                <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '0' }}>🏠 주소</label>
+                                        {!(allowMemberEdit || isAdmin) && <span style={{ fontSize: '11px', color: '#AAA', fontWeight: 500 }}>수정 불가</span>}
+                                    </div>
+                                    <input type="text" value={profileForm.address} onChange={e => (allowMemberEdit || isAdmin) && setProfileForm({ ...profileForm, address: e.target.value })} readOnly={!(allowMemberEdit || isAdmin)} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: (allowMemberEdit || isAdmin) ? '1px solid #D4AF37' : '1px solid #EEE', outline: 'none', background: (allowMemberEdit || isAdmin) ? 'white' : '#F9F9F9', color: (allowMemberEdit || isAdmin) ? '#333' : '#999', cursor: (allowMemberEdit || isAdmin) ? 'text' : 'not-allowed' }} />
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                                        <input type="checkbox" id="address_pub" checked={profileForm.is_address_public} onChange={e => setProfileForm({ ...profileForm, is_address_public: e.target.checked })} />
+                                        <label htmlFor="address_pub" style={{ fontSize: '12px', color: '#888' }}>다른 성도님들께 주소를 공개합니다.</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleSubmit}
+                                disabled={isSavingProfile || !isDirty}
+                                style={{
+                                    width: '100%',
+                                    padding: '16px',
+                                    background: isDirty ? '#333' : '#CCC',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '15px',
+                                    fontWeight: 700,
+                                    cursor: isDirty ? 'pointer' : 'default',
+                                    marginTop: '30px',
+                                    transition: 'all 0.3s'
+                                }}
+                            >
+                                {isSavingProfile ? '저장 중...' : isDirty ? '💾 정보 수정하기' : '변경사항 없음'}
+                            </button>
+                        </div>
+                    </div>
+                );
+            };
             return <ProfileView user={user} supabase={supabase} setView={setView} baseFont={baseFont} allowMemberEdit={churchSettings?.allow_member_edit} setProfileAvatar={setProfileAvatar} isAdmin={isAdmin} churchId={churchId} />;
         }
 
