@@ -4126,6 +4126,9 @@ export default function App() {
                         </div>
                     </div>
 
+                    {/* 플로팅 닫기 버튼 */}
+                    <button onClick={handleBack} style={{ position: 'fixed', bottom: '30px', right: '25px', width: '46px', height: '46px', borderRadius: '50%', background: 'white', color: '#333', border: '1px solid #EEE', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', zIndex: 1000, cursor: 'pointer', opacity: 0.9 }}>X</button>
+
                     {!churchSettings.community_visible && !isAdmin ? (
                         <div style={{ padding: '60px 40px', textAlign: 'center' }}>
                             <div style={{ fontSize: '50px', marginBottom: '20px' }}>🔒</div>
@@ -4685,6 +4688,9 @@ export default function App() {
                         </div>
                     </div>
 
+                    {/* 플로팅 닫기 버튼 */}
+                    <button onClick={handleBack} style={{ position: 'fixed', bottom: '30px', right: '25px', width: '46px', height: '46px', borderRadius: '50%', background: 'white', color: '#333', border: '1px solid #EEE', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', zIndex: 1000, cursor: 'pointer', opacity: 0.9 }}>X</button>
+
                     {!churchSettings.community_visible && !isAdmin ? (
                         <div style={{ padding: '60px 40px', textAlign: 'center' }}>
                             <div style={{ fontSize: '50px', marginBottom: '20px' }}>🔒</div>
@@ -5211,16 +5217,20 @@ export default function App() {
                         display: "flex",
                         alignItems: "center",
                         gap: "12px",
-                        background: 'transparent',
+                        background: '#FDFCFB',
                         position: 'sticky',
-                        top: 'env(safe-area-inset-top)',
+                        top: 0,
                         zIndex: 10,
-                        marginBottom: '12px'
+                        marginBottom: '12px',
+                        padding: '12px 0'
                     }}>
                         <button onClick={handleBack} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
                         <div style={{ fontWeight: 800, color: "#333", fontSize: "15px", flex: 1 }}>⚙️ 교회 관리자 센터</div>
                         <button onClick={handleBack} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>X</button>
                     </div>
+
+                    {/* 플로팅 닫기 버튼 */}
+                    <button onClick={handleBack} style={{ position: 'fixed', bottom: '30px', right: '25px', width: '46px', height: '46px', borderRadius: '50%', background: 'white', color: '#333', border: '1px solid #EEE', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', zIndex: 1000, cursor: 'pointer', opacity: 0.9 }}>X</button>
 
                     <>
                         <div style={{ background: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', marginBottom: '24px', textAlign: 'center', border: '1px solid #F0ECE4' }}>
@@ -5681,11 +5691,24 @@ export default function App() {
 
             return (
                 <div style={{ padding: "20px", maxWidth: "600px", margin: "0 auto", background: "#FDFCFB", minHeight: "100vh", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+                    <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        marginBottom: "20px",
+                        position: 'sticky',
+                        top: 0,
+                        background: '#FDFCFB',
+                        zIndex: 10,
+                        padding: '10px 0'
+                    }}>
                         <button onClick={() => setView('admin')} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
                         <div style={{ fontWeight: 800, fontSize: "16px", color: '#333', flex: 1 }}>🎙️ 설교 자동 요약봇</div>
                         <button onClick={() => setView('admin')} style={{ background: "#F5F5F5", border: "none", borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333' }}>X</button>
                     </div>
+
+                    {/* 플로팅 닫기 버튼 */}
+                    <button onClick={() => setView('admin')} style={{ position: 'fixed', bottom: '30px', right: '25px', width: '46px', height: '46px', borderRadius: '50%', background: 'white', color: '#333', border: '1px solid #EEE', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', zIndex: 1000, cursor: 'pointer', opacity: 0.9 }}>X</button>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                         <div>
@@ -6245,11 +6268,24 @@ export default function App() {
         return (
             <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", padding: "30px 24px", ...baseFont }}>
                 {/* 헤더 */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '15px',
+                    marginBottom: '30px',
+                    position: 'sticky',
+                    top: 0,
+                    background: '#FDFCFB',
+                    zIndex: 10,
+                    padding: '15px 0'
+                }}>
                     <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
                     <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0, flex: 1 }}>소미 활용 가이드</h2>
                     <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>X</button>
                 </div>
+
+                {/* 플로팅 닫기 버튼 */}
+                <button onClick={() => setView('home')} style={{ position: 'fixed', bottom: '30px', right: '25px', width: '46px', height: '46px', borderRadius: '50%', background: 'white', color: '#333', border: '1px solid #EEE', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', zIndex: 1000, cursor: 'pointer', opacity: 0.9 }}>X</button>
 
                 {/* 메인 배너 */}
                 <div style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #B8924A 100%)', borderRadius: '24px', padding: '25px', color: 'white', marginBottom: '30px', boxShadow: '0 10px 25px rgba(184,146,74,0.2)' }}>
@@ -9331,11 +9367,24 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
 
     return (
         <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", padding: "30px 24px", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '15px',
+                marginBottom: '30px',
+                position: 'sticky',
+                top: 0,
+                background: '#FDFCFB',
+                zIndex: 10,
+                padding: '15px 0'
+            }}>
                 <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
                 <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0, flex: 1 }}>내 프로필 관리</h2>
                 <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>X</button>
             </div>
+
+            {/* 플로팅 닫기 버튼 */}
+            <button onClick={() => setView('home')} style={{ position: 'fixed', bottom: '30px', right: '25px', width: '46px', height: '46px', borderRadius: '50%', background: 'white', color: '#333', border: '1px solid #EEE', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', zIndex: 1000, cursor: 'pointer', opacity: 0.9 }}>X</button>
 
             {/* ✅ 알림 설정 섹션 추가 */}
             <div style={{ background: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', marginBottom: '24px', border: '1px solid #F0ECE4' }}>
