@@ -1980,7 +1980,8 @@ export default function App() {
                 church_id: churchId,
                 pastor_column_title: newTitle,
                 pastor_column_content: newContent,
-                requester_id: user?.id
+                requester_id: user?.id,
+                requester_email: user?.email
             };
 
             const saveRes = await fetch('/api/settings', {
@@ -5645,12 +5646,14 @@ export default function App() {
             const handleSaveSermonManage = async () => {
                 const newSettings = {
                     ...churchSettings,
-                    church_id: churchId, // ✅ 교회 식별자 누락 방지
-                    manual_sermon_url: sermonManageForm.videoUrl, // 수동 지정 주소로 저장
+                    church_id: churchId,
+                    manual_sermon_url: sermonManageForm.videoUrl,
                     sermon_summary: sermonManageForm.summary,
                     sermon_q1: sermonManageForm.q1,
                     sermon_q2: sermonManageForm.q2,
-                    sermon_q3: sermonManageForm.q3
+                    sermon_q3: sermonManageForm.q3,
+                    requester_id: user?.id,
+                    requester_email: user?.email
                 };
 
                 const res = await fetch('/api/settings', {
@@ -7680,8 +7683,13 @@ export default function App() {
                                                 <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
                                                     <input type="checkbox" checked={settingsForm.allow_member_edit} onChange={async (e) => {
                                                         const newVal = e.target.checked;
-                                                        const updatedForm = { ...settingsForm, allow_member_edit: newVal };
-                                                        setSettingsForm(updatedForm);
+                                                        const updatedForm = {
+                                                            ...settingsForm,
+                                                            allow_member_edit: newVal,
+                                                            requester_id: user?.id,
+                                                            requester_email: user?.email
+                                                        };
+                                                        setSettingsForm(prev => ({ ...prev, allow_member_edit: newVal }));
 
                                                         // ✅ 체크 즉시 서버에 자동 저장 시도
                                                         try {
