@@ -4100,26 +4100,29 @@ export default function App() {
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
                         <div style={{ fontWeight: 800, color: "#333", fontSize: "16px", flex: 1 }}>은혜나눔 게시판</div>
                         {/* 게시판 알림종: 홈 스크린과 스타일 통일 */}
-                        <div onClick={() => setShowNotiList(!showNotiList)} style={{
-                            position: 'relative',
-                            cursor: 'pointer',
-                            width: '36px',
-                            height: '36px',
-                            background: 'linear-gradient(145deg, #ffffff, #f0f0f0)',
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
-                            border: '1.5px solid #E6A4B4',
-                            animation: notifications.filter(n => !n.is_read).length > 0 ? 'bell-swing 2s infinite ease-in-out' : 'none'
-                        }}>
-                            <span style={{ fontSize: '18px' }}>🔔</span>
-                            {notifications.filter(n => !n.is_read).length > 0 && (
-                                <div style={{ position: 'absolute', top: '-2px', right: '-2px', background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, minWidth: '15px', height: '15px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white' }}>
-                                    {notifications.filter(n => !n.is_read).length}
-                                </div>
-                            )}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div onClick={() => setShowNotiList(!showNotiList)} style={{
+                                position: 'relative',
+                                cursor: 'pointer',
+                                width: '36px',
+                                height: '36px',
+                                background: 'linear-gradient(145deg, #ffffff, #f0f0f0)',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
+                                border: '1.5px solid #E6A4B4',
+                                animation: notifications.filter(n => !n.is_read).length > 0 ? 'bell-swing 2s infinite ease-in-out' : 'none'
+                            }}>
+                                <span style={{ fontSize: '18px' }}>🔔</span>
+                                {notifications.filter(n => !n.is_read).length > 0 && (
+                                    <div style={{ position: 'absolute', top: '-2px', right: '-2px', background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, minWidth: '15px', height: '15px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white' }}>
+                                        {notifications.filter(n => !n.is_read).length}
+                                    </div>
+                                )}
+                            </div>
+                            <button onClick={handleBack} style={{ background: "#F5F5F5", border: "none", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "18px", cursor: "pointer", color: '#333' }}>✕</button>
                         </div>
                     </div>
 
@@ -4656,26 +4659,29 @@ export default function App() {
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333', padding: '8px' }}>←</button>
                         <div style={{ fontWeight: 800, color: "#333", fontSize: "15px", flex: 1 }}>감사일기 나눔</div>
                         {/* 감사일기 알림종: 홈 스크린과 스타일 통일 */}
-                        <div onClick={() => setShowNotiList(!showNotiList)} style={{
-                            position: 'relative',
-                            cursor: 'pointer',
-                            width: '36px',
-                            height: '36px',
-                            background: 'linear-gradient(145deg, #ffffff, #f0f0f0)',
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
-                            border: '1.5px solid #E6A4B4',
-                            animation: notifications.filter(n => !n.is_read).length > 0 ? 'bell-swing 2s infinite ease-in-out' : 'none'
-                        }}>
-                            <span style={{ fontSize: '18px' }}>🔔</span>
-                            {notifications.filter(n => !n.is_read).length > 0 && (
-                                <div style={{ position: 'absolute', top: '-1px', right: '-1px', background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, minWidth: '15px', height: '15px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white' }}>
-                                    {notifications.filter(n => !n.is_read).length}
-                                </div>
-                            )}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div onClick={() => setShowNotiList(!showNotiList)} style={{
+                                position: 'relative',
+                                cursor: 'pointer',
+                                width: '36px',
+                                height: '36px',
+                                background: 'linear-gradient(145deg, #ffffff, #f0f0f0)',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
+                                border: '1.5px solid #E6A4B4',
+                                animation: notifications.filter(n => !n.is_read).length > 0 ? 'bell-swing 2s infinite ease-in-out' : 'none'
+                            }}>
+                                <span style={{ fontSize: '18px' }}>🔔</span>
+                                {notifications.filter(n => !n.is_read).length > 0 && (
+                                    <div style={{ position: 'absolute', top: '-1px', right: '-1px', background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, minWidth: '15px', height: '15px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white' }}>
+                                        {notifications.filter(n => !n.is_read).length}
+                                    </div>
+                                )}
+                            </div>
+                            <button onClick={handleBack} style={{ background: "#FDF0E3", border: "none", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "18px", cursor: "pointer", color: '#333' }}>✕</button>
                         </div>
                     </div>
 
@@ -5212,7 +5218,8 @@ export default function App() {
                         marginBottom: '12px'
                     }}>
                         <button onClick={handleBack} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
-                        <div style={{ fontWeight: 800, color: "#333", fontSize: "15px" }}>⚙️ 교회 관리자 센터</div>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "15px", flex: 1 }}>⚙️ 교회 관리자 센터</div>
+                        <button onClick={handleBack} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>✕</button>
                     </div>
 
                     <>
@@ -5676,7 +5683,8 @@ export default function App() {
                 <div style={{ padding: "20px", maxWidth: "600px", margin: "0 auto", background: "#FDFCFB", minHeight: "100vh", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
                         <button onClick={() => setView('admin')} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
-                        <div style={{ fontWeight: 800, fontSize: "16px", color: '#333' }}>🎙️ 설교 자동 요약봇</div>
+                        <div style={{ fontWeight: 800, fontSize: "16px", color: '#333', flex: 1 }}>🎙️ 설교 자동 요약봇</div>
+                        <button onClick={() => setView('admin')} style={{ background: "#F5F5F5", border: "none", borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333' }}>✕</button>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -6239,7 +6247,8 @@ export default function App() {
                 {/* 헤더 */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
                     <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
-                    <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0 }}>소미 활용 가이드</h2>
+                    <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0, flex: 1 }}>소미 활용 가이드</h2>
+                    <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>✕</button>
                 </div>
 
                 {/* 메인 배너 */}
@@ -9324,7 +9333,8 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
         <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", padding: "30px 24px", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px' }}>
                 <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>←</button>
-                <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0 }}>내 프로필 관리</h2>
+                <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#333', margin: 0, flex: 1 }}>내 프로필 관리</h2>
+                <button onClick={() => setView('home')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>✕</button>
             </div>
 
             {/* ✅ 알림 설정 섹션 추가 */}
