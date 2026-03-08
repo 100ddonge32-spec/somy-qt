@@ -99,14 +99,10 @@ export async function GET(req: NextRequest) {
         const errorMessages = Array.from(new Set(rejected.map(r => {
             const err = r.reason || {};
             const statusCode = err.statusCode || (err.response && err.response.statusCode);
-            if (statusCode === 410 || statusCode === 404) {
-                return '만료되거나 취소된 알림 설정';
-            }
-            if (err.message && err.message.includes('unexpected response code')) {
-                return '브라우저 응답 오류';
-            }
-            if (err.message && err.message.includes('VAPID')) {
-                return 'VAPID 키 설정 오류 (서버-클라이언트 불일치)';
+            if (statusCode) {
+                if (statusCode === 410 || statusCode === 404) return '만료되거나 취소된 알림 설정';
+                if (statusCode === 401 || statusCode === 403) return `VAPID 키 설정 오류 (상태코드: ${statusCode})`;
+                return `브라우저/푸시서비스 응답 오류 (상태코드: ${statusCode})`;
             }
             return err.message || '알 수 없는 네트워크 오류';
         })));
