@@ -5340,6 +5340,9 @@ export default function App() {
                                                 alert('알림을 보낼 성도님이 없습니다. 먼저 성도 관리에서 승인을 해주세요.');
                                             } else {
                                                 let msg = `📢 알림 발송 완료!\n\n✅ 성공: ${data.sentCount}명\n❌ 실패: ${data.failedCount}명`;
+                                                if (data.errorSamples && data.errorSamples.length > 0) {
+                                                    msg += `\n\n⚠️ 오류 내용:\n- ${data.errorSamples.join('\n- ')}`;
+                                                }
                                                 alert(msg);
                                             }
                                         } else {

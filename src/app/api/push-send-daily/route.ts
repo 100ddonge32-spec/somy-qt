@@ -13,8 +13,8 @@ const supabaseAdmin = createClient(
 // VAPID 설정
 webpush.setVapidDetails(
     'mailto:pastorbaek@kakao.com',
-    'BCpTn0SHIYSZzjST5xxL1Cv9svmlp3f9Xmvt9FSALBvo4QwLQCBlo_mu4ThoMHgINRmAk4c9sxwVwI2QtDyHr1I',
-    'LAAS6aJenIKYBShIGZsWVKhXNOMKwkuXvpf2NLCGZAI'
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BCpTn0SHIYSZzjST5xxL1Cv9svmlp3f9Xmvt9FSALBvo4QwLQCBlo_mu4ThoMHgINRmAk4c9sxwVwI2QtDyHr1I',
+    process.env.VAPID_PRIVATE_KEY || 'LAAS6aJenIKYBShIGZsWVKhXNOMKwkuXvpf2NLCGZAI'
 );
 
 export async function GET(req: NextRequest) {
@@ -102,7 +102,7 @@ export async function GET(req: NextRequest) {
 
         // 에러 상세 메시지 수집 (친절한 언어로 번역 및 중복 제거)
         const errorMessages = Array.from(new Set(rejected.map(r => {
-            const err = r.reason;
+            const err = r.reason || {};
             const statusCode = err.statusCode || (err.response && err.response.statusCode);
             if (statusCode === 410 || statusCode === 404) {
                 return '만료되거나 취소된 알림 설정';
@@ -110,7 +110,10 @@ export async function GET(req: NextRequest) {
             if (err.message && err.message.includes('unexpected response code')) {
                 return '브라우저 응답 오류';
             }
-            return err.message || '알 수 없는 오류';
+            if (err.message && err.message.includes('VAPID')) {
+                return 'VAPID 키 설정 오류 (서버-클라이언트 불일치)';
+            }
+            return err.message || '알 수 없는 네트워크 오류';
         })));
 
         return NextResponse.json({
