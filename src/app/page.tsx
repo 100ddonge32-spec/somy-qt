@@ -1453,8 +1453,13 @@ export default function App() {
                 cache: 'no-store'
             });
             const data = await res.json();
-            console.log("📊 History fetched successfully:", data.length, "items");
-            if (Array.isArray(data)) setHistory(data);
+            // 데이터 수신 성공 여부와 개수 로그 출력
+            console.log(`[History] Fetched ${Array.isArray(data) ? data.length : 0} items for ${targetId}`);
+            if (Array.isArray(data)) {
+                setHistory(data);
+            } else {
+                setHistory([]);
+            }
         } catch (e) {
             console.error("히스토리 로드 실패:", e);
         } finally {
@@ -3135,13 +3140,16 @@ export default function App() {
                         });
 
                         if (statsPostRes.ok) {
-                            console.log("📊 QT completion recorded");
-                            // 갱신 전 DB가 반영될 시간을 아주 잠깐 벌어줌
+                            console.log("📊 Meditation record saved successfully");
+                            // 갱신 전 0.5초 대기 (서버 반영 여유)
                             await new Promise(r => setTimeout(r, 500));
                             const statsRes = await fetch(`/api/stats?church_id=${effectiveChurchId}&t=${Date.now()}`, { cache: 'no-store' });
                             const statsData = await statsRes.json();
                             if (statsData) setStats(statsData);
                             if (user?.id) fetchHistory(user.id);
+                        } else {
+                            const err = await statsPostRes.json().catch(() => ({}));
+                            console.error("📊 Saving failed:", err);
                         }
                     } catch (e) {
                         console.error("통계 기록 중 오류:", e);
@@ -3492,12 +3500,15 @@ export default function App() {
                                         });
 
                                         if (res.ok) {
-                                            console.log("📊 Final QT session saved");
+                                            console.log("📊 Final record saved");
+                                            alert("오늘의 묵상이 성공적으로 기록되었습니다! 📜✨");
                                             await new Promise(r => setTimeout(r, 500));
                                             const statsRes = await fetch(`/api/stats?church_id=${effectiveChurchId}&t=${Date.now()}`, { cache: 'no-store' });
                                             const statsData = await statsRes.json();
                                             if (statsData) setStats(statsData);
                                             if (user?.id) fetchHistory(user.id);
+                                        } else {
+                                            console.error("📊 Final save failed");
                                         }
                                     } catch (e) {
                                         console.error("통계 기록 중 오류:", e);
@@ -5020,8 +5031,9 @@ export default function App() {
                                     {Array.from({ length: new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 0).getDate() }).map((_, i) => {
                                         const day = i + 1;
                                         const qtRecord = history.find(h => {
-                                            const hDate = new Date(h.completed_date);
-                                            return hDate.getFullYear() === calendarDate.getFullYear() && hDate.getMonth() === calendarDate.getMonth() && hDate.getDate() === day;
+                                            // [타임존/형식 안전] YYYY-MM-DD 부분이 일치하는지 확인 (ISO 타임스탬프 대응)
+                                            const targetDateStr = `${calendarDate.getFullYear()}-${(calendarDate.getMonth() + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                                            return h.completed_date && h.completed_date.startsWith(targetDateStr);
                                         });
                                         const isToday = new Date().getDate() === day && new Date().getMonth() === calendarDate.getMonth() && new Date().getFullYear() === calendarDate.getFullYear();
 
@@ -5075,6 +5087,12 @@ export default function App() {
                                         );
                                     })}
                                 </div>
+                                <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '20px' }}>
+                                    <button onClick={() => fetchHistory(user?.id)} style={{ padding: '8px 15px', background: '#F5F5F5', border: '1px solid #DDD', borderRadius: '15px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                        <span style={{ fontSize: '16px' }}>🔄</span> 기록 새로고침
+                                    </button>
+                                </div>
+
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginTop: '20px', fontSize: '11px', color: '#888' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#E8F5E9', border: '1px solid #81C784' }}></div> 묵상 완료</div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', border: '2px solid #FF9800' }}></div> 오늘</div>
