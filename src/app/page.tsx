@@ -901,40 +901,46 @@ export default function App() {
                 return;
             }
 
-            const registration = await navigator.serviceWorker.ready;
             // [VAPID 최종] 절대 불변의 정식 키 쌍 (Public/Private 매칭 100% 검증)
-            const forcedPublicKey = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLzRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558';
+            const rawPublicKey = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLzRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558';
+            const forcedPublicKey = rawPublicKey.trim(); // 혹시 모를 공백 제거
+
             console.log('[Push] Forced Subscribing with final verified key...');
 
-            // 기존의 모든 꼬인 상태를 강제로 리셋합니다.
+            // [초강수] 기존 서비스 워커와 구독 정보를 완전히 '삭제'하고 처음부터 다시 시작합니다.
             try {
-                const subs = await registration.pushManager.getSubscription();
-                if (subs) {
-                    console.log('[Push] Found existing sub, cleaning up before final fix...');
-                    await subs.unsubscribe();
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let reg of registrations) {
+                    console.log('[Cleanup] Unregistering Service Worker...');
+                    await reg.unregister();
+                }
+                // 다시 등록
+                await navigator.serviceWorker.register('/sw.js');
+                const newRegistration = await navigator.serviceWorker.ready;
+
+                const subscription = await newRegistration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(forcedPublicKey)
+                });
+
+                console.log('[Push] Subscription successful after nuclear reset!');
+
+                // 모든 푸시 알람 구독은 하나의 API로 통일했습니다.
+                const res = await fetch('/api/push-subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, subscription })
+                });
+
+                if (res.ok) {
+                    console.log("✅ 푸시 알림 서버 등록 완료!");
+                    return true;
                 }
             } catch (e) {
-                console.warn('[Push] Unsubscribe failed, but continuing...', e);
+                console.error("❌ 내부 푸시 알림 구독 작업 실패:", e);
             }
-
-            const subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(forcedPublicKey)
-            });
-
-            // 모든 푸시 알람 구독은 하나의 API로 통일했습니다.
-            const res = await fetch('/api/push-subscribe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId, subscription })
-            });
-
-            if (res.ok) {
-                console.log("✅ 푸시 알림 서버 등록 완료!");
-                return true;
-            }
-        } catch (e) {
-            console.error("❌ 푸시 알림 구독 실패:", e);
+        } catch (outerError) {
+            console.error("❌ 푸시 알림 전체 프로세스 실패:", outerError);
         }
         return false;
     }, []);
