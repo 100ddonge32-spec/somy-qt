@@ -46,8 +46,8 @@ export async function GET(req: NextRequest) {
             startUrl = "/?church_id=somy-main";
         } else {
             churchName = "예수인교회 큐티";
-            // 예수인교회 로고 (환경변수 또는 기본값)
-            churchLogo = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://lfjrfyylsxhvwosdpujv.supabase.co/storage/v1/object/public/church-assets/jesus-in-logo.png";
+            // [Fix] Broken Supabase URL replaced with local fallback
+            churchLogo = "/somy.png";
             startUrl = "/";
         }
     }

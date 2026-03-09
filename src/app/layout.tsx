@@ -58,6 +58,9 @@ export async function generateMetadata(): Promise<Metadata> {
       statusBarStyle: "default",
       title: appName,
     },
+    other: {
+      "mobile-web-app-capable": "yes"
+    },
     icons: {
       icon: "/somy.png",
       apple: "/somy.png",
