@@ -907,9 +907,9 @@ export default function App() {
             const existingSub = await registration.pushManager.getSubscription();
             if (existingSub) await existingSub.unsubscribe();
 
-            // [VAPID 고정] Vercel 오타 무시용 강제 고정
-            const forcedPublicKey = 'BGAg9ENzg-N1bQery6o2tP81mCNE_RARV_fPj9kwxNo9-OOc1B7nm0aW3QhDcnLZQOU6TciWQez_XdBCf5hfCFw';
-            console.log('[Push] Subscribing with forced key:', forcedPublicKey);
+            // [VAPID 고정] 목사님 기기 및 시스템 전체 403 오류 해결을 위해 신규 생성한 정식 키를 직접 고정합니다.
+            const forcedPublicKey = 'BN25jHrUt2ht282iRLuIgiR3vaVhmZHjNwVxMTGULUI5LRUMMo-jtkrOXD5wew6FkxE5OUJIa4nRgrrD1KdzOQ0';
+            console.log('[Push] Subscribing with fresh verified key...');
             const subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(forcedPublicKey)
@@ -957,29 +957,49 @@ export default function App() {
 
         try {
             // 1. 은혜나눔 (오늘 올라온 글이 있거나, 마지막으로 본 시간보다 이후 글이 있는지)
-            const { data: latestPost } = await supabase.from('community_posts').select('created_at').eq('church_id', cId).order('created_at', { ascending: false }).limit(1).single();
-            const lastCommunity = localStorage.getItem(`last_view_community_${cId}`) || '0';
-            const isLatestPostToday = latestPost && new Date(new Date(latestPost.created_at).getTime() + kstOffset).toISOString().split('T')[0] === today;
-            const isLatestPostUnseen = latestPost && new Date(latestPost.created_at).getTime() > Number(lastCommunity);
+            const { data: latestPost } = await supabase.from('community_posts').select('created_at').eq('church_id', cId).order('created_at', { ascending: false }).limit(1).maybeSingle();
+            const lastCommunity = Number(localStorage.getItem(`last_view_community_${cId}`)) || 0;
+            let isLatestPostToday = false;
+            let isLatestPostUnseen = false;
+
+            if (latestPost && latestPost.created_at) {
+                const postTime = new Date(latestPost.created_at).getTime();
+                if (!isNaN(postTime)) {
+                    isLatestPostToday = new Date(postTime + kstOffset).toISOString().split('T')[0] === today;
+                    isLatestPostUnseen = postTime > lastCommunity;
+                }
+            }
             setHasNewCommunity(!!(isLatestPostToday || isLatestPostUnseen));
 
             // 2. 감사일기
-            const { data: latestThanks } = await supabase.from('thanksgiving_diaries').select('created_at').eq('church_id', cId).order('created_at', { ascending: false }).limit(1).single();
-            const lastThanks = localStorage.getItem(`last_view_thanks_${cId}`) || '0';
-            const isLatestThanksToday = latestThanks && new Date(new Date(latestThanks.created_at).getTime() + kstOffset).toISOString().split('T')[0] === today;
-            const isLatestThanksUnseen = latestThanks && new Date(latestThanks.created_at).getTime() > Number(lastThanks);
+            const { data: latestThanks } = await supabase.from('thanksgiving_diaries').select('created_at').eq('church_id', cId).order('created_at', { ascending: false }).limit(1).maybeSingle();
+            const lastThanks = Number(localStorage.getItem(`last_view_thanks_${cId}`)) || 0;
+            let isLatestThanksToday = false;
+            let isLatestThanksUnseen = false;
+
+            if (latestThanks && latestThanks.created_at) {
+                const thanksTime = new Date(latestThanks.created_at).getTime();
+                if (!isNaN(thanksTime)) {
+                    isLatestThanksToday = new Date(thanksTime + kstOffset).toISOString().split('T')[0] === today;
+                    isLatestThanksUnseen = thanksTime > lastThanks;
+                }
+            }
             setHasNewThanksgiving(!!(isLatestThanksToday || isLatestThanksUnseen));
 
             // 3. 설교 업데이트
             const r = await fetch(`/api/settings?church_id=${cId}`, { cache: 'no-store' });
             const { settings } = await r.json();
             if (settings) {
-                const updatedAt = new Date(settings.updated_at || settings.created_at);
-                const updatedKST = new Date(updatedAt.getTime() + kstOffset).toISOString().split('T')[0];
-                const lastSermon = localStorage.getItem(`last_view_sermon_${cId}`) || '0';
-                const isSermonTodayValue = updatedKST === today;
-                const isSermonUnseen = updatedAt.getTime() > Number(lastSermon);
-                setHasNewSermon(!!(isSermonTodayValue || isSermonUnseen));
+                const dateSource = settings.updated_at || settings.created_at;
+                const dateObj = new Date(dateSource);
+                if (!isNaN(dateObj.getTime())) {
+                    const updatedAt = dateObj;
+                    const updatedKST = new Date(updatedAt.getTime() + kstOffset).toISOString().split('T')[0];
+                    const lastSermon = Number(localStorage.getItem(`last_view_sermon_${cId}`)) || 0;
+                    const isSermonTodayValue = updatedKST === today;
+                    const isSermonUnseen = updatedAt.getTime() > lastSermon;
+                    setHasNewSermon(!!(isSermonTodayValue || isSermonUnseen));
+                }
             }
         } catch (e) {
             console.error("Badges check failed", e);

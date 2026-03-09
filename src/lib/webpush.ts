@@ -2,8 +2,8 @@
 import webpush from 'web-push';
 
 // [VAPID 고정] Vercel 환경변수 오타 방지를 위해 정식 키를 직접 고정합니다. 목사님 403 오류 해결용.
-const publicKey = 'BGAg9ENzg-N1bQery6o2tP81mCNE_RARV_fPj9kwxNo9-OOc1B7nm0aW3QhDcnLZQOU6TciWQez_XdBCf5hfCFw';
-const privateKey = 'H5QHbNcikhFs6Fm9fc-9Y-hZVXRHAtkAIt1XFljdvBY';
+const publicKey = 'BN25jHrUt2ht282iRLuIgiR3vaVhmZHjNwVxMTGULUI5LRUMMo-jtkrOXD5wew6FkxE5OUJIa4nRgrrD1KdzOQ0';
+const privateKey = 'Wi4NvZq2A_x7jiEFBzeAVccfkfzubWsHvKayZZ3MGMg';
 
 if (typeof window === 'undefined') {
     try {
