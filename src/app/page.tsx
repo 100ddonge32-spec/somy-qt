@@ -913,17 +913,12 @@ export default function App() {
             const VAPID_KEY = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLzRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558'.trim();
 
             const performSubscribe = async (retryCount = 0): Promise<void> => {
-                // v=3 버전의 서비스 워커가 준비될 때까지 대기
                 const reg = await navigator.serviceWorker.ready;
 
                 try {
-                    // [핵심] 기존에 꼬인 구독 정보가 있다면 먼저 확실히 제거합니다.
-                    console.log(`[Push] Trial ${retryCount + 1}: Checking existing subscription...`);
+                    // [정리] 기존 구독 확인 및 해제
                     const existing = await reg.pushManager.getSubscription();
-                    if (existing) {
-                        console.log('[Push] Found stale subscription, clearing...');
-                        await existing.unsubscribe();
-                    }
+                    if (existing) await existing.unsubscribe();
 
                     const subscription = await reg.pushManager.subscribe({
                         userVisibleOnly: true,
@@ -941,23 +936,23 @@ export default function App() {
                     console.error('[Push] Attempt failed:', err.name, err.message);
 
                     if (retryCount < 2 && (err.name === 'AbortError' || err.message.includes('service error'))) {
-                        // [강제 복구] 만약 두 번째 시도에서도 실패하면 브라우저 푸시 엔진이 '마비'된 것으로 간주합니다.
+                        // [강제 복구] 두 번째 실패 시 브라우저 엔진 마비로 간주하고 사이트 데이터 정화 후 리로드
                         if (retryCount === 1) {
-                            const lastRepair = sessionStorage.getItem('push_last_repair');
+                            const lastReset = localStorage.getItem('push_hard_reset_time');
                             const now = Date.now();
-                            // 1분 이내에 중복 리로드는 방지
-                            if (!lastRepair || (now - parseInt(lastRepair)) > 60000) {
-                                console.error('[Push] Critical service error. Performing Atomic Repair...');
-                                sessionStorage.setItem('push_last_repair', now.toString());
+                            if (!lastReset || (now - parseInt(lastReset)) > 300000) { // 5분 한 번만
+                                console.error('[Push] Hard Reset Triggered!');
+                                localStorage.setItem('push_hard_reset_time', now.toString());
                                 const regs = await navigator.serviceWorker.getRegistrations();
                                 for (let r of regs) await r.unregister();
+                                // 캐시 삭제는 API가 없으므로 리로드로 최대한 유도
                                 window.location.reload();
                                 return;
                             }
                         }
 
-                        console.warn('[Push] Retrying after short delay...');
-                        await new Promise(res => setTimeout(res, 3000));
+                        console.warn('[Push] Retrying...');
+                        await new Promise(res => setTimeout(res, 2000));
                         return performSubscribe(retryCount + 1);
                     }
                     throw err;
