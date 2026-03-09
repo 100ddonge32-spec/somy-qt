@@ -889,83 +889,84 @@ export default function App() {
 
     // [이과장의 푸시 엔진] 브라우저 알림 권한을 얻고 서버에 구독 정보를 저장합니다.
     const subscribePush = useCallback(async (userId: string) => {
-        if (isSubscribing.current) return; // 이미 진행 중이면 중단
+        if (isSubscribing.current) return;
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
         isSubscribing.current = true;
         try {
-            console.log('[Push] Starting subscription process...');
-            const permission = await Notification.permission;
+            console.log('[Push] Process started for user:', userId);
+
+            // 1. 권한 체크
+            const permission = Notification.permission;
             if (permission === 'denied') {
-                console.warn("알림 권한이 거부되어 있습니다.");
+                console.warn('[Push] Permission denied');
                 isSubscribing.current = false;
                 return;
             }
             if (permission === 'default') {
-                const newPermission = await Notification.requestPermission();
-                if (newPermission !== 'granted') {
+                const newPerm = await Notification.requestPermission();
+                if (newPerm !== 'granted') {
                     isSubscribing.current = false;
                     return;
                 }
             }
 
-            // [VAPID] 최종 정밀 고정 키
-            const forcedPublicKey = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLzRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558';
+            // 2. 서비스 워커 준비 대기
+            let registration = await navigator.serviceWorker.ready;
 
-            let registration = await navigator.serviceWorker.getRegistration();
-
-            // 만약 등록된 게 없거나 상태가 이상하면 새로 등록
-            if (!registration) {
-                console.log('[Push] No registration found, registering new one...');
-                registration = await navigator.serviceWorker.register('/sw.js');
+            // 3. 상태 체크 (활성화 확인)
+            if (!registration.active) {
+                console.log('[Push] SW not active, waiting for activation...');
+                await new Promise(res => {
+                    const check = setInterval(() => {
+                        if (registration.active) {
+                            clearInterval(check);
+                            res(null);
+                        }
+                    }, 200);
+                    setTimeout(() => { clearInterval(check); res(null); }, 5000);
+                });
             }
 
-            // 활성화될 때까지 부드럽게 폴링 (최대 10초)
-            const waitForActive = async (reg: ServiceWorkerRegistration) => {
-                for (let i = 0; i < 100; i++) {
-                    if (reg.active && reg.active.state === 'activated') return reg.active;
-                    await new Promise(res => setTimeout(res, 100));
+            // 4. 구독 시도 (재시도 로직 포함)
+            const VAPID_KEY = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLzRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558';
+
+            const performSubscribe = async (isRetry = false): Promise<void> => {
+                try {
+                    const subscription = await registration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(VAPID_KEY)
+                    });
+
+                    console.log('[Push] Subscription successful!');
+                    await fetch('/api/push-subscribe', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: userId, subscription })
+                    });
+                    console.log("✅ 푸시 알림 등록 완료!");
+                } catch (err: any) {
+                    // Chrome 'push service error' 대응
+                    if (!isRetry && (err.name === 'AbortError' || err.message.includes('service error'))) {
+                        console.warn('[Push] Service busy, retrying after reset...');
+                        await new Promise(res => setTimeout(res, 2000));
+
+                        // 기존 구독 해제 후 재시도
+                        const sub = await registration.pushManager.getSubscription();
+                        if (sub) await sub.unsubscribe();
+
+                        return performSubscribe(true);
+                    }
+                    throw err;
                 }
-                return null;
             };
 
-            const activeWorker = await waitForActive(registration);
-            if (!activeWorker) {
-                console.warn('[Push] Service worker activation timed out, retrying once...');
-                // 타임아웃 시 한 번만 더 등록 시도
-                registration = await navigator.serviceWorker.register('/sw.js');
-                await waitForActive(registration);
-            }
-
-            // 구독 시도
-            try {
-                const subscription = await registration.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: urlBase64ToUint8Array(forcedPublicKey)
-                });
-
-                console.log('[Push] Subscription achieved!');
-                const res = await fetch('/api/push-subscribe', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: userId, subscription })
-                });
-
-                if (res.ok) console.log("✅ 푸시 알림 서버 등록 완료!");
-            } catch (subErr: any) {
-                // 만약 키 불일치 등으로 실패하면 그때만 한 번 초기화
-                if (subErr.name === 'InvalidStateError' || subErr.name === 'NotAllowedError') {
-                    console.log('[Push] Subscription failed, attempting one-time repair...');
-                    const existingSub = await registration.pushManager.getSubscription();
-                    if (existingSub) await existingSub.unsubscribe();
-                    // 재시도는 다음 호출 때 맡김
-                }
-                throw subErr;
-            }
+            await performSubscribe();
         } catch (error) {
-            console.error("❌ 푸시 전체 프로세스 실패:", error);
+            console.error("❌ 푸시 알림 프로세스 오류:", error);
         } finally {
-            isSubscribing.current = false;
+            // 연이은 호출을 막기 위해 약간의 지연 후 락 해제
+            setTimeout(() => { isSubscribing.current = false; }, 1000);
         }
     }, []);
 
