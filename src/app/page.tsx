@@ -914,11 +914,42 @@ export default function App() {
                     console.log('[Cleanup] Unregistering Service Worker...');
                     await reg.unregister();
                 }
-                // 다시 등록
-                await navigator.serviceWorker.register('/sw.js');
-                const newRegistration = await navigator.serviceWorker.ready;
 
-                const subscription = await newRegistration.pushManager.subscribe({
+                // 다시 등록
+                console.log('[Cleanup] Re-registering Service Worker...');
+                const reg = await navigator.serviceWorker.register('/sw.js');
+
+                // [핵심] 단순히 'ready'가 아니라 'active'가 될 때까지 기다려야 합니다.
+                const waitForActive = (registration: ServiceWorkerRegistration): Promise<void> => {
+                    return new Promise((resolve) => {
+                        if (registration.active) {
+                            resolve();
+                            return;
+                        }
+                        const worker = registration.installing || registration.waiting;
+                        if (worker) {
+                            worker.addEventListener('statechange', (e: any) => {
+                                if (e.target.state === 'activated') resolve();
+                            });
+                        } else {
+                            // 최후의 수단: 폴링
+                            const interval = setInterval(() => {
+                                if (registration.active) {
+                                    clearInterval(interval);
+                                    resolve();
+                                }
+                            }, 100);
+                        }
+                    });
+                };
+
+                await waitForActive(reg);
+                const activeReg = await navigator.serviceWorker.ready;
+
+                const subs = await activeReg.pushManager.getSubscription();
+                if (subs) await subs.unsubscribe();
+
+                const subscription = await activeReg.pushManager.subscribe({
                     userVisibleOnly: true,
                     applicationServerKey: urlBase64ToUint8Array(forcedPublicKey)
                 });
