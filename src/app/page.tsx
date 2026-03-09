@@ -894,7 +894,7 @@ export default function App() {
 
         isSubscribing.current = true;
         try {
-            console.log('[Push] Subscription process started...');
+            console.log('[Push] Subscription process started (v3)...');
 
             const permission = Notification.permission;
             if (permission === 'denied') {
@@ -909,26 +909,22 @@ export default function App() {
                 }
             }
 
-            // [최종 VAPID] 100% 검증된 정식 키
-            const VAPID_KEY = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLzRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558';
+            // [최종 VAPID] 무결성 검증 키
+            const VAPID_KEY = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLzRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558'.trim();
 
             const performSubscribe = async (retryCount = 0): Promise<void> => {
+                // v=3 버전의 서비스 워커가 준비될 때까지 대기
                 const reg = await navigator.serviceWorker.ready;
 
-                // 서비스 워커가 제어권을 가질 때까지 대기
-                if (!navigator.serviceWorker.controller) {
-                    await new Promise(res => {
-                        const check = setInterval(() => {
-                            if (navigator.serviceWorker.controller) {
-                                clearInterval(check);
-                                res(null);
-                            }
-                        }, 100);
-                        setTimeout(() => { clearInterval(check); res(null); }, 3000);
-                    });
-                }
-
                 try {
+                    // [핵심] 기존에 꼬인 구독 정보가 있다면 먼저 확실히 제거합니다.
+                    console.log(`[Push] Trial ${retryCount + 1}: Checking existing subscription...`);
+                    const existing = await reg.pushManager.getSubscription();
+                    if (existing) {
+                        console.log('[Push] Found stale subscription, clearing...');
+                        await existing.unsubscribe();
+                    }
+
                     const subscription = await reg.pushManager.subscribe({
                         userVisibleOnly: true,
                         applicationServerKey: urlBase64ToUint8Array(VAPID_KEY)
@@ -945,18 +941,14 @@ export default function App() {
                     console.error('[Push] Attempt failed:', err.name, err.message);
 
                     if (retryCount < 2 && (err.name === 'AbortError' || err.message.includes('service error'))) {
-                        console.warn('[Push] Cleaning state and retrying...');
-                        try {
-                            const sub = await reg.pushManager.getSubscription();
-                            if (sub) await sub.unsubscribe();
-                        } catch (e) { }
-
-                        // [원폭 투하] 만약 2번 실패하면 브라우저 푸시 엔진 마비 상태로 판단 -> 강제 초기화 후 새로고침
+                        // [강제 복구] 만약 두 번째 시도에서도 실패하면 브라우저 푸시 엔진이 '마비'된 것으로 간주합니다.
                         if (retryCount === 1) {
-                            const hasRepaired = sessionStorage.getItem('push_repaired');
-                            if (!hasRepaired) {
-                                console.error('[Push] Atomic Repair: Unregistering and reloading...');
-                                sessionStorage.setItem('push_repaired', 'true');
+                            const lastRepair = sessionStorage.getItem('push_last_repair');
+                            const now = Date.now();
+                            // 1분 이내에 중복 리로드는 방지
+                            if (!lastRepair || (now - parseInt(lastRepair)) > 60000) {
+                                console.error('[Push] Critical service error. Performing Atomic Repair...');
+                                sessionStorage.setItem('push_last_repair', now.toString());
                                 const regs = await navigator.serviceWorker.getRegistrations();
                                 for (let r of regs) await r.unregister();
                                 window.location.reload();
@@ -964,7 +956,8 @@ export default function App() {
                             }
                         }
 
-                        await new Promise(res => setTimeout(res, 2000));
+                        console.warn('[Push] Retrying after short delay...');
+                        await new Promise(res => setTimeout(res, 3000));
                         return performSubscribe(retryCount + 1);
                     }
                     throw err;
@@ -973,7 +966,7 @@ export default function App() {
 
             await performSubscribe();
         } catch (error) {
-            console.error("❌ 푸시 알림 최종 실패:", error);
+            console.error("❌ 푸시 알림 최종 실패 (권한 또는 브라우저 오류):", error);
         } finally {
             setTimeout(() => { isSubscribing.current = false; }, 2000);
         }
@@ -1224,10 +1217,10 @@ export default function App() {
         runPoller();
         const poller = setInterval(runPoller, 15000);
 
-        // 4. 서비스 워커 등록 (단일 창구 통합)
+        // 4. 서비스 워커 등록 (단일 창구 통합 - v3)
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').then((reg) => {
-                console.log('SW Registered');
+            navigator.serviceWorker.register('/sw.js?v=3').then((reg) => {
+                console.log('SW Registered (v3)');
                 // 등록 성공 시 알림 구독 로직 실행
                 Notification.requestPermission().then(permission => {
                     if (permission === 'granted') subscribePush(user.id);
