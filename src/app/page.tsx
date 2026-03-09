@@ -902,15 +902,19 @@ export default function App() {
             }
 
             const registration = await navigator.serviceWorker.ready;
-            // [VAPID 고정] 403/400 오류 해결을 위한 신규 정식 키 고정 ( subject: mailto:admin@somy-qt.vercel.app )
-            const forcedPublicKey = 'BN25jHrUt2ht282iRLuIgiR3vaVhmZHjNwVxMTGULUI5LRUMMo-jtkrOXD5wew6FkxE5OUJIa4nRgrrD1KdzOQ0';
-            console.log('[Push] Forced Subscribing with verified key:', forcedPublicKey);
+            // [VAPID 고정] 목사님 기기 및 시스템 전체 403/400 오류 해결을 위해 신규 생성한 정식 키를 직접 고정합니다. (Subject: admin@somy-qt.vercel.app)
+            const forcedPublicKey = 'BLlCJTG1YSphGl3g5yBvK7vfsiuaox9zxj0urmvTa02LZQ3x_AoEWJRl8tEcouvVVOm3nq_qepmLA8dFpAFDH6o';
+            console.log('[Push] Forced Subscribing with fresh verified key:', forcedPublicKey);
 
-            // 기존 구독을 강제로 끊어서 옛날 열쇠 정보를 브라우저에서 완전히 소거합니다.
-            const existingSub = await registration.pushManager.getSubscription();
-            if (existingSub) {
-                console.log('[Push] Removing old subscription before update...');
-                await existingSub.unsubscribe();
+            // 기존 구독을 완전히 초기화하여 브라우저 내부의 꼬인 상태를 해결합니다.
+            try {
+                const existingSub = await registration.pushManager.getSubscription();
+                if (existingSub) {
+                    console.log('[Push] Removing old subscription before update...');
+                    await existingSub.unsubscribe();
+                }
+            } catch (e) {
+                console.warn('[Push] Error during cleanup, continuing...', e);
             }
 
             const subscription = await registration.pushManager.subscribe({
@@ -5239,7 +5243,6 @@ export default function App() {
                     paddingTop: 'env(safe-area-inset-top)'
                 }}>
                     <div style={{
-                        padding: "12px 0",
                         display: "flex",
                         alignItems: "center",
                         gap: "12px",
