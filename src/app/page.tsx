@@ -894,9 +894,8 @@ export default function App() {
 
         isSubscribing.current = true;
         try {
-            console.log('[Push] Subscription attempt started...');
+            console.log('[Push] Final attempt with verified key...');
 
-            // 1. 권한 체크
             const permission = Notification.permission;
             if (permission === 'denied') {
                 isSubscribing.current = false;
@@ -910,17 +909,10 @@ export default function App() {
                 }
             }
 
-            // [매니페스트 안정화 대기]
-            await new Promise(res => setTimeout(res, 1500));
+            await new Promise(res => setTimeout(res, 1000));
 
-            // [강제 버전업] v=2 서비스 워커 활성화 확인
-            let registration = await navigator.serviceWorker.getRegistration('/sw.js?v=2');
-            if (!registration) {
-                registration = await navigator.serviceWorker.register('/sw.js?v=2');
-                await navigator.serviceWorker.ready;
-            }
-
-            const VAPID_KEY = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLrRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558';
+            // [VAPID] 오타 수정 완료: oLzRk13 (r... 이 아니었습니다!)
+            const VAPID_KEY = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLzRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558';
 
             const performSubscribe = async (retryCount = 0): Promise<void> => {
                 const reg = await navigator.serviceWorker.ready;
@@ -930,7 +922,7 @@ export default function App() {
                         applicationServerKey: urlBase64ToUint8Array(VAPID_KEY)
                     });
 
-                    console.log('[Push] Subscription successful!');
+                    console.log('[Push] SUCCESS!');
                     await fetch('/api/push-subscribe', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -947,7 +939,7 @@ export default function App() {
                             if (sub) await sub.unsubscribe();
                         } catch (e) { }
 
-                        await new Promise(res => setTimeout(res, 4000));
+                        await new Promise(res => setTimeout(res, 3000));
                         return performSubscribe(retryCount + 1);
                     }
                     throw err;
@@ -956,7 +948,7 @@ export default function App() {
 
             await performSubscribe();
         } catch (error) {
-            console.error("❌ 푸시 알림 최종 프로세스 오류:", error);
+            console.error("❌ 푸시 알림 프로세스 실패:", error);
         } finally {
             setTimeout(() => { isSubscribing.current = false; }, 2000);
         }
