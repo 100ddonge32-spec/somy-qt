@@ -907,9 +907,12 @@ export default function App() {
             const existingSub = await registration.pushManager.getSubscription();
             if (existingSub) await existingSub.unsubscribe();
 
+            // [VAPID 고정] Vercel 오타 무시용 강제 고정
+            const forcedPublicKey = 'BGAg9ENzg-N1bQery6o2tP81mCNE_RARV_fPj9kwxNo9-OOc1B7nm0aW3QhDcnLZQOU6TciWQez_XdBCf5hfCFw';
+            console.log('[Push] Subscribing with forced key:', forcedPublicKey);
             const subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BGAg9ENzg-N1bQery6o2tP81mCNE_RARV_fPj9kwxNo9-OOc1B7nm0aW3QhDcnLZQOU6TciWQez_XdBCf5hfCFw')
+                applicationServerKey: urlBase64ToUint8Array(forcedPublicKey)
             });
 
             // 모든 푸시 알람 구독은 하나의 API로 통일했습니다.
