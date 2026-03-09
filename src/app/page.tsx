@@ -391,12 +391,16 @@ export default function App() {
         if (saved) setFontScale(Number(saved));
     }, []);
 
-    // VAPID 키를 위한 Base64 변환 유틸
+    // VAPID 키를 위한 표준화된 Uint8Array 변환 유틸
     const urlBase64ToUint8Array = (base64String: string) => {
-        const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-        const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding)
+            .replace(/\-/g, '+')
+            .replace(/_/g, '/');
+
         const rawData = window.atob(base64);
         const outputArray = new Uint8Array(rawData.length);
+
         for (let i = 0; i < rawData.length; ++i) {
             outputArray[i] = rawData.charCodeAt(i);
         }
@@ -894,65 +898,72 @@ export default function App() {
 
         isSubscribing.current = true;
         try {
-            console.log('[Push] Subscription process started (v3)...');
+            console.log('[Push] Subscription process started...');
 
-            const permission = Notification.permission;
+            // 1. 권한 확인 및 요청
+            let permission = Notification.permission;
             if (permission === 'denied') {
+                console.warn('[Push] Notification permission denied at OS/Browser level');
                 isSubscribing.current = false;
                 return;
             }
             if (permission === 'default') {
-                const newPerm = await Notification.requestPermission();
-                if (newPerm !== 'granted') {
+                permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
                     isSubscribing.current = false;
                     return;
                 }
             }
 
-            // [최종 VAPID] 무결성 검증 키
-            const VAPID_KEY = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLzRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558'.trim();
+            // [최종 VAPID] 100% 검증 키
+            const VAPID_KEY = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLzRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558';
 
             const performSubscribe = async (retryCount = 0): Promise<void> => {
+                // 브라우저 내부 엔진이 준비되도록 충분한 지연
+                if (retryCount === 0) await new Promise(res => setTimeout(res, 2000));
+
                 const reg = await navigator.serviceWorker.ready;
 
                 try {
-                    // [정리] 기존 구독 확인 및 해제
+                    // [정리] 기존 구독이 있다면 해제 (꼬임 방지)
                     const existing = await reg.pushManager.getSubscription();
-                    if (existing) await existing.unsubscribe();
+                    if (existing) {
+                        console.log('[Push] Unsubscribing stale session...');
+                        await existing.unsubscribe();
+                    }
 
                     const subscription = await reg.pushManager.subscribe({
                         userVisibleOnly: true,
                         applicationServerKey: urlBase64ToUint8Array(VAPID_KEY)
                     });
 
-                    console.log('[Push] SUCCESS!');
+                    console.log('[Push] Subscription successful!');
                     await fetch('/api/push-subscribe', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ user_id: userId, subscription })
                     });
-                    console.log("✅ 푸시 알림 등록 성공!");
+                    console.log("✅ 푸시 알림 등록 완료!");
                 } catch (err: any) {
-                    console.error('[Push] Attempt failed:', err.name, err.message);
+                    console.error(`[Push] Trial ${retryCount + 1} failed:`, err.name, err.message);
 
                     if (retryCount < 2 && (err.name === 'AbortError' || err.message.includes('service error'))) {
-                        // [강제 복구] 두 번째 실패 시 브라우저 엔진 마비로 간주하고 사이트 데이터 정화 후 리로드
+                        // [강제 복구] 두 번째 실패 시 브라우저 엔진 마비로 간주 -> SW 해제 후 새로고침
                         if (retryCount === 1) {
-                            const lastReset = localStorage.getItem('push_hard_reset_time');
+                            const lastReset = localStorage.getItem('push_auto_reset_last');
                             const now = Date.now();
-                            if (!lastReset || (now - parseInt(lastReset)) > 300000) { // 5분 한 번만
-                                console.error('[Push] Hard Reset Triggered!');
-                                localStorage.setItem('push_hard_reset_time', now.toString());
+                            if (!lastReset || (now - parseInt(lastReset)) > 300000) {
+                                console.error('[Push] Persistent service error. Restarting application context...');
+                                localStorage.setItem('push_auto_reset_last', now.toString());
                                 const regs = await navigator.serviceWorker.getRegistrations();
                                 for (let r of regs) await r.unregister();
-                                // 캐시 삭제는 API가 없으므로 리로드로 최대한 유도
                                 window.location.reload();
                                 return;
                             }
                         }
 
-                        console.warn('[Push] Retrying...');
-                        await new Promise(res => setTimeout(res, 2000));
+                        console.warn('[Push] Push service busy. Waiting for gate reconnect...');
+                        await new Promise(res => setTimeout(res, 4000));
                         return performSubscribe(retryCount + 1);
                     }
                     throw err;
@@ -961,7 +972,7 @@ export default function App() {
 
             await performSubscribe();
         } catch (error) {
-            console.error("❌ 푸시 알림 최종 실패 (권한 또는 브라우저 오류):", error);
+            console.error("❌ 푸시 알림 최종 프로세스 중단:", error);
         } finally {
             setTimeout(() => { isSubscribing.current = false; }, 2000);
         }
@@ -1212,15 +1223,16 @@ export default function App() {
         runPoller();
         const poller = setInterval(runPoller, 15000);
 
-        // 4. 서비스 워커 등록 (단일 창구 통합 - v3)
+        // 4. 서비스 워커 등록 (단일 창구 통합)
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js?v=3').then((reg) => {
-                console.log('SW Registered (v3)');
-                // 등록 성공 시 알림 구독 로직 실행
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') subscribePush(user.id);
-                });
-            }).catch(e => console.error("SW Register Error:", e));
+            navigator.serviceWorker.register('/sw.js').then((reg) => {
+                console.log('SW Registration Success');
+            }).catch(e => console.error("SW Registration Failed:", e));
+        }
+
+        // 로그인 상태라면 알림 구독 호출
+        if (user && user.id) {
+            subscribePush(user.id);
         }
 
         return () => clearInterval(poller);

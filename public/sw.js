@@ -3,7 +3,16 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil(clients.claim());
+    event.waitUntil(
+        clients.claim().then(() => {
+            // 모든 기존 캐시 삭제 (필요한 경우)
+            return caches.keys().then((cacheNames) => {
+                return Promise.all(
+                    cacheNames.map((cacheName) => caches.delete(cacheName))
+                );
+            });
+        })
+    );
 });
 
 self.addEventListener('push', function (event) {
