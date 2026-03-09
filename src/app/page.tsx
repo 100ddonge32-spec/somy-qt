@@ -3104,7 +3104,42 @@ export default function App() {
         ══════════════════════════════ */
         if (view === "qt") {
             const handleShareGrace = async () => {
-                if (!graceInput.trim()) return;
+                const recordQtStats = async () => {
+                    if (isHistoryMode) return;
+                    try {
+                        const effectiveChurchId = churchId || (typeof window !== 'undefined' ? localStorage.getItem('church_id') : null) || 'jesus-in';
+                        console.log(`📊 Attempting to record QT stats for: ${effectiveChurchId}`);
+                        const statsPostRes = await fetch('/api/stats', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                user_id: user.id,
+                                user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '성도',
+                                avatar_url: profileAvatar || user.user_metadata?.avatar_url || null,
+                                church_id: effectiveChurchId,
+                                answers: answers || []
+                            }),
+                        });
+
+                        if (statsPostRes.ok) {
+                            const resData = await statsPostRes.json();
+                            console.log("📊 QT completion recorded:", resData);
+                            const statsRes = await fetch(`/api/stats?church_id=${effectiveChurchId}&t=${Date.now()}`, { cache: 'no-store' });
+                            const statsData = await statsRes.json();
+                            if (statsData) setStats(statsData);
+                            if (user?.id) fetchHistory(user.id);
+                        }
+                    } catch (e) {
+                        console.error("통계 기록 중 오류:", e);
+                    }
+                };
+
+                // 은혜나눔 내용이 없어도 묵상 완료 기록은 남기고 다음 단계로 진행
+                if (!graceInput.trim()) {
+                    if (user && !isHistoryMode) await recordQtStats();
+                    setQtStep("pray");
+                    return;
+                }
 
                 if (user) {
                     try {
@@ -3115,69 +3150,29 @@ export default function App() {
                             body: JSON.stringify({
                                 user_id: user.id,
                                 user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
-                                avatar_url: profileAvatar || user.user_metadata?.avatar_url || null, // ✅ profileAvatar 우선 순위
+                                avatar_url: profileAvatar || user.user_metadata?.avatar_url || null,
                                 content: graceInput,
                                 church_id: churchId || 'jesus-in',
                                 is_private: isPrivatePost,
-                                is_qt: true // ✅ 묵상 기록을 통한 게시글임을 표시
+                                is_qt: true
                             })
                         });
 
                         if (res.ok) {
                             const newPost = await res.json();
-                            setCommunityPosts((prev: any) => [newPost, ...prev]); // [안전] prev를 사용하여 최신 상태 유지
-                            setGraceInput(""); // ✅ 등록 성공 시 입력창 비움
+                            setCommunityPosts((prev: any) => [newPost, ...prev]);
+                            setGraceInput("");
                             setIsPrivatePost(false);
                             alert("은혜가 나눔게시판에 등록되었습니다! ✨");
 
-                            // 2. [핵심] 여기서 즉시 묵상 통계(큐티왕)도 기록! (나중에 '마칠게요' 안 눌러도 기록되게)
-                            const recordQtStats = async () => {
-                                try {
-                                    // [방어] 현재 상태의 churchId가 비어있으면 localStorage나 기본값에서 가져옴
-                                    const effectiveChurchId = churchId || (typeof window !== 'undefined' ? localStorage.getItem('church_id') : null) || 'jesus-in';
-
-                                    console.log(`📊 Attempting to record QT stats for: ${effectiveChurchId}`);
-                                    const statsPostRes = await fetch('/api/stats', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                            user_id: user.id,
-                                            user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '성도',
-                                            avatar_url: profileAvatar || user.user_metadata?.avatar_url || null,
-                                            church_id: effectiveChurchId,
-                                            answers: answers // 큐티 답변 데이터
-                                        }),
-                                    });
-
-                                    if (statsPostRes.ok) {
-                                        const resData = await statsPostRes.json();
-                                        console.log("📊 QT completion recorded:", resData);
-                                        const statsRes = await fetch(`/api/stats?church_id=${effectiveChurchId}&t=${Date.now()}`, { cache: 'no-store' });
-                                        const statsData = await statsRes.json();
-                                        if (statsData) {
-                                            setStats(statsData);
-                                        }
-                                        // ✅ 히스토리 즉시 동기화
-                                        if (user?.id) fetchHistory(user.id);
-                                    } else {
-                                        const err = await statsPostRes.json();
-                                        console.error("📊 QT stats record failed:", err);
-                                    }
-                                } catch (e) {
-                                    console.error("통계 기록 중 오류:", e);
-                                }
-                            };
-
-                            // 즉시 기록
+                            // 2. 묵상 통계 기록
                             await recordQtStats();
                         } else {
                             const errData = await res.json().catch(() => ({}));
                             console.error("게시판 등록 실패:", errData);
-                            alert(`은혜나눔 등록에 실패했습니다: ${errData.error || '알 수 없는 오류'}\n(관리자에게 'community_posts 테이블에 is_qt 컬럼 추가'를 확인해 보세요)`);
                         }
                     } catch (e) {
                         console.error("저장 중 오류 발생:", e);
-                        alert("네트워크 오류로 등록에 실패했습니다.");
                     }
                 }
 
@@ -3444,16 +3439,16 @@ export default function App() {
                                 style={{
                                     width: '100%',
                                     padding: '16px',
-                                    background: graceInput.trim().length > 0 ? '#C2185B' : '#E6A4B4',
+                                    background: graceInput.trim().length > 0 ? '#C2185B' : '#333',
                                     color: 'white',
                                     border: 'none',
                                     borderRadius: '15px',
                                     fontWeight: 700,
                                     cursor: 'pointer',
-                                    transition: 'background-color 0.4s ease'
+                                    transition: 'all 0.3s'
                                 }}
                             >
-                                기록하고 성도들과 나누기
+                                {graceInput.trim().length > 0 ? '기록하고 성도들과 나누기' : '묵상 완료하고 넘어가기'}
                             </button>
                         )}
                         {qtStep === 'pray' && (
