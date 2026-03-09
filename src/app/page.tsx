@@ -1442,11 +1442,24 @@ export default function App() {
         if (!targetId) return;
         setIsHistoryLoading(true);
         try {
-            const res = await fetch(`/api/qt/history?user_id=${targetId}`);
+            // [Bust Cache] 실시간 동기화를 위해 타임스탬프 추가 및 no-store 설정
+            const res = await fetch(`/api/qt/history?user_id=${targetId}&t=${Date.now()}_${Math.random()}`, {
+                method: 'GET',
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                },
+                cache: 'no-store'
+            });
             const data = await res.json();
+            console.log("📊 History fetched successfully:", data.length, "items");
             if (Array.isArray(data)) setHistory(data);
-        } catch (e) { console.error("히스토리 로드 실패:", e); }
-        finally { setIsHistoryLoading(false); }
+        } catch (e) {
+            console.error("히스토리 로드 실패:", e);
+        } finally {
+            setIsHistoryLoading(false);
+        }
     };
     const [settingsSaving, setSettingsSaving] = useState(false);
     const [adminTab, setAdminTab] = useState<"settings" | "members" | "master" | "stats" | "reset" | "admins" | "community" | "thanksgiving">("settings");
@@ -3122,8 +3135,9 @@ export default function App() {
                         });
 
                         if (statsPostRes.ok) {
-                            const resData = await statsPostRes.json();
-                            console.log("📊 QT completion recorded:", resData);
+                            console.log("📊 QT completion recorded");
+                            // 갱신 전 DB가 반영될 시간을 아주 잠깐 벌어줌
+                            await new Promise(r => setTimeout(r, 500));
                             const statsRes = await fetch(`/api/stats?church_id=${effectiveChurchId}&t=${Date.now()}`, { cache: 'no-store' });
                             const statsData = await statsRes.json();
                             if (statsData) setStats(statsData);
@@ -3478,11 +3492,11 @@ export default function App() {
                                         });
 
                                         if (res.ok) {
+                                            console.log("📊 Final QT session saved");
+                                            await new Promise(r => setTimeout(r, 500));
                                             const statsRes = await fetch(`/api/stats?church_id=${effectiveChurchId}&t=${Date.now()}`, { cache: 'no-store' });
                                             const statsData = await statsRes.json();
-                                            if (statsData) {
-                                                setStats(statsData);
-                                            }
+                                            if (statsData) setStats(statsData);
                                             if (user?.id) fetchHistory(user.id);
                                         }
                                     } catch (e) {
