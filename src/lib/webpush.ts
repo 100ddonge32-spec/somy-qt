@@ -7,9 +7,9 @@ const privateKey = 'Wi4NvZq2A_x7jiEFBzeAVccfkfzubWsHvKayZZ3MGMg';
 
 if (typeof window === 'undefined') {
     try {
-        console.log('[WebPush] Server-side VAPID init with fixed keys...');
+        console.log('[WebPush] Server-side VAPID init with fixed keys (verified pair)...');
         webpush.setVapidDetails(
-            'mailto:pastorbaek@kakao.com',
+            'mailto:admin@somy-qt.vercel.app',
             publicKey,
             privateKey
         );
