@@ -367,6 +367,7 @@ export default function App() {
     // 감사일기 상태
     const [thanksgivingDiaries, setThanksgivingDiaries] = useState<Post[]>([]);
     const [counselingRequests, setCounselingRequests] = useState<any[]>([]);
+    const isSubscribing = useRef(false); // [추가] 중복 구독 시도 방지용 락
     const [counselingInput, setCounselingInput] = useState('');
     const [counselingReplyInput, setCounselingReplyInput] = useState<{ [id: string]: string }>({});
     const [isPrivateThanksgiving, setIsPrivateThanksgiving] = useState(false);
@@ -888,91 +889,84 @@ export default function App() {
 
     // [이과장의 푸시 엔진] 브라우저 알림 권한을 얻고 서버에 구독 정보를 저장합니다.
     const subscribePush = useCallback(async (userId: string) => {
+        if (isSubscribing.current) return; // 이미 진행 중이면 중단
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
+        isSubscribing.current = true;
         try {
-            // [핵심] 권한 요청 추가 - 사용자가 명시적으로 허용해야 알림이 옵니다.
+            console.log('[Push] Starting subscription process...');
             const permission = await Notification.permission;
-            if (permission === 'default') {
-                const newPermission = await Notification.requestPermission();
-                if (newPermission !== 'granted') return;
-            } else if (permission === 'denied') {
-                alert("알림 권한이 차단되어 있습니다. 브라우저 설정에서 알림을 허용해 주세요.");
+            if (permission === 'denied') {
+                console.warn("알림 권한이 거부되어 있습니다.");
+                isSubscribing.current = false;
                 return;
             }
-
-            // [VAPID 최종] 절대 불변의 정식 키 쌍 (Public/Private 매칭 100% 검증)
-            const rawPublicKey = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLzRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558';
-            const forcedPublicKey = rawPublicKey.trim(); // 혹시 모를 공백 제거
-
-            console.log('[Push] Forced Subscribing with final verified key...');
-
-            // [초강수] 기존 서비스 워커와 구독 정보를 완전히 '삭제'하고 처음부터 다시 시작합니다.
-            try {
-                const registrations = await navigator.serviceWorker.getRegistrations();
-                for (let reg of registrations) {
-                    console.log('[Cleanup] Unregistering Service Worker...');
-                    await reg.unregister();
+            if (permission === 'default') {
+                const newPermission = await Notification.requestPermission();
+                if (newPermission !== 'granted') {
+                    isSubscribing.current = false;
+                    return;
                 }
+            }
 
-                // 다시 등록
-                console.log('[Cleanup] Re-registering Service Worker...');
-                const reg = await navigator.serviceWorker.register('/sw.js');
+            // [VAPID] 최종 정밀 고정 키
+            const forcedPublicKey = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLzRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558';
 
-                // [핵심] 활성화될 때까지 최대 5초간 대기 (AbortError 방지)
-                const ensureActive = async (registration: ServiceWorkerRegistration) => {
-                    for (let i = 0; i < 50; i++) { // 0.1초씩 50번 = 5초
-                        if (registration.active) return registration.active;
-                        await new Promise(res => setTimeout(res, 100));
-                    }
-                    throw new Error("Service Worker activation timeout");
-                };
+            let registration = await navigator.serviceWorker.getRegistration();
 
-                await ensureActive(reg);
-                // 활성화 직후 아주 미세하게 브라우저가 준비할 시간을 더 줍니다.
-                await new Promise(res => setTimeout(res, 500));
+            // 만약 등록된 게 없거나 상태가 이상하면 새로 등록
+            if (!registration) {
+                console.log('[Push] No registration found, registering new one...');
+                registration = await navigator.serviceWorker.register('/sw.js');
+            }
 
-                const activeReg = await navigator.serviceWorker.ready;
+            // 활성화될 때까지 부드럽게 폴링 (최대 10초)
+            const waitForActive = async (reg: ServiceWorkerRegistration) => {
+                for (let i = 0; i < 100; i++) {
+                    if (reg.active && reg.active.state === 'activated') return reg.active;
+                    await new Promise(res => setTimeout(res, 100));
+                }
+                return null;
+            };
 
-                // 구독 시도 (AbortError 대비 재시도 로직)
-                const subscribeWithRetry = async (retryCount = 0): Promise<PushSubscription> => {
-                    try {
-                        return await activeReg.pushManager.subscribe({
-                            userVisibleOnly: true,
-                            applicationServerKey: urlBase64ToUint8Array(forcedPublicKey)
-                        });
-                    } catch (err: any) {
-                        if (retryCount < 3 && (err.name === 'AbortError' || err.message.includes('active'))) {
-                            console.warn(`[Push] Busy or activating, retrying... (${retryCount + 1})`);
-                            await new Promise(res => setTimeout(res, 1000));
-                            return subscribeWithRetry(retryCount + 1);
-                        }
-                        throw err;
-                    }
-                };
+            const activeWorker = await waitForActive(registration);
+            if (!activeWorker) {
+                console.warn('[Push] Service worker activation timed out, retrying once...');
+                // 타임아웃 시 한 번만 더 등록 시도
+                registration = await navigator.serviceWorker.register('/sw.js');
+                await waitForActive(registration);
+            }
 
-                const subscription = await subscribeWithRetry();
+            // 구독 시도
+            try {
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(forcedPublicKey)
+                });
 
-                console.log('[Push] Subscription successful after nuclear reset!');
-
-                // 모든 푸시 알람 구독은 하나의 API로 통일했습니다.
+                console.log('[Push] Subscription achieved!');
                 const res = await fetch('/api/push-subscribe', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_id: userId, subscription })
                 });
 
-                if (res.ok) {
-                    console.log("✅ 푸시 알림 서버 등록 완료!");
-                    return true;
+                if (res.ok) console.log("✅ 푸시 알림 서버 등록 완료!");
+            } catch (subErr: any) {
+                // 만약 키 불일치 등으로 실패하면 그때만 한 번 초기화
+                if (subErr.name === 'InvalidStateError' || subErr.name === 'NotAllowedError') {
+                    console.log('[Push] Subscription failed, attempting one-time repair...');
+                    const existingSub = await registration.pushManager.getSubscription();
+                    if (existingSub) await existingSub.unsubscribe();
+                    // 재시도는 다음 호출 때 맡김
                 }
-            } catch (e) {
-                console.error("❌ 내부 푸시 알림 구독 작업 실패:", e);
+                throw subErr;
             }
-        } catch (outerError) {
-            console.error("❌ 푸시 알림 전체 프로세스 실패:", outerError);
+        } catch (error) {
+            console.error("❌ 푸시 전체 프로세스 실패:", error);
+        } finally {
+            isSubscribing.current = false;
         }
-        return false;
     }, []);
 
     // [이과장의 배지 시스템] 새로운 글이 있는지 시간을 비교하여 N 배지를 결정합니다.
