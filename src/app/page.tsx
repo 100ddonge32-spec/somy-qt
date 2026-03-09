@@ -898,37 +898,30 @@ export default function App() {
 
         isSubscribing.current = true;
         try {
-            console.log('[Push] Subscription process started...');
+            console.log('[Push] Starting fresh registration (v10)...');
 
-            // 1. 권한 확인 및 요청
-            let permission = Notification.permission;
+            // 1. 권한 확인
+            const permission = Notification.permission;
             if (permission === 'denied') {
-                console.warn('[Push] Notification permission denied at OS/Browser level');
+                console.warn('[Push] Permission denied');
                 isSubscribing.current = false;
                 return;
             }
-            if (permission === 'default') {
-                permission = await Notification.requestPermission();
-                if (permission !== 'granted') {
-                    isSubscribing.current = false;
-                    return;
-                }
-            }
 
-            // [최종 VAPID] 100% 검증 키
+            // [최종 VAPID] 무결성 확인
             const VAPID_KEY = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLzRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558';
 
             const performSubscribe = async (retryCount = 0): Promise<void> => {
-                // 브라우저 내부 엔진이 준비되도록 충분한 지연
-                if (retryCount === 0) await new Promise(res => setTimeout(res, 2000));
+                // 브라우저 내부 안정화를 위해 충분히 대기합니다.
+                await new Promise(res => setTimeout(res, 3000));
 
                 const reg = await navigator.serviceWorker.ready;
 
                 try {
-                    // [정리] 기존 구독이 있다면 해제 (꼬임 방지)
+                    // 기존 구독은 무조건 해지하고 새로 받습니다.
                     const existing = await reg.pushManager.getSubscription();
                     if (existing) {
-                        console.log('[Push] Unsubscribing stale session...');
+                        console.log('[Push] Found existing subscription, renewing...');
                         await existing.unsubscribe();
                     }
 
@@ -937,34 +930,25 @@ export default function App() {
                         applicationServerKey: urlBase64ToUint8Array(VAPID_KEY)
                     });
 
-                    console.log('[Push] Subscription successful!');
+                    console.log('[Push] SUCCESS!');
                     await fetch('/api/push-subscribe', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ user_id: userId, subscription })
                     });
-                    console.log("✅ 푸시 알림 등록 완료!");
+                    console.log("✅ 푸시 알림 등록 완료! (v10)");
                 } catch (err: any) {
-                    console.error(`[Push] Trial ${retryCount + 1} failed:`, err.name, err.message);
+                    console.error(`[Push] Trial ${retryCount + 1} Error:`, err.name, err.message);
 
-                    if (retryCount < 2 && (err.name === 'AbortError' || err.message.includes('service error'))) {
-                        // [강제 복구] 두 번째 실패 시 브라우저 엔진 마비로 간주 -> SW 해제 후 새로고침
-                        if (retryCount === 1) {
-                            const lastReset = localStorage.getItem('push_auto_reset_last');
-                            const now = Date.now();
-                            if (!lastReset || (now - parseInt(lastReset)) > 300000) {
-                                console.error('[Push] Persistent service error. Restarting application context...');
-                                localStorage.setItem('push_auto_reset_last', now.toString());
-                                const regs = await navigator.serviceWorker.getRegistrations();
-                                for (let r of regs) await r.unregister();
-                                window.location.reload();
-                                return;
-                            }
-                        }
+                    if (retryCount < 1 && (err.name === 'AbortError' || err.message.includes('service error'))) {
+                        // [강제 초기화] 브라우저 엔진 마비 시 -> 완전 초기화 후 재시도
+                        console.warn('[Push] Cleaning site data and retrying...');
+                        const regs = await navigator.serviceWorker.getRegistrations();
+                        for (let r of regs) await r.unregister();
 
-                        console.warn('[Push] Push service busy. Waiting for gate reconnect...');
-                        await new Promise(res => setTimeout(res, 4000));
-                        return performSubscribe(retryCount + 1);
+                        await new Promise(res => setTimeout(res, 5000));
+                        window.location.reload(); // 새로고침 후 다시 진입하면 v10 관리자가 잡음
+                        return;
                     }
                     throw err;
                 }
@@ -972,7 +956,7 @@ export default function App() {
 
             await performSubscribe();
         } catch (error) {
-            console.error("❌ 푸시 알림 최종 프로세스 중단:", error);
+            console.error("❌ 푸시 알림 최종 프로세스 오류:", error);
         } finally {
             setTimeout(() => { isSubscribing.current = false; }, 2000);
         }
@@ -1223,14 +1207,26 @@ export default function App() {
         runPoller();
         const poller = setInterval(runPoller, 15000);
 
-        // 4. 서비스 워커 등록 (단일 창구 통합)
+        // 4. 서비스 워커 등록 (Cleanup v10 전략)
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').then((reg) => {
-                console.log('SW Registration Success');
-            }).catch(e => console.error("SW Registration Failed:", e));
+            (async () => {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    // sw-v10.js가 아닌 기존 워커는 모두 해제
+                    for (const reg of registrations) {
+                        if (!reg.active?.scriptURL.includes('sw-v10.js')) {
+                            console.log('[Push] Clearing old SW:', reg.active?.scriptURL);
+                            await reg.unregister();
+                        }
+                    }
+                    await navigator.serviceWorker.register('/sw-v10.js');
+                    console.log('[Push] Service Worker Registered (v10)');
+                } catch (e) {
+                    console.error('[Push] SW Init Error:', e);
+                }
+            })();
         }
 
-        // 로그인 상태라면 알림 구독 호출
         if (user && user.id) {
             subscribePush(user.id);
         }

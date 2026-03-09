@@ -73,7 +73,8 @@ export async function GET(req: NextRequest) {
                 type: "image/png",
                 purpose: "any maskable"
             }
-        ]
+        ],
+        "gcm_sender_id": "103953800507"
     };
 
     return NextResponse.json(manifest, {
