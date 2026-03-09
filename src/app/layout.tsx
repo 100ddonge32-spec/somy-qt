@@ -106,7 +106,8 @@ export default function RootLayout({
 
                   const manifestLink = document.createElement('link');
                   manifestLink.rel = 'manifest';
-                  manifestLink.href = '/api/manifest?church_id=' + encodeURIComponent(cid);
+                  // [Cache Bust] v=2를 추가하여 브라우저가 깨진 아이콘이 있는 옛날 매니페스트를 버리게 합니다.
+                  manifestLink.href = '/api/manifest?church_id=' + encodeURIComponent(cid) + '&v=2';
                   document.head.appendChild(manifestLink);
                   console.log('Dynamic manifest loaded for:', cid);
                 } catch (e) {

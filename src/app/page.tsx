@@ -911,13 +911,10 @@ export default function App() {
                 }
             }
 
-            // 2. 서비스 워커 및 매니페스트 안정화 대기
-            // [중요] 매니페스트 아이콘 에러가 고쳐진 후 브라우저가 이를 반영할 시간을 줍니다.
+            // [중요] 매니페스트 안정화 대기
             await new Promise(res => setTimeout(res, 1000));
 
-            let registration = await navigator.serviceWorker.ready;
-
-            // 3. 구독 시도 (AbortError에 특화된 재시도)
+            const registration = await navigator.serviceWorker.ready;
             const VAPID_KEY = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLzRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558';
 
             const performSubscribe = async (retryCount = 0): Promise<void> => {
@@ -938,7 +935,14 @@ export default function App() {
                     console.error(`[Push] Trial ${retryCount + 1} failed:`, err.name, err.message);
 
                     if (retryCount < 2 && (err.name === 'AbortError' || err.message.includes('service'))) {
-                        console.warn('[Push] Service error. Waiting 3s for gateway reconnect...');
+                        console.warn('[Push] Push service error. Clearing old state and retrying...');
+
+                        // 기존 구독을 명시적으로 해제하여 매칭 오류 방지
+                        try {
+                            const sub = await registration.pushManager.getSubscription();
+                            if (sub) await sub.unsubscribe();
+                        } catch (e) { }
+
                         await new Promise(res => setTimeout(res, 3000));
                         return performSubscribe(retryCount + 1);
                     }
