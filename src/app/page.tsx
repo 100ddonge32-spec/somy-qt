@@ -894,7 +894,7 @@ export default function App() {
 
         isSubscribing.current = true;
         try {
-            console.log('[Push] Final attempt with verified key...');
+            console.log('[Push] Subscription process started...');
 
             const permission = Notification.permission;
             if (permission === 'denied') {
@@ -909,13 +909,25 @@ export default function App() {
                 }
             }
 
-            await new Promise(res => setTimeout(res, 1000));
-
-            // [VAPID] 오타 수정 완료: oLzRk13 (r... 이 아니었습니다!)
+            // [최종 VAPID] 100% 검증된 정식 키
             const VAPID_KEY = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLzRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558';
 
             const performSubscribe = async (retryCount = 0): Promise<void> => {
                 const reg = await navigator.serviceWorker.ready;
+
+                // 서비스 워커가 제어권을 가질 때까지 대기
+                if (!navigator.serviceWorker.controller) {
+                    await new Promise(res => {
+                        const check = setInterval(() => {
+                            if (navigator.serviceWorker.controller) {
+                                clearInterval(check);
+                                res(null);
+                            }
+                        }, 100);
+                        setTimeout(() => { clearInterval(check); res(null); }, 3000);
+                    });
+                }
+
                 try {
                     const subscription = await reg.pushManager.subscribe({
                         userVisibleOnly: true,
@@ -928,18 +940,31 @@ export default function App() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ user_id: userId, subscription })
                     });
-                    console.log("✅ 푸시 알림 등록 완료!");
+                    console.log("✅ 푸시 알림 등록 성공!");
                 } catch (err: any) {
-                    console.error('[Push] Trial failed:', err.name, err.message);
+                    console.error('[Push] Attempt failed:', err.name, err.message);
 
                     if (retryCount < 2 && (err.name === 'AbortError' || err.message.includes('service error'))) {
-                        console.warn('[Push] Cleaning old state and retrying...');
+                        console.warn('[Push] Cleaning state and retrying...');
                         try {
                             const sub = await reg.pushManager.getSubscription();
                             if (sub) await sub.unsubscribe();
                         } catch (e) { }
 
-                        await new Promise(res => setTimeout(res, 3000));
+                        // [원폭 투하] 만약 2번 실패하면 브라우저 푸시 엔진 마비 상태로 판단 -> 강제 초기화 후 새로고침
+                        if (retryCount === 1) {
+                            const hasRepaired = sessionStorage.getItem('push_repaired');
+                            if (!hasRepaired) {
+                                console.error('[Push] Atomic Repair: Unregistering and reloading...');
+                                sessionStorage.setItem('push_repaired', 'true');
+                                const regs = await navigator.serviceWorker.getRegistrations();
+                                for (let r of regs) await r.unregister();
+                                window.location.reload();
+                                return;
+                            }
+                        }
+
+                        await new Promise(res => setTimeout(res, 2000));
                         return performSubscribe(retryCount + 1);
                     }
                     throw err;
@@ -948,7 +973,7 @@ export default function App() {
 
             await performSubscribe();
         } catch (error) {
-            console.error("❌ 푸시 알림 프로세스 실패:", error);
+            console.error("❌ 푸시 알림 최종 실패:", error);
         } finally {
             setTimeout(() => { isSubscribing.current = false; }, 2000);
         }
@@ -1199,20 +1224,15 @@ export default function App() {
         runPoller();
         const poller = setInterval(runPoller, 15000);
 
-        // 4. 서비스 워커 등록
+        // 4. 서비스 워커 등록 (단일 창구 통합)
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function () {
-                // [Version Bump] v=2를 추가하여 서비스 워커를 강제로 새로고침합니다.
-                navigator.serviceWorker.register('/sw.js?v=2').then(function (registration) {
-                    console.log('SW registered');
-                    // 푸시 알림 권한이 부여된 경우 구독 시도
-                    Notification.requestPermission().then(permission => {
-                        if (permission === 'granted') subscribePush(user.id);
-                    });
-                }, function (err) {
-                    console.error("SW Register Error:", err);
+            navigator.serviceWorker.register('/sw.js').then((reg) => {
+                console.log('SW Registered');
+                // 등록 성공 시 알림 구독 로직 실행
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') subscribePush(user.id);
                 });
-            });
+            }).catch(e => console.error("SW Register Error:", e));
         }
 
         return () => clearInterval(poller);
