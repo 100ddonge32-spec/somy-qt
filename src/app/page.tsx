@@ -919,40 +919,39 @@ export default function App() {
                 console.log('[Cleanup] Re-registering Service Worker...');
                 const reg = await navigator.serviceWorker.register('/sw.js');
 
-                // [핵심] 단순히 'ready'가 아니라 'active'가 될 때까지 기다려야 합니다.
-                const waitForActive = (registration: ServiceWorkerRegistration): Promise<void> => {
-                    return new Promise((resolve) => {
-                        if (registration.active) {
-                            resolve();
-                            return;
-                        }
-                        const worker = registration.installing || registration.waiting;
-                        if (worker) {
-                            worker.addEventListener('statechange', (e: any) => {
-                                if (e.target.state === 'activated') resolve();
-                            });
-                        } else {
-                            // 최후의 수단: 폴링
-                            const interval = setInterval(() => {
-                                if (registration.active) {
-                                    clearInterval(interval);
-                                    resolve();
-                                }
-                            }, 100);
-                        }
-                    });
+                // [핵심] 활성화될 때까지 최대 5초간 대기 (AbortError 방지)
+                const ensureActive = async (registration: ServiceWorkerRegistration) => {
+                    for (let i = 0; i < 50; i++) { // 0.1초씩 50번 = 5초
+                        if (registration.active) return registration.active;
+                        await new Promise(res => setTimeout(res, 100));
+                    }
+                    throw new Error("Service Worker activation timeout");
                 };
 
-                await waitForActive(reg);
+                await ensureActive(reg);
+                // 활성화 직후 아주 미세하게 브라우저가 준비할 시간을 더 줍니다.
+                await new Promise(res => setTimeout(res, 500));
+
                 const activeReg = await navigator.serviceWorker.ready;
 
-                const subs = await activeReg.pushManager.getSubscription();
-                if (subs) await subs.unsubscribe();
+                // 구독 시도 (AbortError 대비 재시도 로직)
+                const subscribeWithRetry = async (retryCount = 0): Promise<PushSubscription> => {
+                    try {
+                        return await activeReg.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: urlBase64ToUint8Array(forcedPublicKey)
+                        });
+                    } catch (err: any) {
+                        if (retryCount < 3 && (err.name === 'AbortError' || err.message.includes('active'))) {
+                            console.warn(`[Push] Busy or activating, retrying... (${retryCount + 1})`);
+                            await new Promise(res => setTimeout(res, 1000));
+                            return subscribeWithRetry(retryCount + 1);
+                        }
+                        throw err;
+                    }
+                };
 
-                const subscription = await activeReg.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: urlBase64ToUint8Array(forcedPublicKey)
-                });
+                const subscription = await subscribeWithRetry();
 
                 console.log('[Push] Subscription successful after nuclear reset!');
 
