@@ -904,7 +904,10 @@ export default function App() {
             const registration = await navigator.serviceWorker.ready;
             // [VAPID 고정] 목사님 기기 및 시스템 전체 403/400 오류 해결을 위해 신규 생성한 정식 키를 직접 고정합니다. (Subject: admin@somy-qt.vercel.app)
             const forcedPublicKey = 'BLlCJTG1YSphGl3g5yBvK7vfsiuaox9zxj0urmvTa02LZQ3x_AoEWJRl8tEcouvVVOm3nq_qepmLA8dFpAFDH6o';
-            console.log('[Push] Forced Subscribing with fresh verified key:', forcedPublicKey);
+
+            // [지연] 서비스 워커가 준비된 후 아주 잠깐(1.5초) 기다렸다가 구독을 시도하면 AbortError를 줄일 수 있습니다.
+            await new Promise(res => setTimeout(res, 1500));
+            console.log('[Push] Forced Subscribing with fresh verified key (after delay):', forcedPublicKey);
 
             // 기존 구독을 완전히 초기화하여 브라우저 내부의 꼬인 상태를 해결합니다.
             try {
@@ -917,10 +920,23 @@ export default function App() {
                 console.warn('[Push] Error during cleanup, continuing...', e);
             }
 
-            const subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(forcedPublicKey)
-            });
+            const attemptSubscribe = async (retryCount = 0): Promise<any> => {
+                try {
+                    return await registration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(forcedPublicKey)
+                    });
+                } catch (err: any) {
+                    if (err.name === 'AbortError' && retryCount < 2) {
+                        console.warn(`[Push] AbortError detected, retrying... (${retryCount + 1}/2)`);
+                        await new Promise(res => setTimeout(res, 2000));
+                        return attemptSubscribe(retryCount + 1);
+                    }
+                    throw err;
+                }
+            };
+
+            const subscription = await attemptSubscribe();
 
             // 모든 푸시 알람 구독은 하나의 API로 통일했습니다.
             const res = await fetch('/api/push-subscribe', {
