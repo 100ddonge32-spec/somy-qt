@@ -1,8 +1,8 @@
 // [Build Trigger] VAPID Key synchronization v2
 import webpush from 'web-push';
 
-const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BCpTn0SHIYSZzjST5xxL1Cv9svmlp3f9Xmvt9FSALBvo4QwLQCBlo_mu4ThoMHgINRmAk4c9sxwVwI2QtDyHr1I';
-const privateKey = process.env.VAPID_PRIVATE_KEY || 'LAAS6aJenIKYBShIGZsWVKhXNOMKwkuXvpf2NLCGZAI';
+const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BGAg9ENzg-N1bQery6o2tP81mCNE_RARV_fPj9kwxNo9-OOc1B7nm0aW3QhDcnLZQOU6TciWQez_XdBCf5hfCFw';
+const privateKey = process.env.VAPID_PRIVATE_KEY || 'H5QHbNcikhFs6Fm9fc-9Y-hZVXRHAtkAIt1XFljdvBY';
 
 if (typeof window === 'undefined') {
     if (publicKey && privateKey) {
