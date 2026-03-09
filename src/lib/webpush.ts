@@ -1,21 +1,25 @@
 // [Build Trigger] VAPID Key synchronization v2
 import webpush from 'web-push';
 
-// [VAPID 고정] Vercel 환경변수 오타 방지를 위해 정식 키를 직접 고정합니다. 목사님 403 오류 해결용.
-const publicKey = 'BLlCJTG1YSphGl3g5yBvK7vfsiuaox9zxj0urmvTa02LZQ3x_AoEWJRl8tEcouvVVOm3nq_qepmLA8dFpAFDH6o';
-const privateKey = 'LXNMKdBeaEo6Vw_HKC8SoJ7D37ewn3h62-jO6OG1XvI';
+const publicKey = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLzRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558';
+const privateKey = '794ULAs705fT41boCcyNWYSlvACNRUVTnYXlnWcmKyk';
 
-if (typeof window === 'undefined') {
+function initWebPush() {
     try {
-        console.log('[WebPush] Server-side VAPID init with fixed keys (verified pair)...');
+        console.log('[WebPush] Initializing VAPID (Fixed Pair)...');
         webpush.setVapidDetails(
             'mailto:admin@somy-qt.vercel.app',
             publicKey,
             privateKey
         );
+        return true;
     } catch (error) {
-        console.error('[WebPush] Failed to set VAPID details:', error);
+        console.error('[WebPush] Initialization Error:', error);
+        return false;
     }
 }
+
+// 모듈 로드 시 즉시 초기화 실행
+initWebPush();
 
 export default webpush;
