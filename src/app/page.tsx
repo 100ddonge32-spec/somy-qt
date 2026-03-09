@@ -898,9 +898,8 @@ export default function App() {
 
         isSubscribing.current = true;
         try {
-            console.log('[Push] Starting fresh registration (v10)...');
+            console.log('[Push] Registration attempt started...');
 
-            // 1. 권한 확인
             const permission = Notification.permission;
             if (permission === 'denied') {
                 console.warn('[Push] Permission denied');
@@ -908,17 +907,16 @@ export default function App() {
                 return;
             }
 
-            // [최종 VAPID] 무결성 확인
             const VAPID_KEY = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLzRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558';
 
             const performSubscribe = async (retryCount = 0): Promise<void> => {
-                // 브라우저 내부 안정화를 위해 충분히 대기합니다.
+                // 브라우저 안정화 대기
                 await new Promise(res => setTimeout(res, 3000));
 
                 const reg = await navigator.serviceWorker.ready;
 
                 try {
-                    // 기존 구독은 무조건 해지하고 새로 받습니다.
+                    // [Clean State] 기존 구독 명시적 해제
                     const existing = await reg.pushManager.getSubscription();
                     if (existing) {
                         console.log('[Push] Found existing subscription, renewing...');
@@ -936,27 +934,23 @@ export default function App() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ user_id: userId, subscription })
                     });
-                    console.log("✅ 푸시 알림 등록 완료! (v10)");
+                    console.log("✅ 푸시 알림 등록 완료!");
                 } catch (err: any) {
                     console.error(`[Push] Trial ${retryCount + 1} Error:`, err.name, err.message);
 
                     if (retryCount < 1 && (err.name === 'AbortError' || err.message.includes('service error'))) {
-                        // [강제 초기화] 브라우저 엔진 마비 시 -> 완전 초기화 후 재시도
-                        console.warn('[Push] Cleaning site data and retrying...');
-                        const regs = await navigator.serviceWorker.getRegistrations();
-                        for (let r of regs) await r.unregister();
-
+                        console.warn('[Push] Retrying subscription...');
                         await new Promise(res => setTimeout(res, 5000));
-                        window.location.reload(); // 새로고침 후 다시 진입하면 v10 관리자가 잡음
-                        return;
+                        return performSubscribe(retryCount + 1);
                     }
+                    // 무한 리로드는 중단합니다.
                     throw err;
                 }
             };
 
             await performSubscribe();
         } catch (error) {
-            console.error("❌ 푸시 알림 최종 프로세스 오류:", error);
+            console.error("❌ 푸시 알림 프로세스 중단:", error);
         } finally {
             setTimeout(() => { isSubscribing.current = false; }, 2000);
         }
@@ -1207,24 +1201,11 @@ export default function App() {
         runPoller();
         const poller = setInterval(runPoller, 15000);
 
-        // 4. 서비스 워커 등록 (Cleanup v10 전략)
+        // 4. 서비스 워커 등록 (표준 v11)
         if ('serviceWorker' in navigator) {
-            (async () => {
-                try {
-                    const registrations = await navigator.serviceWorker.getRegistrations();
-                    // sw-v10.js가 아닌 기존 워커는 모두 해제
-                    for (const reg of registrations) {
-                        if (!reg.active?.scriptURL.includes('sw-v10.js')) {
-                            console.log('[Push] Clearing old SW:', reg.active?.scriptURL);
-                            await reg.unregister();
-                        }
-                    }
-                    await navigator.serviceWorker.register('/sw-v10.js');
-                    console.log('[Push] Service Worker Registered (v10)');
-                } catch (e) {
-                    console.error('[Push] SW Init Error:', e);
-                }
-            })();
+            navigator.serviceWorker.register('/sw.js').then((reg) => {
+                console.log('[Push] Service Worker Registered');
+            }).catch(e => console.error('[Push] SW Init Error:', e));
         }
 
         if (user && user.id) {

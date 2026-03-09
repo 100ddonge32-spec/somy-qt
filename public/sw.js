@@ -5,7 +5,6 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         clients.claim().then(() => {
-            // 모든 기존 캐시 삭제 (필요한 경우)
             return caches.keys().then((cacheNames) => {
                 return Promise.all(
                     cacheNames.map((cacheName) => caches.delete(cacheName))
@@ -17,9 +16,15 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('push', function (event) {
     if (event.data) {
-        const data = event.data.json();
+        let data = {};
+        try {
+            data = event.data.json();
+        } catch (e) {
+            data = { title: '알림', body: event.data.text() };
+        }
+
         const options = {
-            body: data.body,
+            body: data.body || '',
             icon: '/somy.png',
             badge: '/somy.png',
             vibrate: [100, 50, 100],
@@ -28,9 +33,8 @@ self.addEventListener('push', function (event) {
             }
         };
 
-        const notificationPromise = self.registration.showNotification(data.title, options);
+        const notificationPromise = self.registration.showNotification(data.title || '소미 QT', options);
 
-        // 배지 업데이트 로직 (지원하는 경우)
         let badgePromise = Promise.resolve();
         if (data.userId && 'setAppBadge' in navigator) {
             badgePromise = fetch(`/api/notifications?user_id=${data.userId}`)
