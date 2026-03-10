@@ -22,7 +22,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "API Key가 없습니다." }, { status: 500 });
         }
 
-        const { messages, church_id: rawChurchId } = await req.json();
+        const { messages, church_id: rawChurchId, max_tokens } = await req.json();
         const church_id = rawChurchId || 'jesus-in';
 
         // 오늘 큐티 본문 가져오기
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
                 ...messages,
             ],
             temperature: 0.7,
-            max_tokens: 500,
+            max_tokens: max_tokens || 500,
         });
 
         return NextResponse.json({ content: response.choices[0].message.content });

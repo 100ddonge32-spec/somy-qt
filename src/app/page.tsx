@@ -1947,10 +1947,67 @@ export default function App() {
             // [항상 표준화] 교회 ID 정규화 처리
             const finalChurchId = (churchId === '예수인교회' || churchId === encodeURIComponent('예수인교회')) ? 'jesus-in' : churchId;
 
+            // [자동 칼럼 생성 체크] 말씀 구절이 바뀌었는데 칼럼을 수동으로 고치지 않은 경우, AI가 자동으로 재작성
+            const verseChanged = settingsForm.today_verse_text !== churchSettings.today_verse_text;
+            const contentUntouched = settingsForm.pastor_column_content === churchSettings.pastor_column_content;
+
+            let finalPastorTitle = settingsForm.pastor_column_title;
+            let finalPastorContent = settingsForm.pastor_column_content;
+
+            if (verseChanged && contentUntouched && settingsForm.today_verse_text) {
+                console.log("📖 Verse changed! Auto-generating Pastor's Column...");
+                try {
+                    const verseText = settingsForm.today_verse_text;
+                    const verseRef = settingsForm.today_verse_ref || '오늘의 말씀';
+
+                    const prompt = `당신은 ${settingsForm.church_name || CHURCH_NAME}의 담임목사입니다. 오늘의 말씀 [${verseRef}: ${verseText}]을 바탕으로 성도들에게 깊은 위로와 영적 도전을 주는 '담임목사 칼럼'을 작성해주세요. 
+
+[작성 가이드라인]
+1. 분량: 약 500자 내외로 풍성하게 작성하세요.
+2. 구조: 말씀 묵상 - 삶의 적용 - 따뜻한 격려와 축복의 순서로 구성하세요.
+3. 말투: 성도를 진심으로 아끼는 마음이 담긴 자애롭고 은혜로운 목소리(존댓말)를 사용하세요.
+4. 내용: 오늘을 살아가는 성도들의 삶에 실제적인 힘이 되는 조언을 포함하세요.
+5. 주의사항: 칼럼 형식이므로 글의 마지막에 '아멘'을 사용하지 말고 담백하고 우아하게 마무리하세요.
+
+반드시 아래 형식을 엄격히 지켜서 출력하세요:
+제목: (강렬하고 은혜로운 제목)
+내용: (깊이 있고 풍성한 권면의 글)
+
+마크다운 기호(** 등)는 사용하지 말고 텍스트로만 정성스럽게 작성해주세요.`;
+
+                    const aiRes = await fetch("/api/chat", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            messages: [{ role: "user", content: prompt }],
+                            max_tokens: 1000,
+                            stream: false
+                        }),
+                    });
+
+                    if (aiRes.ok) {
+                        const aiData = await aiRes.json();
+                        const aiText = aiData.content || "";
+                        const titleMatch = aiText.match(/(?:제목|주제|Title)\s*[:：]\s*(.+)/i) || aiText.match(/\*\*(?:제목|주제|Title)\s*[:：]\s*\*\*(.+)/i);
+                        const contentMatch = aiText.match(/(?:내용|본문|Content)\s*[:：]\s*([\s\S]+)/i) || aiText.match(/\*\*(?:내용|본문|Content)\s*[:：]\s*\*\*(.+)/i);
+
+                        if (titleMatch) finalPastorTitle = titleMatch[1].replace(/\*/g, '').trim();
+                        if (contentMatch) {
+                            finalPastorContent = contentMatch[1].replace(/\*/g, '').trim();
+                            finalPastorContent = finalPastorContent.replace(/\s*아멘\.?\s*$/, "").trim();
+                        }
+                    }
+                } catch (err) {
+                    console.error("Auto-column generation failed:", err);
+                }
+            }
+
             // 권한 검증용 Payload 구성
             const fullPayload = {
                 ...churchSettings,
                 ...settingsForm,
+                pastor_column_title: finalPastorTitle,
+                pastor_column_content: finalPastorContent,
                 church_id: finalChurchId,
                 requester_id: (user as any)?.id,
                 requester_email: (user as any)?.email
@@ -2004,6 +2061,7 @@ export default function App() {
 2. 구조: 말씀 묵상 - 삶의 적용 - 따뜻한 격려와 축복의 순서로 구성하세요.
 3. 말투: 성도를 진심으로 아끼는 마음이 담긴 자애롭고 은혜로운 목소리(존댓말)를 사용하세요.
 4. 내용: 단순히 말씀을 설명하기보다, 오늘을 살아가는 성도들의 삶에 실제적인 힘이 되는 조언을 포함하세요.
+5. 주의사항: 칼럼 형식이므로 글의 마지막에 '아멘'을 사용하지 말고 담백하고 우아하게 마무리하세요.
 
 반드시 아래 형식을 엄격히 지켜서 출력하세요:
 제목: (강렬하고 은혜로운 제목)
@@ -2041,6 +2099,9 @@ export default function App() {
             if (aiResponse.includes('제목:') && !aiResponse.includes('내용:')) {
                 newContent = aiResponse.split('제목:')[1].split('\n').slice(1).join('\n').trim();
             }
+
+            // ✅ 종결어 '아멘' 제거 (사용자 요청: 칼럼에서는 보통 쓰지 않음)
+            newContent = newContent.replace(/\s*아멘\.?\s*$/, "").trim();
 
             // ✅ 현재 settingsForm을 기반으로 저장 (사용자가 다른 설정을 바꿨을 수 있으므로)
             const updatedPayload = {
