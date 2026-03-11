@@ -8790,6 +8790,63 @@ export default function App() {
                                                 </div>
                                             )}
                                         </div>
+
+                                        {/* (3) 로그인 활동 & 추이 */}
+                                        <div style={{ background: 'white', padding: '24px', borderRadius: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #EEE' }}>
+                                            <div style={{ fontSize: '15px', fontWeight: 900, color: '#333', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <span style={{ fontSize: '20px' }}>🔑</span> 로그인 활동 및 추이
+                                            </div>
+
+                                            {!stats?.loginStats ? (
+                                                <div style={{ padding: '40px 20px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
+                                                    로그인 데이터를 불러오는 중입니다...
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+                                                    {/* 로그인 추이 차트 */}
+                                                    <div>
+                                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '15px' }}>📈 최근 14일 접속 추이</div>
+                                                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '100px', padding: '0 5px', marginBottom: '10px' }}>
+                                                            {stats.loginStats.trends.map((t: any, idx: number) => {
+                                                                const maxCount = Math.max(...stats.loginStats.trends.map((d: any) => d.count), 1);
+                                                                const barHeight = (t.count / maxCount) * 80;
+                                                                const isToday = t.date === new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
+                                                                
+                                                                return (
+                                                                    <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', height: '100%' }}>
+                                                                        <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'flex-end' }}>
+                                                                            <div style={{ width: '100%', height: `${barHeight}%`, background: isToday ? '#42A5F5' : '#E0E0E0', borderRadius: '4px 4px 0 0', position: 'relative', transition: 'height 0.5s ease-out' }}>
+                                                                                {t.count > 0 && <div style={{ position: 'absolute', top: '-15px', width: '100%', textAlign: 'center', fontSize: '9px', fontWeight: 800, color: isToday ? '#42A5F5' : '#666' }}>{t.count}</div>}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div style={{ fontSize: '8px', color: isToday ? '#42A5F5' : '#AAA', whiteSpace: 'nowrap', transform: 'scale(0.8)', fontWeight: isToday ? 800 : 400 }}>
+                                                                            {t.date.split('-')[2]}일
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 열성 활동 유저 */}
+                                                    <div>
+                                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '12px' }}>🔥 이번 달 다수 접속 성도 (TOP 10)</div>
+                                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                                                            {stats.loginStats.topUsers.length > 0 ? (
+                                                                stats.loginStats.topUsers.map((u: any, i: number) => (
+                                                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#F8F9FA', borderRadius: '12px', border: '1px solid #F0F0F0' }}>
+                                                                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i + 1}. {u.name}</div>
+                                                                        <div style={{ fontSize: '11px', fontWeight: 800, color: '#42A5F5' }}>{u.count}회</div>
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                <div style={{ gridColumn: 'span 2', fontSize: '12px', color: '#999', textAlign: 'center', padding: '10px' }}>기록이 없습니다.</div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 ) : adminTab === 'admins' ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>

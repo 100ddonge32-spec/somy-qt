@@ -150,7 +150,46 @@ export async function GET(req: NextRequest) {
             }
         });
 
-        // 4. 랭킹 생성 및 정렬
+        // 4. 로그인 활동 통계 추가
+        const { data: loginLogs, error: loginError } = await supabaseAdmin
+            .from('activity_logs')
+            .select('user_name, created_at')
+            .eq('activity_type', 'LOGIN')
+            .in('church_id', cids)
+            .gte('created_at', firstOfMonth)
+            .order('created_at', { ascending: true });
+
+        if (loginError) console.error("[Stats API] Login logs fetch error:", loginError);
+
+        const loginTrends: Record<string, number> = {};
+        const loginUserCounts: Record<string, number> = {};
+
+        (loginLogs || []).forEach(log => {
+            const date = log.created_at.split('T')[0];
+            loginTrends[date] = (loginTrends[date] || 0) + 1;
+            
+            const name = (log.user_name || '익명').trim();
+            loginUserCounts[name] = (loginUserCounts[name] || 0) + 1;
+        });
+
+        // 결과 정렬 및 포맷팅 (최근 14일)
+        const last14Days = Array.from({ length: 14 }, (_, i) => {
+            const d = new Date(Date.now() + 9 * 60 * 60 * 1000);
+            d.setDate(d.getDate() - (13 - i));
+            return d.toISOString().split('T')[0];
+        });
+
+        const formattedTrends = last14Days.map(date => ({
+            date,
+            count: loginTrends[date] || 0
+        }));
+
+        const topLoginUsers = Object.entries(loginUserCounts)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 10);
+
+        // 5. 랭킹 생성 및 정렬
         const ranking = Object.values(userStats)
             .map(u => {
                 // 오늘(3/11)까지의 기록은 baseCount에 이미 포함되어 있다고 가정
@@ -178,16 +217,21 @@ export async function GET(req: NextRequest) {
                 members: todayMembers,
             },
             ranking,
-            totalCompletions: ranking.reduce((acc, cur) => acc + cur.count, 0),
+            totalCompletions: ranking.reduce((acc: number, cur: any) => acc + cur.count, 0),
+            loginStats: {
+                trends: formattedTrends,
+                topUsers: topLoginUsers
+            },
             _debug: {
                 koreaTime: today,
                 completionsCount: allCompletions.length,
                 qtPostsCount: qtPosts.length,
-                uniqueUsers: Object.keys(userStats).length
+                uniqueUsers: Object.keys(userStats).length,
+                loginLogsCount: (loginLogs || []).length
             }
         };
 
-        console.log(`[Stats API] Ranking updated. Excluded: ${EXCLUDED_NAMES.join(', ')}`);
+        console.log(`[Stats API] Ranking and login stats updated.`);
         return NextResponse.json(result);
 
     } catch (err: any) {
