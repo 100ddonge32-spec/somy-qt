@@ -53,72 +53,124 @@ export async function GET(req: NextRequest) {
 
         console.log(`[Stats API] CIDs: ${cids}, Month Start: ${firstOfMonth}`);
 
-        // 1. 해당 교회의 성도 목록 먼저 가져오기
-        const { data: profiles, error: pError } = await supabaseAdmin
-            .from('profiles')
-            .select('id')
-            .in('church_id', cids);
-
-        if (pError) throw pError;
-
-        const userIds = (profiles || []).map(p => p.id);
-        if (userIds.length === 0) {
-            console.log(`[Stats API] No profiles found for church IDs: ${cids}`);
-            return NextResponse.json(fallbackData);
-        }
-
-        // 2. 가용 성도들의 묵상 데이터 가져오기 (인덱싱 성능을 위해 .in() 사용)
+        // 1. 큐티 완료 기록 가져오기 (공식 기록 - 필터 없이 3월 데이터 전체 조회)
         const { data: completions, error: dbError } = await supabaseAdmin
             .from('qt_completions')
-            .select('user_id, user_name, avatar_url, completed_date')
-            .in('user_id', userIds)
+            .select('user_name, avatar_url, completed_date')
             .gte('completed_date', firstOfMonth);
 
-        if (dbError) throw dbError;
+        if (dbError) console.error("[Stats API] Completions fetch error:", dbError);
+
+        // 2. 은혜나눔 게시판의 '묵상나눔' 기록 가져오기
+        const { data: posts, error: postError } = await supabaseAdmin
+            .from('posts')
+            .select('user_name, avatar_url, created_at, is_qt')
+            .gte('created_at', firstOfMonth);
+
+        if (postError) console.error("[Stats API] Posts fetch error:", postError);
+
+        // 필터링: [📖 묵상나눔] 배지가 달린 글만 추출
+        const qtPosts = (posts || []).filter(p => 
+            (p.is_qt === true || p.is_qt === 'true' || p.is_qt === 1 || p.is_qt === '1')
+        );
 
         const allCompletions = completions || [];
 
-        // 2. 가공 로직
+        // --- 3월 수동 복구 데이터 기점 (2026-03-11 기준) ---
+        const MARCH_BASE: Record<string, number> = {
+            '강혜진': 7,
+            '이미경': 6,
+            '백동희': 6,
+            '최말례': 4,
+            '김은영': 4,
+            '장경하': 3,
+            '박영희': 2,
+            '최성은': 2
+        };
+
+        // 제외할 명단
+        const EXCLUDED_NAMES = ['최성희', '고승삼', '한결'];
+
+        // 3. 가공 로직 (성함 기반 통합)
         const todayMembers: any[] = [];
-        const userStats: Record<string, { name: string; avatar: string | null; dates: Set<string>; id: string }> = {};
+        const userStats: Record<string, { name: string; avatar: string | null; dates: Set<string>; baseCount: number }> = {};
 
+        // (1) 큐티 완료 기록 합산
         allCompletions.forEach(comp => {
-            if (!comp.user_id) return;
-
-            const dateStr = comp.completed_date;
-            const statKey = comp.user_id; // ID를 키로 사용하여 정확하게 구분
-
-            if (!userStats[statKey]) {
-                userStats[statKey] = {
-                    id: comp.user_id,
-                    name: comp.user_name || '성도',
-                    avatar: comp.avatar_url,
-                    dates: new Set<string>()
+            const nameKey = (comp.user_name || '익명성도').trim();
+            if (nameKey === '익명성도' || EXCLUDED_NAMES.includes(nameKey)) return;
+            
+            if (!userStats[nameKey]) {
+                userStats[nameKey] = { 
+                    name: nameKey, 
+                    avatar: comp.avatar_url, 
+                    dates: new Set<string>(), 
+                    baseCount: MARCH_BASE[nameKey] || 0 
                 };
             }
-            userStats[statKey].dates.add(dateStr);
+            userStats[nameKey].dates.add(comp.completed_date);
+            if (comp.avatar_url) userStats[nameKey].avatar = comp.avatar_url;
 
-            // 오늘 참여자 명단 (중복 방지)
-            if (dateStr === today) {
-                if (!todayMembers.find(m => m.user_id === comp.user_id)) {
-                    todayMembers.push({
-                        user_id: comp.user_id,
-                        user_name: comp.user_name,
-                        avatar_url: comp.avatar_url
-                    });
+            if (comp.completed_date === today) {
+                if (!todayMembers.find(m => m.user_name === nameKey)) {
+                    todayMembers.push({ user_name: nameKey, avatar_url: comp.avatar_url });
                 }
             }
         });
 
-        // 3. 랭킹 생성 (참여 일수 기준)
+        // (2) 게시판 묵상나눔 기록 합산
+        qtPosts.forEach(post => {
+            const nameKey = (post.user_name || '익명성도').trim();
+            if (nameKey === '익명성도' || EXCLUDED_NAMES.includes(nameKey)) return;
+            
+            const dateStr = post.created_at.split('T')[0];
+
+            if (!userStats[nameKey]) {
+                userStats[nameKey] = { 
+                    name: nameKey, 
+                    avatar: post.avatar_url, 
+                    dates: new Set<string>(), 
+                    baseCount: MARCH_BASE[nameKey] || 0 
+                };
+            }
+            userStats[nameKey].dates.add(dateStr);
+            if (post.avatar_url) userStats[nameKey].avatar = post.avatar_url;
+
+            if (dateStr === today) {
+                if (!todayMembers.find(m => m.user_name === nameKey)) {
+                    todayMembers.push({ user_name: nameKey, avatar_url: post.avatar_url });
+                }
+            }
+        });
+
+        // MARCH_BASE에만 있고 DB에 없는 성도 추가
+        Object.entries(MARCH_BASE).forEach(([name, count]) => {
+            if (!userStats[name]) {
+                userStats[name] = { name, avatar: null, dates: new Set<string>(), baseCount: count };
+            }
+        });
+
+        // 4. 랭킹 생성 및 정렬
         const ranking = Object.values(userStats)
-            .map(u => ({
-                name: u.name,
-                avatar: u.avatar,
-                count: u.dates.size
-            }))
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 10);
+            .map(u => {
+                // 오늘(3/11)까지의 기록은 baseCount에 이미 포함되어 있다고 가정
+                // 따라서 baseCount가 있는 성도는 3/12 이후의 기록만 추가로 더함
+                const newDatesCount = Array.from(u.dates).filter(d => {
+                    if (u.baseCount > 0) return d > '2026-03-11';
+                    return true;
+                }).length;
+
+                return {
+                    name: u.name,
+                    avatar: u.avatar,
+                    count: u.baseCount + newDatesCount
+                };
+            })
+            .sort((a, b) => {
+                if (b.count !== a.count) return b.count - a.count;
+                return a.name.localeCompare(b.name);
+            })
+            .slice(0, 20);
 
         const result = {
             today: {
@@ -129,11 +181,13 @@ export async function GET(req: NextRequest) {
             totalCompletions: ranking.reduce((acc, cur) => acc + cur.count, 0),
             _debug: {
                 koreaTime: today,
-                recordCount: allCompletions.length
+                completionsCount: allCompletions.length,
+                qtPostsCount: qtPosts.length,
+                uniqueUsers: Object.keys(userStats).length
             }
         };
 
-        console.log(`[Stats API] Found ${allCompletions.length} completion records. Unique: ${ranking.length}`);
+        console.log(`[Stats API] Ranking updated. Excluded: ${EXCLUDED_NAMES.join(', ')}`);
         return NextResponse.json(result);
 
     } catch (err: any) {
