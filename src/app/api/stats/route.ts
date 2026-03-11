@@ -19,11 +19,19 @@ function getKoreaDateString(): string {
 }
 
 // 교회 ID 표준화 함수 (한국어 이름이나 공백 등 처리)
-function normalizeChurchId(id: string | null): string {
-    if (!id || id === 'undefined' || id === 'null' || id.trim() === '') return 'jesus-in';
+function getChurchIds(id: string | null): string[] {
+    if (!id || id === 'undefined' || id === 'null' || id.trim() === '') return ['jesus-in', '예수인교회'];
     let nid = id.trim();
-    if (nid === '예수인교회' || nid === decodeURIComponent('예수인교회')) return 'jesus-in';
-    return nid;
+    if (nid === '예수인교회' || nid === decodeURIComponent('예수인교회') || nid === 'jesus-in') {
+        return ['jesus-in', '예수인교회'];
+    }
+    return [nid];
+}
+
+// 단일 ID 반환용 (저장/삭제 시 사용)
+function normalizeChurchId(id: string | null): string {
+    const ids = getChurchIds(id);
+    return ids[0]; // 기본값 'jesus-in' 반환
 }
 
 // 초기화 데이터 (에러 시 반환용)
@@ -38,22 +46,23 @@ export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const rawChurchId = searchParams.get('church_id');
-        const cid = normalizeChurchId(rawChurchId);
+        const cids = getChurchIds(rawChurchId);
         const today = getKoreaDateString();
         const firstOfMonth = today.slice(0, 7) + '-01';
 
-        console.log(`[Stats API] CID: ${cid}, Month Start: ${firstOfMonth}`);
+        console.log(`[Stats API] CIDs: ${cids}, Month Start: ${firstOfMonth}`);
 
-        // 1. 해당 교회의 성도 목록 먼저 가져오기 (qt_completions에 church_id 컬럼이 없으므로 profiles와 조합)
+        // 1. 해당 교회의 성도 목록 먼저 가져오기
         const { data: profiles, error: pError } = await supabaseAdmin
             .from('profiles')
             .select('id')
-            .eq('church_id', cid);
+            .in('church_id', cids);
 
         if (pError) throw pError;
 
         const userIds = (profiles || []).map(p => p.id);
         if (userIds.length === 0) {
+            console.log(`[Stats API] No profiles found for church IDs: ${cids}`);
             return NextResponse.json(fallbackData);
         }
 
