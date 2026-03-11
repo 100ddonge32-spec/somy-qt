@@ -121,26 +121,28 @@ export async function PATCH(req: NextRequest) {
         const body = await req.json();
         const { id, reply, user_reply, content, admin_name, user_name, overwrite } = body;
 
-        // 기존 데이터 가져오기 (추가 답글인 경우를 위해)
+        // 기존 데이터 가져오기 (추가 답글인 경우를 위해) - user_id, church_id 포함해서 가져옴
         const { data: existing, error: fetchError } = await supabaseAdmin
             .from('counseling_requests')
-            .select('content, reply, user_reply')
+            .select('*')
             .eq('id', id)
             .single();
 
-        if (fetchError) throw fetchError;
+        if (fetchError) {
+            console.error("[Counseling PATCH] Fetch Error:", fetchError);
+            throw fetchError;
+        }
 
         const updateData: any = {};
-        if (content !== undefined) {
-            updateData.content = content;
-        }
+        if (content !== undefined) updateData.content = content;
 
         if (reply !== undefined) {
             if (overwrite) {
                 updateData.reply = reply;
             } else {
                 // 목사님 답변이 이미 있으면 개행 후 추가
-                updateData.reply = existing.reply ? `${existing.reply}\n\n[추가 답변]\n${reply}` : reply;
+                const prevReply = (existing.reply || "").toString().trim();
+                updateData.reply = prevReply ? `${prevReply}\n\n[추가 답변]\n${reply}` : reply;
             }
         }
         if (user_reply !== undefined) {

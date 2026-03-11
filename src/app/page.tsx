@@ -344,6 +344,7 @@ const StatsView = ({ memberList }: { memberList: any[] }) => {
 };
 
 export default function App() {
+    const [isStatsSaved, setIsStatsSaved] = useState(false); // ✅ 통계 중복 기록 방지 플래그 (최상위)
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [view, setView] = useState<View>("home");
     const [memberList, setMemberList] = useState<any[]>([]); // ✅ 성도 목록
@@ -1618,6 +1619,7 @@ export default function App() {
     const fetchQt = async () => {
         setIsQtLoading(true);
         setIsHistoryMode(false);
+        setIsStatsSaved(false); // ✅ 새 묵상 시작 시 기록 플래그 초기화
         try {
             const r = await fetch(`/api/qt?church_id=${churchId}`, { cache: 'no-store' });
             const { qt } = await r.json();
@@ -3184,7 +3186,7 @@ export default function App() {
         if (view === "qt") {
             const handleShareGrace = async () => {
                 const recordQtStats = async () => {
-                    if (isHistoryMode) return;
+                    if (isHistoryMode || isStatsSaved) return; // ✅ 이미 기록되었거나 히스토리 모드면 중단
                     try {
                         const effectiveChurchId = churchId || (typeof window !== 'undefined' ? localStorage.getItem('church_id') : null) || 'jesus-in';
                         console.log(`📊 Attempting to record QT stats for: ${effectiveChurchId}`);
@@ -3202,11 +3204,13 @@ export default function App() {
 
                         if (statsPostRes.ok) {
                             console.log("📊 Meditation record saved successfully");
+                            setIsStatsSaved(true); // ✅ 기록 완료 표시
                             // 갱신 전 0.5초 대기 (서버 반영 여유)
                             await new Promise(r => setTimeout(r, 500));
-                            const statsRes = await fetch(`/api/stats?church_id=${effectiveChurchId}&t=${Date.now()}`, { cache: 'no-store' });
-                            const statsData = await statsRes.json();
-                            if (statsData) setStats(statsData);
+                            // 트래픽 절약을 위해 꼭 필요한 경우에만 스태츠 다시 불러오기
+                            // const statsRes = await fetch(`/api/stats?church_id=${effectiveChurchId}&t=${Date.now()}`, { cache: 'no-store' });
+                            // const statsData = await statsRes.json();
+                            // if (statsData) setStats(statsData);
                             if (user?.id) fetchHistory(user.id);
                         } else {
                             const err = await statsPostRes.json().catch(() => ({}));
@@ -3543,7 +3547,7 @@ export default function App() {
                                 }
 
                                 // 큐티 완료 기록 (중복 호출되어도 upsert 처리됨)
-                                if (user) {
+                                if (user && !isStatsSaved) {
                                     try {
                                         const effectiveChurchId = churchId || (typeof window !== 'undefined' ? localStorage.getItem('church_id') : null) || 'jesus-in';
                                         console.log(`📊 Finishing QT: Recording stats for ${effectiveChurchId}`);
@@ -3562,11 +3566,9 @@ export default function App() {
 
                                         if (res.ok) {
                                             console.log("📊 Final record saved");
+                                            setIsStatsSaved(true);
                                             alert("오늘의 묵상이 성공적으로 기록되었습니다! 📜✨");
                                             await new Promise(r => setTimeout(r, 500));
-                                            const statsRes = await fetch(`/api/stats?church_id=${effectiveChurchId}&t=${Date.now()}`, { cache: 'no-store' });
-                                            const statsData = await statsRes.json();
-                                            if (statsData) setStats(statsData);
                                             if (user?.id) fetchHistory(user.id);
                                         } else {
                                             console.error("📊 Final save failed");
@@ -6175,7 +6177,12 @@ export default function App() {
                                                         if (r.ok) {
                                                             const updated = await r.json();
                                                             setCounselingRequests(counselingRequests.map(c => c.id === req.id ? updated : c));
+                                                            // ✅ 입력창 초기화
+                                                            setCounselingReplyInput(prev => ({ ...prev, [req.id]: '' }));
                                                             alert("답변이 전송되었습니다.");
+                                                        } else {
+                                                            const errorData = await r.json().catch(() => ({}));
+                                                            alert(`답변 전송에 실패했습니다: ${errorData.error || '알 수 없는 오류'}`);
                                                         }
                                                     } catch (e) {
                                                     } finally {

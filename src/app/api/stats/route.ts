@@ -34,7 +34,7 @@ const fallbackData = {
 };
 
 export async function GET(req: NextRequest) {
-    console.log("[Stats API] === GET Request Started (Automated via Community Board) ===");
+    console.log("[Stats API] === GET Request Started (Optimized) ===");
     try {
         const { searchParams } = new URL(req.url);
         const rawChurchId = searchParams.get('church_id');
@@ -44,51 +44,46 @@ export async function GET(req: NextRequest) {
 
         console.log(`[Stats API] CID: ${cid}, Month Start: ${firstOfMonth}`);
 
-        // 1. 게시판에서 '묵상나눔(is_qt: true)' 게시글들만 가져오기
-        // 이번 달 전체 데이터를 가져와서 서버에서 오늘 참여자와 참여 일수를 계산합니다.
-        const { data: posts, error: dbError } = await supabaseAdmin
-            .from('community_posts')
-            .select('user_id, user_name, avatar_url, created_at, is_qt')
+        // 1. qt_completions에서 데이터 가져오기 (묵상 완료의 원천 데이터)
+        // community_posts 대신 qt_completions를 사용하여 실제 묵상 완료 통계를 정확히 산출합니다.
+        // 이 방식이 Vercel 트래픽과 DB 부하를 줄이는 데 훨씬 효율적입니다.
+        const { data: completions, error: dbError } = await supabaseAdmin
+            .from('qt_completions')
+            .select('user_id, user_name, avatar_url, completed_date')
             .eq('church_id', cid)
-            .eq('is_qt', true)
-            .gte('created_at', firstOfMonth + 'T00:00:00Z');
+            .gte('completed_date', firstOfMonth);
 
         if (dbError) throw dbError;
 
-        const allPosts = posts || [];
+        const allCompletions = completions || [];
 
         // 2. 가공 로직
         const todayMembers: any[] = [];
-        const userStats: Record<string, { name: string; avatar: string | null; dates: Set<string> }> = {};
-        let totalCompletions = 0;
+        const userStats: Record<string, { name: string; avatar: string | null; dates: Set<string>; id: string }> = {};
 
-        allPosts.forEach(post => {
-            if (!post.user_id) return;
+        allCompletions.forEach(comp => {
+            if (!comp.user_id) return;
 
-            const postDateFull = new Date(post.created_at);
-            // KST 변환 (UTC + 9)
-            const kstDate = new Date(postDateFull.getTime() + (9 * 60 * 60 * 1000));
-            const dateStr = kstDate.toISOString().split('T')[0];
+            const dateStr = comp.completed_date;
+            const statKey = comp.user_id; // ID를 키로 사용하여 정확하게 구분
 
-            // 랭킹용 일수 집계 (날짜별 동일 인물 체크: 이름을 키로 사용해 중복 계정 자연 통합)
-            const statKey = post.user_name || post.user_id;
             if (!userStats[statKey]) {
                 userStats[statKey] = {
-                    name: post.user_name || '성도',
-                    avatar: post.avatar_url,
+                    id: comp.user_id,
+                    name: comp.user_name || '성도',
+                    avatar: comp.avatar_url,
                     dates: new Set<string>()
                 };
             }
             userStats[statKey].dates.add(dateStr);
-            totalCompletions++; // 이건 전체 게시글 수
 
             // 오늘 참여자 명단 (중복 방지)
             if (dateStr === today) {
-                if (!todayMembers.find(m => (m.user_name || m.user_id) === statKey)) {
+                if (!todayMembers.find(m => m.user_id === comp.user_id)) {
                     todayMembers.push({
-                        user_id: post.user_id,
-                        user_name: post.user_name,
-                        avatar_url: post.avatar_url
+                        user_id: comp.user_id,
+                        user_name: comp.user_name,
+                        avatar_url: comp.avatar_url
                     });
                 }
             }
@@ -99,7 +94,7 @@ export async function GET(req: NextRequest) {
             .map(u => ({
                 name: u.name,
                 avatar: u.avatar,
-                count: u.dates.size // '며칠' 참여했는지가 점수가 됩니다.
+                count: u.dates.size
             }))
             .sort((a, b) => b.count - a.count)
             .slice(0, 10);
@@ -110,14 +105,14 @@ export async function GET(req: NextRequest) {
                 members: todayMembers,
             },
             ranking,
-            totalCompletions: ranking.reduce((acc, cur) => acc + cur.count, 0), // 전체 참여 일수 합계
+            totalCompletions: ranking.reduce((acc, cur) => acc + cur.count, 0),
             _debug: {
                 koreaTime: today,
-                postCount: allPosts.length
+                recordCount: allCompletions.length
             }
         };
 
-        console.log(`[Stats API] Found ${allPosts.length} QT posts. Unique participants: ${ranking.length}`);
+        console.log(`[Stats API] Found ${allCompletions.length} completion records. Unique: ${ranking.length}`);
         return NextResponse.json(result);
 
     } catch (err: any) {
