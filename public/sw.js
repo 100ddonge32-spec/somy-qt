@@ -23,6 +23,7 @@ self.addEventListener('push', function (event) {
             data = { title: '알림', body: event.data.text() };
         }
 
+        // Service Worker Version: 2.1 (VAPID Key Update)
         const options = {
             body: data.body || '',
             icon: '/somy.png',

@@ -1,8 +1,8 @@
 // [Build Trigger] VAPID Key synchronization v2
 import webpush from 'web-push';
 
-const publicKey = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLzRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558';
-const privateKey = '794ULAs705fT41boCcyNWYSlvACNRUVTnYXlnWcmKyk';
+const publicKey = 'BCb9VfYqqCOBO2MhVKC65TP2eAQw_bJoFRl4JgqU64ze2AImucB1H6GV1m78F7BuxPaGGRvETl1ACMdkVwTxIKQ';
+const privateKey = 'bh-AhDK0mUyEyR-kQUiLrfdJYIp2SFDLAJUAjrUIS2Q';
 
 function initWebPush() {
     try {

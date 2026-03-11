@@ -908,7 +908,7 @@ export default function App() {
                 return;
             }
 
-            const VAPID_KEY = 'BE2FplgPf9AbVOwlpoOgFrSPjAMRfuJcxMIQBn3Hm_HoY5oLzRk13Hq99oVt7dG5FgQd3Z5W1Xoe_6-KaeuK558';
+            const VAPID_KEY = 'BCb9VfYqqCOBO2MhVKC65TP2eAQw_bJoFRl4JgqU64ze2AImucB1H6GV1m78F7BuxPaGGRvETl1ACMdkVwTxIKQ';
 
             const performSubscribe = async (retryCount = 0): Promise<void> => {
                 // 브라우저 안정화 대기
@@ -1620,6 +1620,7 @@ export default function App() {
         setIsQtLoading(true);
         setIsHistoryMode(false);
         setIsStatsSaved(false); // ✅ 새 묵상 시작 시 기록 플래그 초기화
+        setAnswers(["", "", ""]); // ✅ 묵상 기록(답변) 초기화
         try {
             const r = await fetch(`/api/qt?church_id=${churchId}`, { cache: 'no-store' });
             const { qt } = await r.json();
@@ -3190,7 +3191,7 @@ export default function App() {
                     try {
                         const effectiveChurchId = churchId || (typeof window !== 'undefined' ? localStorage.getItem('church_id') : null) || 'jesus-in';
                         console.log(`📊 Attempting to record QT stats for: ${effectiveChurchId}`);
-                        const statsPostRes = await fetch('/api/stats', {
+                        const res = await fetch('/api/stats', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -3198,22 +3199,16 @@ export default function App() {
                                 user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '성도',
                                 avatar_url: profileAvatar || user.user_metadata?.avatar_url || null,
                                 church_id: effectiveChurchId,
-                                answers: answers || []
+                                answers: answers || ["", "", ""] // ✅ 답변이 비어있어도 최소 구조 유지
                             }),
                         });
 
-                        if (statsPostRes.ok) {
+                        if (res.ok) {
                             console.log("📊 Meditation record saved successfully");
-                            setIsStatsSaved(true); // ✅ 기록 완료 표시
-                            // 갱신 전 0.5초 대기 (서버 반영 여유)
-                            await new Promise(r => setTimeout(r, 500));
-                            // 트래픽 절약을 위해 꼭 필요한 경우에만 스태츠 다시 불러오기
-                            // const statsRes = await fetch(`/api/stats?church_id=${effectiveChurchId}&t=${Date.now()}`, { cache: 'no-store' });
-                            // const statsData = await statsRes.json();
-                            // if (statsData) setStats(statsData);
-                            if (user?.id) fetchHistory(user.id);
+                            setIsStatsSaved(true); // ✅ 중간 기록 성공 표시
+                            if (user?.id) fetchHistory(user.id); // 히스토리 즉시 동기화
                         } else {
-                            const err = await statsPostRes.json().catch(() => ({}));
+                            const err = await res.json().catch(() => ({}));
                             console.error("📊 Saving failed:", err);
                         }
                     } catch (e) {
@@ -3546,8 +3541,8 @@ export default function App() {
                                     return;
                                 }
 
-                                // 큐티 완료 기록 (중복 호출되어도 upsert 처리됨)
-                                if (user && !isStatsSaved) {
+                                // 큐티 완료 기록 (최종 답변 상태 동기화를 위해 항상 수행)
+                                if (user) {
                                     try {
                                         const effectiveChurchId = churchId || (typeof window !== 'undefined' ? localStorage.getItem('church_id') : null) || 'jesus-in';
                                         console.log(`📊 Finishing QT: Recording stats for ${effectiveChurchId}`);

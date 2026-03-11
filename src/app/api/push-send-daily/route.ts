@@ -76,9 +76,9 @@ export async function GET(req: NextRequest) {
                 } catch (err: any) {
                     const statusCode = err.statusCode || (err.response && err.response.statusCode);
 
-                    // 410 (Gone) or 404 (Not Found) means the subscription has expired or is no longer valid
-                    if (statusCode === 410 || statusCode === 404) {
-                        console.log(`[Push] Deleting expired subscription for user: ${sub.user_id}`);
+                    // 410 (Gone), 404 (Not Found), or 400 (Bad Request - typically VAPID mismatch)
+                    if (statusCode === 410 || statusCode === 404 || statusCode === 400) {
+                        console.log(`[Push] Deleting invalid/expired subscription for user: ${sub.user_id} (Status: ${statusCode})`);
                         await supabaseAdmin
                             .from('push_subscriptions')
                             .delete()

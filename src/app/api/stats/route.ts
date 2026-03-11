@@ -44,13 +44,24 @@ export async function GET(req: NextRequest) {
 
         console.log(`[Stats API] CID: ${cid}, Month Start: ${firstOfMonth}`);
 
-        // 1. qt_completions에서 데이터 가져오기 (묵상 완료의 원천 데이터)
-        // community_posts 대신 qt_completions를 사용하여 실제 묵상 완료 통계를 정확히 산출합니다.
-        // 이 방식이 Vercel 트래픽과 DB 부하를 줄이는 데 훨씬 효율적입니다.
+        // 1. 해당 교회의 성도 목록 먼저 가져오기 (qt_completions에 church_id 컬럼이 없으므로 profiles와 조합)
+        const { data: profiles, error: pError } = await supabaseAdmin
+            .from('profiles')
+            .select('id')
+            .eq('church_id', cid);
+
+        if (pError) throw pError;
+
+        const userIds = (profiles || []).map(p => p.id);
+        if (userIds.length === 0) {
+            return NextResponse.json(fallbackData);
+        }
+
+        // 2. 가용 성도들의 묵상 데이터 가져오기 (인덱싱 성능을 위해 .in() 사용)
         const { data: completions, error: dbError } = await supabaseAdmin
             .from('qt_completions')
             .select('user_id, user_name, avatar_url, completed_date')
-            .eq('church_id', cid)
+            .in('user_id', userIds)
             .gte('completed_date', firstOfMonth);
 
         if (dbError) throw dbError;
@@ -136,7 +147,7 @@ export async function POST(req: NextRequest) {
         const today = getKoreaDateString();
         console.log(`[Stats API] Saving Stats: User=${user_name}(${user_id}), Date=${today}, Church=${church_id}`);
 
-        // [중요] Upsert 시도
+        // [중요] Upsert 시도 (church_id 컬럼 제외 - 부재함)
         const { data, error } = await supabaseAdmin
             .from('qt_completions')
             .upsert(
@@ -145,7 +156,6 @@ export async function POST(req: NextRequest) {
                     user_name: user_name || '성도',
                     avatar_url,
                     completed_date: today,
-                    church_id: church_id,
                     answers: answers || [] // 큐티 답변 저장 복구 ✅
                 },
                 { onConflict: 'user_id,completed_date' }
@@ -153,15 +163,14 @@ export async function POST(req: NextRequest) {
 
         if (error) {
             console.error("[Stats API] Upsert Error:", error);
-            // upsert가 onConflict 문제로 실패할 경우를 대비해 일반 insert 시도 (동일 날짜 중복 허용하되 집계에서 처리)
+            // upsert가 onConflict 문제로 실패할 경우를 대비해 일반 insert 시도
             console.log("[Stats API] Retrying with plain insert...");
             const { error: insertError } = await supabaseAdmin.from('qt_completions').insert({
                 user_id,
                 user_name: user_name || '성도',
                 avatar_url,
                 completed_date: today,
-                church_id: church_id,
-                answers: answers || [] // 큐티 답변 저장 복구 ✅
+                answers: answers || []
             });
             if (insertError) throw insertError;
         }
@@ -185,14 +194,19 @@ export async function DELETE(req: NextRequest) {
             console.error("[Stats API] DELETE Failed: Church ID is required for selective reset");
             return NextResponse.json({ error: 'Church ID is required for selective reset' }, { status: 400 });
         }
-        console.log(`[Stats API] Deleting stats for Church: ${churchId}`);
+        console.log(`[Stats API] Deleting stats (All users - church filter unavailable in this table)`);
 
-        const { error } = await supabaseAdmin
-            .from('qt_completions')
-            .delete()
-            .eq('church_id', churchId);
+        // church_id 컬럼이 없으므로 해당 교회의 모든 성도의 데이터를 지우려면 profiles와 조인해야 함
+        const { data: profiles } = await supabaseAdmin.from('profiles').select('id').eq('church_id', churchId);
+        const userIds = (profiles || []).map(p => p.id);
 
-        if (error) throw error;
+        if (userIds.length > 0) {
+            const { error } = await supabaseAdmin
+                .from('qt_completions')
+                .delete()
+                .in('user_id', userIds);
+            if (error) throw error;
+        }
         return NextResponse.json({ success: true });
     } catch (err: any) {
         console.error('[Stats API DELETE Error]:', err);
