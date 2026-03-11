@@ -1328,6 +1328,8 @@ export default function App() {
     const [sermonManageForm, setSermonManageForm] = useState({ script: '', summary: '', q1: '', q2: '', q3: '', videoUrl: '', inputType: 'text' as 'text' | 'video' });
     const [aiLoading, setAiLoading] = useState(false);
     const [stats, setStats] = useState<{ today: { count: number; members: { user_name: string; avatar_url: string | null }[] }; ranking: { name: string; avatar: string | null; count: number }[]; totalCompletions: number } | null>(null);
+    const [activityLogs, setActivityLogs] = useState<any[]>([]);
+    const [isActivitiesLoading, setIsActivitiesLoading] = useState(false);
     const [statsError, setStatsError] = useState<string | null>(null);
 
     const [showSettings, setShowSettings] = useState(false);
@@ -1468,7 +1470,7 @@ export default function App() {
         }
     };
     const [settingsSaving, setSettingsSaving] = useState(false);
-    const [adminTab, setAdminTab] = useState<"settings" | "members" | "master" | "stats" | "reset" | "admins" | "community" | "thanksgiving">("settings");
+    const [adminTab, setAdminTab] = useState<"settings" | "members" | "master" | "stats" | "reset" | "admins" | "community" | "thanksgiving" | "activities">("settings");
 
     const [isHistoryMode, setIsHistoryMode] = useState(false);
     const [churchStats, setChurchStats] = useState<any>(null); // ✅ { registered: [], orphans: [] }
@@ -5533,6 +5535,7 @@ export default function App() {
                                 </div>
                             </button>
 
+
                             <button onClick={() => setView('brandGuide')} style={{ padding: '16px 8px', background: 'linear-gradient(135deg, #FFF9C4 0%, #FFF176 100%)', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(212,175,55,0.15)' }}>
                                 <div style={{ width: '40px', height: '40px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>✨</div>
                                 <div style={{ textAlign: 'center' }}>
@@ -7499,7 +7502,7 @@ export default function App() {
                             {/* 고정되는 헤더 영역 */}
                             <div style={{ padding: '28px 28px 15px 28px', flexShrink: 0, borderBottom: '1px solid #F0F0F0', zIndex: 10 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>⚙️ {adminTab === 'settings' ? '교회 설정' : adminTab === 'members' ? '성도 관리' : adminTab === 'community' ? '은혜나눔 관리' : adminTab === 'thanksgiving' ? '감사일기 관리' : adminTab === 'stats' ? '활동 통계' : adminTab === 'admins' ? '권한 관리' : adminTab === 'reset' ? '데이터 초기화' : '슈퍼 관리'}</h2>
+                                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>⚙️ {adminTab === 'settings' ? '교회 설정' : adminTab === 'members' ? '성도 관리' : adminTab === 'community' ? '은혜나눔 관리' : adminTab === 'thanksgiving' ? '감사일기 관리' : adminTab === 'stats' ? '활동 통계' : adminTab === 'admins' ? '권한 관리' : adminTab === 'activities' ? '활동 내역' : adminTab === 'reset' ? '데이터 초기화' : '슈퍼 관리'}</h2>
                                     <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>X</button>
                                 </div>
 
@@ -7526,23 +7529,6 @@ export default function App() {
                                         setIsAdminsLoading(false);
                                     }} style={{ flex: '0 0 auto', padding: '8px 12px', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 600, background: adminTab === 'stats' ? 'white' : 'transparent', boxShadow: adminTab === 'stats' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'stats' ? '#333' : '#777', whiteSpace: 'nowrap' }}>📊 통계</button>
 
-                                    <button onClick={async () => {
-                                        setAdminTab('community');
-                                        try {
-                                            const res = await fetch(`/api/community?church_id=${churchId}`);
-                                            const data = await res.json();
-                                            if (Array.isArray(data)) setCommunityPosts(data);
-                                        } catch (e) { }
-                                    }} style={{ flex: '0 0 auto', padding: '8px 12px', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 600, background: adminTab === 'community' ? 'white' : 'transparent', boxShadow: adminTab === 'community' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'community' ? '#333' : '#777', whiteSpace: 'nowrap' }}>💬 은혜</button>
-
-                                    <button onClick={async () => {
-                                        setAdminTab('thanksgiving');
-                                        try {
-                                            const res = await fetch(`/api/thanksgiving?church_id=${churchId}`);
-                                            const data = await res.json();
-                                            if (Array.isArray(data)) setThanksgivingDiaries(data);
-                                        } catch (e) { }
-                                    }} style={{ flex: '0 0 auto', padding: '8px 12px', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 600, background: adminTab === 'thanksgiving' ? 'white' : 'transparent', boxShadow: adminTab === 'thanksgiving' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'thanksgiving' ? '#333' : '#777', whiteSpace: 'nowrap' }}>📔 감사</button>
                                     {isMainAdmin && (
                                         <button onClick={() => { setAdminTab('admins'); fetchAllAdmins(); }} style={{ flex: '0 0 auto', padding: '8px 12px', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 600, background: adminTab === 'admins' ? 'white' : 'transparent', boxShadow: adminTab === 'admins' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'admins' ? '#333' : '#777', whiteSpace: 'nowrap' }}>🔐 권한</button>
                                     )}
@@ -8666,120 +8652,6 @@ export default function App() {
                                             </div>
                                         </div>
                                     </>
-                                ) : adminTab === 'community' ? (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                        {communityPosts.length === 0 ? (
-                                            <div style={{ textAlign: 'center', padding: '40px', color: '#999', fontSize: '14px' }}>
-                                                아직 작성된 은혜나눔 게시글이 없습니다.
-                                            </div>
-                                        ) : (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                                {communityPosts.map(post => {
-                                                    const likerInfo = getLikerInfo(post.liker_ids || []);
-                                                    return (
-                                                        <div key={post.id} style={{ background: 'white', padding: '16px', borderRadius: '15px', border: '1px solid #E0E0E0', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#F0F0F0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                                                                        {post.avatar_url ? <img src={post.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : '👤'}
-                                                                    </div>
-                                                                    <div>
-                                                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#333' }}>{post.full_name || '익명'}</div>
-                                                                        <div style={{ fontSize: '11px', color: '#999' }}>{new Date(post.created_at).toLocaleString()}</div>
-                                                                    </div>
-                                                                </div>
-                                                                <button
-                                                                    onClick={async () => {
-                                                                        if (window.confirm(`"${post.title}" 게시글을 삭제하시겠습니까?`)) {
-                                                                            const res = await fetch('/api/admin', {
-                                                                                method: 'POST',
-                                                                                headers: { 'Content-Type': 'application/json' },
-                                                                                body: JSON.stringify({ action: 'delete_community_post', post_id: post.id, church_id: churchId, requester_id: user?.id, requester_email: user?.email })
-                                                                            });
-                                                                            if (res.ok) {
-                                                                                setCommunityPosts((prev: any) => prev.filter((p: any) => p.id !== post.id));
-                                                                                alert('게시글이 삭제되었습니다.');
-                                                                            }
-                                                                        }
-                                                                    }}
-                                                                    style={{ background: '#FFF5F5', border: '1px solid #FFE3E3', padding: '6px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', color: '#E03131' }}
-                                                                >
-                                                                    삭제
-                                                                </button>
-                                                            </div>
-                                                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', marginBottom: '8px' }}>{post.title}</div>
-                                                            <div style={{ fontSize: '13px', color: '#555', lineHeight: 1.5, marginBottom: '12px' }}>{post.content}</div>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', fontSize: '12px', color: '#777' }}>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                    ❤️ {likerInfo.count} {likerInfo.text}
-                                                                </div>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                    💬 {post.comment_count || 0}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : adminTab === 'thanksgiving' ? (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                        {thanksgivingDiaries.length === 0 ? (
-                                            <div style={{ textAlign: 'center', padding: '40px', color: '#999', fontSize: '14px' }}>
-                                                아직 작성된 감사일기가 없습니다.
-                                            </div>
-                                        ) : (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                                {thanksgivingDiaries.map(diary => {
-                                                    const likerInfo = getLikerInfo(diary.liker_ids || []);
-                                                    return (
-                                                        <div key={diary.id} style={{ background: 'white', padding: '16px', borderRadius: '15px', border: '1px solid #E0E0E0', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#F0F0F0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                                                                        {diary.avatar_url ? <img src={diary.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : '👤'}
-                                                                    </div>
-                                                                    <div>
-                                                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#333' }}>{diary.full_name || '익명'}</div>
-                                                                        <div style={{ fontSize: '11px', color: '#999' }}>{new Date(diary.created_at).toLocaleString()}</div>
-                                                                    </div>
-                                                                </div>
-                                                                <button
-                                                                    onClick={async () => {
-                                                                        if (window.confirm(`"${diary.title}" 감사일기를 삭제하시겠습니까?`)) {
-                                                                            const res = await fetch('/api/admin', {
-                                                                                method: 'POST',
-                                                                                headers: { 'Content-Type': 'application/json' },
-                                                                                body: JSON.stringify({ action: 'delete_thanksgiving_diary', diary_id: diary.id, church_id: churchId, requester_id: user?.id, requester_email: user?.email })
-                                                                            });
-                                                                            if (res.ok) {
-                                                                                setThanksgivingDiaries((prev: any) => prev.filter((d: any) => d.id !== diary.id));
-                                                                                alert('감사일기가 삭제되었습니다.');
-                                                                            }
-                                                                        }
-                                                                    }}
-                                                                    style={{ background: '#FFF5F5', border: '1px solid #FFE3E3', padding: '6px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', color: '#E03131' }}
-                                                                >
-                                                                    삭제
-                                                                </button>
-                                                            </div>
-                                                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', marginBottom: '8px' }}>{diary.title}</div>
-                                                            <div style={{ fontSize: '13px', color: '#555', lineHeight: 1.5, marginBottom: '12px' }}>{diary.content}</div>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', fontSize: '12px', color: '#777' }}>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                    ❤️ {likerInfo.count} {likerInfo.text}
-                                                                </div>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                    💬 {diary.comment_count || 0}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
                                 ) : adminTab === 'reset' ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                                         <div style={{ padding: '20px', background: '#FFF5F5', borderRadius: '20px', border: '1px solid #FFC9C9' }}>
