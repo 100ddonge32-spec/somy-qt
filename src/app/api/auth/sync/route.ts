@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { logActivity } from '@/lib/logger';
 
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -322,22 +323,26 @@ export async function POST(req: NextRequest) {
             await supabaseAdmin.from('app_admins').update({ user_id: user_id }).eq('id', adminCheckTerm.id);
         }
 
-        if (profileById) {
-            await supabaseAdmin.from('profiles').update(dataToSet).eq('id', user_id);
-            return NextResponse.json({ ...resData, status: 'updated' });
-        } else {
-            const isAnonymous = !email ||
-                email.includes('anonymous.local') ||
-                email.includes('noemail.local') ||
-                email.includes('kakao.somy-qt.local');
-            const hasRealInfo = (rawName && !isSystemGeneratedName && !genericNames.includes(rawName)) || (rawPhone && rawPhone.length > 5);
-            if (isAnonymous && !hasRealInfo) {
-                console.log(`[Sync] Skipping profile creation for generic/anonymous user: ${email}`);
-                return NextResponse.json({ status: 'visitor', is_approved: false, church_id: 'somy-main' });
+            if (profileById) {
+                await supabaseAdmin.from('profiles').update(dataToSet).eq('id', user_id);
+                // 로그인 활동 기록
+                logActivity(user_id, dataToSet.full_name, 'LOGIN', pChurch);
+                return NextResponse.json({ ...resData, status: 'updated' });
+            } else {
+                const isAnonymous = !email ||
+                    email.includes('anonymous.local') ||
+                    email.includes('noemail.local') ||
+                    email.includes('kakao.somy-qt.local');
+                const hasRealInfo = (rawName && !isSystemGeneratedName && !genericNames.includes(rawName)) || (rawPhone && rawPhone.length > 5);
+                if (isAnonymous && !hasRealInfo) {
+                    console.log(`[Sync] Skipping profile creation for generic/anonymous user: ${email}`);
+                    return NextResponse.json({ status: 'visitor', is_approved: false, church_id: 'somy-main' });
+                }
+                await supabaseAdmin.from('profiles').insert([dataToSet]);
+                // 로그인 활동 기록
+                logActivity(user_id, dataToSet.full_name, 'LOGIN', pChurch);
+                return NextResponse.json({ ...resData, status: 'created' });
             }
-            await supabaseAdmin.from('profiles').insert([dataToSet]);
-            return NextResponse.json({ ...resData, status: 'created' });
-        } // closes else
     } // closes try
     catch (err: any) {
         console.error('[Sync Error]', err);

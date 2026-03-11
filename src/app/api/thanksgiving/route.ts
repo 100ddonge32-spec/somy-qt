@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-
+import { logActivity } from '@/lib/logger';
 import webpush from '@/lib/webpush';
 
 export const dynamic = 'force-dynamic';
@@ -65,6 +65,9 @@ export async function POST(req: NextRequest) {
             .single();
 
         if (error) throw error;
+
+        // 활동 기록 남기기
+        logActivity(user_id, user_name, 'THANKS_DIARY', cid, content.slice(0, 50));
 
         // 새 글이 등록되면 모든 성도에게 알림 발송 (단, 본인 제외, 비밀글 아닐 때)
         if (!is_private) {

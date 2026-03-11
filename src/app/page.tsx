@@ -6,7 +6,7 @@ import { getGraceVerse } from '@/lib/navigator-verses';
 import { getTodayCcm, CcmVideo, CCM_LIST } from "@/lib/ccm";
 import * as XLSX from 'xlsx';
 
-type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "adminGuide" | "brandGuide" | "profile" | "memberSearch" | "book" | "pastorColumn";
+type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "adminGuide" | "brandGuide" | "profile" | "memberSearch" | "book" | "pastorColumn" | "gallery";
 
 const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://lfjrfyylsxhvwosdpujv.supabase.co/storage/v1/object/public/church-assets/jesus-in-logo.png";
@@ -464,6 +464,13 @@ export default function App() {
     const [editingCounselingId, setEditingCounselingId] = useState<any>(null);
     const [editingCounselingField, setEditingCounselingField] = useState<string | null>(null);
     const [editCounselingContent, setEditCounselingContent] = useState("");
+
+    // 갤러리 상태
+    const [galleryPosts, setGalleryPosts] = useState<any[]>([]);
+    const [isGalleryLoading, setIsGalleryLoading] = useState(false);
+    const [selectedGalleryPost, setSelectedGalleryPost] = useState<any>(null);
+    const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+    const [hasNewGallery, setHasNewGallery] = useState(false);
 
     // ✅ 상담 알림Derivation (실시간 알림 목록에서 계산)
     const hasNewCounseling = notifications.some(n => !n.is_read && ['counseling_reply', 'counseling_req', 'counseling_user_reply'].includes(n.type));
@@ -1248,12 +1255,12 @@ export default function App() {
                         const hideKey = `somy_hide_poster_${btoa(cleanUrl).substring(0, 32)}`;
                         const hideDate = localStorage.getItem(hideKey);
                         // 로그인 + 승인 상태에서만 포스터 노출
-                        // (user는 여기에서 주입 불가하므로 이후 checkApprovalStatus에서 별도 학대로 체크)
                         if (hideDate !== new Date().toDateString()) {
-                            setShowEventPopup(true); // isApproved 체크는 렌더 조건에서 함
+                            setShowEventPopup(true);
                         }
                     }
                 } else {
+
                     // [추가] 데모 버전일 경우 초기 데이터 자동 생성 호출
                     if (cId === 'demo') {
                         try {
@@ -1469,8 +1476,62 @@ export default function App() {
             setIsHistoryLoading(false);
         }
     };
+
+    const fetchGalleryPosts = async () => {
+        if (!churchId) return;
+        setIsGalleryLoading(true);
+        try {
+            const res = await fetch(`/api/gallery/posts?church_id=${churchId}&t=${Date.now()}`, { cache: 'no-store' });
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                setGalleryPosts(data);
+            }
+        } catch (err) {
+            console.error("갤러리 로드 실패:", err);
+        } finally {
+            setIsGalleryLoading(false);
+        }
+    };
+
+    const handleGalleryLike = async (postId: string) => {
+        if (!user) {
+            alert("로그인이 필요합니다.");
+            return;
+        }
+        try {
+            const res = await fetch('/api/gallery/likes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ post_id: postId, user_id: user.id })
+            });
+            if (res.ok) {
+                // 성공 시 목록 다시 불러오기 (또는 로컬 상태 업데이트)
+                fetchGalleryPosts();
+            }
+        } catch (err) {
+            console.error("좋아요 실패:", err);
+        }
+    };
+
+    const handleGalleryDelete = async (postId: string) => {
+        if (!confirm("이 사진을 삭제하시겠습니까?")) return;
+        try {
+            const res = await fetch('/api/gallery/posts', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: postId, user_id: user?.id, is_admin: isAdmin })
+            });
+            if (res.ok) {
+                alert("삭제되었습니다.");
+                fetchGalleryPosts();
+                setSelectedGalleryPost(null);
+            }
+        } catch (err) {
+            console.error("삭제 실패:", err);
+        }
+    };
     const [settingsSaving, setSettingsSaving] = useState(false);
-    const [adminTab, setAdminTab] = useState<"settings" | "members" | "master" | "stats" | "reset" | "admins" | "community" | "thanksgiving" | "activities">("settings");
+    const [adminTab, setAdminTab] = useState<"settings" | "members" | "master" | "stats" | "reset" | "admins" | "community" | "thanksgiving" | "activities" | "gallery">("settings");
 
     const [isHistoryMode, setIsHistoryMode] = useState(false);
     const [churchStats, setChurchStats] = useState<any>(null); // ✅ { registered: [], orphans: [] }
@@ -2364,6 +2425,20 @@ export default function App() {
         if (view === "book") {
             return <BookView book={churchSettings} onBack={handleBack} />;
         }
+        if (view === "gallery") {
+            return (
+                <GalleryView
+                    posts={galleryPosts}
+                    isLoading={isGalleryLoading}
+                    onBack={handleBack}
+                    onUpload={() => setIsUploadingGallery(true)}
+                    onSelectPost={setSelectedGalleryPost}
+                    isAdmin={isAdmin}
+                    userId={user?.id}
+                    onLike={handleGalleryLike}
+                />
+            );
+        }
         if (view === "home") {
             return (
                 <div style={{
@@ -2977,6 +3052,7 @@ export default function App() {
                                     gap: '10px',
                                     width: '100%'
                                 }}>
+                                    {/* Row 1: 설교 / 상담 */}
                                     <button onClick={() => {
                                         if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
                                             playerRef.current.pauseVideo();
@@ -3001,6 +3077,7 @@ export default function App() {
                                         <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>담임목사 설교</span>
                                         {hasNewSermon && <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px' }}>N</div>}
                                     </button>
+
                                     <div style={{ position: 'relative' }}>
                                         <button onClick={async () => {
                                             setView('counseling');
@@ -3043,6 +3120,7 @@ export default function App() {
                                         </button>
                                     </div>
 
+                                    {/* Row 2: 큐티왕 / 기록 */}
                                     <button onClick={async () => {
                                         setView('stats');
                                         setStatsError(null);
@@ -3091,6 +3169,28 @@ export default function App() {
                                         <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>나의 묵상 기록</span>
                                     </button>
 
+                                    {/* Row 3: 갤러리 / CCM */}
+                                    <div style={{ position: 'relative' }}>
+                                        <button onClick={async () => {
+                                            setView('gallery');
+                                            setHasNewGallery(false);
+                                            fetchGalleryPosts();
+                                        }} className="main-action-button" style={{
+                                            width: "100%", padding: "16px 12px",
+                                            background: "linear-gradient(145deg, #ffffff 0%, #f0f7ff 100%)", color: "#0D47A1",
+                                            fontWeight: 800, fontSize: "15px", borderRadius: "18px",
+                                            border: "1px solid #bbdefb", cursor: "pointer",
+                                            boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
+                                            display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
+                                            transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                                            position: 'relative', justifyContent: 'flex-start'
+                                        }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                                            <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>📸</div>
+                                            <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>추억나눔(갤러리)</span>
+                                            {hasNewGallery && <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px' }}>N</div>}
+                                        </button>
+                                    </div>
+
                                     <button onClick={() => setView('ccm')} className="main-action-button" style={{
                                         padding: "16px 12px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f4f6fa 100%)", color: "#465293",
@@ -3105,6 +3205,7 @@ export default function App() {
                                         <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>CCM 듣기</span>
                                     </button>
 
+                                    {/* Row 4: 주소록 / 프로필 */}
                                     <button onClick={() => setView('memberSearch')} className="main-action-button" style={{
                                         padding: "16px 12px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f1f8f3 100%)", color: "#2E7D32",
@@ -3118,20 +3219,22 @@ export default function App() {
                                         <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🔎</div>
                                         <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>성도 주소록</span>
                                     </button>
+
+                                    <button onClick={() => setView('profile')} className="main-action-button" style={{
+                                        padding: "16px 12px",
+                                        background: "linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%)", color: "#1976D2",
+                                        fontWeight: 800, fontSize: "15px", borderRadius: "18px",
+                                        border: "1px solid #90CAF9", cursor: "pointer",
+                                        boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
+                                        display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
+                                        transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                                        justifyContent: 'flex-start'
+                                    }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                                        <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>👤</div>
+                                        <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>내 프로필 수정</span>
+                                    </button>
                                 </div>
 
-                                <button onClick={() => setView('profile')} style={{
-                                    width: '100%', padding: "10px",
-                                    background: "linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%)",
-                                    color: "#1976D2",
-                                    fontWeight: 800, fontSize: "14px", borderRadius: "14px",
-                                    border: "1px solid #90CAF9", cursor: "pointer",
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                    boxShadow: '0 4px 10px rgba(25,118,210,0.08)',
-                                    transition: 'all 0.2s'
-                                }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                    👤 내 프로필 & 정보 수정
-                                </button>
                             </>
                         )}
                     </div >
@@ -7475,6 +7578,31 @@ export default function App() {
                 </div>
             </div>
             {renderContent()}
+ 
+            {/* 갤러리 업로드 모달 */}
+            {isUploadingGallery && (
+                <GalleryUploadModal
+                    onClose={() => setIsUploadingGallery(false)}
+                    onSuccess={() => {
+                        setIsUploadingGallery(false);
+                        fetchGalleryPosts();
+                    }}
+                    user={user}
+                    churchId={churchId}
+                />
+            )}
+
+            {/* 갤러리 상세보기 모달 */}
+            {selectedGalleryPost && (
+                <GalleryDetailModal
+                    post={selectedGalleryPost}
+                    onClose={() => setSelectedGalleryPost(null)}
+                    user={user}
+                    isAdmin={isAdmin}
+                    onLike={handleGalleryLike}
+                    onDelete={handleGalleryDelete}
+                />
+            )}
 
             {showEventPopup && isApproved && churchSettings.event_poster_url && churchSettings.event_poster_visible && (
                 <EventPosterPopup
@@ -7528,6 +7656,10 @@ export default function App() {
                                         } catch (e) { }
                                         setIsAdminsLoading(false);
                                     }} style={{ flex: '0 0 auto', padding: '8px 12px', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 600, background: adminTab === 'stats' ? 'white' : 'transparent', boxShadow: adminTab === 'stats' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'stats' ? '#333' : '#777', whiteSpace: 'nowrap' }}>📊 통계</button>
+                                    <button onClick={async () => {
+                                        setAdminTab('gallery');
+                                        fetchGalleryPosts();
+                                    }} style={{ flex: '0 0 auto', padding: '8px 12px', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 600, background: adminTab === 'gallery' ? 'white' : 'transparent', boxShadow: adminTab === 'gallery' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'gallery' ? '#333' : '#777', whiteSpace: 'nowrap' }}>📸 갤러리</button>
 
                                     {isMainAdmin && (
                                         <button onClick={() => { setAdminTab('admins'); fetchAllAdmins(); }} style={{ flex: '0 0 auto', padding: '8px 12px', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 600, background: adminTab === 'admins' ? 'white' : 'transparent', boxShadow: adminTab === 'admins' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'admins' ? '#333' : '#777', whiteSpace: 'nowrap' }}>🔐 권한</button>
@@ -9015,6 +9147,53 @@ export default function App() {
                                             </div>
                                         </div>
                                     </div>
+                                ) : adminTab === 'gallery' ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                        <div style={{ background: '#F5F5F3', padding: '16px', borderRadius: '16px', fontSize: '13px', color: '#666', lineHeight: 1.5 }}>
+                                            📸 <strong>갤러리 및 저장용량 관리</strong><br />
+                                            공유된 사진들을 관리하고 저장 공간을 최적화합니다.
+                                        </div>
+
+                                        <div style={{ background: 'white', padding: '20px', borderRadius: '20px', border: '1px solid #EEE' }}>
+                                            <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                🧹 저장소 자동 정리 (90일 정책)
+                                            </div>
+                                            <p style={{ fontSize: '13px', color: '#666', marginBottom: '20px' }}>
+                                                현재 설정된 정책에 따라 90일이 지난 사진은 자동으로 삭제됩니다. 
+                                                아래 버튼을 눌러 지금 즉시 정리를 실행할 수 있습니다.
+                                            </p>
+                                            <button 
+                                              onClick={async () => {
+                                                  if(!confirm("90일 이상 된 오래된 사진들을 모두 정리하시겠습니까?")) return;
+                                                  try {
+                                                      const res = await fetch('/api/gallery/cleanup', { method: 'POST' });
+                                                      const data = await res.json();
+                                                      alert(data.message || "정리가 완료되었습니다.");
+                                                      fetchGalleryPosts();
+                                                  } catch (e) { alert("처리 중 오류 발생"); }
+                                              }}
+                                              style={{ width: '100%', padding: '14px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
+                                            >
+                                                오래된 사진 수동 정리 실행
+                                            </button>
+                                        </div>
+
+                                        <div style={{ background: 'white', padding: '20px', borderRadius: '20px', border: '1px solid #EEE' }}>
+                                            <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', marginBottom: '15px' }}>🖼️ 최근 공유된 사진 (모니터링)</div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                                                {galleryPosts.slice(0, 12).map((post: any) => (
+                                                    <div 
+                                                      key={post.id} 
+                                                      onClick={() => setSelectedGalleryPost(post)}
+                                                      style={{ aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer', background: '#F5F5F5' }}
+                                                    >
+                                                        <img src={post.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            {galleryPosts.length === 0 && <div style={{ textAlign: 'center', padding: '20px', fontSize: '13px', color: '#999' }}>현재 공유된 사진이 없습니다.</div>}
+                                        </div>
+                                    </div>
                                 ) : adminTab === 'master' ? (
                                     <>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -9285,6 +9464,333 @@ export default function App() {
 }
 
 // === 독립 컴포넌트 구역 (App 외부에 정의하여 불필요한 리마운트 방지) ===
+
+// 갤러리 메인 뷰
+const GalleryView = ({ posts, isLoading, onBack, onUpload, onSelectPost, isAdmin, userId, onLike }: any) => {
+    return (
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '120px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button onClick={onBack} style={{ background: '#F5F5F5', border: 'none', width: '36px', height: '36px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '18px' }}>←</button>
+                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>📸 추억나눔(갤러리)</h2>
+                </div>
+                <button 
+                  onClick={onUpload}
+                  style={{ background: '#D4AF37', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '14px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(212,175,55,0.3)' }}
+                >
+                  사진 공유하기
+                </button>
+            </div>
+
+            <div style={{ background: 'rgba(212, 175, 55, 0.08)', padding: '16px', borderRadius: '20px', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
+              <p style={{ margin: 0, fontSize: '13px', color: '#8B6E3F', lineHeight: 1.5, wordBreak: 'keep-all' }}>
+                ✨ 성도님들의 아름다운 추억과 은혜를 사진으로 나눠보세요! <br/>
+                (사진은 게시 후 90일이 지나면 추억 저장소에서 자동 정리됩니다.)
+              </p>
+            </div>
+
+            {isLoading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 0', gap: '16px' }}>
+                    <div style={{ width: '40px', height: '40px', border: '4px solid #F3F3F3', borderTop: '4px solid #D4AF37', borderRadius: '50%', animation: 'gallery-spin 1s linear infinite' }}></div>
+                    <span style={{ color: '#999', fontSize: '14px' }}>은혜 가득한 사진들을 불러오고 있어요...</span>
+                </div>
+            ) : posts.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '100px 20px', color: '#AAA' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎞️</div>
+                    <p style={{ fontSize: '15px', fontWeight: 600 }}>아직 공유된 사진이 없네요.<br/>첫 번째 주인공이 되어보세요!</p>
+                </div>
+            ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', borderRadius: '16px', overflow: 'hidden' }}>
+                    {posts.map((post: any) => (
+                        <GalleryGridItem 
+                          key={post.id} 
+                          post={post} 
+                          onClick={() => onSelectPost(post)} 
+                        />
+                    ))}
+                </div>
+            )}
+            <style>{`
+              @keyframes gallery-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            `}</style>
+        </div>
+    );
+};
+
+// 갤러리 그리드 아이템
+const GalleryGridItem = ({ post, onClick }: any) => {
+    return (
+        <div 
+          onClick={onClick}
+          style={{ position: 'relative', width: '100%', paddingBottom: '100%', cursor: 'pointer', overflow: 'hidden', background: '#F5F5F3' }}
+        >
+            <img 
+              src={post.image_url} 
+              alt={post.description} 
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+        </div>
+    );
+};
+
+// 갤러리 업로드 모달
+const GalleryUploadModal = ({ onClose, onSuccess, user, churchId }: any) => {
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [description, setDescription] = useState("");
+    const [isUploading, setIsUploading] = useState(false);
+
+    const compressImage = (file: File): Promise<File> => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target?.result as string;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const max_size = 1200;
+                    if (width > height) {
+                        if (width > max_size) {
+                            height *= max_size / width;
+                            width = max_size;
+                        }
+                    } else {
+                        if (height > max_size) {
+                            width *= max_size / height;
+                            height = max_size;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+                        }
+                    }, 'image/jpeg', 0.8);
+                };
+                img.onerror = () => {
+                    alert("이미지 로드에 실패했습니다.");
+                    resolve(file); // 원본 파일이라도 반환하여 중단되지 않게 함
+                };
+            };
+            reader.onerror = () => {
+                alert("파일 읽기에 실패했습니다.");
+                resolve(file);
+            };
+        });
+    };
+
+    const handleFileChange = async (e: any) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setPreviewUrl(URL.createObjectURL(file));
+        const compressed = await compressImage(file);
+        setSelectedFile(compressed);
+    };
+
+    const handleUpload = async () => {
+        if (!selectedFile || !user) {
+            alert("공유할 사진이 없거나 사용자 정보를 불러올 수 없습니다.");
+            return;
+        }
+        setIsUploading(true);
+        try {
+            const fileExt = selectedFile.name.split('.').pop();
+            const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+            const filePath = `gallery/${churchId || 'jesus-in'}/${fileName}`;
+
+            // 1. 스토리지 업로드
+            const { error: uploadError } = await supabase.storage
+                .from('church-assets')
+                .upload(filePath, selectedFile, {
+                    cacheControl: '3600',
+                    upsert: false
+                });
+            
+            if (uploadError) {
+                if (uploadError.message.includes('security policy')) {
+                    throw new Error("저장소 권한(RLS)이 없습니다. 아까 제가 드린 SQL을 Supabase에서 실행했는지 확인해 주세요.");
+                }
+                throw uploadError;
+            }
+
+            // 2. 공개 URL 획득
+            const { data: { publicUrl } } = supabase.storage
+                .from('church-assets')
+                .getPublicUrl(filePath);
+
+            // 3. API 서버에 게시물 저장
+            const res = await fetch('/api/gallery/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: user.id,
+                    user_name: user.user_metadata?.full_name || user.email,
+                    avatar_url: user.user_metadata?.avatar_url,
+                    image_url: publicUrl,
+                    description,
+                    church_id: churchId || 'jesus-in'
+                })
+            });
+
+            const result = await res.json();
+            if (!res.ok) {
+                throw new Error(result.error || "서버 저장에 실패했습니다.");
+            }
+
+            onSuccess();
+        } catch (err: any) {
+            console.error("Upload error:", err);
+            alert("업로드 실패: " + err.message);
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    return (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 11000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(10px)' }}>
+            <div style={{ background: 'white', width: '100%', maxWidth: '420px', borderRadius: '32px', overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.4)', animation: 'modal-up 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+                <div style={{ padding: '24px', borderBottom: '1px solid #F0F0F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>📸 사진 공유하기</h3>
+                    <button onClick={onClose} style={{ background: '#F5F5F5', border: 'none', width: '32px', height: '32px', borderRadius: '50%', fontSize: '14px', cursor: 'pointer', color: '#666' }}>✕</button>
+                </div>
+                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div 
+                      onClick={() => document.getElementById('gallery-upload-input')?.click()}
+                      style={{ width: '100%', aspectRatio: '1/1', background: '#F8F9FA', borderRadius: '24px', border: '2px dashed #DDD', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden' }}
+                    >
+                        {previewUrl ? <img src={previewUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (
+                            <div style={{ textAlign: 'center', color: '#AAA' }}>
+                                <div style={{ fontSize: '40px', marginBottom: '8px' }}>🖼️</div>
+                                <div style={{ fontSize: '14px', fontWeight: 700 }}>탭하여 사진 선택</div>
+                            </div>
+                        )}
+                        <input id="gallery-upload-input" type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
+                    </div>
+                    <textarea 
+                        placeholder="이 사진에 담긴 은혜의 소감을 적어주세요..."
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        style={{ width: '100%', height: '100px', padding: '16px', borderRadius: '18px', border: '1.5px solid #EEE', background: '#F9F9F9', fontSize: '14px', resize: 'none', outline: 'none', color: '#333' }}
+                    />
+                    <button 
+                        onClick={handleUpload}
+                        disabled={!selectedFile || isUploading}
+                        style={{ width: '100%', padding: '18px', background: isUploading || !selectedFile ? '#CCC' : '#333', color: 'white', border: 'none', borderRadius: '20px', fontSize: '16px', fontWeight: 800, cursor: 'pointer', boxShadow: '0 8px 16px rgba(0,0,0,0.1)' }}
+                    >
+                        {isUploading ? '기록 중...' : '공유하기'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// 갤러리 상세 모달
+const GalleryDetailModal = ({ post, onClose, user, isAdmin, onLike, onDelete }: any) => {
+    const [likes, setLikes] = useState({ count: 0, isLiked: false });
+    const [comments, setComments] = useState<any[]>([]);
+    const [commentText, setCommentText] = useState("");
+
+    useEffect(() => {
+        if (post) {
+            fetch(`/api/gallery/likes?post_id=${post.id}&user_id=${user?.id}`).then(r => r.json()).then(setLikes);
+            fetch(`/api/gallery/comments?post_id=${post.id}`).then(r => r.json()).then(setComments);
+        }
+    }, [post, user]);
+
+    const handleLike = async () => {
+        await onLike(post.id);
+        fetch(`/api/gallery/likes?post_id=${post.id}&user_id=${user?.id}`).then(r => r.json()).then(setLikes);
+    };
+
+    const handleAddComment = async () => {
+        if (!commentText.trim() || !user) return;
+        const res = await fetch('/api/gallery/comments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                post_id: post.id,
+                user_id: user.id,
+                user_name: user.user_metadata?.full_name || user.email,
+                comment: commentText
+            })
+        });
+        if (res.ok) {
+            setCommentText("");
+            fetch(`/api/gallery/comments?post_id=${post.id}`).then(r => r.json()).then(setComments);
+        }
+    };
+
+    return (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 12000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0', backdropFilter: 'blur(20px)' }}>
+            <div style={{ background: 'white', width: '100%', maxWidth: '500px', height: '100%', maxHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                <div style={{ position: 'absolute', top: '15px', right: '15px', zIndex: 10 }}>
+                    <button onClick={onClose} style={{ background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white', width: '36px', height: '36px', borderRadius: '50%', fontSize: '18px', cursor: 'pointer', backdropFilter: 'blur(5px)' }}>✕</button>
+                </div>
+                
+                <div style={{ flex: 1, overflowY: 'auto', background: '#000', display: 'flex', alignItems: 'center' }}>
+                    <img src={post.image_url} style={{ width: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                </div>
+
+                <div style={{ padding: '20px', background: 'white', borderRadius: '32px 32px 0 0', marginTop: '-32px', position: 'relative', boxShadow: '0 -10px 30px rgba(0,0,0,0.1)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F5F5F5', overflow: 'hidden' }}>
+                                {post.avatar_url && <img src={post.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                            </div>
+                            <span style={{ fontWeight: 800, fontSize: '14px' }}>{post.user_name}</span>
+                        </div>
+                        {(user?.id === post.user_id || isAdmin) && (
+                            <button onClick={() => onDelete(post.id)} style={{ background: '#FFF0F0', border: 'none', color: '#FF5252', padding: '6px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>삭제</button>
+                        )}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
+                        <div onClick={handleLike} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', background: '#F8F9FA', padding: '8px 14px', borderRadius: '14px' }}>
+                            <span style={{ fontSize: '18px' }}>{likes.isLiked ? '❤️' : '🤍'}</span>
+                            <span style={{ fontWeight: 800, fontSize: '14px' }}>{likes.count}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#F8F9FA', padding: '8px 14px', borderRadius: '14px' }}>
+                            <span style={{ fontSize: '18px' }}>💬</span>
+                            <span style={{ fontWeight: 800, fontSize: '14px' }}>{comments.length}</span>
+                        </div>
+                    </div>
+
+                    <div style={{ fontSize: '15px', lineHeight: 1.6, color: '#333', whiteSpace: 'pre-wrap', marginBottom: '25px' }}>{post.description}</div>
+
+                    <div style={{ borderTop: '1px solid #F0F0F0', paddingTop: '20px' }}>
+                        <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#999' }}>댓글 {comments.length}</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '200px', overflowY: 'auto', marginBottom: '20px' }}>
+                            {comments.map((c: any) => (
+                                <div key={c.id} style={{ display: 'flex', gap: '10px', fontSize: '14px' }}>
+                                    <span style={{ fontWeight: 800, color: '#333', flexShrink: 0 }}>{c.user_name}</span>
+                                    <span style={{ color: '#666' }}>{c.comment}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <input 
+                                placeholder="따뜻한 댓글을 남겨주세요..."
+                                value={commentText}
+                                onChange={(e) => setCommentText(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+                                style={{ flex: 1, border: 'none', background: '#F5F5F5', padding: '14px 18px', borderRadius: '16px', fontSize: '14px', outline: 'none' }}
+                            />
+                            <button onClick={handleAddComment} style={{ background: '#D4AF37', border: 'none', color: 'white', padding: '0 20px', borderRadius: '16px', fontWeight: 800, cursor: 'pointer' }}>게시</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 // 내 프로필 화면 컴포넌트
 function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setProfileAvatar, isAdmin, churchId, subscribePush }: any) {

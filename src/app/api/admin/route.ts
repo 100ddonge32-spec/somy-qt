@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import webpush from '@/lib/webpush';
+import { logActivity } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -266,6 +267,19 @@ export async function GET(req: NextRequest) {
             });
 
             return NextResponse.json(formattedData);
+        }
+
+        // [5] 최근 활동 내역 조회
+        if (action === 'list_activities') {
+            const { data: logs, error: logErr } = await supabaseAdmin
+                .from('activity_logs')
+                .select('*')
+                .eq('church_id', churchId || 'jesus-in')
+                .order('created_at', { ascending: false })
+                .limit(100);
+
+            if (logErr) throw logErr;
+            return NextResponse.json(logs || []);
         }
 
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
@@ -764,6 +778,10 @@ export async function POST(req: NextRequest) {
                 }
             } catch (notiErr) { console.error("Deletion Notification failed:", notiErr); }
 
+            if (target_email) {
+                logActivity(requester_id, requesterProfile?.full_name || '관리자', 'ADMIN_MODIFIED', (adminInfo?.church_id || 'somy-main'), `${target_email} 관리자 권한 삭제`);
+            }
+
             return NextResponse.json({ success: true });
         }
 
@@ -847,6 +865,10 @@ export async function POST(req: NextRequest) {
                 } catch (notiErr) { console.error("Approval notification failed:", notiErr); }
             }
 
+            if (is_approved) {
+                logActivity(requester_id, requesterProfile?.full_name || '관리자', 'MEMBER_APPROVED', (adminInfo?.church_id || 'jesus-in'), `성도(${user_id}) 승인 완료`);
+            }
+
             return NextResponse.json(data);
         }
 
@@ -886,6 +908,10 @@ export async function POST(req: NextRequest) {
                     }));
                     await supabaseAdmin.from('notifications').insert(notis);
                 } catch (e) { console.error("Bulk approval notification failed:", e); }
+            }
+
+            if (approve) {
+              logActivity(requester_id, requesterProfile?.full_name || '관리자', 'MEMBER_APPROVED', (adminInfo?.church_id || 'jesus-in'), `${ids.length}명 일괄 승인`);
             }
 
             return NextResponse.json({ success: true, count: data?.length });
