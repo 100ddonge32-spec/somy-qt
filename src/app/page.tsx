@@ -2600,7 +2600,6 @@ export default function App() {
                         </div>
                     )}
 
-                    {/* Church Logo Header */}
                     <div style={{ width: '100%', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <a href={churchSettings.church_url} target="_blank" rel="noopener noreferrer" style={{
                             textDecoration: "none",
@@ -2697,30 +2696,25 @@ export default function App() {
 
 
                                     <button
-                                        onClick={handleDirectLogin}
-                                        disabled={isDirectLoggingIn}
-                                        style={{
-                                            marginTop: '10px',
-                                            width: '100%',
-                                            padding: '18px',
-                                            background: ((loginName && loginPhoneTail.length >= 4) || loginName === '백동희' || loginName === '동희') ? '#333' : '#AAA',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '18px',
-                                            fontSize: '16px',
-                                            fontWeight: 800,
-                                            cursor: ((loginName && loginPhoneTail.length >= 4) || loginName === '백동희' || loginName === '동희') ? 'pointer' : 'default',
-                                            boxShadow: ((loginName && loginPhoneTail.length >= 4) || loginName === '백동희' || loginName === '동희') ? '0 10px 20px rgba(0,0,0,0.15)' : 'none',
-                                            transition: 'all 0.3s'
-                                        }}
-                                    >
-                                        {isDirectLoggingIn ? '정보 확인 중...' : '교인 정보로 바로 시작하기'}
-                                    </button>
-                                    <div style={{ marginTop: '20px', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '11px', color: '#BBB', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                                            <span style={{ fontSize: '14px' }}>🔒</span> 안전한 보안 입구 (성도 및 관리자 자동 인식)
-                                        </div>
-                                    </div>
+                                         onClick={handleDirectLogin}
+                                         disabled={isDirectLoggingIn}
+                                         style={{
+                                             marginTop: '10px',
+                                             width: '100%',
+                                             padding: '18px',
+                                             background: ((loginName && loginPhoneTail.length >= 4) || loginName === '백동희' || loginName === '동희') ? '#333' : '#AAA',
+                                             color: 'white',
+                                             border: 'none',
+                                             borderRadius: '18px',
+                                             fontSize: '16px',
+                                             fontWeight: 800,
+                                             cursor: ((loginName && loginPhoneTail.length >= 4) || loginName === '백동희' || loginName === '동희') ? 'pointer' : 'default',
+                                             boxShadow: ((loginName && loginPhoneTail.length >= 4) || loginName === '백동희' || loginName === '동희') ? '0 10px 20px rgba(0,0,0,0.15)' : 'none',
+                                             transition: 'all 0.3s'
+                                         }}
+                                     >
+                                         {isDirectLoggingIn ? '정보 확인 중...' : '교인 정보로 바로 시작하기'}
+                                     </button>
                                 </div>
                             </div>
                         ) : (!isApproved && !isAdmin && !isSuperAdmin) ? (
@@ -9557,7 +9551,7 @@ export default function App() {
 // === 독립 컴포넌트 구역 (App 외부에 정의하여 불필요한 리마운트 방지) ===
 
 // 갤러리 메인 뷰
-const GalleryView = ({ posts, isLoading, onBack, onUpload, onSelectPost, isAdmin, userId, onLike }: any) => {
+function GalleryView({ posts, isLoading, onBack, onUpload, onSelectPost, isAdmin, userId, onLike }: any) {
     return (
         <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '120px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -9609,7 +9603,8 @@ const GalleryView = ({ posts, isLoading, onBack, onUpload, onSelectPost, isAdmin
 };
 
 // 갤러리 그리드 아이템
-const GalleryGridItem = ({ post, onClick }: any) => {
+// 갤러리 그리드 아이템
+function GalleryGridItem({ post, onClick }: any) {
     return (
         <div 
           onClick={onClick}
@@ -9625,11 +9620,13 @@ const GalleryGridItem = ({ post, onClick }: any) => {
 };
 
 // 갤러리 업로드 모달
-const GalleryUploadModal = ({ onClose, onSuccess, user, churchId }: any) => {
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+// 갤러리 업로드 모달
+function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [previewUrls, setPreviewUrls] = useState<string[]>([]);
     const [description, setDescription] = useState("");
     const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0); // 0 to 100
 
     const compressImage = (file: File): Promise<File> => {
         return new Promise((resolve) => {
@@ -9677,67 +9674,77 @@ const GalleryUploadModal = ({ onClose, onSuccess, user, churchId }: any) => {
     };
 
     const handleFileChange = async (e: any) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        setPreviewUrl(URL.createObjectURL(file));
-        const compressed = await compressImage(file);
-        setSelectedFile(compressed);
+        const files = Array.from(e.target.files) as File[];
+        if (files.length === 0) return;
+        
+        const newPreviewUrls = files.map(file => URL.createObjectURL(file));
+        setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
+        
+        const compressedFiles = await Promise.all(files.map(file => compressImage(file)));
+        setSelectedFiles(prev => [...prev, ...compressedFiles]);
+    };
+
+    const removeFile = (index: number) => {
+        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+        setPreviewUrls(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleUpload = async () => {
-        if (!selectedFile || !user) {
+        if (selectedFiles.length === 0 || !user) {
             alert("공유할 사진이 없거나 사용자 정보를 불러올 수 없습니다.");
             return;
         }
         setIsUploading(true);
+        setUploadProgress(0);
+        
+        let successCount = 0;
         try {
-            const fileExt = selectedFile.name.split('.').pop();
-            const fileName = `${user.id}_${Date.now()}.${fileExt}`;
-            const filePath = `gallery/${churchId || 'jesus-in'}/${fileName}`;
+            for (let i = 0; i < selectedFiles.length; i++) {
+                const file = selectedFiles[i];
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${user.id}_${Date.now()}_${i}.${fileExt}`;
+                const filePath = `gallery/${churchId || 'jesus-in'}/${fileName}`;
 
-            // 1. 스토리지 업로드
-            const { error: uploadError } = await supabase.storage
-                .from('church-assets')
-                .upload(filePath, selectedFile, {
-                    cacheControl: '3600',
-                    upsert: false
+                // 1. 스토리지 업로드
+                const { error: uploadError } = await supabase.storage
+                    .from('church-assets')
+                    .upload(filePath, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+                
+                if (uploadError) throw uploadError;
+
+                // 2. 공개 URL 획득
+                const { data: { publicUrl } } = supabase.storage
+                    .from('church-assets')
+                    .getPublicUrl(filePath);
+
+                // 3. API 서버에 게시물 저장
+                const res = await fetch('/api/gallery/posts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: user.id,
+                        user_name: user.user_metadata?.full_name || user.email,
+                        avatar_url: user.user_metadata?.avatar_url,
+                        image_url: publicUrl,
+                        description: i === 0 ? description : "", // 첫 번째 사진에만 설명을 붙이거나 공통으로 사용
+                        church_id: churchId || 'jesus-in'
+                    })
                 });
-            
-            if (uploadError) {
-                if (uploadError.message.includes('security policy')) {
-                    throw new Error("저장소 권한(RLS)이 없습니다. 아까 제가 드린 SQL을 Supabase에서 실행했는지 확인해 주세요.");
-                }
-                throw uploadError;
+
+                if (res.ok) successCount++;
+                setUploadProgress(Math.round(((i + 1) / selectedFiles.length) * 100));
             }
 
-            // 2. 공개 URL 획득
-            const { data: { publicUrl } } = supabase.storage
-                .from('church-assets')
-                .getPublicUrl(filePath);
-
-            // 3. API 서버에 게시물 저장
-            const res = await fetch('/api/gallery/posts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: user.id,
-                    user_name: user.user_metadata?.full_name || user.email,
-                    avatar_url: user.user_metadata?.avatar_url,
-                    image_url: publicUrl,
-                    description,
-                    church_id: churchId || 'jesus-in'
-                })
-            });
-
-            const result = await res.json();
-            if (!res.ok) {
-                throw new Error(result.error || "서버 저장에 실패했습니다.");
+            if (successCount > 0) {
+                alert(`${successCount}장의 사진이 공유되었습니다. ✨`);
+                onSuccess();
             }
-
-            onSuccess();
         } catch (err: any) {
             console.error("Upload error:", err);
-            alert("업로드 실패: " + err.message);
+            alert("업로드 중 일부 오류가 발생했습니다: " + err.message);
         } finally {
             setIsUploading(false);
         }
@@ -9751,18 +9758,26 @@ const GalleryUploadModal = ({ onClose, onSuccess, user, churchId }: any) => {
                     <button onClick={onClose} style={{ background: '#F5F5F5', border: 'none', width: '32px', height: '32px', borderRadius: '50%', fontSize: '14px', cursor: 'pointer', color: '#666' }}>✕</button>
                 </div>
                 <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div 
-                      onClick={() => document.getElementById('gallery-upload-input')?.click()}
-                      style={{ width: '100%', aspectRatio: '1/1', background: '#F8F9FA', borderRadius: '24px', border: '2px dashed #DDD', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden' }}
-                    >
-                        {previewUrl ? <img src={previewUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (
-                            <div style={{ textAlign: 'center', color: '#AAA' }}>
-                                <div style={{ fontSize: '40px', marginBottom: '8px' }}>🖼️</div>
-                                <div style={{ fontSize: '14px', fontWeight: 700 }}>탭하여 사진 선택</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                        {previewUrls.map((url, idx) => (
+                            <div key={idx} style={{ position: 'relative', width: '100%', aspectRatio: '1/1', borderRadius: '12px', overflow: 'hidden', border: '1px solid #EEE' }}>
+                                <img src={url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <button onClick={() => removeFile(idx)} style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>✕</button>
+                            </div>
+                        ))}
+                        {previewUrls.length < 9 && (
+                            <div 
+                              onClick={() => document.getElementById('gallery-upload-input')?.click()}
+                              style={{ width: '100%', aspectRatio: '1/1', background: '#F8F9FA', borderRadius: '12px', border: '2px dashed #DDD', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                            >
+                                <div style={{ textAlign: 'center', color: '#AAA' }}>
+                                    <div style={{ fontSize: '24px' }}>➕</div>
+                                    <div style={{ fontSize: '10px', fontWeight: 700 }}>추가</div>
+                                </div>
                             </div>
                         )}
-                        <input id="gallery-upload-input" type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
                     </div>
+                    <input id="gallery-upload-input" type="file" multiple accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
                     <textarea 
                         placeholder="이 사진에 담긴 은혜의 소감을 적어주세요..."
                         value={description}
@@ -9771,10 +9786,10 @@ const GalleryUploadModal = ({ onClose, onSuccess, user, churchId }: any) => {
                     />
                     <button 
                         onClick={handleUpload}
-                        disabled={!selectedFile || isUploading}
-                        style={{ width: '100%', padding: '18px', background: isUploading || !selectedFile ? '#CCC' : '#333', color: 'white', border: 'none', borderRadius: '20px', fontSize: '16px', fontWeight: 800, cursor: 'pointer', boxShadow: '0 8px 16px rgba(0,0,0,0.1)' }}
+                        disabled={selectedFiles.length === 0 || isUploading}
+                        style={{ width: '100%', padding: '18px', background: isUploading || selectedFiles.length === 0 ? '#CCC' : '#333', color: 'white', border: 'none', borderRadius: '20px', fontSize: '16px', fontWeight: 800, cursor: 'pointer', boxShadow: '0 8px 16px rgba(0,0,0,0.1)' }}
                     >
-                        {isUploading ? '기록 중...' : '공유하기'}
+                        {isUploading ? `업로드 중... (${uploadProgress}%)` : '공유하기'}
                     </button>
                 </div>
             </div>
@@ -9783,7 +9798,8 @@ const GalleryUploadModal = ({ onClose, onSuccess, user, churchId }: any) => {
 };
 
 // 갤러리 상세 모달
-const GalleryDetailModal = ({ post, onClose, user, isAdmin, onLike, onDelete }: any) => {
+// 갤러리 상세 모달
+function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: any) {
     const [likes, setLikes] = useState({ count: 0, isLiked: false });
     const [comments, setComments] = useState<any[]>([]);
     const [commentText, setCommentText] = useState("");

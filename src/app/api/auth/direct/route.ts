@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { logActivity } from '@/lib/logger';
 
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -184,6 +185,11 @@ export async function POST(req: NextRequest) {
                 // 기존 프로필 정리 (이관 성공 후에만)
                 await supabaseAdmin.from('profiles').delete().eq('id', match.id);
             }
+
+            // --- 활동 로그 기록 추가 (실시간 통계 반영용) ---
+            const finalChurchId = match.church_id || church_id || 'somy-main';
+            console.log(`[DirectAuth] Logging login for ${match.full_name} in church ${finalChurchId}`);
+            await logActivity(user_id, match.full_name, 'LOGIN', finalChurchId);
 
             return NextResponse.json({
                 success: true,

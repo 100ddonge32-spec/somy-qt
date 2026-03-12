@@ -53,18 +53,26 @@ export async function GET(req: NextRequest) {
 
         console.log(`[Stats API] CIDs: ${cids}, Month Start: ${firstOfMonth}`);
 
-        // 1. 큐티 완료 기록 가져오기 (공식 기록 - 필터 없이 3월 데이터 전체 조회)
+        // 1. 큐티 완료 기록 가져오기 (교회별 격리 필터 적용)
         const { data: completions, error: dbError } = await supabaseAdmin
             .from('qt_completions')
-            .select('user_name, avatar_url, completed_date')
+            .select(`
+                user_id,
+                user_name,
+                avatar_url,
+                completed_date,
+                profiles!inner(church_id)
+            `)
+            .in('profiles.church_id', cids)
             .gte('completed_date', firstOfMonth);
 
         if (dbError) console.error("[Stats API] Completions fetch error:", dbError);
 
-        // 2. 은혜나눔 게시판의 '묵상나눔' 기록 가져오기
+        // 2. 은혜나눔(community_posts) 기록 가져오기 (교회별 격리)
         const { data: posts, error: postError } = await supabaseAdmin
-            .from('posts')
+            .from('community_posts')
             .select('user_name, avatar_url, created_at, is_qt')
+            .in('church_id', cids)
             .gte('created_at', firstOfMonth);
 
         if (postError) console.error("[Stats API] Posts fetch error:", postError);
@@ -77,7 +85,9 @@ export async function GET(req: NextRequest) {
         const allCompletions = completions || [];
 
         // --- 3월 수동 복구 데이터 기점 (2026-03-11 기준) ---
-        const MARCH_BASE: Record<string, number> = {
+        // [수정] 성도 명단 기반 하드코딩 데이터 격리: 예수인교회인 경우에만 기본 실적 부여
+        const isJesusIn = cids.includes('jesus-in') || cids.includes('예수인교회');
+        const MARCH_BASE: Record<string, number> = isJesusIn ? {
             '강혜진': 7,
             '이미경': 6,
             '백동희': 6,
@@ -86,7 +96,7 @@ export async function GET(req: NextRequest) {
             '장경하': 3,
             '박영희': 2,
             '최성은': 2
-        };
+        } : {};
 
         // 제외할 명단
         const EXCLUDED_NAMES = ['최성희', '고승삼', '한결'];
