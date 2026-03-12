@@ -21,7 +21,7 @@ function getKoreaDateString(): string {
 
 // 교회 ID 표준화 함수 (한국어 이름이나 공백 등 처리)
 function getChurchIds(id: string | null): string[] {
-    if (!id || id === 'undefined' || id === 'null' || id.trim() === '') return ['jesus-in', '예수인교회'];
+    if (!id || id === 'undefined' || id === 'null' || id.trim() === '') return [];
     let nid = id.trim();
     if (nid === '예수인교회' || nid === decodeURIComponent('예수인교회') || nid === 'jesus-in') {
         return ['jesus-in', '예수인교회'];
@@ -32,14 +32,19 @@ function getChurchIds(id: string | null): string[] {
 // 단일 ID 반환용 (저장/삭제 시 사용)
 function normalizeChurchId(id: string | null): string {
     const ids = getChurchIds(id);
-    return ids[0]; // 기본값 'jesus-in' 반환
+    return ids[0] || 'somy-main'; 
 }
 
 // 초기화 데이터 (에러 시 반환용)
 const fallbackData = {
     today: { count: 0, members: [] },
     ranking: [],
-    totalCompletions: 0
+    totalCompletions: 0,
+    loginStats: {
+        trends: [],
+        topUsers: [],
+        recent: []
+    }
 };
 
 export async function GET(req: NextRequest) {
@@ -48,6 +53,14 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
         const rawChurchId = searchParams.get('church_id');
         const cids = getChurchIds(rawChurchId);
+        
+        // 만약 유효한 교회 ID가 정해지지 않았으면 빈 결과 반환 (보호막 강화)
+        if (cids.length === 0) {
+            return NextResponse.json(fallbackData, {
+                headers: { 'Cache-Control': 'no-store, max-age=0' }
+            });
+        }
+
         const today = getKoreaDateString();
         const firstOfMonth = today.slice(0, 7) + '-01';
 
@@ -85,7 +98,7 @@ export async function GET(req: NextRequest) {
         const allCompletions = completions || [];
 
         // --- 3월 수동 복구 데이터 기점 (2026-03-11 기준) ---
-        // [수정] 성도 명단 기반 하드코딩 데이터 격리: 예수인교회인 경우에만 기본 실적 부여
+        // [수정] 성도 명단 기반 하드코딩 데이터 격리: 예수인교회인 경우에만 기본 실적 부여 (보호막)
         const isJesusIn = cids.includes('jesus-in') || cids.includes('예수인교회');
         const MARCH_BASE: Record<string, number> = isJesusIn ? {
             '강혜진': 7,

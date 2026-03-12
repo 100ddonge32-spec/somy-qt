@@ -1334,7 +1334,16 @@ export default function App() {
     });
     const [sermonManageForm, setSermonManageForm] = useState({ script: '', summary: '', q1: '', q2: '', q3: '', videoUrl: '', inputType: 'text' as 'text' | 'video' });
     const [aiLoading, setAiLoading] = useState(false);
-    const [stats, setStats] = useState<{ today: { count: number; members: { user_name: string; avatar_url: string | null }[] }; ranking: { name: string; avatar: string | null; count: number }[]; totalCompletions: number } | null>(null);
+    const [stats, setStats] = useState<{ 
+        today: { count: number; members: { user_name: string; avatar_url: string | null }[] }; 
+        ranking: { name: string; avatar: string | null; count: number }[]; 
+        totalCompletions: number;
+        loginStats?: {
+            trends: { date: string; count: number }[];
+            topUsers: { name: string; count: number }[];
+            recent: { name: string; time: string; userId: string }[];
+        }
+    } | null>(null);
     const [activityLogs, setActivityLogs] = useState<any[]>([]);
     const [isActivitiesLoading, setIsActivitiesLoading] = useState(false);
     const [statsError, setStatsError] = useState<string | null>(null);
@@ -2972,43 +2981,33 @@ export default function App() {
                                         <div style={{ width: '40px', height: '56px', background: '#FFFDF7', borderRadius: '6px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', border: '1px solid #FAF0D7' }}>✍️</div>
                                         <div>
                                             <div className="label" style={{ fontSize: '13px', color: '#B8924A', fontWeight: 800, marginBottom: '2px', wordBreak: 'keep-all' }}>담임목사 칼럼</div>
-                                            <div style={{ fontSize: '14px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', width: '100%', lineHeight: 1.2 }}>{churchSettings.pastor_column_title || '오늘의 칼럼'}</div>
+                                            <div style={{ fontSize: '14px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', width: '100%', lineHeight: 1.2 }}>
+                                                {churchSettings.pastor_column_content ? (churchSettings.pastor_column_title || '오늘의 칼럼') : (qtData?.reference ? `📖 ${qtData.reference}` : '오늘의 말씀')}
+                                            </div>
                                         </div>
-                                        {!churchSettings.pastor_column_content && (
+                                        {!churchSettings.pastor_column_content && !qtData?.interpretation && (
                                             <div
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleGenerateColumn();
-                                                }}
-                                                style={{
-                                                    position: 'absolute',
-                                                    inset: 0,
-                                                    background: 'rgba(255,255,255,0.7)',
-                                                    backdropFilter: 'blur(2px)',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    borderRadius: '24px',
-                                                    zIndex: 10
-                                                }}
+                                                onClick={(e) => { e.stopPropagation(); handleGenerateColumn(); }}
+                                                style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '24px', zIndex: 10 }}
                                             >
                                                 <div style={{ background: '#333', color: 'white', padding: '6px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 700, boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
-                                                    {isGeneratingColumn ? '생성 중...' : '✨ AI 자동 생성'}
+                                                    AI 칼럼 생성
                                                 </div>
                                             </div>
                                         )}
                                     </div>
                                 </div>
 
-                                {/* Character Section (오늘의 말씀)을 4개 액션버튼 바로 아래로 이동 */}
+                                {/* 오늘의 말씀 섹션 - 동기화된 데이터 사용 */}
                                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", flex: 1, justifyContent: 'center', width: "100%", marginTop: '10px', marginBottom: '10px' }}>
                                     <div style={{ background: "rgba(255, 255, 255, 0.9)", borderRadius: "24px", padding: "24px", width: "100%", maxWidth: "320px", boxShadow: "0 10px 30px rgba(0,0,0,0.06)", border: "1px solid #F0ECE4", animation: "fade-in 0.8s ease-out", display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', textAlign: 'left', backdropFilter: 'blur(10px)', userSelect: 'none' }}>
                                         {(() => {
                                             const autoVerse = getGraceVerse();
                                             const isCustom = !!churchSettings?.today_verse_text;
-                                            const verseText = isCustom ? churchSettings.today_verse_text : autoVerse.verse;
-                                            const verseBook = isCustom ? '' : autoVerse.book;
-                                            const verseRef = isCustom ? (churchSettings.today_verse_ref || '') : autoVerse.ref;
+                                            // [동기화] 커스텀 말씀이 없고 오늘의 큐티(qtData)가 있으면 큐티 말씀을 우선 노출
+                                            const verseText = isCustom ? churchSettings.today_verse_text : (qtData?.verse || autoVerse.verse);
+                                            const verseBook = isCustom ? '' : (qtData?.reference ? '' : autoVerse.book);
+                                            const verseRef = isCustom ? (churchSettings.today_verse_ref || '') : (qtData?.reference || autoVerse.ref);
                                             return (
                                                 <>
                                                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
@@ -3018,7 +3017,7 @@ export default function App() {
                                                     <div style={{ position: 'relative', padding: '0 4px' }}>
                                                         <p className="verse-text" style={{ position: 'relative', zIndex: 1, fontSize: "15px", color: "#444", lineHeight: 1.8, margin: "0 0 16px 0", fontWeight: 500, wordBreak: 'keep-all', textAlign: 'center' }}>"{verseText}"</p>
                                                     </div>
-                                                    <p style={{ fontSize: "13px", color: "#B8924A", fontWeight: 700, margin: 0, textAlign: 'right' }}>— {verseBook} {verseRef} {!isCustom && <span style={{ fontSize: '10px', color: '#CCC', fontWeight: 400 }}>(개역한글)</span>}</p>
+                                                    <p style={{ fontSize: "13px", color: "#B8924A", fontWeight: 700, margin: 0, textAlign: 'right' }}>— {verseBook} {verseRef} {(!isCustom && !qtData?.verse) && <span style={{ fontSize: '10px', color: '#CCC', fontWeight: 400 }}>(개역한글)</span>}</p>
 
                                                     <div style={{ width: '100%', height: '1px', background: 'repeating-linear-gradient(to right, #EEEEEE 0, #EEEEEE 4px, transparent 4px, transparent 8px)', margin: '20px 0' }} />
 
@@ -6409,10 +6408,16 @@ export default function App() {
             const verseText = isCustom ? churchSettings.today_verse_text : autoVerse.verse;
             const verseRef = isCustom ? (churchSettings.today_verse_ref || '오늘의 말씀') : `${autoVerse.book} ${autoVerse.ref}`;
 
-            // ✅ 칼럼이 입력되지 않았을 경우, 오늘의 말씀을 바탕으로 한 기본 묵상 메시지 생성
-            const columnTitle = churchSettings.pastor_column_title || "🕊️ 오늘의 말씀 묵상";
-            const columnContent = churchSettings.pastor_column_content ||
-                `"${verseText}"\n\n- ${verseRef}\n\n사랑하는 성도 여러분, 오늘 우리에게 주신 이 생명의 말씀을 마음 깊이 새기길 원합니다.\n\n하나님의 말씀은 우리 삶의 등불입니다. 때로는 앞이 보이지 않는 막막한 순간에도 주님은 항상 말씀으로 우리를 가장 선한 길로 인도하고 계십니다.\n\n오늘 이 말씀을 묵상하며, 내 생각보다 크신 하나님의 완전하신 계획을 신뢰합시다. 우리가 주님의 약속을 온전히 붙들고 나아갈 때, 주님께서 친히 우리의 모든 걸음을 지키시고 평안을 베풀어 주실 것입니다.\n\n오늘 하루도 주님의 은혜 안에서 승리하시고, 말씀의 능력으로 힘을 얻는 복된 날 되시기를 간절히 기도하며 축복합니다.`;
+            // ✅ [동기화] 칼럼이 입력되지 않았을 경우, 오늘의 말씀을 바탕으로 한 자동 묵상 메시지 노출
+            const hasCustomColumn = !!churchSettings?.pastor_column_content?.trim();
+            const columnTitle = hasCustomColumn 
+                ? (churchSettings.pastor_column_title || "🕊️ 오늘의 목양 메시지")
+                : (qtData?.reference ? `📖 오늘의 말씀 (${qtData.reference})` : (churchSettings.pastor_column_title || "🕊️ 오늘의 말씀 묵상"));
+            
+            const columnContent = hasCustomColumn 
+                ? churchSettings.pastor_column_content 
+                : (qtData?.interpretation || 
+                `"${verseText}"\n\n- ${verseRef}\n\n사랑하는 성도 여러분, 오늘 우리에게 주신 이 생명의 말씀을 마음 깊이 새기길 원합니다.\n\n하나님의 말씀은 우리 삶의 등불입니다. 때로는 앞이 보이지 않는 막막한 순간에도 주님은 항상 말씀으로 우리를 가장 선한 길로 인도하고 계심을 확신할 수 있습니다.\n\n오늘 이 말씀을 묵상하며, 내 생각보다 크신 하나님의 완전하신 계획을 신뢰합시다. 우리가 주님의 약속을 온전히 붙들고 나아갈 때, 주님께서 친히 우리의 모든 걸음을 지키시고 평안을 베풀어 주실 것입니다.\n\n오늘 하루도 주님의 은혜 안에서 승리하시고, 말씀의 능력으로 힘을 얻는 복된 날 되시기를 간절히 기도하며 축복합니다.`);
 
             return (
                 <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', ...baseFont, animation: 'fade-in 0.4s ease-out' }}>
@@ -7981,6 +7986,7 @@ export default function App() {
                                                             {isGeneratingColumn ? '생성 중...' : '✨ AI 생성'}
                                                         </button>
                                                     </div>
+                                                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>* 비워두면 오늘의 큐티(본문/해설)와 매일 자동으로 동기화됩니다.</div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                         <input type="text" value={settingsForm.pastor_column_title || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, pastor_column_title: e.target.value }))} placeholder="칼럼 제목" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
                                                         <textarea value={settingsForm.pastor_column_content || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, pastor_column_content: e.target.value }))} placeholder="칼럼 내용 (직접 입력 또는 AI 생성)" style={{ width: '100%', minHeight: '100px', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px', resize: 'none', lineHeight: 1.6 }} />
@@ -7992,7 +7998,7 @@ export default function App() {
                                                     <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                         📖 오늘의 말씀 커스텀 (옵션)
                                                     </div>
-                                                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>* 비워두면 추천 말씀이 매일 자동 생성됩니다. 직접 입력 시 해당 말씀이 고정 노출됩니다.</div>
+                                                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>* 비워두면 오늘의 큐티 말씀과 매일 자동으로 동기화됩니다. 직접 입력 시 해당 말씀이 고정 노출됩니다.</div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                         <input type="text" value={settingsForm.today_verse_text || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, today_verse_text: e.target.value }))} placeholder="예: 여호와는 나의 목자시니..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
                                                         <input type="text" value={settingsForm.today_verse_ref || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, today_verse_ref: e.target.value }))} placeholder="출처 (예: 시편 23:1)" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
@@ -8588,7 +8594,7 @@ export default function App() {
                                                                             style={{
                                                                                 width: '24px', height: '24px', borderRadius: '8px', border: '2.5px solid #D4AF37',
                                                                                 background: selectedMemberIds.includes(member.id) ? '#D4AF37' : 'white',
-                                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0
+                                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
                                                                             }}
                                                                         >
                                                                             {selectedMemberIds.includes(member.id) && <span style={{ color: 'white', fontSize: '14px', fontWeight: 900 }}>✓</span>}
@@ -8645,7 +8651,6 @@ export default function App() {
                                                                             <span style={{ color: '#777', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.address || '-'}</span>
                                                                         </div>
                                                                     </div>
-
                                                                     {/* [하단 섹션] 액션 버튼 */}
                                                                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                                                         {!member.is_approved && (
@@ -8977,8 +8982,9 @@ export default function App() {
                                                     <div>
                                                         <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '15px' }}>📈 최근 14일 접속 추이</div>
                                                         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '100px', padding: '0 5px', marginBottom: '10px' }}>
-                                                            {stats.loginStats.trends.map((t: any, idx: number) => {
-                                                                const maxCount = Math.max(...stats.loginStats.trends.map((d: any) => d.count), 1);
+                                                            {(stats?.loginStats?.trends || []).map((t: any, idx: number) => {
+                                                                const trends = stats.loginStats?.trends || [];
+                                                                const maxCount = Math.max(...trends.map((d: any) => d.count), 1);
                                                                 const barHeight = (t.count / maxCount) * 80;
                                                                 const isToday = t.date === new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
                                                                 
@@ -9002,8 +9008,8 @@ export default function App() {
                                                     <div>
                                                         <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '12px' }}>🔥 이번 달 다수 접속 성도 (TOP 10)</div>
                                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
-                                                            {stats.loginStats.topUsers.length > 0 ? (
-                                                                stats.loginStats.topUsers.map((u: any, i: number) => (
+                                                            {(stats?.loginStats?.topUsers || []).length > 0 ? (
+                                                                (stats?.loginStats?.topUsers || []).map((u: any, i: number) => (
                                                                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#F8F9FA', borderRadius: '12px', border: '1px solid #F0F0F0' }}>
                                                                         <div style={{ fontSize: '12px', fontWeight: 700, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i + 1}. {u.name}</div>
                                                                         <div style={{ fontSize: '11px', fontWeight: 800, color: '#42A5F5' }}>{u.count}회</div>
@@ -9019,9 +9025,9 @@ export default function App() {
                                                     <div>
                                                         <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '12px' }}>📋 최근 로그인 기록 (최근 50건)</div>
                                                         <div style={{ background: '#F8F9FA', borderRadius: '18px', border: '1px solid #F0F0F0', overflow: 'hidden' }}>
-                                                            {stats.loginStats.recent && stats.loginStats.recent.length > 0 ? (
+                                                            {stats?.loginStats?.recent && stats.loginStats.recent.length > 0 ? (
                                                                 <div style={{ display: 'flex', flexDirection: 'column', maxHeight: '300px', overflowY: 'auto' }}>
-                                                                    {stats.loginStats.recent.slice(0, 50).map((l: any, i: number) => {
+                                                                    {(stats?.loginStats?.recent || []).slice(0, 50).map((l: any, i: number) => {
                                                                         const loginTime = new Date(l.time);
                                                                         const now = new Date();
                                                                         const diffMs = now.getTime() - loginTime.getTime();
@@ -9041,7 +9047,7 @@ export default function App() {
                                                                                 justifyContent: 'space-between', 
                                                                                 alignItems: 'center', 
                                                                                 padding: '12px 16px', 
-                                                                                borderBottom: i === stats.loginStats.recent.length - 1 ? 'none' : '1px solid #EEE',
+                                                                                borderBottom: (stats?.loginStats?.recent && i === stats.loginStats.recent.length - 1) ? 'none' : '1px solid #EEE',
                                                                                 animation: 'fade-in 0.3s ease-out'
                                                                             }}>
                                                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -9265,12 +9271,12 @@ export default function App() {
 
                                         <div style={{ background: 'white', padding: '20px', borderRadius: '20px', border: '1px solid #EEE' }}>
                                             <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', marginBottom: '15px' }}>🖼️ 최근 공유된 사진 (모니터링)</div>
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                                            <div style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', scrollBehavior: 'smooth', gap: '8px' }}>
                                                 {galleryPosts.slice(0, 12).map((post: any) => (
                                                     <div 
                                                       key={post.id} 
                                                       onClick={() => setSelectedGalleryPost(post)}
-                                                      style={{ aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer', background: '#F5F5F5' }}
+                                                      style={{ minWidth: 'calc(25% - 6px)', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer', background: '#F5F5F5', scrollSnapAlign: 'start' }}
                                                     >
                                                         <img src={post.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                     </div>
@@ -9699,6 +9705,9 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
         
         let successCount = 0;
         try {
+            // [수정] 성도 요청: 여러 장의 사진을 하나의 게시물로 묶어서 업로드
+            const uploadedUrls: string[] = [];
+            
             for (let i = 0; i < selectedFiles.length; i++) {
                 const file = selectedFiles[i];
                 const fileExt = file.name.split('.').pop();
@@ -9719,8 +9728,13 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
                 const { data: { publicUrl } } = supabase.storage
                     .from('church-assets')
                     .getPublicUrl(filePath);
+                
+                uploadedUrls.push(publicUrl);
+                setUploadProgress(Math.round(((i + 1) / (selectedFiles.length + 1)) * 100));
+            }
 
-                // 3. API 서버에 게시물 저장
+            // 3. API 서버에 하나의 게시물로 저장
+            if (uploadedUrls.length > 0) {
                 const res = await fetch('/api/gallery/posts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -9728,23 +9742,24 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
                         user_id: user.id,
                         user_name: user.user_metadata?.full_name || user.email,
                         avatar_url: user.user_metadata?.avatar_url,
-                        image_url: publicUrl,
-                        description: i === 0 ? description : "", // 첫 번째 사진에만 설명을 붙이거나 공통으로 사용
+                        image_url: uploadedUrls[0], // 대표 이미지
+                        image_urls: uploadedUrls,    // 전체 이미지 목록
+                        description: description,
                         church_id: churchId || 'jesus-in'
                     })
                 });
 
-                if (res.ok) successCount++;
-                setUploadProgress(Math.round(((i + 1) / selectedFiles.length) * 100));
-            }
-
-            if (successCount > 0) {
-                alert(`${successCount}장의 사진이 공유되었습니다. ✨`);
-                onSuccess();
+                if (res.ok) {
+                    setUploadProgress(100);
+                    alert(`총 ${uploadedUrls.length}장의 사진이 하나의 추억으로 공유되었습니다. ✨`);
+                    onSuccess();
+                } else {
+                    throw new Error("서버 저장 실패");
+                }
             }
         } catch (err: any) {
             console.error("Upload error:", err);
-            alert("업로드 중 일부 오류가 발생했습니다: " + err.message);
+            alert("업로드 중 오류가 발생했습니다: " + err.message);
         } finally {
             setIsUploading(false);
         }
@@ -9841,8 +9856,26 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
                     <button onClick={onClose} style={{ background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white', width: '36px', height: '36px', borderRadius: '50%', fontSize: '18px', cursor: 'pointer', backdropFilter: 'blur(5px)' }}>✕</button>
                 </div>
                 
-                <div style={{ flex: 1, overflowY: 'auto', background: '#000', display: 'flex', alignItems: 'center' }}>
-                    <img src={post.image_url} style={{ width: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                <div style={{ flex: 1, overflowY: 'auto', background: '#000', display: 'flex', alignItems: 'center', position: 'relative' }}>
+                    {(() => {
+                        const images = post.image_urls && post.image_urls.length > 0 ? post.image_urls : [post.image_url];
+                        return (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', scrollBehavior: 'smooth' }}>
+                                {images.map((url: string, idx: number) => (
+                                    <div key={idx} style={{ minWidth: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', scrollSnapAlign: 'start' }}>
+                                        <img src={url} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                                    </div>
+                                ))}
+                                {images.length > 1 && (
+                                    <div style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '6px', zIndex: 5 }}>
+                                        {images.map((_: any, i: number) => (
+                                            <div key={i} style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,255,255,0.5)' }} />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
                 </div>
 
                 <div style={{ padding: '20px', background: 'white', borderRadius: '32px 32px 0 0', marginTop: '-32px', position: 'relative', boxShadow: '0 -10px 30px rgba(0,0,0,0.1)' }}>

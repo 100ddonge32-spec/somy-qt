@@ -11,7 +11,13 @@ const supabaseAdmin = createClient(
 
 export async function POST(req: NextRequest) {
     try {
-        // 권한 확인 (보통은 내부 크론이나 마스터 관리자만 호출 가능하게 함)
+        // [보안] 갑작스러운 삭제를 방지하기 위해 서비스 키의 일부를 URL 파라미터로 요구함
+        const { searchParams } = new URL(req.url);
+        const secret = searchParams.get('secret');
+        if (!secret || secret !== process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 8)) {
+            return NextResponse.json({ error: 'Unauthorized: Security secret is missing or invalid.' }, { status: 401 });
+        }
+
         const ninetyDaysAgo = new Date();
         ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
         const isoDate = ninetyDaysAgo.toISOString();
