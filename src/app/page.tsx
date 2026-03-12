@@ -6412,12 +6412,11 @@ export default function App() {
             const hasCustomColumn = !!churchSettings?.pastor_column_content?.trim();
             const columnTitle = hasCustomColumn 
                 ? (churchSettings.pastor_column_title || "🕊️ 오늘의 목양 메시지")
-                : (qtData?.reference ? `📖 오늘의 말씀 (${qtData.reference})` : (churchSettings.pastor_column_title || "🕊️ 오늘의 말씀 묵상"));
+                : `📖 오늘의 말씀 (${verseRef})`;
             
             const columnContent = hasCustomColumn 
                 ? churchSettings.pastor_column_content 
-                : (qtData?.interpretation || 
-                `"${verseText}"\n\n- ${verseRef}\n\n사랑하는 성도 여러분, 오늘 우리에게 주신 이 생명의 말씀을 마음 깊이 새기길 원합니다.\n\n하나님의 말씀은 우리 삶의 등불입니다. 때로는 앞이 보이지 않는 막막한 순간에도 주님은 항상 말씀으로 우리를 가장 선한 길로 인도하고 계심을 확신할 수 있습니다.\n\n오늘 이 말씀을 묵상하며, 내 생각보다 크신 하나님의 완전하신 계획을 신뢰합시다. 우리가 주님의 약속을 온전히 붙들고 나아갈 때, 주님께서 친히 우리의 모든 걸음을 지키시고 평안을 베풀어 주실 것입니다.\n\n오늘 하루도 주님의 은혜 안에서 승리하시고, 말씀의 능력으로 힘을 얻는 복된 날 되시기를 간절히 기도하며 축복합니다.`);
+                : `"${verseText}"\n\n- ${verseRef}\n\n사랑하는 성도 여러분, 오늘 우리에게 주신 이 생명의 말씀을 마음 깊이 새기길 원합니다.\n\n하나님의 말씀은 우리 삶의 등불입니다. 때로는 앞이 보이지 않는 막막한 순간에도 주님은 항상 말씀으로 우리를 가장 선한 길로 인도하고 계심을 확신할 수 있습니다.\n\n오늘 이 말씀을 묵상하며, 내 생각보다 크신 하나님의 완전하신 계획을 신뢰합시다. 우리가 주님의 약속을 온전히 붙들고 나아갈 때, 주님께서 친히 우리의 모든 걸음을 지키시고 평안을 베풀어 주실 것입니다.\n\n오늘 하루도 주님의 은혜 안에서 승리하시고, 말씀의 능력으로 힘을 얻는 복된 날 되시기를 간절히 기도하며 축복합니다.`;
 
             return (
                 <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', ...baseFont, animation: 'fade-in 0.4s ease-out' }}>
