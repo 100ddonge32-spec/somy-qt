@@ -189,11 +189,20 @@ export async function GET(req: NextRequest) {
             .sort((a, b) => b.count - a.count)
             .slice(0, 10);
 
-        // 5. 랭킹 생성 및 정렬
+        // 5. 최근 로그인 기록 (최근 100건)
+        const { data: recentLogins, error: recentError } = await supabaseAdmin
+            .from('activity_logs')
+            .select('user_name, created_at, user_id')
+            .eq('activity_type', 'LOGIN')
+            .in('church_id', cids)
+            .order('created_at', { ascending: false })
+            .limit(100);
+
+        if (recentError) console.error("[Stats API] Recent logins fetch error:", recentError);
+
+        // 6. 랭킹 생성 및 정렬
         const ranking = Object.values(userStats)
             .map(u => {
-                // 오늘(3/11)까지의 기록은 baseCount에 이미 포함되어 있다고 가정
-                // 따라서 baseCount가 있는 성도는 3/12 이후의 기록만 추가로 더함
                 const newDatesCount = Array.from(u.dates).filter(d => {
                     if (u.baseCount > 0) return d > '2026-03-11';
                     return true;
@@ -220,7 +229,12 @@ export async function GET(req: NextRequest) {
             totalCompletions: ranking.reduce((acc: number, cur: any) => acc + cur.count, 0),
             loginStats: {
                 trends: formattedTrends,
-                topUsers: topLoginUsers
+                topUsers: topLoginUsers,
+                recent: (recentLogins || []).map(l => ({
+                    name: l.user_name || '익명',
+                    time: l.created_at,
+                    userId: l.user_id
+                }))
             },
             _debug: {
                 koreaTime: today,

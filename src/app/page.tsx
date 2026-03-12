@@ -3684,7 +3684,51 @@ export default function App() {
                             <button onClick={() => setView('home')} style={{ width: '100%', padding: '16px', background: '#EEE', color: '#333', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 이동</button>
                         )}
                     </div>
+
+                    {/* 상단 이동 & 뒤로가기 플로팅 버튼 */}
+                    <div style={{
+                        position: 'fixed',
+                        bottom: '100px',
+                        right: 'max(20px, calc(50% - 280px))',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
+                        zIndex: 100,
+                        animation: 'fade-in 0.5s ease'
+                    }}>
+                        <button 
+                            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                            style={{
+                                width: '48px', height: '48px', borderRadius: '50%',
+                                background: 'rgba(255, 255, 255, 0.9)',
+                                backdropFilter: 'blur(10px)',
+                                border: '1px solid rgba(0,0,0,0.05)',
+                                boxShadow: '0 8px 25px rgba(0,0,0,0.12)',
+                                fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                cursor: 'pointer', color: '#333', transition: 'all 0.2s'
+                            }}
+                            title="위로 가기"
+                        >
+                            ↑
+                        </button>
+                        <button 
+                            onClick={handleBack}
+                            style={{
+                                width: '48px', height: '48px', borderRadius: '50%',
+                                background: 'rgba(255, 255, 255, 0.9)',
+                                backdropFilter: 'blur(10px)',
+                                border: '1px solid rgba(0,0,0,0.05)',
+                                boxShadow: '0 8px 25px rgba(0,0,0,0.12)',
+                                fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                cursor: 'pointer', color: '#333', transition: 'all 0.2s'
+                            }}
+                            title="뒤로 가기"
+                        >
+                            ←
+                        </button>
+                    </div>
                 </div >
+
             );
         }
         /* ══════════════════════════════
@@ -8973,6 +9017,53 @@ export default function App() {
                                                                 ))
                                                             ) : (
                                                                 <div style={{ gridColumn: 'span 2', fontSize: '12px', color: '#999', textAlign: 'center', padding: '10px' }}>기록이 없습니다.</div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 최근 로그인 기록 */}
+                                                    <div>
+                                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '12px' }}>📋 최근 로그인 기록 (최근 50건)</div>
+                                                        <div style={{ background: '#F8F9FA', borderRadius: '18px', border: '1px solid #F0F0F0', overflow: 'hidden' }}>
+                                                            {stats.loginStats.recent && stats.loginStats.recent.length > 0 ? (
+                                                                <div style={{ display: 'flex', flexDirection: 'column', maxHeight: '300px', overflowY: 'auto' }}>
+                                                                    {stats.loginStats.recent.slice(0, 50).map((l: any, i: number) => {
+                                                                        const loginTime = new Date(l.time);
+                                                                        const now = new Date();
+                                                                        const diffMs = now.getTime() - loginTime.getTime();
+                                                                        const diffMin = Math.floor(diffMs / 60000);
+                                                                        const diffHr = Math.floor(diffMin / 60);
+                                                                        const diffDay = Math.floor(diffHr / 24);
+
+                                                                        let relativeTime = "";
+                                                                        if (diffMin < 1) relativeTime = "방금 전";
+                                                                        else if (diffMin < 60) relativeTime = `${diffMin}분 전`;
+                                                                        else if (diffHr < 24) relativeTime = `${diffHr}시간 전`;
+                                                                        else relativeTime = `${diffDay}일 전`;
+
+                                                                        return (
+                                                                            <div key={i} style={{ 
+                                                                                display: 'flex', 
+                                                                                justifyContent: 'space-between', 
+                                                                                alignItems: 'center', 
+                                                                                padding: '12px 16px', 
+                                                                                borderBottom: i === stats.loginStats.recent.length - 1 ? 'none' : '1px solid #EEE',
+                                                                                animation: 'fade-in 0.3s ease-out'
+                                                                            }}>
+                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                                    <div style={{ width: '8px', height: '8px', background: '#4CAF50', borderRadius: '50%' }}></div>
+                                                                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#333' }}>{l.name} 성도님</div>
+                                                                                </div>
+                                                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                                                                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#42A5F5' }}>{relativeTime}</div>
+                                                                                    <div style={{ fontSize: '10px', color: '#AAA' }}>{loginTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</div>
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            ) : (
+                                                                <div style={{ padding: '30px', textAlign: 'center', color: '#999', fontSize: '12px' }}>최근 로그인 기록이 없습니다.</div>
                                                             )}
                                                         </div>
                                                     </div>
