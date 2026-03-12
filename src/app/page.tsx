@@ -1078,6 +1078,9 @@ export default function App() {
                         birthdate: metaBirth, church_id: churchId
                     })
                 });
+
+                let safeChurch = churchId || 'somy-main';
+
                 if (syncRes.ok) {
                     const syncData = await syncRes.json();
                     setIsApproved((isHardcodedAdmin || isMasterName) ? true : !!syncData.is_approved);
@@ -1088,16 +1091,36 @@ export default function App() {
                         const pathName = rawPathName ? decodeURIComponent(rawPathName) : '';
                         const hasSpecificChurchUrl = urlParams.get('church') || urlParams.get('church_id') || (pathName !== '' ? pathName : null);
 
-                        let safeChurch = hasSpecificChurchUrl ? hasSpecificChurchUrl : (syncData.church_id || 'somy-main');
+                        safeChurch = hasSpecificChurchUrl ? hasSpecificChurchUrl : (syncData.church_id || 'somy-main');
                         if (safeChurch === '예수인교회' || safeChurch === encodeURIComponent('예수인교회')) safeChurch = 'jesus-in';
 
                         setChurchId(safeChurch);
                         localStorage.setItem('church_id', safeChurch);
                     }
+
                     setProfileName(syncData.full_name || syncData.name || metaName);
+                    
                     if (syncData.is_approved) {
                         subscribePush(user.id);
                         checkNewContent();
+                        
+                        // ✅ 하루 한 번 접속 로그 남기기 (중복 방지)
+                        const todayStr = new Date().toISOString().split('T')[0];
+                        const lastLoggedVisit = localStorage.getItem(`last_visit_log_${user.id}`);
+                        if (lastLoggedVisit !== todayStr) {
+                            fetch('/api/auth/sync', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ 
+                                    user_id: user.id, 
+                                    email: user.email, 
+                                    name: syncData.full_name || metaName || '성도',
+                                    church_id: safeChurch 
+                                })
+                            }).then(() => {
+                                localStorage.setItem(`last_visit_log_${user.id}`, todayStr);
+                            }).catch(() => {});
+                        }
                     }
                 }
             } else {
@@ -8965,21 +8988,21 @@ export default function App() {
                                             )}
                                         </div>
 
-                                        {/* (3) 로그인 활동 & 추이 */}
+                                        {/* (3) 종합 활동 통계 */}
                                         <div style={{ background: 'white', padding: '24px', borderRadius: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #EEE' }}>
                                             <div style={{ fontSize: '15px', fontWeight: 900, color: '#333', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <span style={{ fontSize: '20px' }}>🔑</span> 로그인 활동 및 추이
+                                                <span style={{ fontSize: '20px' }}>📊</span> 종합 활동 및 추이
                                             </div>
 
                                             {!stats?.loginStats ? (
                                                 <div style={{ padding: '40px 20px', textAlign: 'center', color: '#999', fontSize: '14px' }}>
-                                                    로그인 데이터를 불러오는 중입니다...
+                                                    활동 데이터를 불러오는 중입니다...
                                                 </div>
                                             ) : (
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
-                                                    {/* 로그인 추이 차트 */}
+                                                    {/* 활동 추이 차트 */}
                                                     <div>
-                                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '15px' }}>📈 최근 14일 접속 추이</div>
+                                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '15px' }}>📈 최근 14일 전반적 활동 추이</div>
                                                         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '100px', padding: '0 5px', marginBottom: '10px' }}>
                                                             {(stats?.loginStats?.trends || []).map((t: any, idx: number) => {
                                                                 const trends = stats.loginStats?.trends || [];
@@ -8990,11 +9013,11 @@ export default function App() {
                                                                 return (
                                                                     <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', height: '100%' }}>
                                                                         <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'flex-end' }}>
-                                                                            <div style={{ width: '100%', height: `${barHeight}%`, background: isToday ? '#42A5F5' : '#E0E0E0', borderRadius: '4px 4px 0 0', position: 'relative', transition: 'height 0.5s ease-out' }}>
-                                                                                {t.count > 0 && <div style={{ position: 'absolute', top: '-15px', width: '100%', textAlign: 'center', fontSize: '9px', fontWeight: 800, color: isToday ? '#42A5F5' : '#666' }}>{t.count}</div>}
+                                                                            <div style={{ width: '100%', height: `${barHeight}%`, background: isToday ? 'linear-gradient(to top, #FFD700, #D4AF37)' : '#E0E0E0', borderRadius: '4px 4px 0 0', position: 'relative', transition: 'height 0.5s ease-out' }}>
+                                                                                {t.count > 0 && <div style={{ position: 'absolute', top: '-15px', width: '100%', textAlign: 'center', fontSize: '9px', fontWeight: 800, color: isToday ? '#D4AF37' : '#666' }}>{t.count}</div>}
                                                                             </div>
                                                                         </div>
-                                                                        <div style={{ fontSize: '8px', color: isToday ? '#42A5F5' : '#AAA', whiteSpace: 'nowrap', transform: 'scale(0.8)', fontWeight: isToday ? 800 : 400 }}>
+                                                                        <div style={{ fontSize: '8px', color: isToday ? '#D4AF37' : '#AAA', whiteSpace: 'nowrap', transform: 'scale(0.8)', fontWeight: isToday ? 800 : 400 }}>
                                                                             {t.date.split('-')[2]}일
                                                                         </div>
                                                                     </div>
@@ -9005,31 +9028,33 @@ export default function App() {
 
                                                     {/* 열성 활동 유저 */}
                                                     <div>
-                                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '12px' }}>🔥 이번 달 다수 접속 성도 (TOP 10)</div>
+                                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '12px' }}>🔥 이번 달 다수 활동 성도 (TOP 15)</div>
                                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
                                                             {(stats?.loginStats?.topUsers || []).length > 0 ? (
                                                                 (stats?.loginStats?.topUsers || []).map((u: any, i: number) => (
-                                                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#F8F9FA', borderRadius: '12px', border: '1px solid #F0F0F0' }}>
-                                                                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i + 1}. {u.name}</div>
-                                                                        <div style={{ fontSize: '11px', fontWeight: 800, color: '#42A5F5' }}>{u.count}회</div>
+                                                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: i < 3 ? '#FFF9E6' : '#F8F9FA', borderRadius: '12px', border: i < 3 ? '1px solid #FFE082' : '1px solid #F0F0F0' }}>
+                                                                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                            <span style={{ color: i < 3 ? '#D4AF37' : '#999', marginRight: '4px' }}>{i + 1}</span>{u.name}
+                                                                        </div>
+                                                                        <div style={{ fontSize: '11px', fontWeight: 800, color: i < 3 ? '#D4AF37' : '#666' }}>{u.count}회</div>
                                                                     </div>
                                                                 ))
                                                             ) : (
-                                                                <div style={{ gridColumn: 'span 2', fontSize: '12px', color: '#999', textAlign: 'center', padding: '10px' }}>기록이 없습니다.</div>
+                                                                <div style={{ gridColumn: 'span 2', fontSize: '12px', color: '#999', textAlign: 'center', padding: '10px' }}>활동 기록이 없습니다.</div>
                                                             )}
                                                         </div>
                                                     </div>
 
-                                                    {/* 최근 로그인 기록 */}
+                                                    {/* 최근 활동 기록 */}
                                                     <div>
-                                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '12px' }}>📋 최근 로그인 기록 (최근 50건)</div>
+                                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '12px' }}>📋 최근 활동 기록 (최근 50건)</div>
                                                         <div style={{ background: '#F8F9FA', borderRadius: '18px', border: '1px solid #F0F0F0', overflow: 'hidden' }}>
                                                             {stats?.loginStats?.recent && stats.loginStats.recent.length > 0 ? (
-                                                                <div style={{ display: 'flex', flexDirection: 'column', maxHeight: '300px', overflowY: 'auto' }}>
+                                                                <div style={{ display: 'flex', flexDirection: 'column', maxHeight: '400px', overflowY: 'auto' }}>
                                                                     {(stats?.loginStats?.recent || []).slice(0, 50).map((l: any, i: number) => {
-                                                                        const loginTime = new Date(l.time);
+                                                                        const logTime = new Date(l.time);
                                                                         const now = new Date();
-                                                                        const diffMs = now.getTime() - loginTime.getTime();
+                                                                        const diffMs = now.getTime() - logTime.getTime();
                                                                         const diffMin = Math.floor(diffMs / 60000);
                                                                         const diffHr = Math.floor(diffMin / 60);
                                                                         const diffDay = Math.floor(diffHr / 24);
@@ -9040,29 +9065,42 @@ export default function App() {
                                                                         else if (diffHr < 24) relativeTime = `${diffHr}시간 전`;
                                                                         else relativeTime = `${diffDay}일 전`;
 
+                                                                        // 활동 유형별 아이콘 및 라벨
+                                                                        const typeMap: Record<string, { icon: string, label: string, color: string }> = {
+                                                                            'LOGIN': { icon: '🔑', label: '접속', color: '#42A5F5' },
+                                                                            'POST_CREATED': { icon: '✍️', label: '글작성', color: '#4CAF50' },
+                                                                            'COMMENT_CREATED': { icon: '💬', label: '댓글', color: '#FF9800' },
+                                                                            'QT_COMPLETED': { icon: '📖', label: '큐티완료', color: '#D4AF37' },
+                                                                            'THANKS_DIARY': { icon: '🙏', label: '감사일기', color: '#E91E63' }
+                                                                        };
+                                                                        const activity = typeMap[l.activityType] || { icon: '✨', label: '활동', color: '#999' };
+
                                                                         return (
                                                                             <div key={i} style={{ 
                                                                                 display: 'flex', 
                                                                                 justifyContent: 'space-between', 
                                                                                 alignItems: 'center', 
                                                                                 padding: '12px 16px', 
-                                                                                borderBottom: (stats?.loginStats?.recent && i === stats.loginStats.recent.length - 1) ? 'none' : '1px solid #EEE',
+                                                                                borderBottom: i === (stats?.loginStats?.recent?.length || 0) - 1 ? 'none' : '1px solid #EEE',
                                                                                 animation: 'fade-in 0.3s ease-out'
                                                                             }}>
-                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                                    <div style={{ width: '8px', height: '8px', background: '#4CAF50', borderRadius: '50%' }}></div>
-                                                                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#333' }}>{l.name} 성도님</div>
+                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                                    <div style={{ fontSize: '16px' }}>{activity.icon}</div>
+                                                                                    <div>
+                                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                            <div style={{ fontSize: '12px', fontWeight: 800, color: '#333' }}>{l.name} 성도님</div>
+                                                                                            <span style={{ fontSize: '9px', fontWeight: 800, color: 'white', background: activity.color, padding: '1px 5px', borderRadius: '4px' }}>{activity.label}</span>
+                                                                                        </div>
+                                                                                        <div style={{ fontSize: '10px', color: '#AAA', marginTop: '1px' }}>{logTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</div>
+                                                                                    </div>
                                                                                 </div>
-                                                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                                                                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#42A5F5' }}>{relativeTime}</div>
-                                                                                    <div style={{ fontSize: '10px', color: '#AAA' }}>{loginTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</div>
-                                                                                </div>
+                                                                                <div style={{ fontSize: '11px', fontWeight: 700, color: activity.color }}>{relativeTime}</div>
                                                                             </div>
                                                                         );
                                                                     })}
                                                                 </div>
                                                             ) : (
-                                                                <div style={{ padding: '30px', textAlign: 'center', color: '#999', fontSize: '12px' }}>최근 로그인 기록이 없습니다.</div>
+                                                                <div style={{ padding: '30px', textAlign: 'center', color: '#999', fontSize: '12px' }}>최근 활동 기록이 없습니다.</div>
                                                             )}
                                                         </div>
                                                     </div>

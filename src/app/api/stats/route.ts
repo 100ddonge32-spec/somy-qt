@@ -1,6 +1,7 @@
 // [Deployment Trigger] v3.1 - 3월 큐티왕 데이터 복구용
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { logActivity } from '@/lib/logger';
 
 // 캐싱 완전 방지
 // 캐싱 완전 방지
@@ -173,11 +174,13 @@ export async function GET(req: NextRequest) {
             }
         });
 
-        // 4. 로그인 활동 통계 추가
+        // 4. 로그인 및 주요 활동 통계 추가
+        const ACTIVITY_TYPES = ['LOGIN', 'POST_CREATED', 'COMMENT_CREATED', 'QT_COMPLETED', 'THANKS_DIARY'];
+
         const { data: loginLogs, error: loginError } = await supabaseAdmin
             .from('activity_logs')
-            .select('user_name, created_at')
-            .eq('activity_type', 'LOGIN')
+            .select('user_name, created_at, activity_type')
+            .in('activity_type', ACTIVITY_TYPES)
             .in('church_id', cids)
             .gte('created_at', firstOfMonth)
             .order('created_at', { ascending: true });
@@ -187,6 +190,7 @@ export async function GET(req: NextRequest) {
         const loginTrends: Record<string, number> = {};
         const loginUserCounts: Record<string, number> = {};
 
+        // 중복 활동 방지 (같은 날 한 유저가 여러 번 접속/활동해도 1번으로 카운트하고 싶다면 처리할 수 있지만, 현재는 활동량 전체를 봄)
         (loginLogs || []).forEach(log => {
             const date = log.created_at.split('T')[0];
             loginTrends[date] = (loginTrends[date] || 0) + 1;
@@ -210,13 +214,13 @@ export async function GET(req: NextRequest) {
         const topLoginUsers = Object.entries(loginUserCounts)
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count)
-            .slice(0, 10);
+            .slice(0, 15); // TOP 15로 확장
 
-        // 5. 최근 로그인 기록 (최근 100건)
+        // 5. 최근 활동 기록 (최근 100건)
         const { data: recentLogins, error: recentError } = await supabaseAdmin
             .from('activity_logs')
-            .select('user_name, created_at, user_id')
-            .eq('activity_type', 'LOGIN')
+            .select('user_name, created_at, user_id, activity_type')
+            .in('activity_type', ACTIVITY_TYPES)
             .in('church_id', cids)
             .order('created_at', { ascending: false })
             .limit(100);
@@ -256,7 +260,8 @@ export async function GET(req: NextRequest) {
                 recent: (recentLogins || []).map(l => ({
                     name: l.user_name || '익명',
                     time: l.created_at,
-                    userId: l.user_id
+                    userId: l.user_id,
+                    activityType: l.activity_type
                 }))
             },
             _debug: {
@@ -319,6 +324,9 @@ export async function POST(req: NextRequest) {
             });
             if (insertError) throw insertError;
         }
+
+        // ✅ 큐티 완료 로그 기록 (성도 활동 추적)
+        logActivity(user_id, user_name || '성도', 'QT_COMPLETED', church_id, today);
 
         console.log("[Stats API] POST Success");
         return NextResponse.json({ success: true, savedDate: today, savedChurch: church_id });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import webpush from '@/lib/webpush';
+import { logActivity } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,12 +28,17 @@ export async function POST(req: NextRequest) {
 
         if (commentError) throw commentError;
 
-        // 2. 게시글 작성자 찾기 (알림을 보내기 위함)
+        // 2. 게시글 정보 및 작성자 찾기
         const { data: post, error: postError } = await supabaseAdmin
             .from('community_posts')
-            .select('user_id')
+            .select('user_id, church_id')
             .eq('id', post_id)
             .single();
+
+        // 활동 기록 남기기 (로거 추가)
+        if (post?.church_id) {
+            logActivity(user_id, user_name, 'COMMENT_CREATED', post.church_id, content.slice(0, 50));
+        }
 
         // 3. 알림 생성 및 푸시 전송 (자신이 쓴 댓글은 알림 제외)
         if (!postError && post && post.user_id !== user_id) {

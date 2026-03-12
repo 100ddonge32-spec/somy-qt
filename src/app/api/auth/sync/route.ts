@@ -258,6 +258,8 @@ export async function POST(req: NextRequest) {
                 if (match.id !== user_id) {
                     await migrateData(match.id, user_id);
                 }
+                // 로그인 활동 기록 추가 ✅
+                await logActivity(user_id, responseData.full_name, 'LOGIN', permanentChurch);
                 return NextResponse.json({ ...responseData, name: responseData.full_name, status: 'merged' });
             } else { // 1
                 const newProfile = { ...responseData, id: user_id };
@@ -285,6 +287,8 @@ export async function POST(req: NextRequest) {
                     } // 3 close
                     await supabaseAdmin.from('profiles').delete().eq('id', match.id);
                 } // 2 close
+                // 로그인 활동 기록 추가 ✅
+                await logActivity(user_id, newProfile.full_name, 'LOGIN', permanentChurch);
                 return NextResponse.json({ ...newProfile, name: newProfile.full_name, status: 'linked' });
             } // 1 close
         } // CLOSES `if (match)` FROM LINE 157!!
