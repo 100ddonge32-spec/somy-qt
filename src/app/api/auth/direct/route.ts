@@ -176,11 +176,34 @@ export async function POST(req: NextRequest) {
 
                 // [데이터 이관] 게시글, 댓글 등의 소유권을 신규 ID로 이전하여 데이터 증발 방지
                 console.log(`[DirectAuth] Migrating data from ${match.id} to ${user_id}`);
-                await supabaseAdmin.from('thanksgiving_diaries').update({ user_id: user_id }).eq('user_id', match.id);
-                await supabaseAdmin.from('thanksgiving_comments').update({ user_id: user_id }).eq('user_id', match.id);
-                await supabaseAdmin.from('community_posts').update({ user_id: user_id }).eq('user_id', match.id);
-                await supabaseAdmin.from('community_comments').update({ user_id: user_id }).eq('user_id', match.id);
-                await supabaseAdmin.from('notifications').update({ user_id: user_id }).eq('user_id', match.id);
+                const migrateTables = [
+                    'thanksgiving_diaries',
+                    'thanksgiving_comments',
+                    'community_posts',
+                    'community_comments',
+                    'notifications',
+                    'qt_completions',
+                    'counseling_requests',
+                    'push_subscriptions',
+                    'gallery_posts',
+                    'gallery_likes',
+                    'gallery_comments'
+                ];
+
+                for (const table of migrateTables) {
+                    try {
+                        const { error: migrationError } = await supabaseAdmin
+                            .from(table)
+                            .update({ user_id: user_id })
+                            .eq('user_id', match.id);
+                        
+                        if (migrationError) {
+                            console.error(`[DirectAuth] Migration failed for table ${table}:`, migrationError.message);
+                        }
+                    } catch (e) {
+                        console.error(`[DirectAuth] Unexpected error migrating table ${table}:`, e);
+                    }
+                }
 
                 // 기존 프로필 정리 (이관 성공 후에만)
                 await supabaseAdmin.from('profiles').delete().eq('id', match.id);
