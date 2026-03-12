@@ -61,6 +61,20 @@ export async function POST(req: NextRequest) {
         // 활동 기록 남기기
         logActivity(user_id, user_name, 'POST_CREATED', cid, content.slice(0, 50));
 
+        // ✅ 만약 묵상나눔(is_qt)이라면 qt_completions에도 기록하여 캘린더에 표시되게 함
+        if (is_qt) {
+            const koreaDate = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
+            await supabaseAdmin.from('qt_completions').upsert({
+                user_id,
+                user_name: user_name || '성도',
+                completed_date: koreaDate,
+                answers: [content] // 게시글 내용을 첫 번째 답변으로 저장하거나 별도 처리
+            }, { onConflict: 'user_id,completed_date' });
+            
+            // 묵상 완료 로그도 추가 기록
+            logActivity(user_id, user_name, 'QT_COMPLETED', cid, koreaDate);
+        }
+
         // 새 글이 등록되면 모든 성도에게 알림 발송 (단, 본인 제외, 비밀글 아닐 때)
         if (!is_private) {
             const { data: usersToNotify } = await supabaseAdmin.from('profiles').select('id').eq('church_id', cid).neq('id', user_id);

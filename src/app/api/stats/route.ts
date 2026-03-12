@@ -67,19 +67,24 @@ export async function GET(req: NextRequest) {
 
         console.log(`[Stats API] CIDs: ${cids}, Month Start: ${firstOfMonth}`);
 
-        // 1. 큐티 완료 기록 가져오기 (교회별 격리 필터 적용)
-        const { data: completions, error: dbError } = await supabaseAdmin
-            .from('qt_completions')
-            .select(`
-                user_id,
-                user_name,
-                avatar_url,
-                completed_date,
-                profiles!inner(church_id)
-            `)
-            .in('profiles.church_id', cids)
-            .gte('completed_date', firstOfMonth);
+        // 1. 해당 교회의 사용자 ID 목록 먼저 가져오기 (매우 안전한 방식)
+        const { data: churchProfiles } = await supabaseAdmin
+            .from('profiles')
+            .select('id')
+            .in('church_id', cids);
+        
+        const churchUserIds = (churchProfiles || []).map(p => p.id);
 
+        // 큐티 완료 기록 가져오기 (사용자 ID 필터링)
+        let completionsQuery = supabaseAdmin.from('qt_completions').select('*').gte('completed_date', firstOfMonth);
+        if (rawChurchId !== 'somy-main' && churchUserIds.length > 0) {
+            completionsQuery = completionsQuery.in('user_id', churchUserIds);
+        } else if (rawChurchId !== 'somy-main') {
+            // 성도가 한 명도 없는 교회라면 빈 결과 처리
+            completionsQuery = completionsQuery.in('user_id', ['none']);
+        }
+        
+        const { data: completions, error: dbError } = await completionsQuery;
         if (dbError) console.error("[Stats API] Completions fetch error:", dbError);
 
         // 2. 은혜나눔(community_posts) 기록 가져오기 (교회별 격리)
@@ -147,7 +152,9 @@ export async function GET(req: NextRequest) {
             const nameKey = (post.user_name || '익명성도').trim();
             if (nameKey === '익명성도' || EXCLUDED_NAMES.includes(nameKey)) return;
             
-            const dateStr = post.created_at.split('T')[0];
+            // ✅ UTC 시간을 한국 시간(KST)으로 변환 후 날짜 추출 (오전 작성 건 처리)
+            const kstDate = new Date(new Date(post.created_at).getTime() + 9 * 60 * 60 * 1000);
+            const dateStr = kstDate.toISOString().split('T')[0];
 
             if (!userStats[nameKey]) {
                 userStats[nameKey] = { 
@@ -175,15 +182,21 @@ export async function GET(req: NextRequest) {
         });
 
         // 4. 로그인 및 주요 활동 통계 추가
-        const ACTIVITY_TYPES = ['LOGIN', 'POST_CREATED', 'COMMENT_CREATED', 'QT_COMPLETED', 'THANKS_DIARY'];
+        const ACTIVITY_TYPES = ['LOGIN', 'POST_CREATED', 'COMMENT_CREATED', 'QT_COMPLETED', 'THANKS_DIARY', 'MEMBER_APPROVED', 'ADMIN_MODIFIED'];
 
-        const { data: loginLogs, error: loginError } = await supabaseAdmin
+        let logsQuery = supabaseAdmin
             .from('activity_logs')
             .select('user_name, created_at, activity_type')
             .in('activity_type', ACTIVITY_TYPES)
-            .in('church_id', cids)
             .gte('created_at', firstOfMonth)
             .order('created_at', { ascending: true });
+            
+        // 슈퍼 관리자(somy-main)가 아니면 해당 교회 활동만 필터링
+        if (rawChurchId !== 'somy-main') {
+            logsQuery = logsQuery.in('church_id', cids);
+        }
+
+        const { data: loginLogs, error: loginError } = await logsQuery;
 
         if (loginError) console.error("[Stats API] Login logs fetch error:", loginError);
 
@@ -192,7 +205,8 @@ export async function GET(req: NextRequest) {
 
         // 중복 활동 방지 (같은 날 한 유저가 여러 번 접속/활동해도 1번으로 카운트하고 싶다면 처리할 수 있지만, 현재는 활동량 전체를 봄)
         (loginLogs || []).forEach(log => {
-            const date = log.created_at.split('T')[0];
+            const kstDate = new Date(new Date(log.created_at).getTime() + 9 * 60 * 60 * 1000);
+            const date = kstDate.toISOString().split('T')[0];
             loginTrends[date] = (loginTrends[date] || 0) + 1;
             
             const name = (log.user_name || '익명').trim();
@@ -217,13 +231,18 @@ export async function GET(req: NextRequest) {
             .slice(0, 15); // TOP 15로 확장
 
         // 5. 최근 활동 기록 (최근 100건)
-        const { data: recentLogins, error: recentError } = await supabaseAdmin
+        let recentQuery = supabaseAdmin
             .from('activity_logs')
             .select('user_name, created_at, user_id, activity_type')
             .in('activity_type', ACTIVITY_TYPES)
-            .in('church_id', cids)
             .order('created_at', { ascending: false })
             .limit(100);
+
+        if (rawChurchId !== 'somy-main') {
+            recentQuery = recentQuery.in('church_id', cids);
+        }
+
+        const { data: recentLogins, error: recentError } = await recentQuery;
 
         if (recentError) console.error("[Stats API] Recent logins fetch error:", recentError);
 
