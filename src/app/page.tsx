@@ -9909,6 +9909,8 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
     const [likes, setLikes] = useState({ count: 0, isLiked: false });
     const [comments, setComments] = useState<any[]>([]);
     const [commentText, setCommentText] = useState("");
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const scrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (post) {
@@ -9958,26 +9960,69 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
                     }
                     if (images.length === 0 && post.image_url) images = [post.image_url];
 
+                    const handleScroll = () => {
+                        if (scrollRef.current) {
+                            const scrollLeft = scrollRef.current.scrollLeft;
+                            const width = scrollRef.current.offsetWidth;
+                            const newIndex = Math.round(scrollLeft / width);
+                            if (newIndex !== currentIndex) setCurrentIndex(newIndex);
+                        }
+                    };
+
+                    const scrollTo = (index: number) => {
+                        if (scrollRef.current) {
+                            scrollRef.current.scrollTo({
+                                left: index * scrollRef.current.offsetWidth,
+                                behavior: 'smooth'
+                            });
+                        }
+                    };
+
                     return (
                         <div style={{ 
                             position: 'relative', 
                             flexShrink: 0, 
                             width: '100%',
-                            height: '60vh', // 겹침을 제거하므로 높이를 약간 조절
+                            height: '45vh', // 크기를 더 줄여서 전체가 잘 보이게 함
                             background: '#000', 
                             display: 'flex', 
-                            flexDirection: 'column'
+                            flexDirection: 'column',
+                            overflow: 'hidden'
                         }}>
-                            <div style={{ 
-                                width: '100%', 
-                                height: '100%', 
-                                display: 'flex', 
-                                overflowX: 'scroll', 
-                                scrollSnapType: 'x mandatory', 
-                                WebkitOverflowScrolling: 'touch',
-                                scrollbarWidth: 'none',
-                                msOverflowStyle: 'none'
-                            }}>
+                            {/* 좌측 화살표 */}
+                            {images.length > 1 && currentIndex > 0 && (
+                                <button 
+                                    onClick={() => scrollTo(currentIndex - 1)}
+                                    style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', zIndex: 15, background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}
+                                >
+                                    ‹
+                                </button>
+                            )}
+                            
+                            {/* 우측 화살표 */}
+                            {images.length > 1 && currentIndex < images.length - 1 && (
+                                <button 
+                                    onClick={() => scrollTo(currentIndex + 1)}
+                                    style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', zIndex: 15, background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}
+                                >
+                                    ›
+                                </button>
+                            )}
+
+                            <div 
+                                ref={scrollRef}
+                                onScroll={handleScroll}
+                                style={{ 
+                                    width: '100%', 
+                                    height: '100%', 
+                                    display: 'flex', 
+                                    overflowX: 'scroll', 
+                                    scrollSnapType: 'x mandatory', 
+                                    WebkitOverflowScrolling: 'touch',
+                                    scrollbarWidth: 'none',
+                                    msOverflowStyle: 'none'
+                                }}
+                            >
                                 {images.map((url: string, idx: number) => (
                                     <div key={idx} style={{ 
                                         minWidth: '100%', 
@@ -9987,7 +10032,7 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
                                         justifyContent: 'center', 
                                         scrollSnapAlign: 'start', 
                                         flexShrink: 0,
-                                        padding: '10px' // 테두리 여백을 주어 절대 잘리지 않게 함
+                                        padding: '20px 40px' // 좌우 여백을 크게 주어 사진이 가운데 작게 보이게 함
                                     }}>
                                         <img 
                                             src={url} 
@@ -9996,7 +10041,8 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
                                                 maxHeight: '100%', 
                                                 objectFit: 'contain', 
                                                 display: 'block',
-                                                boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+                                                boxShadow: '0 10px 40px rgba(0,0,0,0.6)',
+                                                borderRadius: '8px'
                                             }} 
                                             alt={`공유 사진 ${idx + 1}`}
                                         />
@@ -10008,24 +10054,25 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
                             {images.length > 1 && (
                                 <div style={{ 
                                     position: 'absolute', 
-                                    bottom: '20px', 
+                                    bottom: '15px', 
                                     left: '50%', 
                                     transform: 'translateX(-50%)', 
                                     display: 'flex', 
-                                    gap: '8px', 
+                                    gap: '6px', 
                                     zIndex: 10,
-                                    background: 'rgba(0,0,0,0.5)',
-                                    padding: '6px 12px',
-                                    borderRadius: '16px',
-                                    backdropFilter: 'blur(10px)'
+                                    background: 'rgba(0,0,0,0.4)',
+                                    padding: '5px 10px',
+                                    borderRadius: '12px',
+                                    backdropFilter: 'blur(4px)'
                                 }}>
                                     {images.map((_: any, i: number) => (
                                         <div key={i} style={{ 
-                                            width: '7px', 
-                                            height: '7px', 
+                                            width: '6px', 
+                                            height: '6px', 
                                             borderRadius: '50%', 
-                                            background: 'white',
-                                            opacity: 0.9
+                                            background: i === currentIndex ? '#D4AF37' : 'white',
+                                            opacity: i === currentIndex ? 1 : 0.5,
+                                            transition: 'all 0.3s'
                                         }} />
                                     ))}
                                 </div>
@@ -10034,7 +10081,7 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
                     );
                 })()}
 
-                {/* 정보 영역: 마진 겹침(marginTop: -32px) 제거하여 사진 가림 방지 */}
+                {/* 정보 영역 */}
                 <div style={{ padding: '24px', background: 'white', borderRadius: '24px 24px 0 0', position: 'relative', boxShadow: '0 -5px 25px rgba(0,0,0,0.1)', flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
