@@ -9950,7 +9950,7 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
                             position: 'relative', 
                             flexShrink: 0, 
                             width: '100%',
-                            height: '55vh', 
+                            height: '65vh', // ✅ 높이 확대
                             background: '#000', 
                             display: 'flex', 
                             alignItems: 'center',
@@ -9964,8 +9964,8 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
                                 overflowX: 'scroll', 
                                 scrollSnapType: 'x mandatory', 
                                 WebkitOverflowScrolling: 'touch',
-                                scrollbarWidth: 'none', // Firefox
-                                msOverflowStyle: 'none' // IE/Edge
+                                scrollbarWidth: 'none',
+                                msOverflowStyle: 'none'
                             }}>
                                 {images.map((url: string, idx: number) => (
                                     <div key={idx} style={{ 
@@ -9975,28 +9975,34 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
                                         alignItems: 'center', 
                                         justifyContent: 'center', 
                                         scrollSnapAlign: 'start', 
-                                        flexShrink: 0 
+                                        flexShrink: 0,
+                                        paddingBottom: '32px' // ✅ 하단 설명창 겹침만큼 여백 추가 (사진 잘림 방지)
                                     }}>
                                         <img 
                                             src={url} 
-                                            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} 
+                                            style={{ 
+                                                maxWidth: '100%', 
+                                                maxHeight: '100%', 
+                                                objectFit: 'contain', // ✅ 사진 전체가 보이도록 고정
+                                                display: 'block'
+                                            }} 
                                             alt={`사진 ${idx + 1}`}
                                         />
                                     </div>
                                 ))}
                             </div>
                             
-                            {/* 페이지 인디케이터 (하단 중앙) */}
+                            {/* 페이지 인디케이터 (위치 상향 조정) */}
                             {images.length > 1 && (
                                 <div style={{ 
                                     position: 'absolute', 
-                                    bottom: '16px', 
+                                    bottom: '40px', // ✅ 설명창 위로 올림
                                     left: '50%', 
                                     transform: 'translateX(-50%)', 
                                     display: 'flex', 
                                     gap: '6px', 
                                     zIndex: 10,
-                                    background: 'rgba(0,0,0,0.3)',
+                                    background: 'rgba(0,0,0,0.4)',
                                     padding: '5px 10px',
                                     borderRadius: '12px',
                                     backdropFilter: 'blur(4px)'
@@ -10016,7 +10022,7 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
                     );
                 })()}
 
-                <div style={{ padding: '20px', background: 'white', borderRadius: '32px 32px 0 0', marginTop: '-32px', position: 'relative', boxShadow: '0 -10px 30px rgba(0,0,0,0.1)' }}>
+                <div style={{ padding: '24px', background: 'white', borderRadius: '32px 32px 0 0', marginTop: '-32px', position: 'relative', boxShadow: '0 -10px 40px rgba(0,0,0,0.2)', flex: 1, display: 'flex', flexDirection: 'column' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F5F5F5', overflow: 'hidden' }}>
