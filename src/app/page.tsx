@@ -3006,7 +3006,7 @@ export default function App() {
                                         <div>
                                             <div className="label" style={{ fontSize: '13px', color: '#B8924A', fontWeight: 800, marginBottom: '2px', wordBreak: 'keep-all' }}>담임목사 칼럼</div>
                                             <div style={{ fontSize: '14px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', width: '100%', lineHeight: 1.2 }}>
-                                                {churchSettings.pastor_column_content ? (churchSettings.pastor_column_title || '오늘의 칼럼') : (qtData?.reference ? `📖 ${qtData.reference}` : '오늘의 말씀')}
+                                                {churchSettings.pastor_column_content ? (churchSettings.pastor_column_title || '오늘의 칼럼') : '오늘의 목양 칼럼'}
                                             </div>
                                         </div>
                                         {!churchSettings.pastor_column_content && !qtData?.interpretation && (
@@ -3028,10 +3028,10 @@ export default function App() {
                                         {(() => {
                                             const autoVerse = getGraceVerse();
                                             const isCustom = !!churchSettings?.today_verse_text;
-                                            // [동기화] 커스텀 말씀이 없고 오늘의 큐티(qtData)가 있으면 큐티 말씀을 우선 노출
-                                            const verseText = isCustom ? churchSettings.today_verse_text : (qtData?.verse || autoVerse.verse);
-                                            const verseBook = isCustom ? '' : (qtData?.reference ? '' : autoVerse.book);
-                                            const verseRef = isCustom ? (churchSettings.today_verse_ref || '') : (qtData?.reference || autoVerse.ref);
+                                            // [독립화] 큐티 본문(qtData)과 동기화하지 않고 설정된 말씀 또는 기본 은혜의 말씀 노출
+                                            const verseText = isCustom ? churchSettings.today_verse_text : autoVerse.verse;
+                                            const verseBook = isCustom ? '' : autoVerse.book;
+                                            const verseRef = isCustom ? (churchSettings.today_verse_ref || '') : autoVerse.ref;
                                             return (
                                                 <>
                                                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>

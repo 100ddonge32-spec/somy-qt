@@ -116,6 +116,7 @@ export async function GET(req: NextRequest) {
         }
 
         // [푸시 알림] 자동 생성된 오늘 큐티 알림 전송
+        // [알림] 자동 생성된 오늘 큐티 알림 전송 (신규 로직 포함)
         try {
             const { data: subscriptions } = await supabaseAdmin
                 .from('push_subscriptions')
@@ -126,8 +127,8 @@ export async function GET(req: NextRequest) {
                     if (sub.subscription) {
                         try {
                             const payload = JSON.stringify({
-                                title: '📖 오늘의 큐티가 도착했습니다!',
-                                body: `${today} ${reference} 말씀이 준비되었습니다. ✨`,
+                                title: '📖 오늘의 말씀과 큐티가 도착했습니다!',
+                                body: `${today} 묵상과 칼럼이 준비되었습니다. ✨`,
                                 url: '/',
                                 userId: sub.user_id
                             });
@@ -150,11 +151,95 @@ export async function GET(req: NextRequest) {
             }
         } catch (e) { }
 
+        // [신규] 오늘의 말씀 & 담임목사 칼럼 자동 생성 (큐티와 별개)
+        try {
+            console.log('[Cron] Generating Word of the Day & Pastor Column...');
+            // 4. 오늘의 말씀(별도) 생성
+            const verseRes = await openai.chat.completions.create({
+                model: 'gpt-4o-mini',
+                messages: [
+                    {
+                        role: 'system',
+                        content: `성도들에게 매일 아침 전할 은혜로운 '오늘의 말씀'을 한 구절 선정하고 그 이유를 짧게 설명하세요. 
+주어진 큐티 본문(${reference})과는 가급적 중복되지 않는 다른 성경의 은혜로운 구절을 선정해 주세요.
+반드시 아래 JSON 형식으로만 답하세요:
+{"reference":"성경구절(장:절)","verse":"말씀 내용"}`
+                    }
+                ],
+                temperature: 0.8,
+            });
+
+            const verseContent = verseRes.choices[0]?.message?.content || '';
+            const verseJson = JSON.parse(verseContent.match(/\{[\s\S]*\}/)![0]);
+
+            // 5. 담임목사 칼럼 생성
+            const columnRes = await openai.chat.completions.create({
+                model: 'gpt-4o-mini',
+                messages: [
+                    {
+                        role: 'system',
+                        content: `당신은 교회의 담임목사입니다. 오늘의 말씀 [${verseJson.reference}: ${verseJson.verse}]을 바탕으로 성도들에게 깊은 위로와 영적 도전을 주는 '담임목사 칼럼'을 작성해주세요. 
+
+[작성 가이드라인]
+1. 분량: 약 500자 내외로 풍성하게 작성하세요.
+2. 구조: 말씀 묵상 - 삶의 적용 - 따뜻한 격려와 축복의 순서로 구성하세요.
+3. 말투: 성도를 진심으로 아끼는 마음이 담긴 자애롭고 은혜로운 목과소리(존댓말)를 사용하세요.
+4. 내용: 단순히 말씀을 설명하기보다, 오늘을 살아가는 성도들의 삶에 실제적인 힘이 되는 조언을 포함하세요.
+
+반드시 아래 JSON 형식으로만 답하세요:
+{"title":"제목","content":"내용"}`
+                    }
+                ],
+                temperature: 0.7,
+            });
+
+            const columnContent = columnRes.choices[0]?.message?.content || '';
+            const columnJson = JSON.parse(columnContent.match(/\{[\s\S]*\}/)![0]);
+
+            // 6. 교회 설정(church_settings) 업데이트
+            // 플랫폼 메인과 예수인교회(ID: 1) 설정을 업데이트합니다.
+            const { data: currentSettings } = await supabaseAdmin
+                .from('church_settings')
+                .select('plan')
+                .eq('id', 1)
+                .single();
+
+            let newPlan = currentSettings?.plan || 'premium';
+            // 기존 tv_text, tv_ref, column_title, column_content 제거 후 새로 추가
+            newPlan = newPlan.split('|').filter((p: string) => 
+                !p.startsWith('tv_text:') && 
+                !p.startsWith('tv_ref:') && 
+                !p.startsWith('column_title:') && 
+                !p.startsWith('column_content:')
+            ).join('|');
+            
+            newPlan += `|tv_text:${encodeURIComponent(verseJson.verse)}`;
+            newPlan += `|tv_ref:${encodeURIComponent(verseJson.reference)}`;
+            newPlan += `|column_title:${encodeURIComponent(columnJson.title)}`;
+            newPlan += `|column_content:${encodeURIComponent(columnJson.content)}`;
+
+            await supabaseAdmin
+                .from('church_settings')
+                .update({
+                    today_verse_text: verseJson.verse,
+                    today_verse_ref: verseJson.reference,
+                    pastor_column_title: columnJson.title,
+                    pastor_column_content: columnJson.content,
+                    plan: newPlan
+                })
+                .eq('id', 1);
+
+            console.log('[Cron] Word of the Day & Pastor Column updated successfully.');
+
+        } catch (e) {
+            console.error('오늘의 말씀/칼럼 생성 실패:', e);
+        }
+
         return NextResponse.json({
             success: true,
             date: today,
             reference,
-            message: '오늘의 큐티가 자동 생성되었습니다! 🐑'
+            message: '오늘의 큐티 및 말씀/칼럼이 자동 생성되었습니다! 🐑'
         });
 
     } catch (err: any) {
