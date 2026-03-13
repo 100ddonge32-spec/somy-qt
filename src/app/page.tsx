@@ -345,6 +345,7 @@ const StatsView = ({ memberList }: { memberList: any[] }) => {
 
 export default function App() {
     const [isStatsSaved, setIsStatsSaved] = useState(false); // ✅ 통계 중복 기록 방지 플래그 (최상위)
+    const [isSubmittingGrace, setIsSubmittingGrace] = useState(false); // ✅ 은혜나눔 이중 제출 방지
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [view, setView] = useState<View>("home");
     const [memberList, setMemberList] = useState<any[]>([]); // ✅ 성도 목록
@@ -3307,6 +3308,10 @@ export default function App() {
         ══════════════════════════════ */
         if (view === "qt") {
             const handleShareGrace = async () => {
+                // ✅ 이중 제출 방지: 이미 제출 중이면 즉시 종료
+                if (isSubmittingGrace) return;
+                setIsSubmittingGrace(true);
+
                 const recordQtStats = async () => {
                     if (isHistoryMode || isStatsSaved) return; // ✅ 이미 기록되었거나 히스토리 모드면 중단
                     try {
@@ -3337,15 +3342,15 @@ export default function App() {
                     }
                 };
 
-                // 은혜나눔 내용이 없어도 묵상 완료 기록은 남기고 다음 단계로 진행
-                if (!graceInput.trim()) {
-                    if (user && !isHistoryMode) await recordQtStats();
-                    setQtStep("pray");
-                    return;
-                }
+                try {
+                    // 은혜나눔 내용이 없어도 묵상 완료 기록은 남기고 다음 단계로 진행
+                    if (!graceInput.trim()) {
+                        if (user && !isHistoryMode) await recordQtStats();
+                        setQtStep("pray");
+                        return;
+                    }
 
-                if (user) {
-                    try {
+                    if (user) {
                         // 1. 은혜나눔 게시글 저장 (is_qt: true 추가)
                         const res = await fetch('/api/community', {
                             method: 'POST',
@@ -3373,13 +3378,17 @@ export default function App() {
                         } else {
                             const errData = await res.json().catch(() => ({}));
                             console.error("게시판 등록 실패:", errData);
+                            alert("게시글 등록에 실패했습니다. 다시 시도해주세요.");
                         }
-                    } catch (e) {
-                        console.error("저장 중 오류 발생:", e);
                     }
-                }
 
-                setQtStep("pray");
+                    setQtStep("pray");
+                } catch (e) {
+                    console.error("저장 중 오류 발생:", e);
+                } finally {
+                    // ✅ 작업 완료 후(성공이든 실패든) 반드시 잠금 해제
+                    setIsSubmittingGrace(false);
+                }
             };
 
             return (
@@ -3639,19 +3648,21 @@ export default function App() {
                         {qtStep === 'grace' && (
                             <button
                                 onClick={handleShareGrace}
+                                disabled={isSubmittingGrace}
                                 style={{
                                     width: '100%',
                                     padding: '16px',
-                                    background: graceInput.trim().length > 0 ? '#C2185B' : '#333',
+                                    background: isSubmittingGrace ? '#AAA' : (graceInput.trim().length > 0 ? '#C2185B' : '#333'),
                                     color: 'white',
                                     border: 'none',
                                     borderRadius: '15px',
                                     fontWeight: 700,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s'
+                                    cursor: isSubmittingGrace ? 'not-allowed' : 'pointer',
+                                    transition: 'all 0.3s',
+                                    opacity: isSubmittingGrace ? 0.7 : 1
                                 }}
                             >
-                                {graceInput.trim().length > 0 ? '기록하고 성도들과 나누기' : '묵상 완료하고 넘어가기'}
+                                {isSubmittingGrace ? '저장 중... ⏳' : (graceInput.trim().length > 0 ? '기록하고 성도들과 나누기' : '묵상 완료하고 넘어가기')}
                             </button>
                         )}
                         {qtStep === 'pray' && (
