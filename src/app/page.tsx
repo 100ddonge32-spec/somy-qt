@@ -9658,10 +9658,16 @@ function GalleryView({ posts, isLoading, onBack, onUpload, onSelectPost, isAdmin
 
 // 갤러리 그리드 아이템
 function GalleryGridItem({ post, onClick }: any) {
-    // image_urls가 없으면 image_url을 하나 담은 배열로 취급 (DB 컬럼 추가 전 대응)
-    const images = (post.image_urls && Array.isArray(post.image_urls) && post.image_urls.length > 0) 
-                   ? post.image_urls 
-                   : (post.image_url ? [post.image_url] : []);
+    // image_urls 판정 강화 (배열 또는 문자열 형태 대응)
+    let images = [];
+    if (post.image_urls) {
+        if (Array.isArray(post.image_urls)) images = post.image_urls;
+        else if (typeof post.image_urls === 'string' && post.image_urls.startsWith('{')) {
+            // Postgres array string format 대응: "{url1,url2}"
+            images = post.image_urls.slice(1, -1).split(',');
+        }
+    }
+    if (images.length === 0 && post.image_url) images = [post.image_url];
     
     return (
         <div 
@@ -9673,35 +9679,36 @@ function GalleryGridItem({ post, onClick }: any) {
             cursor: 'pointer', 
             overflow: 'hidden', 
             background: '#F5F5F3',
-            borderRadius: '4px' 
+            borderRadius: '12px' 
           }}
         >
             <img 
               src={images[0]} 
               alt={post.description} 
-              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }}
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
             />
             
-            {/* 여러 장일 경우 장수 배지 표시 (디자인 강화) */}
+            {/* 여러 장일 경우 장수 배지 표시 (더 시인성 좋게) */}
             {images.length > 1 && (
                 <div style={{
                     position: 'absolute',
                     top: '8px',
                     right: '8px',
-                    background: 'rgba(0, 0, 0, 0.7)',
+                    background: 'rgba(0, 0, 0, 0.75)',
                     backdropFilter: 'blur(4px)',
                     color: 'white',
-                    fontSize: '10px',
+                    fontSize: '11px',
                     fontWeight: 900,
-                    padding: '3px 7px',
-                    borderRadius: '6px',
+                    padding: '4px 8px',
+                    borderRadius: '8px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '4px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                    zIndex: 2
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                    zIndex: 2,
+                    border: '1px solid rgba(255,255,255,0.2)'
                 }}>
-                    <span style={{ fontSize: '12px' }}>🎞️</span>
+                    <span style={{ fontSize: '13px' }}>🖼️</span>
                     <span>{images.length}</span>
                 </div>
             )}
@@ -9940,22 +9947,26 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
                     <button onClick={onClose} style={{ background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white', width: '36px', height: '36px', borderRadius: '50%', fontSize: '18px', cursor: 'pointer', backdropFilter: 'blur(5px)' }}>✕</button>
                 </div>
                 
-                {/* 이미지 슬라이더 */}
+                {/* 이미지 슬라이더 영역 */}
                 {(() => {
-                    const images = (post.image_urls && Array.isArray(post.image_urls) && post.image_urls.length > 0) 
-                                   ? post.image_urls 
-                                   : (post.image_url ? [post.image_url] : []);
+                    let images = [];
+                    if (post.image_urls) {
+                        if (Array.isArray(post.image_urls)) images = post.image_urls;
+                        else if (typeof post.image_urls === 'string' && post.image_urls.startsWith('{')) {
+                            images = post.image_urls.slice(1, -1).split(',');
+                        }
+                    }
+                    if (images.length === 0 && post.image_url) images = [post.image_url];
+
                     return (
                         <div style={{ 
                             position: 'relative', 
                             flexShrink: 0, 
                             width: '100%',
-                            height: '65vh', // ✅ 높이 확대
+                            height: '60vh', // 겹침을 제거하므로 높이를 약간 조절
                             background: '#000', 
                             display: 'flex', 
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            overflow: 'hidden'
+                            flexDirection: 'column'
                         }}>
                             <div style={{ 
                                 width: '100%', 
@@ -9976,44 +9987,45 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
                                         justifyContent: 'center', 
                                         scrollSnapAlign: 'start', 
                                         flexShrink: 0,
-                                        paddingBottom: '32px' // ✅ 하단 설명창 겹침만큼 여백 추가 (사진 잘림 방지)
+                                        padding: '10px' // 테두리 여백을 주어 절대 잘리지 않게 함
                                     }}>
                                         <img 
                                             src={url} 
                                             style={{ 
                                                 maxWidth: '100%', 
                                                 maxHeight: '100%', 
-                                                objectFit: 'contain', // ✅ 사진 전체가 보이도록 고정
-                                                display: 'block'
+                                                objectFit: 'contain', 
+                                                display: 'block',
+                                                boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
                                             }} 
-                                            alt={`사진 ${idx + 1}`}
+                                            alt={`공유 사진 ${idx + 1}`}
                                         />
                                     </div>
                                 ))}
                             </div>
                             
-                            {/* 페이지 인디케이터 (위치 상향 조정) */}
+                            {/* 페이지 인디케이터 */}
                             {images.length > 1 && (
                                 <div style={{ 
                                     position: 'absolute', 
-                                    bottom: '40px', // ✅ 설명창 위로 올림
+                                    bottom: '20px', 
                                     left: '50%', 
                                     transform: 'translateX(-50%)', 
                                     display: 'flex', 
-                                    gap: '6px', 
+                                    gap: '8px', 
                                     zIndex: 10,
-                                    background: 'rgba(0,0,0,0.4)',
-                                    padding: '5px 10px',
-                                    borderRadius: '12px',
-                                    backdropFilter: 'blur(4px)'
+                                    background: 'rgba(0,0,0,0.5)',
+                                    padding: '6px 12px',
+                                    borderRadius: '16px',
+                                    backdropFilter: 'blur(10px)'
                                 }}>
                                     {images.map((_: any, i: number) => (
                                         <div key={i} style={{ 
-                                            width: '6px', 
-                                            height: '6px', 
+                                            width: '7px', 
+                                            height: '7px', 
                                             borderRadius: '50%', 
                                             background: 'white',
-                                            opacity: 0.8
+                                            opacity: 0.9
                                         }} />
                                     ))}
                                 </div>
@@ -10022,7 +10034,8 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
                     );
                 })()}
 
-                <div style={{ padding: '24px', background: 'white', borderRadius: '32px 32px 0 0', marginTop: '-32px', position: 'relative', boxShadow: '0 -10px 40px rgba(0,0,0,0.2)', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                {/* 정보 영역: 마진 겹침(marginTop: -32px) 제거하여 사진 가림 방지 */}
+                <div style={{ padding: '24px', background: 'white', borderRadius: '24px 24px 0 0', position: 'relative', boxShadow: '0 -5px 25px rgba(0,0,0,0.1)', flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F5F5F5', overflow: 'hidden' }}>
