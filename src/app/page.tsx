@@ -9657,18 +9657,37 @@ function GalleryView({ posts, isLoading, onBack, onUpload, onSelectPost, isAdmin
 };
 
 // 갤러리 그리드 아이템
-// 갤러리 그리드 아이템
 function GalleryGridItem({ post, onClick }: any) {
+    const images = post.image_urls && post.image_urls.length > 0 ? post.image_urls : [post.image_url];
     return (
         <div 
           onClick={onClick}
           style={{ position: 'relative', width: '100%', paddingBottom: '100%', cursor: 'pointer', overflow: 'hidden', background: '#F5F5F3' }}
         >
             <img 
-              src={post.image_url} 
+              src={images[0]} 
               alt={post.description} 
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
             />
+            {/* 여러 장일 경우 장수 배지 표시 */}
+            {images.length > 1 && (
+                <div style={{
+                    position: 'absolute',
+                    top: '6px',
+                    right: '6px',
+                    background: 'rgba(0,0,0,0.6)',
+                    color: 'white',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    padding: '2px 6px',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '3px'
+                }}>
+                    <span>🖼️</span> {images.length}
+                </div>
+            )}
         </div>
     );
 };
@@ -9904,27 +9923,29 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
                     <button onClick={onClose} style={{ background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white', width: '36px', height: '36px', borderRadius: '50%', fontSize: '18px', cursor: 'pointer', backdropFilter: 'blur(5px)' }}>✕</button>
                 </div>
                 
-                <div style={{ flex: 1, overflowY: 'auto', background: '#000', display: 'flex', alignItems: 'center', position: 'relative' }}>
-                    {(() => {
-                        const images = post.image_urls && post.image_urls.length > 0 ? post.image_urls : [post.image_url];
-                        return (
-                            <div style={{ width: '100%', height: '100%', display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', scrollBehavior: 'smooth' }}>
+                {/* 이미지 슬라이더 */}
+                {(() => {
+                    const images = post.image_urls && post.image_urls.length > 0 ? post.image_urls : [post.image_url];
+                    return (
+                        <div style={{ position: 'relative', flex: '0 0 auto', height: '55vh', background: '#000', display: 'flex', alignItems: 'center' }}>
+                            <div style={{ width: '100%', height: '100%', display: 'flex', overflowX: 'scroll', scrollSnapType: 'x mandatory', scrollBehavior: 'smooth', WebkitOverflowScrolling: 'touch' }}>
                                 {images.map((url: string, idx: number) => (
-                                    <div key={idx} style={{ minWidth: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', scrollSnapAlign: 'start' }}>
+                                    <div key={idx} style={{ minWidth: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', scrollSnapAlign: 'start', flexShrink: 0 }}>
                                         <img src={url} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                                     </div>
                                 ))}
-                                {images.length > 1 && (
-                                    <div style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '6px', zIndex: 5 }}>
-                                        {images.map((_: any, i: number) => (
-                                            <div key={i} style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,255,255,0.5)' }} />
-                                        ))}
-                                    </div>
-                                )}
                             </div>
-                        );
-                    })()}
-                </div>
+                            {/* 페이지 인디케이터 */}
+                            {images.length > 1 && (
+                                <div style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '6px', zIndex: 5 }}>
+                                    {images.map((_: any, i: number) => (
+                                        <div key={i} style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,255,255,0.7)' }} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()}
 
                 <div style={{ padding: '20px', background: 'white', borderRadius: '32px 32px 0 0', marginTop: '-32px', position: 'relative', boxShadow: '0 -10px 30px rgba(0,0,0,0.1)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
