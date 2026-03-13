@@ -9658,34 +9658,51 @@ function GalleryView({ posts, isLoading, onBack, onUpload, onSelectPost, isAdmin
 
 // 갤러리 그리드 아이템
 function GalleryGridItem({ post, onClick }: any) {
-    const images = post.image_urls && post.image_urls.length > 0 ? post.image_urls : [post.image_url];
+    // image_urls가 없으면 image_url을 하나 담은 배열로 취급 (DB 컬럼 추가 전 대응)
+    const images = (post.image_urls && Array.isArray(post.image_urls) && post.image_urls.length > 0) 
+                   ? post.image_urls 
+                   : (post.image_url ? [post.image_url] : []);
+    
     return (
         <div 
           onClick={onClick}
-          style={{ position: 'relative', width: '100%', paddingBottom: '100%', cursor: 'pointer', overflow: 'hidden', background: '#F5F5F3' }}
+          style={{ 
+            position: 'relative', 
+            width: '100%', 
+            paddingBottom: '100%', 
+            cursor: 'pointer', 
+            overflow: 'hidden', 
+            background: '#F5F5F3',
+            borderRadius: '4px' 
+          }}
         >
             <img 
               src={images[0]} 
               alt={post.description} 
-              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }}
             />
-            {/* 여러 장일 경우 장수 배지 표시 */}
+            
+            {/* 여러 장일 경우 장수 배지 표시 (디자인 강화) */}
             {images.length > 1 && (
                 <div style={{
                     position: 'absolute',
-                    top: '6px',
-                    right: '6px',
-                    background: 'rgba(0,0,0,0.6)',
+                    top: '8px',
+                    right: '8px',
+                    background: 'rgba(0, 0, 0, 0.7)',
+                    backdropFilter: 'blur(4px)',
                     color: 'white',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    padding: '2px 6px',
-                    borderRadius: '8px',
+                    fontSize: '10px',
+                    fontWeight: 900,
+                    padding: '3px 7px',
+                    borderRadius: '6px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '3px'
+                    gap: '4px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    zIndex: 2
                 }}>
-                    <span>🖼️</span> {images.length}
+                    <span style={{ fontSize: '12px' }}>🎞️</span>
+                    <span>{images.length}</span>
                 </div>
             )}
         </div>
@@ -9925,21 +9942,73 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
                 
                 {/* 이미지 슬라이더 */}
                 {(() => {
-                    const images = post.image_urls && post.image_urls.length > 0 ? post.image_urls : [post.image_url];
+                    const images = (post.image_urls && Array.isArray(post.image_urls) && post.image_urls.length > 0) 
+                                   ? post.image_urls 
+                                   : (post.image_url ? [post.image_url] : []);
                     return (
-                        <div style={{ position: 'relative', flex: '0 0 auto', height: '55vh', background: '#000', display: 'flex', alignItems: 'center' }}>
-                            <div style={{ width: '100%', height: '100%', display: 'flex', overflowX: 'scroll', scrollSnapType: 'x mandatory', scrollBehavior: 'smooth', WebkitOverflowScrolling: 'touch' }}>
+                        <div style={{ 
+                            position: 'relative', 
+                            flexShrink: 0, 
+                            width: '100%',
+                            height: '55vh', 
+                            background: '#000', 
+                            display: 'flex', 
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            overflow: 'hidden'
+                        }}>
+                            <div style={{ 
+                                width: '100%', 
+                                height: '100%', 
+                                display: 'flex', 
+                                overflowX: 'scroll', 
+                                scrollSnapType: 'x mandatory', 
+                                WebkitOverflowScrolling: 'touch',
+                                scrollbarWidth: 'none', // Firefox
+                                msOverflowStyle: 'none' // IE/Edge
+                            }}>
                                 {images.map((url: string, idx: number) => (
-                                    <div key={idx} style={{ minWidth: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', scrollSnapAlign: 'start', flexShrink: 0 }}>
-                                        <img src={url} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                                    <div key={idx} style={{ 
+                                        minWidth: '100%', 
+                                        height: '100%', 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center', 
+                                        scrollSnapAlign: 'start', 
+                                        flexShrink: 0 
+                                    }}>
+                                        <img 
+                                            src={url} 
+                                            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} 
+                                            alt={`사진 ${idx + 1}`}
+                                        />
                                     </div>
                                 ))}
                             </div>
-                            {/* 페이지 인디케이터 */}
+                            
+                            {/* 페이지 인디케이터 (하단 중앙) */}
                             {images.length > 1 && (
-                                <div style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '6px', zIndex: 5 }}>
+                                <div style={{ 
+                                    position: 'absolute', 
+                                    bottom: '16px', 
+                                    left: '50%', 
+                                    transform: 'translateX(-50%)', 
+                                    display: 'flex', 
+                                    gap: '6px', 
+                                    zIndex: 10,
+                                    background: 'rgba(0,0,0,0.3)',
+                                    padding: '5px 10px',
+                                    borderRadius: '12px',
+                                    backdropFilter: 'blur(4px)'
+                                }}>
                                     {images.map((_: any, i: number) => (
-                                        <div key={i} style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,255,255,0.7)' }} />
+                                        <div key={i} style={{ 
+                                            width: '6px', 
+                                            height: '6px', 
+                                            borderRadius: '50%', 
+                                            background: 'white',
+                                            opacity: 0.8
+                                        }} />
                                     ))}
                                 </div>
                             )}
