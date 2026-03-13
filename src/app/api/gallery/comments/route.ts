@@ -20,12 +20,24 @@ export async function GET(req: NextRequest) {
 
         const { data, error } = await supabaseAdmin
             .from('gallery_comments')
-            .select('*')
+            .select(`
+                *,
+                profiles:user_id (
+                    full_name
+                )
+            `)
             .eq('post_id', post_id)
             .order('created_at', { ascending: true });
 
         if (error) throw error;
-        return NextResponse.json(data);
+
+        // profiles에서 이름을 가져와서 user_name이 비어있을 경우 보완
+        const formattedData = data.map((item: any) => ({
+            ...item,
+            user_name: item.user_name || item.profiles?.full_name || '알 수 없음'
+        }));
+
+        return NextResponse.json(formattedData);
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
