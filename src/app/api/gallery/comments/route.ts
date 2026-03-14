@@ -47,15 +47,18 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { post_id, user_id, user_name, comment } = body;
+        const { post_id, user_id, user_name, comment, parent_id } = body;
 
         if (!post_id || !user_id || !comment) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
+        const insertData: any = { post_id, user_id, user_name, comment };
+        if (parent_id) insertData.parent_id = parent_id;
+
         const { data, error } = await supabaseAdmin
             .from('gallery_comments')
-            .insert([{ post_id, user_id, user_name, comment }])
+            .insert([insertData])
             .select()
             .single();
 
@@ -71,6 +74,32 @@ export async function POST(req: NextRequest) {
         if (post?.church_id) {
             logActivity(user_id, user_name, 'COMMENT_CREATED', post.church_id, comment.slice(0, 50));
         }
+
+        return NextResponse.json(data);
+    } catch (err: any) {
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}
+
+// 댓글 수정 (PATCH)
+export async function PATCH(req: NextRequest) {
+    try {
+        const body = await req.json();
+        const { id, user_id, comment, is_admin } = body;
+
+        if (!id || !comment) {
+            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        }
+
+        let query = supabaseAdmin.from('gallery_comments').update({ comment }).eq('id', id);
+        
+        // 관리자가 아니면 본인 것만 수정 가능
+        if (!is_admin) {
+            query = query.eq('user_id', user_id);
+        }
+
+        const { data, error } = await query.select().single();
+        if (error) throw error;
 
         return NextResponse.json(data);
     } catch (err: any) {

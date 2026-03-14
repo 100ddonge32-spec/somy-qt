@@ -442,6 +442,7 @@ export default function App() {
     const [editingCommentId, setEditingCommentId] = useState<any>(null);
     const [editCommentContent, setEditCommentContent] = useState("");
     const [isEditPrivate, setIsEditPrivate] = useState(false);
+    const [replyingToCommentId, setReplyingToCommentId] = useState<any>(null);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [showNotiList, setShowNotiList] = useState(false);
     const [ccmIndex, setCcmIndex] = useState<number | null>(null);
@@ -1034,6 +1035,22 @@ export default function App() {
                     setHasNewSermon(!!(isSermonTodayValue || isSermonUnseen));
                 }
             }
+
+            // 4. 추억나눔 (갤러리)
+            const { data: latestGallery } = await supabase.from('gallery_posts').select('created_at').eq('church_id', cId).order('created_at', { ascending: false }).limit(1).maybeSingle();
+            const lastGallery = Number(localStorage.getItem(`last_view_gallery_${cId}`)) || 0;
+            let isLatestGalleryToday = false;
+            let isLatestGalleryUnseen = false;
+
+            if (latestGallery && latestGallery.created_at) {
+                const galleryTime = new Date(latestGallery.created_at).getTime();
+                if (!isNaN(galleryTime)) {
+                    isLatestGalleryToday = new Date(galleryTime + kstOffset).toISOString().split('T')[0] === today;
+                    isLatestGalleryUnseen = galleryTime > lastGallery;
+                }
+            }
+            setHasNewGallery(!!(isLatestGalleryToday || isLatestGalleryUnseen));
+
         } catch (e) {
             console.error("Badges check failed", e);
         }
@@ -1717,6 +1734,8 @@ export default function App() {
         setIsHistoryMode(false);
         setIsStatsSaved(false); // ✅ 새 묵상 시작 시 기록 플래그 초기화
         setAnswers(["", "", ""]); // ✅ 묵상 기록(답변) 초기화
+        setGraceInput(""); // ✅ 은혜나눔 입력 초기화
+        setIsPrivatePost(false); // ✅ 비공개 설정 초기화
         try {
             const r = await fetch(`/api/qt?church_id=${churchId}`, { cache: 'no-store' });
             const { qt } = await r.json();
@@ -3048,7 +3067,49 @@ export default function App() {
                                                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                                                         <div style={{ fontSize: '13px', color: '#999', fontWeight: 700, letterSpacing: '0.5px' }}>💡 오늘의 한줄!</div>
                                                         {(() => {
-                                                            const quotes = ["하나님은 우리가 감당할 수 없는 시련을 주시지는 않는다. - 고린도전서 10:13 강해 중", "기도는 하나님의 팔을 움직이는 가장 조용한 힘이다. - 찰스 스펄전", "하나님께서 나의 계획을 무너뜨리시는 것은, 나의 계획이 나를 무너뜨릴 수 있기 때문이다. - 코리 텐 붐", "우리가 하나님을 온전히 신뢰할 때, 하나님은 우리의 모든 상황을 그분의 목적을 위해 사용하신다. - A.W. 토저", "고난은 하나님의 변장된 축복이다. 그것은 우리를 하나님께로 더 가까이 이끈다. - C.S. 루이스", "우리가 하나님 외에 다른 곳에서 만족을 찾으려 할 때, 우리는 결코 만족을 얻을 수 없다. - 어거스틴", "성경은 단순히 읽기 위한 책이 아니라, 우리 삶이 읽혀지기 위한 거울이다. - D.L. 무디"];
+                                                            // AI가 생성한 오늘의 명언이 있으면 우선 사용
+                                                            if (churchSettings?.today_quote) {
+                                                                return (
+                                                                    <div className="quote-text" style={{ fontSize: '14.5px', color: '#2D2D2D', lineHeight: 1.7, wordBreak: 'keep-all', fontStyle: 'normal', fontWeight: 500, background: 'rgba(212, 175, 55, 0.04)', padding: '12px 16px', borderRadius: '12px', borderLeft: '4px solid #D4AF37', letterSpacing: '-0.3px' }}>
+                                                                        "{churchSettings.today_quote}"
+                                                                    </div>
+                                                                );
+                                                            }
+
+                                                            // 데이터가 없을 때의 풍성한 대체 리스트 (31개 - 한 달 순환)
+                                                            const quotes = [
+                                                                "하나님은 우리가 감당할 수 없는 시련을 주시지는 않는다. - 고린도전서 10:13",
+                                                                "기도는 하나님의 팔을 움직이는 가장 조용한 힘이다. - 찰스 스펄전",
+                                                                "하나님께서 나의 계획을 무너뜨리시는 것은, 나의 계획이 나를 무너뜨릴 수 있기 때문이다. - 코리 텐 붐",
+                                                                "우리가 하나님을 온전히 신뢰할 때, 하나님은 우리의 모든 상황을 그분의 목적을 위해 사용하신다. - A.W. 토저",
+                                                                "고난은 하나님의 변장된 축복이다. 그것은 우리를 하나님께로 더 가까이 이끈다. - C.S. 루이스",
+                                                                "우리가 하나님 외에 다른 곳에서 만족을 찾으려 할 때, 우리는 결코 만족을 얻을 수 없다. - 어거스틴",
+                                                                "성경은 단순히 읽기 위한 책이 아니라, 우리 삶이 읽혀지기 위한 거울이다. - D.L. 무디",
+                                                                "하나님을 아는 만큼 사랑할 수 있고, 사랑하는 만큼 신뢰할 수 있다. - 자크 엘륄",
+                                                                "참된 기도는 내가 원하는 것을 하나님께 얻어내는 것이 아니라, 내가 하나님의 뜻에 복종하는 것이다. - 오스왈드 챔버스",
+                                                                "우리의 연약함은 하나님의 능력이 머무는 장소이다. - 사도 바울",
+                                                                "하나님은 우리의 과거보다 우리의 미래에 더 관심이 많으시다. - 빌리 그래함",
+                                                                "믿음은 보이지 않는 것을 믿는 것이요, 그 대가는 믿는 것을 보는 것이다. - 아우구스티누스",
+                                                                "세상은 읽을 수 있는 유일한 성경인 그리스도인들을 보고 있다. - 무명의 성도",
+                                                                "가장 위대한 선교지는 바로 옆집이다. - 무명의 전도자",
+                                                                "하나님의 시간은 결코 늦는 법이 없으며, 결코 서두르는 법도 없다. - 무명의 신학자",
+                                                                "죄는 우리를 하나님에게서 멀어지게 하지만, 회개는 우리를 그분의 품으로 데려간다. - 토마스 왓슨",
+                                                                "은혜란 우리가 받을 자격이 없는 것을 받는 것이다. - 존 스토트",
+                                                                "찬양은 영혼의 호흡이며, 감사는 영혼의 건강이다. - 무명의 목회자",
+                                                                "예수 그리스도는 어제나 오늘이나 영원토록 동일하시다. - 히브리서 13:8",
+                                                                "순종은 지식의 끝이 아니라 믿음의 시작이다. - 디트리히 본회퍼",
+                                                                "우리가 무릎 꿇을 때, 우리는 가장 높이 서 있는 것이다. - 무명의 기도자",
+                                                                "하나님은 완벽한 사람이 아니라 준비된 사람을 쓰신다. - 무명의 성도",
+                                                                "십자가는 하나님의 공의와 사랑이 만나는 지점이다. - 존 스토트",
+                                                                "우리가 하나님께 드릴 수 있는 가장 큰 선물은 신뢰이다. - 아서 핑크",
+                                                                "세상을 변화시키기 전에 내 마음을 먼저 주님께 드려야 한다. - 무명의 선교사",
+                                                                "진정한 자유는 내 마음대로 하는 것이 아니라 하나님의 뜻대로 하는 것이다. - 리처드 포스터",
+                                                                "그리스도인은 고난 속에서도 소망의 별을 보는 사람이다. - 무명의 목회자",
+                                                                "하나님은 소리에 귀 기울이시는 것이 아니라 마음의 울림에 귀 기울이신다. - 존 번연",
+                                                                "성령님은 우리를 진리 가운데로 인도하시는 가장 친절한 안내자이시다. - 무명의 성도",
+                                                                "오늘의 고통은 내일의 간증이 된다. - 무명의 성도",
+                                                                "우리는 넘어질 수 있지만, 하나님은 우리를 결코 놓지 않으신다. - 무명의 성도"
+                                                            ];
                                                             const todayIndex = new Date().getDate() % quotes.length;
                                                             return (
                                                                 <div className="quote-text" style={{ fontSize: '14.5px', color: '#2D2D2D', lineHeight: 1.7, wordBreak: 'keep-all', fontStyle: 'normal', fontWeight: 500, background: 'rgba(212, 175, 55, 0.04)', padding: '12px 16px', borderRadius: '12px', borderLeft: '4px solid #D4AF37', letterSpacing: '-0.3px' }}>
@@ -3191,6 +3252,7 @@ export default function App() {
                                         <button onClick={async () => {
                                             setView('gallery');
                                             setHasNewGallery(false);
+                                            localStorage.setItem(`last_view_gallery_${churchId}`, Date.now().toString());
                                             fetchGalleryPosts();
                                         }} className="main-action-button" style={{
                                             width: "100%", padding: "16px 12px",
@@ -3547,7 +3609,7 @@ export default function App() {
                                             <div key={idx} style={{ padding: '16px', background: 'white', borderRadius: '15px', border: '1px solid #EEE', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
                                                 <div style={{ fontSize: '11px', color: '#B8924A', fontWeight: 700, marginBottom: '6px' }}>질문 {idx + 1}</div>
                                                 <div style={{ fontSize: '14px', color: '#333', fontWeight: 600, marginBottom: '10px', lineHeight: 1.5 }}>{q}</div>
-                                                <textarea value={answers[idx] || ""} onChange={(e) => handleAnswerChange(idx, e.target.value)} placeholder="여기에 답을 적어보세요..." style={{ width: '100%', height: '80px', border: '1px solid #F0F0F0', borderRadius: '10px', padding: '12px', boxSizing: 'border-box', outline: 'none', fontSize: '14px', background: '#FDFDFD', fontFamily: 'inherit' }} />
+                                                <textarea value={answers[idx] || ""} onChange={(e) => handleAnswerChange(idx, e.target.value)} readOnly={isHistoryMode} placeholder={isHistoryMode ? "기록된 답변이 없습니다." : "여기에 답을 적어보세요..."} style={{ width: '100%', height: '80px', border: '1px solid #F0F0F0', borderRadius: '10px', padding: '12px', boxSizing: 'border-box', outline: 'none', fontSize: '14px', background: isHistoryMode ? '#F9F9F9' : '#FDFDFD', fontFamily: 'inherit' }} />
                                             </div>
                                         ))}
                                     </div>
@@ -3561,7 +3623,7 @@ export default function App() {
                                         <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>은혜나눔</h3>
                                     </div>
                                     <p style={{ fontSize: '14px', color: '#666', marginBottom: '16px' }}>오늘 말씀을 통해 받은 은혜를 기록해보세요.</p>
-                                    <textarea value={graceInput} onChange={(e) => setGraceInput(e.target.value)} placeholder="성도들과 나누고 싶은 은혜를 자유롭게 적어주세요..." style={{ width: '100%', height: '200px', border: '1px solid #EEE', borderRadius: '15px', padding: '16px', boxSizing: 'border-box', outline: 'none', fontSize: '15px', background: 'white', fontFamily: 'inherit', lineHeight: 1.6 }} />
+                                    <textarea value={graceInput} onChange={(e) => setGraceInput(e.target.value)} readOnly={isHistoryMode} placeholder={isHistoryMode ? "기록된 은혜나눔이 없습니다." : "성도들과 나누고 싶은 은혜를 자유롭게 적어주세요..."} style={{ width: '100%', height: '200px', border: '1px solid #EEE', borderRadius: '15px', padding: '16px', boxSizing: 'border-box', outline: 'none', fontSize: '15px', background: isHistoryMode ? '#F9F9F9' : 'white', fontFamily: 'inherit', lineHeight: 1.6 }} />
                                     <div
                                         onClick={() => setIsPrivatePost(!isPrivatePost)}
                                         style={{
@@ -4234,7 +4296,8 @@ export default function App() {
                             user_id: user.id,
                             user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
                             content: commentText,
-                            is_private: isPrivate
+                            is_private: isPrivate,
+                            parent_id: replyingToCommentId // ✅ 답글 지원
                         })
                     });
                     if (res.ok) {
@@ -4250,6 +4313,7 @@ export default function App() {
                         }));
                         setCommentInputs((prev: any) => ({ ...prev, [postId]: "" }));
                         setCommentPrivateStates((prev: any) => ({ ...prev, [postId]: false }));
+                        setReplyingToCommentId(null); // ✅ 상태 초기화
                     } else {
                         const errData = await res.json().catch(() => ({}));
                         alert("댓글 등록에 실패했어요: " + (errData.error || "알 수 없는 오류"));
@@ -4629,133 +4693,202 @@ export default function App() {
                                                 </div>
                                             )}
 
-                                            {/* Comments Section */}
-                                            <div style={{ borderTop: '1px solid #F5F5F5', paddingTop: '15px' }}>
-                                                <div style={{ display: 'none' }}>댓글 {post.comments?.length || 0}개</div>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
-                                                    {post.comments && Array.isArray(post.comments) && post.comments.map((comment: any) => {
-                                                        const isCommentVisible = !comment.is_private || isAdmin || user?.id === comment.user_id || user?.id === post.user_id;
-                                                        return (
-                                                            <div key={comment.id} style={{ background: '#FAFAFA', padding: '10px 15px', borderRadius: '12px', fontSize: '13px', opacity: comment.is_private ? 0.9 : 1 }}>
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                                                    <span style={{ fontWeight: 700, color: '#555', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                        {comment.user_name || '성도'}
-                                                                        {comment.is_private && <span style={{ fontSize: '10px', color: '#9E2A5B' }}>🔒</span>}
-                                                                    </span>
-                                                                    <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                        {comment.created_at ? new Date(comment.created_at).toLocaleTimeString() : '방금 전'}
-                                                                        {user?.id === comment.user_id && editingCommentId !== comment.id && (
-                                                                            <button onClick={() => { setEditingCommentId(comment.id); setEditCommentContent(comment.content); setIsEditPrivate(!!comment.is_private); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#B8924A', padding: 0, fontWeight: 600 }}>수정</button>
-                                                                        )}
-                                                                        {(isAdmin || user?.id === comment.user_id || user?.id === post.user_id) && editingCommentId !== comment.id && (
-                                                                            <button onClick={() => handleDeleteComment(post.id, comment.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>X</button>
-                                                                        )}
-                                                                    </span>
-                                                                </div>
-                                                                {editingCommentId === comment.id ? (
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-                                                                        <textarea
-                                                                            value={editCommentContent}
-                                                                            onChange={(e) => { setEditCommentContent(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
-                                                                            onKeyDown={(e) => {
-                                                                                if (e.key === 'Enter' && !e.shiftKey) {
-                                                                                    e.preventDefault();
-                                                                                    handleUpdateComment(post.id, comment.id);
-                                                                                }
-                                                                            }}
-                                                                            autoFocus
-                                                                            style={{ width: '100%', padding: '8px 10px', border: '1px solid #DDD', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'none', height: '40px', minHeight: '40px', fontFamily: 'inherit' }}
-                                                                        />
-                                                                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                                                            <button onClick={() => handleUpdateComment(post.id, comment.id)} style={{ background: '#333', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>저장</button>
-                                                                            <button onClick={() => setEditingCommentId(null)} style={{ background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>취소</button>
-                                                                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginLeft: 'auto' }}>
-                                                                                <input type="checkbox" checked={isEditPrivate} onChange={(e: any) => setIsEditPrivate(e.target.checked)} />
-                                                                                <span style={{ fontSize: '11px', color: '#777' }}>비공개</span>
-                                                                            </label>
+                                                {/* Comments Section */}
+                                                <div style={{ borderTop: '1px solid #F5F5F5', paddingTop: '15px' }}>
+                                                    <div style={{ display: 'none' }}>댓글 {post.comments?.length || 0}개</div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '15px' }}>
+                                                        {post.comments && Array.isArray(post.comments) && (() => {
+                                                            const rootComments = post.comments.filter((c: any) => !c.parent_id);
+                                                            return rootComments.map((comment: any) => {
+                                                                const replies = post.comments.filter((r: any) => r.parent_id === comment.id);
+                                                                const isCommentVisible = !comment.is_private || isAdmin || user?.id === comment.user_id || user?.id === post.user_id;
+                                                                
+                                                                return (
+                                                                    <div key={comment.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                                        {/* 부모 댓글 */}
+                                                                        <div style={{ background: '#FAFAFA', padding: '10px 15px', borderRadius: '12px', fontSize: '13px', opacity: comment.is_private ? 0.9 : 1 }}>
+                                                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                                                <span style={{ fontWeight: 700, color: '#555', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                                    {comment.user_name || '성도'}
+                                                                                    {comment.is_private && <span style={{ fontSize: '10px', color: '#9E2A5B' }}>🔒</span>}
+                                                                                </span>
+                                                                                <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                    {comment.created_at ? new Date(comment.created_at).toLocaleTimeString() : '방금 전'}
+                                                                                    {editingCommentId !== comment.id && (
+                                                                                        <span onClick={() => { setReplyingToCommentId(comment.id); setCommentInputs({ ...commentInputs, [post.id]: `@${comment.user_name} ` }); }} style={{ cursor: 'pointer', color: '#B8924A', fontWeight: 700 }}>답글</span>
+                                                                                    )}
+                                                                                    {user?.id === comment.user_id && editingCommentId !== comment.id && (
+                                                                                        <button onClick={() => { setEditingCommentId(comment.id); setEditCommentContent(comment.content); setIsEditPrivate(!!comment.is_private); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#B8924A', padding: 0, fontWeight: 600 }}>수정</button>
+                                                                                    )}
+                                                                                    {(isAdmin || user?.id === comment.user_id || user?.id === post.user_id) && editingCommentId !== comment.id && (
+                                                                                        <button onClick={() => handleDeleteComment(post.id, comment.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>X</button>
+                                                                                    )}
+                                                                                </span>
+                                                                            </div>
+                                                                            {editingCommentId === comment.id ? (
+                                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                                                                                    <textarea
+                                                                                        value={editCommentContent}
+                                                                                        onChange={(e) => { setEditCommentContent(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
+                                                                                        onKeyDown={(e) => {
+                                                                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                                                                e.preventDefault();
+                                                                                                handleUpdateComment(post.id, comment.id);
+                                                                                            }
+                                                                                        }}
+                                                                                        autoFocus
+                                                                                        style={{ width: '100%', padding: '8px 10px', border: '1px solid #DDD', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'none', height: '40px', minHeight: '40px', fontFamily: 'inherit' }}
+                                                                                    />
+                                                                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                                                                        <button onClick={() => handleUpdateComment(post.id, comment.id)} style={{ background: '#333', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>저장</button>
+                                                                                        <button onClick={() => setEditingCommentId(null)} style={{ background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>취소</button>
+                                                                                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginLeft: 'auto' }}>
+                                                                                            <input type="checkbox" checked={isEditPrivate} onChange={(e: any) => setIsEditPrivate(e.target.checked)} />
+                                                                                            <span style={{ fontSize: '11px', color: '#777' }}>비공개</span>
+                                                                                        </label>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div style={{ color: isCommentVisible ? '#666' : '#AAA', whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontStyle: isCommentVisible ? 'normal' : 'italic' }}>
+                                                                                    {isCommentVisible ? comment.content : '🔒 비공개 댓글입니다.'}
+                                                                                </div>
+                                                                            )}
                                                                         </div>
+                                                                        
+                                                                        {/* 대댓글 리스트 */}
+                                                                        {replies.map((reply: any) => {
+                                                                            const isReplyVisible = !reply.is_private || isAdmin || user?.id === reply.user_id || user?.id === post.user_id || user?.id === comment.user_id;
+                                                                            return (
+                                                                                <div key={reply.id} style={{ marginLeft: '24px', padding: '8px 12px', background: '#F5F5F5', borderRadius: '12px', fontSize: '13px', borderLeft: '3px solid #E6A4B4', opacity: reply.is_private ? 0.9 : 1 }}>
+                                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                                                        <span style={{ fontWeight: 700, color: '#777', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}>
+                                                                                            {reply.user_name || '성도'}
+                                                                                            {reply.is_private && <span style={{ fontSize: '10px', color: '#9E2A5B' }}>🔒</span>}
+                                                                                        </span>
+                                                                                        <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                            {reply.created_at ? new Date(reply.created_at).toLocaleTimeString() : '방금 전'}
+                                                                                            {user?.id === reply.user_id && editingCommentId !== reply.id && (
+                                                                                                <button onClick={() => { setEditingCommentId(reply.id); setEditCommentContent(reply.content); setIsEditPrivate(!!reply.is_private); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#B8924A', padding: 0, fontWeight: 600 }}>수정</button>
+                                                                                            )}
+                                                                                            {(isAdmin || user?.id === reply.user_id || user?.id === post.user_id) && editingCommentId !== reply.id && (
+                                                                                                <button onClick={() => handleDeleteComment(post.id, reply.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>X</button>
+                                                                                            )}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    {editingCommentId === reply.id ? (
+                                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                                                                                            <textarea
+                                                                                                value={editCommentContent}
+                                                                                                onChange={(e) => { setEditCommentContent(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
+                                                                                                onKeyDown={(e) => {
+                                                                                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                                                                                        e.preventDefault();
+                                                                                                        handleUpdateComment(post.id, reply.id);
+                                                                                                    }
+                                                                                                }}
+                                                                                                autoFocus
+                                                                                                style={{ width: '100%', padding: '8px 10px', border: '1px solid #DDD', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'none', height: '40px', minHeight: '40px', fontFamily: 'inherit' }}
+                                                                                            />
+                                                                                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                                                                                <button onClick={() => handleUpdateComment(post.id, reply.id)} style={{ background: '#333', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>저장</button>
+                                                                                                <button onClick={() => setEditingCommentId(null)} style={{ background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>취소</button>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <div style={{ color: isReplyVisible ? '#777' : '#AAA', whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontStyle: isReplyVisible ? 'normal' : 'italic' }}>
+                                                                                            {isReplyVisible ? reply.content : '🔒 비공개 답글입니다.'}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            );
+                                                                        })}
                                                                     </div>
-                                                                ) : (
-                                                                    <div style={{ color: isCommentVisible ? '#666' : '#AAA', whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontStyle: isCommentVisible ? 'normal' : 'italic' }}>
-                                                                        {isCommentVisible ? comment.content : '🔒 비공개 댓글입니다.'}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
+                                                                );
+                                                            });
+                                                        })()}
+                                                    </div>
+                                                    
+                                                    {/* 답글 안내 문구 */}
+                                                    {replyingToCommentId && (
+                                                        <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFF8E1', padding: '8px 12px', borderRadius: '10px', border: '1px solid #FFE082' }}>
+                                                            <span style={{ fontSize: '12px', color: '#856404', fontWeight: 700 }}>
+                                                                💬 답글 남기는 중...
+                                                            </span>
+                                                            <button onClick={() => { setReplyingToCommentId(null); setCommentInputs({ ...commentInputs, [post.id]: "" }); }} style={{ background: 'none', border: 'none', color: '#A57224', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>취소</button>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Comment Input */}
+                                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+                                                        <textarea
+                                                            value={commentInputs[post.id] || ""}
+                                                            onChange={(e) => {
+                                                                setCommentInputs({ ...commentInputs, [post.id]: e.target.value });
+                                                                e.target.style.height = 'auto';
+                                                                e.target.style.height = e.target.scrollHeight + 'px';
+                                                            }}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                                    // handleAddComment(post.id); // 개행 허용 원할 경우 주석 처리
+                                                                }
+                                                            }}
+                                                            placeholder={replyingToCommentId ? "답글을 입력하세요..." : "따뜻한 격려의 댓글..."}
+                                                            disabled={submittingCommentId === post.id}
+                                                            style={{
+                                                                flex: 1,
+                                                                padding: '10px 12px',
+                                                                borderRadius: '12px',
+                                                                border: '1px solid #EEE',
+                                                                fontSize: '14px',
+                                                                outline: 'none',
+                                                                background: submittingCommentId === post.id ? '#FAFAFA' : 'white',
+                                                                resize: 'none',
+                                                                height: '40px',
+                                                                minHeight: '40px',
+                                                                maxHeight: '120px',
+                                                                fontFamily: 'inherit',
+                                                                lineHeight: '1.5'
+                                                            }}
+                                                        />
+                                                        <button
+                                                            onClick={() => setCommentPrivateStates((prev: any) => ({ ...prev, [post.id]: !prev[post.id] }))}
+                                                            style={{
+                                                                background: commentPrivateStates[post.id] ? '#F3E5F5' : '#F5F5F5',
+                                                                border: 'none',
+                                                                borderRadius: '10px',
+                                                                width: '40px',
+                                                                height: '40px',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                cursor: 'pointer',
+                                                                fontSize: '16px',
+                                                                transition: 'all 0.2s'
+                                                            }}
+                                                            title={commentPrivateStates[post.id] ? "비공개" : "공개"}
+                                                        >
+                                                            {commentPrivateStates[post.id] ? '🔒' : '🔓'}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleAddComment(post.id)}
+                                                            disabled={submittingCommentId === post.id}
+                                                            style={{
+                                                                background: '#333',
+                                                                color: 'white',
+                                                                border: 'none',
+                                                                borderRadius: '10px',
+                                                                padding: '0 12px',
+                                                                height: '40px',
+                                                                fontSize: '12px',
+                                                                fontWeight: 700,
+                                                                cursor: submittingCommentId === post.id ? 'default' : 'pointer',
+                                                                opacity: submittingCommentId === post.id ? 0.7 : 1
+                                                            }}
+                                                        >
+                                                            {submittingCommentId === post.id ? '...' : (replyingToCommentId ? '답글' : '등록')}
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                {/* Comment Input */}
-                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
-                                                    <textarea
-                                                        value={commentInputs[post.id] || ""}
-                                                        onChange={(e) => {
-                                                            setCommentInputs({ ...commentInputs, [post.id]: e.target.value });
-                                                            e.target.style.height = 'auto';
-                                                            e.target.style.height = e.target.scrollHeight + 'px';
-                                                        }}
-                                                        onKeyDown={(e) => {
-                                                            // Shift+Enter는 개행, Enter는 개행 (사용자 요청: 줄바꿈 허용)
-                                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                                // e.preventDefault(); // 기본 개행 동작 허용
-                                                            }
-                                                        }}
-                                                        placeholder="따뜻한 격려의 댓글..."
-                                                        disabled={submittingCommentId === post.id}
-                                                        style={{
-                                                            flex: 1,
-                                                            padding: '10px 12px',
-                                                            borderRadius: '12px',
-                                                            border: '1px solid #EEE',
-                                                            fontSize: '14px',
-                                                            outline: 'none',
-                                                            background: submittingCommentId === post.id ? '#FAFAFA' : 'white',
-                                                            resize: 'none',
-                                                            height: '40px',
-                                                            minHeight: '40px',
-                                                            maxHeight: '120px',
-                                                            fontFamily: 'inherit',
-                                                            lineHeight: '1.5'
-                                                        }}
-                                                    />
-                                                    <button
-                                                        onClick={() => setCommentPrivateStates((prev: any) => ({ ...prev, [post.id]: !prev[post.id] }))}
-                                                        style={{
-                                                            background: commentPrivateStates[post.id] ? '#F3E5F5' : '#F5F5F5',
-                                                            border: 'none',
-                                                            borderRadius: '10px',
-                                                            width: '40px',
-                                                            height: '40px',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            cursor: 'pointer',
-                                                            fontSize: '16px',
-                                                            transition: 'all 0.2s'
-                                                        }}
-                                                        title={commentPrivateStates[post.id] ? "비공개" : "공개"}
-                                                    >
-                                                        {commentPrivateStates[post.id] ? '🔒' : '🔓'}
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleAddComment(post.id)}
-                                                        disabled={submittingCommentId === post.id}
-                                                        style={{
-                                                            background: '#333',
-                                                            color: 'white',
-                                                            border: 'none',
-                                                            borderRadius: '10px',
-                                                            padding: '0 12px',
-                                                            height: '40px',
-                                                            fontSize: '12px',
-                                                            fontWeight: 700,
-                                                            cursor: submittingCommentId === post.id ? 'default' : 'pointer',
-                                                            opacity: submittingCommentId === post.id ? 0.7 : 1
-                                                        }}
-                                                    >
-                                                        {submittingCommentId === post.id ? '...' : '등록'}
-                                                    </button>
-                                                </div>
-                                            </div>
                                         </div>
                                     );
                                 })}
@@ -4816,7 +4949,8 @@ export default function App() {
                             user_id: user.id,
                             user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
                             content: commentText,
-                            is_private: isPrivate
+                            is_private: isPrivate,
+                            parent_id: replyingToCommentId // ✅ 답글 지원
                         })
                     });
                     if (res.ok) {
@@ -4829,6 +4963,7 @@ export default function App() {
                         }));
                         setCommentInputs((prev: any) => ({ ...prev, [diaryId]: "" }));
                         setCommentPrivateStates((prev: any) => ({ ...prev, [diaryId]: false }));
+                        setReplyingToCommentId(null); // ✅ 초기화
                     } else {
                         const errData = await res.json().catch(() => ({}));
                         alert("댓글 등록에 실패했어요: " + (errData.error || "알 수 없는 오류"));
@@ -5125,52 +5260,117 @@ export default function App() {
 
                                             <div style={{ borderTop: '1px solid #FFF1E6', paddingTop: '15px' }}>
                                                 <div style={{ display: 'none' }}>댓글 {diary.comments?.length || 0}개</div>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
-                                                    {(diary.comments || []).map((comment: any) => {
-                                                        const isCommentVisible = !comment.is_private || isAdmin || user?.id === comment.user_id || user?.id === diary.user_id;
-                                                        return (
-                                                            <div key={comment.id} style={{ background: '#FFFDFB', padding: '10px 15px', borderRadius: '12px', fontSize: '13px', border: '1px solid #fae1cd', opacity: comment.is_private ? 0.9 : 1 }}>
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                                                    <span style={{ fontWeight: 700, color: '#555', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                        {comment.user_name || '성도'}
-                                                                        {comment.is_private && <span style={{ fontSize: '10px', color: '#E07A5F' }}>🔒</span>}
-                                                                    </span>
-                                                                    <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                        {comment.created_at ? new Date(comment.created_at).toLocaleTimeString() : '방금 전'}
-                                                                        {user?.id === comment.user_id && editingCommentId !== comment.id && (
-                                                                            <button onClick={() => { setEditingCommentId(comment.id); setEditCommentContent(comment.content); setIsEditPrivate(!!comment.is_private); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#B8924A', padding: 0, fontWeight: 600 }}>수정</button>
-                                                                        )}
-                                                                        {(isAdmin || user?.id === comment.user_id || user?.id === diary.user_id) && editingCommentId !== comment.id && (
-                                                                            <button onClick={() => handleDeleteThanksgivingComment(diary.id, comment.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>X</button>
-                                                                        )}
-                                                                    </span>
-                                                                </div>
-                                                                {editingCommentId === comment.id ? (
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-                                                                        <textarea
-                                                                            value={editCommentContent}
-                                                                            onChange={(e) => { setEditCommentContent(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
-                                                                            autoFocus
-                                                                            style={{ width: '100%', padding: '8px 10px', border: '1px solid #fae1cd', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'none', height: '40px', minHeight: '40px', fontFamily: 'inherit' }}
-                                                                        />
-                                                                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                                                            <button onClick={() => handleUpdateThanksgivingComment(diary.id, comment.id)} style={{ background: '#E07A5F', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>저장</button>
-                                                                            <button onClick={() => setEditingCommentId(null)} style={{ background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>취소</button>
-                                                                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginLeft: 'auto' }}>
-                                                                                <input type="checkbox" checked={isEditPrivate} onChange={(e: any) => setIsEditPrivate(e.target.checked)} />
-                                                                                <span style={{ fontSize: '11px', color: '#777' }}>비공개</span>
-                                                                            </label>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '15px' }}>
+                                                    {(() => {
+                                                        const comments = diary.comments || [];
+                                                        const rootComments = comments.filter((c: any) => !c.parent_id);
+                                                        return rootComments.map((comment: any) => {
+                                                            const replies = comments.filter((r: any) => r.parent_id === comment.id);
+                                                            const isCommentVisible = !comment.is_private || isAdmin || user?.id === comment.user_id || user?.id === diary.user_id;
+
+                                                            return (
+                                                                <div key={comment.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                                    {/* 부모 댓글 */}
+                                                                    <div style={{ background: '#FFFDFB', padding: '10px 15px', borderRadius: '12px', fontSize: '13px', border: '1px solid #fae1cd', opacity: comment.is_private ? 0.9 : 1 }}>
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                                            <span style={{ fontWeight: 700, color: '#555', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                                {comment.user_name || '성도'}
+                                                                                {comment.is_private && <span style={{ fontSize: '10px', color: '#E07A5F' }}>🔒</span>}
+                                                                            </span>
+                                                                            <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                {comment.created_at ? new Date(comment.created_at).toLocaleTimeString() : '방금 전'}
+                                                                                {editingCommentId !== comment.id && (
+                                                                                    <span onClick={() => { setReplyingToCommentId(comment.id); setCommentInputs({ ...commentInputs, [diary.id]: `@${comment.user_name} ` }); }} style={{ cursor: 'pointer', color: '#E07A5F', fontWeight: 700 }}>답글</span>
+                                                                                )}
+                                                                                {user?.id === comment.user_id && editingCommentId !== comment.id && (
+                                                                                    <button onClick={() => { setEditingCommentId(comment.id); setEditCommentContent(comment.content); setIsEditPrivate(!!comment.is_private); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#B8924A', padding: 0, fontWeight: 600 }}>수정</button>
+                                                                                )}
+                                                                                {(isAdmin || user?.id === comment.user_id || user?.id === diary.user_id) && editingCommentId !== comment.id && (
+                                                                                    <button onClick={() => handleDeleteThanksgivingComment(diary.id, comment.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>X</button>
+                                                                                )}
+                                                                            </span>
                                                                         </div>
+                                                                        {editingCommentId === comment.id ? (
+                                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                                                                                <textarea
+                                                                                    value={editCommentContent}
+                                                                                    onChange={(e) => { setEditCommentContent(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
+                                                                                    autoFocus
+                                                                                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #fae1cd', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'none', height: '40px', minHeight: '40px', fontFamily: 'inherit' }}
+                                                                                />
+                                                                                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                                                                    <button onClick={() => handleUpdateThanksgivingComment(diary.id, comment.id)} style={{ background: '#E07A5F', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>저장</button>
+                                                                                    <button onClick={() => setEditingCommentId(null)} style={{ background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>취소</button>
+                                                                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginLeft: 'auto' }}>
+                                                                                        <input type="checkbox" checked={isEditPrivate} onChange={(e: any) => setIsEditPrivate(e.target.checked)} />
+                                                                                        <span style={{ fontSize: '11px', color: '#777' }}>비공개</span>
+                                                                                    </label>
+                                                                                </div>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div style={{ color: isCommentVisible ? '#666' : '#AAA', fontStyle: isCommentVisible ? 'normal' : 'italic', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                                                                {isCommentVisible ? comment.content : '🔒 비공개 댓글입니다.'}
+                                                                            </div>
+                                                                        )}
                                                                     </div>
-                                                                ) : (
-                                                                    <div style={{ color: isCommentVisible ? '#666' : '#AAA', fontStyle: isCommentVisible ? 'normal' : 'italic' }}>
-                                                                        {isCommentVisible ? comment.content : '🔒 비공개 댓글입니다.'}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
+
+                                                                    {/* 대댓글 리스트 */}
+                                                                    {replies.map((reply: any) => {
+                                                                        const isReplyVisible = !reply.is_private || isAdmin || user?.id === reply.user_id || user?.id === diary.user_id || user?.id === comment.user_id;
+                                                                        return (
+                                                                            <div key={reply.id} style={{ marginLeft: '24px', padding: '10px 15px', background: '#FDFCFB', borderRadius: '12px', fontSize: '13px', border: '1px solid #fae1cd', borderLeft: '4px solid #E07A5F', opacity: reply.is_private ? 0.9 : 1 }}>
+                                                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                                                    <span style={{ fontWeight: 700, color: '#777', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}>
+                                                                                        {reply.user_name || '성도'}
+                                                                                        {reply.is_private && <span style={{ fontSize: '10px', color: '#E07A5F' }}>🔒</span>}
+                                                                                    </span>
+                                                                                    <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                        {reply.created_at ? new Date(reply.created_at).toLocaleTimeString() : '방금 전'}
+                                                                                        {user?.id === reply.user_id && editingCommentId !== reply.id && (
+                                                                                            <button onClick={() => { setEditingCommentId(reply.id); setEditCommentContent(reply.content); setIsEditPrivate(!!reply.is_private); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#B8924A', padding: 0, fontWeight: 600 }}>수정</button>
+                                                                                        )}
+                                                                                        {(isAdmin || user?.id === reply.user_id || user?.id === diary.user_id) && editingCommentId !== reply.id && (
+                                                                                            <button onClick={() => handleDeleteThanksgivingComment(diary.id, reply.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>X</button>
+                                                                                        )}
+                                                                                    </span>
+                                                                                </div>
+                                                                                {editingCommentId === reply.id ? (
+                                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                                                                                        <textarea
+                                                                                            value={editCommentContent}
+                                                                                            onChange={(e) => { setEditCommentContent(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
+                                                                                            autoFocus
+                                                                                            style={{ width: '100%', padding: '8px 10px', border: '1px solid #fae1cd', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'none', height: '40px', minHeight: '40px', fontFamily: 'inherit' }}
+                                                                                        />
+                                                                                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                                                                            <button onClick={() => handleUpdateThanksgivingComment(diary.id, reply.id)} style={{ background: '#E07A5F', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>저장</button>
+                                                                                            <button onClick={() => setEditingCommentId(null)} style={{ background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>취소</button>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <div style={{ color: isReplyVisible ? '#777' : '#AAA', fontStyle: isReplyVisible ? 'normal' : 'italic', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                                                                        {isReplyVisible ? reply.content : '🔒 비공개 답글입니다.'}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            );
+                                                        });
+                                                    })()}
                                                 </div>
+
+                                                {/* 답글 안내 문구 */}
+                                                {replyingToCommentId && (
+                                                    <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFF8E1', padding: '8px 12px', borderRadius: '10px', border: '1px solid #FFE082' }}>
+                                                        <span style={{ fontSize: '12px', color: '#856404', fontWeight: 700 }}>
+                                                            💬 답글 남기는 중...
+                                                        </span>
+                                                        <button onClick={() => { setReplyingToCommentId(null); setCommentInputs({ ...commentInputs, [diary.id]: "" }); }} style={{ background: 'none', border: 'none', color: '#A57224', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>취소</button>
+                                                    </div>
+                                                )}
+
                                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
                                                     <textarea
                                                         value={commentInputs[diary.id] || ""}
@@ -5181,11 +5381,11 @@ export default function App() {
                                                         }}
                                                         onKeyDown={(e) => {
                                                             if (e.key === 'Enter' && !e.shiftKey) {
-                                                                e.preventDefault();
-                                                                handleAddThanksgivingComment(diary.id);
+                                                                // e.preventDefault();
+                                                                // handleAddThanksgivingComment(diary.id);
                                                             }
                                                         }}
-                                                        placeholder="공감의 댓글..."
+                                                        placeholder={replyingToCommentId ? "답글을 입력하세요..." : "공감의 댓글..."}
                                                         style={{ flex: 1, padding: '10px 12px', borderRadius: '12px', border: '1px solid #fae1cd', fontSize: '14px', outline: 'none', resize: 'none', height: '40px', minHeight: '40px', maxHeight: '120px', fontFamily: 'inherit', lineHeight: '1.5' }}
                                                     />
                                                     <button
@@ -5200,7 +5400,7 @@ export default function App() {
                                                         onClick={() => handleAddThanksgivingComment(diary.id)}
                                                         style={{ background: submittingCommentId === diary.id ? '#CCC' : '#E07A5F', color: 'white', border: 'none', borderRadius: '10px', padding: '0 12px', height: '40px', fontSize: '12px', fontWeight: 700, cursor: submittingCommentId === diary.id ? 'default' : 'pointer' }}
                                                     >
-                                                        {submittingCommentId === diary.id ? '...' : '등록'}
+                                                        {submittingCommentId === diary.id ? '...' : (replyingToCommentId ? '답글' : '등록')}
                                                     </button>
                                                 </div>
                                             </div>
@@ -5287,6 +5487,7 @@ export default function App() {
                                                             prayer: qt.prayer,
                                                         });
                                                         setAnswers(qtRecord.answers || []);
+                                                        setGraceInput(qtRecord.reflection || ""); // 은혜나눔 복원
                                                         setIsHistoryMode(true);
                                                         setQtStep('read');
                                                         setView("qt");
@@ -5391,6 +5592,7 @@ export default function App() {
                                                         });
                                                     }
                                                     setAnswers(h.answers || []);
+                                                    setGraceInput(h.reflection || ""); // 은혜나눔 복원
                                                     setIsHistoryMode(true);
                                                     setQtStep('read');
                                                     setView('qt');
@@ -9904,11 +10106,13 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
 };
 
 // 갤러리 상세 모달
-// 갤러리 상세 모달
 function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: any) {
     const [likes, setLikes] = useState({ count: 0, isLiked: false });
     const [comments, setComments] = useState<any[]>([]);
     const [commentText, setCommentText] = useState("");
+    const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+    const [editCommentText, setEditCommentText] = useState("");
+    const [replyingToId, setReplyingToId] = useState<string | null>(null);
     const [currentIndex, setCurrentIndex] = useState(0);
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -9933,11 +10137,47 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
                 post_id: post.id,
                 user_id: user.id,
                 user_name: user.user_metadata?.full_name || user.email,
-                comment: commentText
+                comment: commentText,
+                parent_id: replyingToId // 답글일 경우 부모 ID 전송
             })
         });
         if (res.ok) {
             setCommentText("");
+            setReplyingToId(null);
+            fetch(`/api/gallery/comments?post_id=${post.id}`).then(r => r.json()).then(setComments);
+        }
+    };
+
+    const handleUpdateComment = async (commentId: string) => {
+        if (!editCommentText.trim()) return;
+        const res = await fetch('/api/gallery/comments', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: commentId,
+                user_id: user.id,
+                comment: editCommentText,
+                is_admin: isAdmin
+            })
+        });
+        if (res.ok) {
+            setEditingCommentId(null);
+            fetch(`/api/gallery/comments?post_id=${post.id}`).then(r => r.json()).then(setComments);
+        }
+    };
+
+    const handleDeleteComment = async (commentId: string) => {
+        if (!confirm("이 댓글을 삭제하시겠습니까?")) return;
+        const res = await fetch('/api/gallery/comments', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: commentId,
+                user_id: user.id,
+                is_admin: isAdmin
+            })
+        });
+        if (res.ok) {
             fetch(`/api/gallery/comments?post_id=${post.id}`).then(r => r.json()).then(setComments);
         }
     };
@@ -10110,17 +10350,90 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
 
                     <div style={{ borderTop: '1px solid #F0F0F0', paddingTop: '20px' }}>
                         <h4 style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#999' }}>댓글 {comments.length}</h4>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '200px', overflowY: 'auto', marginBottom: '20px' }}>
-                            {comments.map((c: any) => (
-                                <div key={c.id} style={{ display: 'flex', gap: '10px', fontSize: '14px' }}>
-                                    <span style={{ fontWeight: 800, color: '#333', flexShrink: 0 }}>{c.user_name}</span>
-                                    <span style={{ color: '#666' }}>{c.comment}</span>
-                                </div>
-                            ))}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', overflowY: 'visible', marginBottom: '20px' }}>
+                            {(() => {
+                                // 대댓글 구조화를 위해 부모 댓글 추출
+                                const rootComments = comments.filter(c => !c.parent_id);
+                                return rootComments.map((c: any) => {
+                                    const replies = comments.filter(r => r.parent_id === c.id);
+                                    return (
+                                        <div key={c.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            <div style={{ display: 'flex', gap: '10px', fontSize: '14px' }}>
+                                                <span style={{ fontWeight: 800, color: '#333', flexShrink: 0 }}>{c.user_name}</span>
+                                                <div style={{ flex: 1 }}>
+                                                    {editingCommentId === c.id ? (
+                                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                                            <input 
+                                                              value={editCommentText} 
+                                                              onChange={(e) => setEditCommentText(e.target.value)}
+                                                              style={{ flex: 1, border: '1px solid #EEE', borderRadius: '8px', padding: '4px 8px', fontSize: '13px' }}
+                                                            />
+                                                            <button onClick={() => handleUpdateComment(c.id)} style={{ padding: '4px 8px', background: '#333', color: 'white', border: 'none', borderRadius: '6px', fontSize: '11px' }}>저장</button>
+                                                            <button onClick={() => setEditingCommentId(null)} style={{ padding: '4px 8px', background: '#EEE', color: '#666', border: 'none', borderRadius: '6px', fontSize: '11px' }}>취소</button>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div style={{ color: '#666', marginBottom: '4px' }}>{c.comment}</div>
+                                                            <div style={{ display: 'flex', gap: '10px', fontSize: '11px', fontWeight: 700, color: '#999' }}>
+                                                                <span onClick={() => { setReplyingToId(c.id); setCommentText(`@${c.user_name} `); }} style={{ cursor: 'pointer' }}>답글달기</span>
+                                                                {(user?.id === c.user_id || isAdmin) && (
+                                                                    <>
+                                                                        <span onClick={() => { setEditingCommentId(c.id); setEditCommentText(c.comment); }} style={{ cursor: 'pointer' }}>수정</span>
+                                                                        <span onClick={() => handleDeleteComment(c.id)} style={{ cursor: 'pointer', color: '#FF5252' }}>삭제</span>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {/* 대댓글 리스트 */}
+                                            {replies.map((r: any) => (
+                                                <div key={r.id} style={{ display: 'flex', gap: '10px', fontSize: '14px', marginLeft: '24px', paddingLeft: '12px', borderLeft: '2px solid #F0F0F0' }}>
+                                                    <span style={{ fontWeight: 800, color: '#777', flexShrink: 0 }}>{r.user_name}</span>
+                                                    <div style={{ flex: 1 }}>
+                                                        {editingCommentId === r.id ? (
+                                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                                <input 
+                                                                    value={editCommentText} 
+                                                                    onChange={(e) => setEditCommentText(e.target.value)}
+                                                                    style={{ flex: 1, border: '1px solid #EEE', borderRadius: '8px', padding: '4px 8px', fontSize: '13px' }}
+                                                                />
+                                                                <button onClick={() => handleUpdateComment(r.id)} style={{ padding: '4px 8px', background: '#333', color: 'white', border: 'none', borderRadius: '6px', fontSize: '11px' }}>저장</button>
+                                                                <button onClick={() => setEditingCommentId(null)} style={{ padding: '4px 8px', background: '#EEE', color: '#666', border: 'none', borderRadius: '6px', fontSize: '11px' }}>취소</button>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <div style={{ color: '#666', marginBottom: '4px' }}>{r.comment}</div>
+                                                                <div style={{ display: 'flex', gap: '10px', fontSize: '11px', fontWeight: 700, color: '#999' }}>
+                                                                    {(user?.id === r.user_id || isAdmin) && (
+                                                                        <>
+                                                                            <span onClick={() => { setEditingCommentId(r.id); setEditCommentText(r.comment); }} style={{ cursor: 'pointer' }}>수정</span>
+                                                                            <span onClick={() => handleDeleteComment(r.id)} style={{ cursor: 'pointer', color: '#FF5252' }}>삭제</span>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    );
+                                });
+                            })()}
                         </div>
+                        
+                        {replyingToId && (
+                            <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8F9FA', padding: '8px 12px', borderRadius: '10px' }}>
+                                <span style={{ fontSize: '12px', color: '#666' }}><b>{comments.find(c => c.id === replyingToId)?.user_name}</b>님에게 답글 남기는 중...</span>
+                                <button onClick={() => { setReplyingToId(null); setCommentText(""); }} style={{ background: 'none', border: 'none', color: '#999', fontSize: '12px', cursor: 'pointer' }}>취소</button>
+                            </div>
+                        )}
+
                         <div style={{ display: 'flex', gap: '10px' }}>
                             <input 
-                                placeholder="따뜻한 댓글을 남겨주세요..."
+                                placeholder={replyingToId ? "답글을 남겨주세요..." : "따뜻한 댓글을 남겨주세요..."}
                                 value={commentText}
                                 onChange={(e) => setCommentText(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}

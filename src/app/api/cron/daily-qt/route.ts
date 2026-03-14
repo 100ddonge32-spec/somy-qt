@@ -196,7 +196,25 @@ export async function GET(req: NextRequest) {
             const columnContent = columnRes.choices[0]?.message?.content || '';
             const columnJson = JSON.parse(columnContent.match(/\{[\s\S]*\}/)![0]);
 
-            // 6. 교회 설정(church_settings) 업데이트
+            // 6. 오늘의 한줄(명언) 생성
+            const quoteRes = await openai.chat.completions.create({
+                model: 'gpt-4o-mini',
+                messages: [
+                    {
+                        role: 'system',
+                        content: `성도들에게 영감을 줄 수 있는 짧고 강력한 '크리스찬 명언' 또는 '신학자의 한마디'를 생성해 주세요. 
+기존 성경 구절과는 다른 깊이 있는 통찰을 주는 내용이어야 합니다.
+반드시 아래 JSON 형식으로만 답하세요:
+{"quote": "명언 내용 - 저자 또는 출처"}`
+                    }
+                ],
+                temperature: 0.9, // 다양성을 위해 온도를 높임
+            });
+
+            const quoteContent = quoteRes.choices[0]?.message?.content || '';
+            const quoteJson = JSON.parse(quoteContent.match(/\{[\s\S]*\}/)![0]);
+
+            // 7. 교회 설정(church_settings) 업데이트
             // 플랫폼 메인과 예수인교회(ID: 1) 설정을 업데이트합니다.
             const { data: currentSettings } = await supabaseAdmin
                 .from('church_settings')
@@ -205,18 +223,20 @@ export async function GET(req: NextRequest) {
                 .single();
 
             let newPlan = currentSettings?.plan || 'premium';
-            // 기존 tv_text, tv_ref, column_title, column_content 제거 후 새로 추가
+            // 기존 tv_text, tv_ref, column_title, column_content, today_quote 제거 후 새로 추가
             newPlan = newPlan.split('|').filter((p: string) => 
                 !p.startsWith('tv_text:') && 
                 !p.startsWith('tv_ref:') && 
                 !p.startsWith('column_title:') && 
-                !p.startsWith('column_content:')
+                !p.startsWith('column_content:') &&
+                !p.startsWith('today_quote:')
             ).join('|');
             
             newPlan += `|tv_text:${encodeURIComponent(verseJson.verse)}`;
             newPlan += `|tv_ref:${encodeURIComponent(verseJson.reference)}`;
             newPlan += `|column_title:${encodeURIComponent(columnJson.title)}`;
             newPlan += `|column_content:${encodeURIComponent(columnJson.content)}`;
+            newPlan += `|today_quote:${encodeURIComponent(quoteJson.quote)}`;
 
             await supabaseAdmin
                 .from('church_settings')
@@ -229,7 +249,7 @@ export async function GET(req: NextRequest) {
                 })
                 .eq('id', 1);
 
-            console.log('[Cron] Word of the Day & Pastor Column updated successfully.');
+            console.log('[Cron] Word of the Day, Pastor Column & Daily Quote updated successfully.');
 
         } catch (e) {
             console.error('오늘의 말씀/칼럼 생성 실패:', e);

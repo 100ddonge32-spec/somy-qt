@@ -16,13 +16,16 @@ const supabaseAdmin = createClient(
 // 댓글 작성 및 알림 생성
 export async function POST(req: NextRequest) {
     try {
+// 1. 댓글 삽입
         const body = await req.json();
-        const { post_id, user_id, user_name, content, is_private } = body;
+        const { post_id, user_id, user_name, content, is_private, parent_id } = body;
 
-        // 1. 댓글 삽입
+        const insertData: any = { post_id, user_id, user_name, content, is_private: !!is_private };
+        if (parent_id) insertData.parent_id = parent_id;
+
         const { data: comment, error: commentError } = await supabaseAdmin
             .from('community_comments')
-            .insert([{ post_id, user_id, user_name, content, is_private: !!is_private }])
+            .insert([insertData])
             .select()
             .single();
 

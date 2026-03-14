@@ -16,12 +16,15 @@ const supabaseAdmin = createClient(
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { diary_id, user_id, user_name, content, is_private } = body;
+        const { diary_id, user_id, user_name, content, is_private, parent_id } = body;
+
+        const insertData: any = { diary_id, user_id, user_name, content, is_private: !!is_private };
+        if (parent_id) insertData.parent_id = parent_id;
 
         // 1. 댓글 삽입
         const { data: comment, error: commentError } = await supabaseAdmin
             .from('thanksgiving_comments')
-            .insert([{ diary_id, user_id, user_name, content, is_private: !!is_private }])
+            .insert([insertData])
             .select()
             .single();
 

@@ -148,6 +148,12 @@ export async function GET(req: NextRequest) {
             if (match) data.today_verse_ref = decodeURIComponent(match[1]);
         }
 
+        // 8. 오늘의 한줄 (명언)
+        if (planStr.includes('today_quote:')) {
+            const match = planStr.match(/today_quote:([^|]+)/);
+            if (match) data.today_quote = decodeURIComponent(match[1]);
+        }
+
         data.plan = data.plan.split('|')[0]; // 원래 plan 값만 추출 (ui용)
     }
 

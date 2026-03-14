@@ -38,14 +38,32 @@ export async function GET(req: NextRequest) {
 
         if (qtError) throw qtError;
 
+        // Fetch community posts (reflections) for this user to match with history
+        const { data: reflections, error: reflectionError } = await supabaseAdmin
+            .from('community_posts')
+            .select('content, created_at, is_qt')
+            .eq('user_id', userId)
+            .eq('is_qt', true);
+
         const qtMap = new Map();
         if (qts) {
             qts.forEach(qt => qtMap.set(qt.date, qt));
         }
 
+        const reflectionMap = new Map();
+        if (reflections) {
+            reflections.forEach(ref => {
+                // created_at (UTC) -> KST date string
+                const kstDate = new Date(new Date(ref.created_at).getTime() + 9 * 60 * 60 * 1000);
+                const dateStr = kstDate.toISOString().split('T')[0];
+                reflectionMap.set(dateStr, ref.content);
+            });
+        }
+
         const data = completions.map(c => ({
             completed_date: c.completed_date,
             answers: c.answers || null,
+            reflection: reflectionMap.get(c.completed_date) || null,
             daily_qt: qtMap.get(c.completed_date) || null
         }));
 
