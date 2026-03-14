@@ -93,16 +93,14 @@ export async function GET(req: NextRequest) {
         if (fallback) {
             data = fallback;
 
-            // [자동 복구/Self-Healing] 과거 버그로 인해 ID 1번(메인)의 church_id가 체험판으로 오염된 경우 즉시 복구
-            if (data.church_id && data.church_id !== 'jesus-in') {
-                console.log(`[API Settings] CRITICAL: ID 1 is corrupted with church_id ${data.church_id}. Auto-healing...`);
+            // [자동 복구/Self-Healing] 혹시라도 ID 1번(메인)의 church_id가 다른 값으로 오염된 경우 즉시 복구
+            if (data.church_id !== 'jesus-in') {
+                console.log(`[API Settings] CRITICAL: ID 1 is corrupted. Auto-healing to jesus-in...`);
                 await supabaseAdmin.from('church_settings').update({
                     church_id: 'jesus-in',
-                    church_name: '예수인교회'
+                    church_name: data.church_name || '예수인교회'
                 }).eq('id', 1);
-
                 data.church_id = 'jesus-in';
-                data.church_name = '예수인교회';
             }
             console.log(`[API Settings] Fallback to ID 1 successful for jesus-in`);
         }
@@ -364,16 +362,25 @@ export async function POST(req: NextRequest) {
     };
 
     // [최후의 보루] ID 매칭 강제화 및 물리적 격리
+    // [중요] 데모 교회나 타교회 설정이 업데이트될 때 실수로 ID 1번(예수인교회)을 건드리는 것을 원천 차단합니다.
     if (normTargetId === 'jesus-in') {
         safeBaseData.id = 1; // 예수인교회는 무조건 ID 1 고정
-    } else if (currentSettings) {
-        // [강력 대응] 다른 교회의 업데이트가 ID 1번을 건드리는 것을 물리적으로 차단 (이중 체크)
-        if (currentSettings.id === 1) {
-            return NextResponse.json({ success: false, error: "보안 정책 위반: 잘못된 ID 타겟팅" }, { status: 403 });
+    } else if (normTargetId === 'demo') {
+        // [데모 격리] 데모 교회는 ID 1번을 절대 사용할 수 없음
+        if (currentSettings && currentSettings.id !== 1) {
+            safeBaseData.id = currentSettings.id;
+        } else {
+            // 기존 레코드가 없거나, 기존 레코드가 하필 ID 1번이라면(버그 상황) ID를 제거하여 신규 생성 유도
+            delete safeBaseData.id;
         }
-        safeBaseData.id = currentSettings.id;
+    } else if (currentSettings) {
+        // [일반 교회] 기존 레코드가 ID 1번이 아닐 때만 ID 유지
+        if (currentSettings.id !== 1) {
+            safeBaseData.id = currentSettings.id;
+        } else {
+            delete safeBaseData.id;
+        }
     } else {
-        // [신규] currentSettings가 없으면 새로운 레코드이므로 ID를 절대 포함하지 않음
         delete safeBaseData.id;
     }
 
