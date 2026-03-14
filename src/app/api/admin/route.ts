@@ -210,24 +210,24 @@ export async function GET(req: NextRequest) {
             });
 
             // [추가] 등록은 안 되어 있는데 성도 데이터만 있는 아이디들도 'Trial/Orphan' 섹션을 위해 따로 반환
-            const registeredIds = new Set(stats.map(s => s.church_id));
+            let registeredIds = new Set(stats.map(s => s.church_id));
             const orphans: any[] = [];
             Object.entries(countMap).forEach(([cid, count]) => {
-                const isDemo = cid === 'demo';
-                
-                if (isDemo && !registeredIds.has(cid)) {
-                    // 데모 교회가 리스트에 없으면 정식 교회 리스트에 가상으로 추가
-                    stats.push({
-                        id: 9999, // 임의 ID
-                        church_id: 'demo',
-                        church_name: '소미 체험 교회 (데모)',
-                        count: count,
-                        plan: 'demo|premium'
-                    });
-                } else if (!registeredIds.has(cid) && cid !== 'jesus-in') {
+                if (!registeredIds.has(cid) && cid !== 'jesus-in' && cid !== 'demo') {
                     orphans.push({ church_id: cid, church_name: `미등록 데이터 (${cid})`, count, is_orphan: true });
                 }
             });
+
+            // [핵심 수정] 데모 교회는 활동 기록이 0이라도 무조건 정식 리스트에 노출
+            if (!registeredIds.has('demo')) {
+                stats.push({
+                    id: 9999,
+                    church_id: 'demo',
+                    church_name: '소미 체험 교회 (데모)',
+                    count: countMap['demo'] || 0,
+                    plan: 'demo|premium'
+                });
+            }
 
             console.log(`[Admin API] Returning ${stats.length} registered stats and ${orphans.length} orphans`);
             return NextResponse.json({ registered: stats, orphans });
