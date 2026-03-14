@@ -10114,6 +10114,7 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
     const [editCommentText, setEditCommentText] = useState("");
     const [replyingToId, setReplyingToId] = useState<string | null>(null);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -10129,22 +10130,39 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
     };
 
     const handleAddComment = async () => {
-        if (!commentText.trim() || !user) return;
-        const res = await fetch('/api/gallery/comments', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                post_id: post.id,
-                user_id: user.id,
-                user_name: user.user_metadata?.full_name || user.email,
-                comment: commentText,
-                parent_id: replyingToId // 답글일 경우 부모 ID 전송
-            })
-        });
-        if (res.ok) {
-            setCommentText("");
-            setReplyingToId(null);
-            fetch(`/api/gallery/comments?post_id=${post.id}`).then(r => r.json()).then(setComments);
+        if (!commentText.trim()) return;
+        if (!user) {
+            alert("로그인이 필요한 기능입니다.");
+            return;
+        }
+        if (isSubmitting) return;
+
+        setIsSubmitting(true);
+        try {
+            const res = await fetch('/api/gallery/comments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    post_id: post.id,
+                    user_id: user.id,
+                    user_name: user.user_metadata?.full_name || user.email,
+                    comment: commentText,
+                    parent_id: replyingToId // 답글일 경우 부모 ID 전송
+                })
+            });
+            if (res.ok) {
+                setCommentText("");
+                setReplyingToId(null);
+                fetch(`/api/gallery/comments?post_id=${post.id}`).then(r => r.json()).then(setComments);
+            } else {
+                const err = await res.json().catch(() => ({ error: "알 수 없는 오류" }));
+                alert("댓글 등록에 실패했습니다: " + err.error);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("댓글 등록 중 네트워크 오류가 발생했습니다.");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -10436,10 +10454,26 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
                                 placeholder={replyingToId ? "답글을 남겨주세요..." : "따뜻한 댓글을 남겨주세요..."}
                                 value={commentText}
                                 onChange={(e) => setCommentText(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
-                                style={{ flex: 1, border: 'none', background: '#F5F5F5', padding: '14px 18px', borderRadius: '16px', fontSize: '14px', outline: 'none' }}
+                                onKeyDown={(e) => e.key === 'Enter' && !isSubmitting && handleAddComment()}
+                                disabled={isSubmitting}
+                                style={{ flex: 1, border: 'none', background: '#F5F5F5', padding: '14px 18px', borderRadius: '16px', fontSize: '14px', outline: 'none', opacity: isSubmitting ? 0.7 : 1 }}
                             />
-                            <button onClick={handleAddComment} style={{ background: '#D4AF37', border: 'none', color: 'white', padding: '0 20px', borderRadius: '16px', fontWeight: 800, cursor: 'pointer' }}>게시</button>
+                            <button 
+                                onClick={handleAddComment} 
+                                disabled={isSubmitting || !commentText.trim()}
+                                style={{ 
+                                    background: isSubmitting || !commentText.trim() ? '#CCC' : '#D4AF37', 
+                                    border: 'none', 
+                                    color: 'white', 
+                                    padding: '0 20px', 
+                                    borderRadius: '16px', 
+                                    fontWeight: 800, 
+                                    cursor: isSubmitting ? 'default' : 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                {isSubmitting ? '...' : '게시'}
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -107,14 +107,16 @@ export async function GET(req: NextRequest) {
         // [수정] 성도 명단 기반 하드코딩 데이터 격리: 예수인교회인 경우에만 기본 실적 부여 (보호막)
         const isJesusIn = cids.includes('jesus-in') || cids.includes('예수인교회');
         const MARCH_BASE: Record<string, number> = isJesusIn ? {
-            '강혜진': 7,
-            '이미경': 6,
-            '백동희': 6,
-            '최말례': 4,
-            '김은영': 4,
-            '장경하': 3,
+            '백동희': 4,
+            '김은영': 3,
+            '안유리': 3,
+            '강혜진': 2,
             '박영희': 2,
-            '최성은': 2
+            '이미경': 2,
+            '최말례': 2,
+            '박선민': 1,
+            '장경하': 1,
+            '최성은': 1
         } : {};
 
         // 제외할 명단
