@@ -9711,28 +9711,20 @@ export default function App() {
                                                                         <span style={{ fontSize: '13px', fontWeight: 800, color: '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ch.church_name || ch.church_id}</span>
                                                                         <span style={{ fontSize: '10px', color: '#888', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>ID: {ch.church_id} | {ch.plan?.split('|')[0] || 'free'}</span>
                                                                     </div>
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                                                                        <span style={{ fontSize: '13px', fontWeight: 800, color: '#D4AF37', whiteSpace: 'nowrap' }}>{ch.count}명</span>
-                                                                        <div style={{ display: 'flex', gap: '4px' }}>
-                                                                            <a href={ch.church_id === 'somy-main' ? '/' : `/?church_id=${ch.church_id}`} target="_blank" title="새 탭에서 보기" style={{ padding: '6px 10px', background: '#E3F2FD', color: '#1565C0', textDecoration: 'none', borderRadius: '8px', fontSize: '10px', fontWeight: 800, display: 'inline-block' }}>조회</a>
-                                                                                <button onClick={() => {
-                                                                                    if (confirm(`${ch.church_id} 교회를 데모 모드로 체험하시겠습니까?\n실제 데이터에는 영향을 주지 않습니다.`)) {
-                                                                                        localStorage.setItem('church_id', ch.church_id);
-                                                                                        localStorage.setItem('is_demo_mode', 'true');
-                                                                                        localStorage.setItem('demo_nickname', '마스터(체험)');
-                                                                                        window.location.href = `/?church_id=${ch.church_id}`;
-                                                                                    }
-                                                                                }} style={{ padding: '6px 10px', background: '#F3E5F5', color: '#7B1FA2', border: 'none', borderRadius: '8px', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}>데모</button>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                                                                            <span style={{ fontSize: '13px', fontWeight: 800, color: '#D4AF37', whiteSpace: 'nowrap' }}>{ch.count}명</span>
+                                                                            <div style={{ display: 'flex', gap: '4px' }}>
+                                                                                <a href={ch.church_id === 'somy-main' ? '/' : `/?church_id=${ch.church_id}`} target="_blank" title="새 탭에서 보기" style={{ padding: '6px 10px', background: '#E3F2FD', color: '#1565C0', textDecoration: 'none', borderRadius: '8px', fontSize: '10px', fontWeight: 800, display: 'inline-block' }}>조회</a>
                                                                                 <button onClick={() => {
                                                                                     if (confirm(`${ch.church_id} 교회를 현재 화면에서 관리하시겠습니까?`)) {
                                                                                         window.location.href = ch.church_id === 'somy-main' ? '/' : `/?church_id=${ch.church_id}`;
                                                                                     }
                                                                                 }} style={{ padding: '6px 10px', background: '#E8F5E9', color: '#2E7D32', border: 'none', borderRadius: '8px', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}>관리</button>
-                                                                                {ch.church_id !== 'jesus-in' && (
+                                                                                {ch.church_id !== 'jesus-in' && ch.church_id !== 'demo' && (
                                                                                     <button onClick={() => handleDeleteChurch(ch.church_id)} style={{ padding: '6px 10px', background: '#FEE', color: '#C62828', border: 'none', borderRadius: '8px', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}>삭제</button>
                                                                                 )}
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         ))

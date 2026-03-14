@@ -213,7 +213,18 @@ export async function GET(req: NextRequest) {
             const registeredIds = new Set(stats.map(s => s.church_id));
             const orphans: any[] = [];
             Object.entries(countMap).forEach(([cid, count]) => {
-                if (!registeredIds.has(cid) && cid !== 'jesus-in') {
+                const isDemo = cid === 'demo';
+                
+                if (isDemo && !registeredIds.has(cid)) {
+                    // 데모 교회가 리스트에 없으면 정식 교회 리스트에 가상으로 추가
+                    stats.push({
+                        id: 9999, // 임의 ID
+                        church_id: 'demo',
+                        church_name: '소미 체험 교회 (데모)',
+                        count: count,
+                        plan: 'demo|premium'
+                    });
+                } else if (!registeredIds.has(cid) && cid !== 'jesus-in') {
                     orphans.push({ church_id: cid, church_name: `미등록 데이터 (${cid})`, count, is_orphan: true });
                 }
             });
