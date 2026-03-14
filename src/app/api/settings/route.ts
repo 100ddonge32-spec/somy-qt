@@ -55,8 +55,15 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ settings: platformData }, { headers: noCacheHeaders });
     }
 
-    // [신규] 'demo' 교회 요청 시 하드코딩된 체험판 설정 반환 (실제 교회 데이터와 완전 격리)
-    if (targetChurchId === 'demo') {
+    // 1순위: church_id로 DB 검색
+    let { data, error } = await supabaseAdmin
+        .from('church_settings')
+        .select('*')
+        .eq('church_id', targetChurchId)
+        .maybeSingle();
+
+    // [신규] 'demo' 교회 요청 시: DB에 데이터가 없으면 하드코딩된 기본 체험판 설정 반환
+    if (!data && targetChurchId === 'demo') {
         const demoData = {
             church_id: 'demo',
             church_name: '소미 체험 교회',
@@ -75,13 +82,6 @@ export async function GET(req: NextRequest) {
         };
         return NextResponse.json({ settings: demoData }, { headers: noCacheHeaders });
     }
-
-    // 1순위: church_id로 검색
-    let { data, error } = await supabaseAdmin
-        .from('church_settings')
-        .select('*')
-        .eq('church_id', targetChurchId)
-        .maybeSingle();
 
     // 2순위: jesus-in에 한해서는 id=1 레코드를 마지막 보루로 시도 (호환성)
     if (!data && targetChurchId === 'jesus-in') {
