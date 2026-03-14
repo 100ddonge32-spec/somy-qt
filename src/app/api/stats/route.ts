@@ -23,9 +23,18 @@ function getKoreaDateString(): string {
 // 교회 ID 표준화 함수 (한국어 이름이나 공백 등 처리)
 function getChurchIds(id: string | null): string[] {
     if (!id || id === 'undefined' || id === 'null' || id.trim() === '') return [];
-    let nid = id.trim();
-    if (nid === '예수인교회' || nid === decodeURIComponent('예수인교회') || nid === 'jesus-in') {
-        return ['jesus-in', '예수인교회'];
+    let nid = id.trim().toLowerCase();
+    
+    // 예수인교회 관련 모든 변형 처리 (데이터 누락 방지)
+    if (
+        nid === '예수인교회' || 
+        nid === decodeURIComponent('예수인교회') || 
+        nid === 'jesus-in' || 
+        nid === '예수인' || 
+        nid === 'jesus' || 
+        nid === '예수'
+    ) {
+        return ['jesus-in', '예수인교회', '예수인', 'jesus'];
     }
     return [nid];
 }
@@ -107,16 +116,15 @@ export async function GET(req: NextRequest) {
         // [수정] 성도 명단 기반 하드코딩 데이터 격리: 예수인교회인 경우에만 기본 실적 부여 (보호막)
         const isJesusIn = cids.includes('jesus-in') || cids.includes('예수인교회');
         const MARCH_BASE: Record<string, number> = isJesusIn ? {
-            '백동희': 4,
-            '김은영': 3,
+            '강혜진': 11,
+            '백동희': 9,
+            '이미경': 8,
+            '김은영': 8,
+            '최말례': 7,
+            '장경하': 4,
+            '박영희': 4,
             '안유리': 3,
-            '강혜진': 2,
-            '박영희': 2,
-            '이미경': 2,
-            '최말례': 2,
-            '박선민': 1,
-            '장경하': 1,
-            '최성은': 1
+            '최성은': 3
         } : {};
 
         // 제외할 명단
@@ -252,7 +260,7 @@ export async function GET(req: NextRequest) {
         const ranking = Object.values(userStats)
             .map(u => {
                 const newDatesCount = Array.from(u.dates).filter(d => {
-                    if (u.baseCount > 0) return d > '2026-03-11';
+                    if (u.baseCount > 0) return d > '2026-03-14';
                     return true;
                 }).length;
 
