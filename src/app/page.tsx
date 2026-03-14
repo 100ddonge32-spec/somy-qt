@@ -8366,7 +8366,7 @@ export default function App() {
                                                             {isGeneratingColumn ? '생성 중...' : '✨ AI 생성'}
                                                         </button>
                                                     </div>
-                                                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>* 비워두면 오늘의 큐티(본문/해설)와 매일 자동으로 동기화됩니다.</div>
+                                                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>* 비워두면 오늘의 말씀을 바탕으로 매일 새로운 메시지가 AI에 의해 자동 생성됩니다.</div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                         <input type="text" value={settingsForm.pastor_column_title || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, pastor_column_title: e.target.value }))} placeholder="칼럼 제목" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
                                                         <textarea value={settingsForm.pastor_column_content || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, pastor_column_content: e.target.value }))} placeholder="칼럼 내용 (직접 입력 또는 AI 생성)" style={{ width: '100%', minHeight: '100px', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px', resize: 'none', lineHeight: 1.6 }} />
@@ -8378,7 +8378,7 @@ export default function App() {
                                                     <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                         📖 오늘의 말씀 커스텀 (옵션)
                                                     </div>
-                                                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>* 비워두면 오늘의 큐티 말씀과 매일 자동으로 동기화됩니다. 직접 입력 시 해당 말씀이 고정 노출됩니다.</div>
+                                                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>* 비워두면 매일 새로운 은혜의 말씀으로 별도 자동 업데이트됩니다. 직접 입력 시 해당 말씀이 고정 노출됩니다.</div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                         <input type="text" value={settingsForm.today_verse_text || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, today_verse_text: e.target.value }))} placeholder="예: 여호와는 나의 목자시니..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
                                                         <input type="text" value={settingsForm.today_verse_ref || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, today_verse_ref: e.target.value }))} placeholder="출처 (예: 시편 23:1)" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
