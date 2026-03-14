@@ -582,6 +582,9 @@ export default function App() {
 
     const [isAdminsLoading, setIsAdminsLoading] = useState(false); // ✅ 관리자 목록 로딩 상태
     const [showVerification, setShowVerification] = useState(false); // ✅ 실명 인증 폼 노출 여부
+    const [isDemoMode, setIsDemoMode] = useState(false); // ✅ 데모 체험 모드
+    const [showDemoModal, setShowDemoModal] = useState(false); // ✅ 데모 닉네임 입력 모달
+    const [demoNickname, setDemoNickname] = useState(''); // ✅ 데모용 닉네임
     const [isInApp, setIsInApp] = useState(false); // ✅ 카톡 등 인앱 브라우저 여부
     const [vName, setVName] = useState(""); // ✅ 인증용 성함
     const [vPhone, setVPhone] = useState(""); // ✅ 인증용 연락처
@@ -2568,8 +2571,113 @@ export default function App() {
                     </div>
                     {styles}
 
+                    {/* ✅ 데모 닉네임 입력 모달 */}
+                    {showDemoModal && (
+                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', backdropFilter: 'blur(8px)' }}>
+                            <div style={{ background: 'white', borderRadius: '32px', padding: '36px 28px', width: '100%', maxWidth: '360px', boxShadow: '0 30px 80px rgba(0,0,0,0.3)', animation: 'scale-up 0.3s ease-out', textAlign: 'center' }}>
+                                <div style={{ fontSize: '48px', marginBottom: '16px' }}>✨</div>
+                                <h2 style={{ fontSize: '22px', fontWeight: 900, color: '#333', marginBottom: '8px' }}>소미 앱 무료 체험</h2>
+                                <p style={{ fontSize: '13px', color: '#888', lineHeight: 1.6, marginBottom: '28px' }}>
+                                    닉네임을 입력하면 바로 시작!<br />
+                                    실제 교회와 완전히 분리된 안전한 체험 공간입니다.
+                                </p>
+                                <input
+                                    type="text"
+                                    placeholder="사용할 닉네임 입력 (예: 체험자1)"
+                                    value={demoNickname}
+                                    onChange={(e) => setDemoNickname(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && demoNickname.trim().length >= 2) {
+                                            const nick = demoNickname.trim();
+                                            setProfileName(nick);
+                                            setChurchId('demo');
+                                            localStorage.setItem('church_id', 'demo');
+                                            localStorage.setItem('demo_nickname', nick);
+                                            setIsDemoMode(true);
+                                            setIsApproved(true);
+                                            setShowDemoModal(false);
+                                        }
+                                    }}
+                                    maxLength={10}
+                                    style={{ width: '100%', padding: '16px', borderRadius: '16px', border: '2px solid #667eea', fontSize: '16px', outline: 'none', boxSizing: 'border-box', textAlign: 'center', fontWeight: 700, marginBottom: '16px' }}
+                                    autoFocus
+                                />
+                                <button
+                                    onClick={() => {
+                                        const nick = demoNickname.trim();
+                                        if (nick.length < 2) { alert('닉네임을 2자 이상 입력해주세요.'); return; }
+                                        setProfileName(nick);
+                                        setChurchId('demo');
+                                        localStorage.setItem('church_id', 'demo');
+                                        localStorage.setItem('demo_nickname', nick);
+                                        setIsDemoMode(true);
+                                        setIsApproved(true);
+                                        setShowDemoModal(false);
+                                    }}
+                                    disabled={demoNickname.trim().length < 2}
+                                    style={{
+                                        width: '100%', padding: '18px',
+                                        background: demoNickname.trim().length >= 2 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#EEE',
+                                        color: demoNickname.trim().length >= 2 ? 'white' : '#AAA',
+                                        border: 'none', borderRadius: '18px', fontSize: '16px', fontWeight: 800,
+                                        cursor: demoNickname.trim().length >= 2 ? 'pointer' : 'default',
+                                        boxShadow: demoNickname.trim().length >= 2 ? '0 10px 25px rgba(102,126,234,0.4)' : 'none',
+                                        transition: 'all 0.3s', marginBottom: '12px'
+                                    }}
+                                >
+                                    🚀 바로 체험 시작하기
+                                </button>
+                                <button
+                                    onClick={() => { setShowDemoModal(false); setDemoNickname(''); }}
+                                    style={{ background: 'none', border: 'none', color: '#BBB', fontSize: '13px', cursor: 'pointer', padding: '8px' }}
+                                >
+                                    취소
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ✅ 데모 모드 배너 */}
+                    {isDemoMode && (
+                        <div style={{
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            padding: '10px 16px',
+                            borderRadius: '14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            marginBottom: '12px',
+                            boxShadow: '0 4px 15px rgba(102,126,234,0.35)',
+                            animation: 'fade-in 0.5s ease-out'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '16px' }}>🎮</span>
+                                <div>
+                                    <div style={{ color: 'white', fontSize: '12px', fontWeight: 800 }}>데모 체험 중 · {profileName || '체험자'}</div>
+                                    <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '10px' }}>실제 교회 데이터와 완전히 분리된 체험 공간</div>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setIsDemoMode(false);
+                                    setIsApproved(false);
+                                    setChurchId('somy-main');
+                                    setProfileName(null);
+                                    localStorage.removeItem('church_id');
+                                    localStorage.removeItem('demo_nickname');
+                                    setDemoNickname('');
+                                    setView('home');
+                                }}
+                                style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', fontSize: '11px', fontWeight: 700, padding: '6px 12px', borderRadius: '10px', cursor: 'pointer' }}
+                            >
+                                종료
+                            </button>
+                        </div>
+                    )}
+
                     {/* 환영 모달 (인트로 스크린) */}
                     {showWelcome && (
+
                         <div style={{ position: 'fixed', inset: 0, background: "linear-gradient(180deg, #FFF8F0 0%, #FEF0D8 100%)", zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px' }}>
                             <div style={{ display: "flex", justifyContent: "center", marginBottom: "30px" }}>
                                 <div style={{ position: "relative", animation: "float-gentle 3.5s ease-in-out infinite" }}>
@@ -2767,6 +2875,34 @@ export default function App() {
                                      >
                                          {isDirectLoggingIn ? '정보 확인 중...' : '교인 정보로 바로 시작하기'}
                                      </button>
+
+                                     {/* 데모 체험 버튼 */}
+                                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '8px 0' }}>
+                                         <div style={{ flex: 1, height: '1px', background: '#EEE' }} />
+                                         <span style={{ fontSize: '11px', color: '#BBB', fontWeight: 600 }}>또는</span>
+                                         <div style={{ flex: 1, height: '1px', background: '#EEE' }} />
+                                     </div>
+                                     <button
+                                         onClick={() => setShowDemoModal(true)}
+                                         style={{
+                                             width: '100%',
+                                             padding: '16px',
+                                             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                             color: 'white',
+                                             border: 'none',
+                                             borderRadius: '18px',
+                                             fontSize: '15px',
+                                             fontWeight: 800,
+                                             cursor: 'pointer',
+                                             boxShadow: '0 8px 20px rgba(102,126,234,0.4)',
+                                             transition: 'all 0.3s'
+                                         }}
+                                     >
+                                         ✨ 소미 앱 무료 체험하기
+                                     </button>
+                                     <p style={{ textAlign: 'center', fontSize: '11px', color: '#BBB', margin: '6px 0 0', lineHeight: 1.5 }}>
+                                         닉네임만 입력하면 바로 시작! 가입 불필요
+                                     </p>
                                 </div>
                             </div>
                         ) : (!isApproved && !isAdmin && !isSuperAdmin) ? (

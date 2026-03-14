@@ -84,9 +84,12 @@ export async function GET(req: NextRequest) {
         
         const churchUserIds = (churchProfiles || []).map(p => p.id);
 
-        // 큐티 완료 기록 가져오기 (사용자 ID 필터링)
+        // 큐티 완료 기록 가져오기 (데모는 user_name 기반으로 격리, 일반은 user_id 필터링)
         let completionsQuery = supabaseAdmin.from('qt_completions').select('*').gte('completed_date', firstOfMonth);
-        if (rawChurchId !== 'somy-main' && churchUserIds.length > 0) {
+        if (rawChurchId === 'demo') {
+            // 데모: user_name에 '[데모]' 접두사가 붙은 기록만 필터링
+            completionsQuery = completionsQuery.like('user_name', '[데모]%');
+        } else if (rawChurchId !== 'somy-main' && churchUserIds.length > 0) {
             completionsQuery = completionsQuery.in('user_id', churchUserIds);
         } else if (rawChurchId !== 'somy-main') {
             // 성도가 한 명도 없는 교회라면 빈 결과 처리
