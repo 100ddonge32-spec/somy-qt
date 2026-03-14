@@ -2789,7 +2789,7 @@ export default function App() {
                                 <div style={{ fontSize: '15px', color: '#1A5D55', fontWeight: 800 }}>보안 연결 확인 중...</div>
                                 <div style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>잠시만 기다려 주세요.</div>
                             </div>
-                        ) : !user ? (
+                        ) : (!user && !isDemoMode) ? (
                             <div style={{ background: 'white', padding: '30px', borderRadius: '32px', boxShadow: '0 15px 50px rgba(0,0,0,0.1)', border: '1px solid #F0ECE4', textAlign: 'center' }}>
                                 <div style={{ marginBottom: '25px', textAlign: 'center', animation: 'fade-in 0.8s ease' }}>
                                     <div style={{ fontSize: '22px', fontWeight: 900, color: '#1A5D55', marginBottom: '12px' }}>성도 & 관리자 통합 입장 ⛪</div>
@@ -2905,7 +2905,7 @@ export default function App() {
                                      </p>
                                 </div>
                             </div>
-                        ) : (!isApproved && !isAdmin && !isSuperAdmin) ? (
+                        ) : (!isApproved && !isAdmin && !isSuperAdmin && !isDemoMode) ? (
                             <div style={{ background: '#FFFDE7', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', border: '1px solid #FFF59D', textAlign: 'center' }}>
                                 <div style={{ fontSize: '40px', marginBottom: '15px' }}>⏳</div>
                                 <div style={{ fontSize: '18px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>자동 승인 대기 중</div>
