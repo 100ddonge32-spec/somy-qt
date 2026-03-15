@@ -19,13 +19,25 @@ export async function GET(req: NextRequest) {
 
         const { data, error } = await supabaseAdmin
             .from('gallery_posts')
-            .select('*')
+            .select(`
+                *,
+                profiles:user_id (
+                    full_name
+                )
+            `)
             .eq('church_id', churchId)
             .order('created_at', { ascending: false })
             .limit(limit);
 
         if (error) throw error;
-        return NextResponse.json(data);
+
+        // profiles에서 최신 이름을 가져와서 user_name 보완
+        const formattedData = data.map((item: any) => ({
+            ...item,
+            user_name: item.profiles?.full_name || item.user_name || '알 수 없음'
+        }));
+
+        return NextResponse.json(formattedData);
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }

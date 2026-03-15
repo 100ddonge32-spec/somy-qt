@@ -10044,21 +10044,42 @@ function GalleryGridItem({ post, onClick }: any) {
                     background: 'rgba(0, 0, 0, 0.75)',
                     backdropFilter: 'blur(4px)',
                     color: 'white',
-                    fontSize: '11px',
+                    fontSize: '10px',
                     fontWeight: 900,
-                    padding: '4px 8px',
-                    borderRadius: '8px',
+                    padding: '3px 7px',
+                    borderRadius: '6px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '4px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
                     zIndex: 2,
-                    border: '1px solid rgba(255,255,255,0.2)'
+                    border: '1px solid rgba(255,255,255,0.1)'
                 }}>
-                    <span style={{ fontSize: '13px' }}>🖼️</span>
+                    <span style={{ fontSize: '12px' }}>🎞️</span>
                     <span>{images.length}</span>
                 </div>
             )}
+
+            {/* 작성자 이름 오버레이 추가 */}
+            <div style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                background: 'linear-gradient(transparent, rgba(0,0,0,0.6))',
+                padding: '12px 8px 6px',
+                color: 'white',
+                fontSize: '11px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+            }}>
+                <span style={{ opacity: 0.9 }}>👤</span>
+                <span style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {post.user_name || '성도'}
+                </span>
+            </div>
         </div>
     );
 };
@@ -10491,7 +10512,12 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
                             <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F5F5F5', overflow: 'hidden' }}>
                                 {post.avatar_url && <img src={post.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                             </div>
-                            <span style={{ fontWeight: 800, fontSize: '14px' }}>{post.user_name}</span>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <span style={{ fontWeight: 800, fontSize: '15px', color: '#333' }}>
+                                    {post.user_name || '알 수 없는 성도'}
+                                </span>
+                                <span style={{ fontSize: '11px', color: '#999' }}>작성자</span>
+                            </div>
                         </div>
                         {(user?.id === post.user_id || isAdmin) && (
                             <button onClick={() => onDelete(post.id)} style={{ background: '#FFF0F0', border: 'none', color: '#FF5252', padding: '6px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>삭제</button>
