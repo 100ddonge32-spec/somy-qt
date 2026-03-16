@@ -10226,12 +10226,12 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
 
     return (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 11000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(10px)' }}>
-            <div style={{ background: 'white', width: '100%', maxWidth: '420px', borderRadius: '32px', overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.4)', animation: 'modal-up 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+            <div style={{ background: 'white', width: '100%', maxWidth: '420px', borderRadius: '32px', overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.4)', animation: 'modal-up 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ padding: '24px', borderBottom: '1px solid #F0F0F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>📸 사진 공유하기</h3>
                     <button onClick={onClose} style={{ background: '#F5F5F5', border: 'none', width: '32px', height: '32px', borderRadius: '50%', fontSize: '14px', cursor: 'pointer', color: '#666' }}>✕</button>
                 </div>
-                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                         {previewUrls.map((url, idx) => (
                             <div key={idx} style={{ position: 'relative', width: '100%', aspectRatio: '1/1', borderRadius: '12px', overflow: 'hidden', border: '1px solid #EEE' }}>
