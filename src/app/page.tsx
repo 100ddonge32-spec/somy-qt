@@ -2184,13 +2184,13 @@ export default function App() {
             const verseRef = churchSettings.today_verse_text ? churchSettings.today_verse_ref || '직접 입력' : `${autoVerse.book} ${autoVerse.ref}`;
 
             // ✅ 프롬프트를 더 풍성하고 깊이 있게 수정
-            const prompt = `당신은 ${settingsForm.church_name || CHURCH_NAME}의 담임목사입니다. 오늘의 말씀 [${verseRef}: ${verseText}]을 바탕으로 성도들에게 깊은 위로와 영적 도전을 주는 '담임목사 칼럼'을 작성해주세요. 
+            const prompt = `당신은 ${settingsForm.church_name || CHURCH_NAME}의 담임목사입니다. 이번주 암송구절 [${verseRef}: ${verseText}]을 바탕으로 성도들에게 깊은 위로와 영적 도전을 주는 '목양 칼럼'을 작성해주세요. 
 
 [작성 가이드라인]
 1. 분량: 약 500자 내외로 풍성하게 작성하세요.
-2. 구조: 말씀 묵상 - 삶의 적용 - 따뜻한 격려와 축복의 순서로 구성하세요.
+2. 구조: 말씀의 의미 설명 - 한 주간 삶의 적용점 - 따뜻한 격려와 축복의 순서로 구성하세요.
 3. 말투: 성도를 진심으로 아끼는 마음이 담긴 자애롭고 은혜로운 목소리(존댓말)를 사용하세요.
-4. 내용: 단순히 말씀을 설명하기보다, 오늘을 살아가는 성도들의 삶에 실제적인 힘이 되는 조언을 포함하세요.
+4. 내용: 한 주 동안 성도들이 암송구절을 되새기며 승리할 수 있도록 돕는 실질적인 조언을 포함하세요.
 5. 주의사항: 칼럼 형식이므로 글의 마지막에 '아멘'을 사용하지 말고 담백하고 우아하게 마무리하세요.
 
 반드시 아래 형식을 엄격히 지켜서 출력하세요:
@@ -3168,9 +3168,9 @@ export default function App() {
                                     }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.08)'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.04)'; }}>
                                         <div style={{ width: '40px', height: '56px', background: '#FFFDF7', borderRadius: '6px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', border: '1px solid #FAF0D7' }}>✍️</div>
                                         <div>
-                                            <div className="label" style={{ fontSize: '13px', color: '#B8924A', fontWeight: 800, marginBottom: '2px', wordBreak: 'keep-all' }}>담임목사 칼럼</div>
+                                            <div className="label" style={{ fontSize: '13px', color: '#B8924A', fontWeight: 800, marginBottom: '2px', wordBreak: 'keep-all' }}>이번주 암송구절 칼럼</div>
                                             <div style={{ fontSize: '14px', fontWeight: 900, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', width: '100%', lineHeight: 1.2 }}>
-                                                {churchSettings.pastor_column_content ? (churchSettings.pastor_column_title || '오늘의 칼럼') : '오늘의 목양 칼럼'}
+                                                {churchSettings.pastor_column_content ? (churchSettings.pastor_column_title || '이번주 칼럼') : '한주간의 목양 칼럼'}
                                             </div>
                                         </div>
                                         {!churchSettings.pastor_column_content && !qtData?.interpretation && (
@@ -3186,7 +3186,7 @@ export default function App() {
                                     </div>
                                 </div>
 
-                                {/* 오늘의 말씀 섹션 - 동기화된 데이터 사용 */}
+                                {/* 이번주 암송구절 섹션 - 동기화된 데이터 사용 */}
                                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", flex: 1, justifyContent: 'center', width: "100%", marginTop: '10px', marginBottom: '10px' }}>
                                     <div style={{ background: "rgba(255, 255, 255, 0.9)", borderRadius: "24px", padding: "24px", width: "100%", maxWidth: "320px", boxShadow: "0 10px 30px rgba(0,0,0,0.06)", border: "1px solid #F0ECE4", animation: "fade-in 0.8s ease-out", display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', textAlign: 'left', backdropFilter: 'blur(10px)', userSelect: 'none' }}>
                                         {(() => {
@@ -3200,7 +3200,7 @@ export default function App() {
                                                 <>
                                                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
                                                         <div style={{ width: '32px', height: '32px', background: '#F5F2EA', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>📖</div>
-                                                        <span style={{ fontSize: "15px", fontWeight: 800, color: "#9E7B31", letterSpacing: '-0.2px' }}>오늘의 말씀</span>
+                                                        <span style={{ fontSize: "15px", fontWeight: 800, color: "#9E7B31", letterSpacing: '-0.2px' }}>이번주 암송구절</span>
                                                     </div>
                                                     <div style={{ position: 'relative', padding: '0 4px' }}>
                                                         <p className="verse-text" style={{ position: 'relative', zIndex: 1, fontSize: "15px", color: "#444", lineHeight: 1.8, margin: "0 0 16px 0", fontWeight: 500, wordBreak: 'keep-all', textAlign: 'center' }}>"{verseText}"</p>
@@ -4118,7 +4118,7 @@ export default function App() {
                                     alert('말씀은 불러왔으나 질문 생성에 실패했습니다.');
                                 } finally { setAiLoading(false); }
                             }} disabled={aiLoading} style={{ width: '100%', padding: '12px', background: '#F5F2EA', color: '#B8924A', border: '1px solid #B8924A', borderRadius: '10px', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
-                                🛳️ {churchSettings?.today_verse_text ? '설정된 오늘의 말씀 불러오기' : '네비게이토 은혜 말씀 불러오기'}
+                                🛳️ {churchSettings?.today_verse_text ? '설정된 오늘의 암송 불러오기' : '네비게이토 은혜 말씀 불러오기'}
                             </button>
 
                             <p style={{ fontSize: '11px', color: '#999', marginTop: '8px', textAlign: 'center' }}>
@@ -5698,7 +5698,7 @@ export default function App() {
 
                                             <div style={{ marginBottom: '15px' }}>
                                                 <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                    📖 {h.daily_qt?.reference || "오늘의 말씀 묵상"}
+                                                    📖 {h.daily_qt?.reference || "오늘의 암송 묵상"}
                                                 </div>
                                                 {h.daily_qt?.passage ? (
                                                     <p style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
@@ -6137,7 +6137,7 @@ export default function App() {
                     <div style={{ padding: "20px" }}>
                         <div style={{ background: '#FFF3E0', padding: '15px', borderRadius: '15px', marginBottom: '20px', border: '1px solid #FFCC80' }}>
                             <p style={{ margin: 0, fontSize: '14px', color: '#E65100', fontWeight: 600, textAlign: 'center' }}>
-                                아래 영상을 눌러 오늘의 말씀을 시청하세요 ✨
+                                아래 영상을 눌러 오늘의 암송을 시청하세요 ✨
                             </p>
                         </div>
                         {embedUrl ? (
@@ -6787,17 +6787,17 @@ export default function App() {
             const autoVerse = getGraceVerse();
             const isCustom = !!churchSettings?.today_verse_text;
             const verseText = isCustom ? churchSettings.today_verse_text : autoVerse.verse;
-            const verseRef = isCustom ? (churchSettings.today_verse_ref || '오늘의 말씀') : `${autoVerse.book} ${autoVerse.ref}`;
+            const verseRef = isCustom ? (churchSettings.today_verse_ref || '이번주 암송') : `${autoVerse.book} ${autoVerse.ref}`;
 
             // ✅ [동기화] 칼럼이 입력되지 않았을 경우, 오늘의 말씀을 바탕으로 한 자동 묵상 메시지 노출
             const hasCustomColumn = !!churchSettings?.pastor_column_content?.trim();
             const columnTitle = hasCustomColumn 
                 ? (churchSettings.pastor_column_title || "🕊️ 오늘의 목양 메시지")
-                : `📖 오늘의 말씀 (${verseRef})`;
+                : `📖 이번주 암송구절 (${verseRef})`;
             
             const columnContent = hasCustomColumn 
                 ? churchSettings.pastor_column_content 
-                : `"${verseText}"\n\n- ${verseRef}\n\n사랑하는 성도 여러분, 오늘 우리에게 주신 이 생명의 말씀을 마음 깊이 새기길 원합니다.\n\n하나님의 말씀은 우리 삶의 등불입니다. 때로는 앞이 보이지 않는 막막한 순간에도 주님은 항상 말씀으로 우리를 가장 선한 길로 인도하고 계심을 확신할 수 있습니다.\n\n오늘 이 말씀을 묵상하며, 내 생각보다 크신 하나님의 완전하신 계획을 신뢰합시다. 우리가 주님의 약속을 온전히 붙들고 나아갈 때, 주님께서 친히 우리의 모든 걸음을 지키시고 평안을 베풀어 주실 것입니다.\n\n오늘 하루도 주님의 은혜 안에서 승리하시고, 말씀의 능력으로 힘을 얻는 복된 날 되시기를 간절히 기도하며 축복합니다.`;
+                : `"${verseText}"\n\n- ${verseRef}\n\n사랑하는 성도 여러분, 이번 한 주간 우리에게 주신 이 생명의 암송구절을 마음 깊이 새기길 원합니다.\n\n하나님의 말씀은 우리 삶의 등불입니다. 때로는 앞이 보이지 않는 막막한 순간에도 주님은 항상 말씀으로 우리를 가장 선한 길로 인도하고 계심을 확신할 수 있습니다.\n\n이번 주 내내 이 말씀을 묵상하고 암송하며, 내 생각보다 크신 하나님의 완전하신 계획을 신뢰합시다. 우리가 주님의 약속을 온전히 붙들고 나아갈 때, 주님께서 친히 우리의 모든 걸음을 지키시고 평안을 베풀어 주실 것입니다.\n\n한 주간의 삶 속에서도 주님의 은혜 안에서 승리하시고, 암송한 말씀의 능력으로 힘을 얻는 복된 나날 되시기를 간절히 기도하며 축복합니다.`;
 
             return (
                 <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', ...baseFont, animation: 'fade-in 0.4s ease-out' }}>
@@ -7301,7 +7301,7 @@ export default function App() {
                         {/* 큐티 화면 모형 */}
                         <div style={{ width: '240px', height: '440px', background: 'white', border: '8px solid #333', borderRadius: '36px', overflow: 'hidden', position: 'relative', boxShadow: '0 20px 50px rgba(0,0,0,0.1)' }}>
                             <div style={{ padding: '20px' }}>
-                                <div style={{ fontSize: '12px', fontWeight: 900, marginBottom: '10px' }}>📖 오늘의 말씀</div>
+                                <div style={{ fontSize: '12px', fontWeight: 900, marginBottom: '10px' }}>📖 오늘의 암송</div>
                                 <div style={{ height: '2px', background: '#D4AF37', width: '30px', marginBottom: '15px' }} />
                                 <div style={{ fontSize: '10px', lineHeight: 1.6, color: '#666' }}>
                                     하나님이 세상을 이처럼 사랑하사 독생자를 주셨으니...<br />
@@ -8358,7 +8358,7 @@ export default function App() {
                                                 {/* ✅ 담임목사 칼럼 관리 섹션 추가 */}
                                                 <div style={{ marginTop: '10px', padding: '15px', background: '#FDF8F0', borderRadius: '15px', border: '1px solid #FAF0D7' }}>
                                                     <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>✍️ 담임목사 칼럼 관리</div>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>✍️ 이번주 암송 칼럼 관리</div>
                                                         <button
                                                             disabled={isGeneratingColumn}
                                                             onClick={(e) => { e.preventDefault(); handleGenerateColumn(); }}
@@ -8366,19 +8366,19 @@ export default function App() {
                                                             {isGeneratingColumn ? '생성 중...' : '✨ AI 생성'}
                                                         </button>
                                                     </div>
-                                                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>* 비워두면 오늘의 말씀을 바탕으로 매일 새로운 메시지가 AI에 의해 자동 생성됩니다.</div>
+                                                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>* 비워두면 이번주 암송구절을 바탕으로 매주 새로운 메시지가 AI에 의해 자동 생성됩니다.</div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                         <input type="text" value={settingsForm.pastor_column_title || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, pastor_column_title: e.target.value }))} placeholder="칼럼 제목" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
                                                         <textarea value={settingsForm.pastor_column_content || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, pastor_column_content: e.target.value }))} placeholder="칼럼 내용 (직접 입력 또는 AI 생성)" style={{ width: '100%', minHeight: '100px', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px', resize: 'none', lineHeight: 1.6 }} />
                                                     </div>
                                                 </div>
 
-                                                {/* ✅ 오늘의 말씀 개별 설정 추가 */}
+                                                {/* ✅ 이번주 암송구절 개별 설정 추가 */}
                                                 <div style={{ marginTop: '10px', padding: '15px', background: '#F8F9FA', borderRadius: '15px', border: '1px solid #E9ECEF' }}>
                                                     <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        📖 오늘의 말씀 커스텀 (옵션)
+                                                        📖 이번주 암송구절 커스텀 (옵션)
                                                     </div>
-                                                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>* 비워두면 매일 새로운 은혜의 말씀으로 별도 자동 업데이트됩니다. 직접 입력 시 해당 말씀이 고정 노출됩니다.</div>
+                                                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>* 비워두면 매주 새로운 은혜의 말씀으로 별도 자동 업데이트됩니다. 직접 입력 시 해당 말씀이 고정 노출됩니다.</div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                         <input type="text" value={settingsForm.today_verse_text || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, today_verse_text: e.target.value }))} placeholder="예: 여호와는 나의 목자시니..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
                                                         <input type="text" value={settingsForm.today_verse_ref || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, today_verse_ref: e.target.value }))} placeholder="출처 (예: 시편 23:1)" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />

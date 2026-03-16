@@ -151,108 +151,133 @@ export async function GET(req: NextRequest) {
             }
         } catch (e) { }
 
-        // [신규] 오늘의 말씀 & 담임목사 칼럼 자동 생성 (큐티와 별개)
+        // [신규] '이번주 암송구절' & 담임목사 칼럼 자동 생성 (한 주에 한 번, 월요일 또는 데이터 부재 시)
         try {
-            console.log('[Cron] Generating Word of the Day & Pastor Column...');
-            // 4. 오늘의 말씀(별도) 생성
-            const verseRes = await openai.chat.completions.create({
-                model: 'gpt-4o-mini',
-                messages: [
-                    {
-                        role: 'system',
-                        content: `성도들에게 매일 아침 전할 은혜로운 '오늘의 말씀'을 한 구절 선정하고 그 이유를 짧게 설명하세요. 
-주어진 큐티 본문(${reference})과는 가급적 중복되지 않는 다른 성경의 은혜로운 구절을 선정해 주세요.
-반드시 아래 JSON 형식으로만 답하세요:
-{"reference":"성경구절(장:절)","verse":"말씀 내용"}`
-                    }
-                ],
-                temperature: 0.8,
-            });
-
-            const verseContent = verseRes.choices[0]?.message?.content || '';
-            const verseJson = JSON.parse(verseContent.match(/\{[\s\S]*\}/)![0]);
-
-            // 5. 담임목사 칼럼 생성
-            const columnRes = await openai.chat.completions.create({
-                model: 'gpt-4o-mini',
-                messages: [
-                    {
-                        role: 'system',
-                        content: `당신은 교회의 담임목사입니다. 오늘의 말씀 [${verseJson.reference}: ${verseJson.verse}]을 바탕으로 성도들에게 깊은 위로와 영적 도전을 주는 '담임목사 칼럼'을 작성해주세요. 
-
-[작성 가이드라인]
-1. 분량: 약 500자 내외로 풍성하게 작성하세요.
-2. 구조: 말씀 묵상 - 삶의 적용 - 따뜻한 격려와 축복의 순서로 구성하세요.
-3. 말투: 성도를 진심으로 아끼는 마음이 담긴 자애롭고 은혜로운 목과소리(존댓말)를 사용하세요.
-4. 내용: 단순히 말씀을 설명하기보다, 오늘을 살아가는 성도들의 삶에 실제적인 힘이 되는 조언을 포함하세요.
-
-반드시 아래 JSON 형식으로만 답하세요:
-{"title":"제목","content":"내용"}`
-                    }
-                ],
-                temperature: 0.7,
-            });
-
-            const columnContent = columnRes.choices[0]?.message?.content || '';
-            const columnJson = JSON.parse(columnContent.match(/\{[\s\S]*\}/)![0]);
-
-            // 6. 오늘의 한줄(명언) 생성
-            const quoteRes = await openai.chat.completions.create({
-                model: 'gpt-4o-mini',
-                messages: [
-                    {
-                        role: 'system',
-                        content: `성도들에게 영감을 줄 수 있는 짧고 강력한 '크리스찬 명언' 또는 '신학자의 한마디'를 생성해 주세요. 
-기존 성경 구절과는 다른 깊이 있는 통찰을 주는 내용이어야 합니다.
-반드시 아래 JSON 형식으로만 답하세요:
-{"quote": "명언 내용 - 저자 또는 출처"}`
-                    }
-                ],
-                temperature: 0.9, // 다양성을 위해 온도를 높임
-            });
-
-            const quoteContent = quoteRes.choices[0]?.message?.content || '';
-            const quoteJson = JSON.parse(quoteContent.match(/\{[\s\S]*\}/)![0]);
-
-            // 7. 교회 설정(church_settings) 업데이트
-            // 플랫폼 메인과 예수인교회(ID: 1) 설정을 업데이트합니다.
+            const now = new Date();
+            const dayOfWeek = now.getDay(); // 0: 일, 1: 월, ...
+            
+            // 기존 설정 가져오기
             const { data: currentSettings } = await supabaseAdmin
                 .from('church_settings')
-                .select('plan')
+                .select('*')
                 .eq('id', 1)
                 .single();
 
-            let newPlan = currentSettings?.plan || 'premium';
-            // 기존 tv_text, tv_ref, column_title, column_content, today_quote 제거 후 새로 추가
-            newPlan = newPlan.split('|').filter((p: string) => 
-                !p.startsWith('tv_text:') && 
-                !p.startsWith('tv_ref:') && 
-                !p.startsWith('column_title:') && 
-                !p.startsWith('column_content:') &&
-                !p.startsWith('today_quote:')
-            ).join('|');
-            
-            newPlan += `|tv_text:${encodeURIComponent(verseJson.verse)}`;
-            newPlan += `|tv_ref:${encodeURIComponent(verseJson.reference)}`;
-            newPlan += `|column_title:${encodeURIComponent(columnJson.title)}`;
-            newPlan += `|column_content:${encodeURIComponent(columnJson.content)}`;
-            newPlan += `|today_quote:${encodeURIComponent(quoteJson.quote)}`;
+            const planStr = currentSettings?.plan || '';
+            const isAiGenerated = planStr.includes('|column_ai:true');
+            // 관리자가 직접 입력했는지 여부 확인: AI 생성 플래그가 없고 내용이 있으면 관리자 입력으로 간주
+            const isManuallySet = !isAiGenerated && !!currentSettings?.pastor_column_content;
 
-            await supabaseAdmin
-                .from('church_settings')
-                .update({
-                    today_verse_text: verseJson.verse,
-                    today_verse_ref: verseJson.reference,
-                    pastor_column_title: columnJson.title,
-                    pastor_column_content: columnJson.content,
-                    plan: newPlan
-                })
-                .eq('id', 1);
+            // 월요일(1)이거나, 필수 데이터(암송구절/칼럼)가 하나라도 없는 경우 생성 수행
+            const shouldGenerateWeekly = dayOfWeek === 1 || !currentSettings?.today_verse_text || !currentSettings?.pastor_column_content;
 
-            console.log('[Cron] Word of the Day, Pastor Column & Daily Quote updated successfully.');
+            if (shouldGenerateWeekly) {
+                console.log(`[Cron] Day ${dayOfWeek}: Generating Weekly Memorization Verse & Pastor Column...`);
+                
+                // 4. 이번주 암송구절 생성
+                const verseRes = await openai.chat.completions.create({
+                    model: 'gpt-4o-mini',
+                    messages: [
+                        {
+                            role: 'system',
+                            content: `성도들이 한 주간 마음속에 새기고 암송할 '이번주 암송구절'을 하나 선정해 주세요. 
+핵심적이고 은혜로우며, 암송하기에 문장이 간결하고 아름다운 구절을 권장합니다.
+주어진 큐티 본문(${reference})과는 가급적 중복되지 않는 다른 성경의 구절을 선정해 주세요.
+반드시 아래 JSON 형식으로만 답하세요:
+{"reference":"성경구절(장:절)","verse":"말씀 내용"}`
+                        }
+                    ],
+                    temperature: 0.8,
+                });
+
+                const verseContent = verseRes.choices[0]?.message?.content || '';
+                const verseJson = JSON.parse(verseContent.match(/\{[\s\S]*\}/)![0]);
+
+                let columnJson = { title: currentSettings?.pastor_column_title || '', content: currentSettings?.pastor_column_content || '' };
+                
+                // 관리자가 직접 입력하지 않은 경우에만 칼럼 자동 생성
+                if (!isManuallySet) {
+                    const columnRes = await openai.chat.completions.create({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                            {
+                                role: 'system',
+                                content: `당신은 교회의 담임목사입니다. 이번주 암송구절 [${verseJson.reference}: ${verseJson.verse}]을 바탕으로 성도들에게 한 주간의 삶에 깊은 위로와 영적 도전을 주는 '목양 칼럼'을 작성해주세요. 
+
+[작성 가이드라인]
+1. 분량: 약 500자 내외로 풍성하게 작성하세요.
+2. 구조: 말씀의 의미 설명 - 한 주간 삶의 적용점 - 따뜻한 격려와 축복의 순서로 구성하세요.
+3. 말투: 성도를 진심으로 아끼는 마음이 담긴 자애롭고 은혜로운 목소리(존댓말)를 사용하세요.
+4. 내용: 한 주 동안 성도들이 암송구절을 되새기며 승리할 수 있도록 돕는 실질적인 조언을 포함하세요.
+
+반드시 아래 JSON 형식으로만 답하세요:
+{"title":"목양 칼럼: ${verseJson.reference}","content":"내용"}`
+                            }
+                        ],
+                        temperature: 0.7,
+                    });
+
+                    const columnContent = columnRes.choices[0]?.message?.content || '';
+                    columnJson = JSON.parse(columnContent.match(/\{[\s\S]*\}/)![0]);
+                } else {
+                    console.log('[Cron] Pastor column is manually set by admin. Skipping AI column generation.');
+                }
+
+                // 6. 오늘의 한줄(명언) 생성
+                const quoteRes = await openai.chat.completions.create({
+                    model: 'gpt-4o-mini',
+                    messages: [
+                        {
+                            role: 'system',
+                            content: `성도들에게 영감을 줄 수 있는 짧고 강력한 '크리스찬 명언' 또는 '신학자의 한마디'를 생성해 주세요. 
+기존 성경 구절과는 다른 깊이 있는 통찰을 주는 내용이어야 합니다.
+반드시 아래 JSON 형식으로만 답하세요:
+{"quote": "명언 내용 - 저자 또는 출처"}`
+                        }
+                    ],
+                    temperature: 0.9,
+                });
+
+                const quoteContent = quoteRes.choices[0]?.message?.content || '';
+                const quoteJson = JSON.parse(quoteContent.match(/\{[\s\S]*\}/)![0]);
+
+                // 7. 교회 설정(church_settings) 업데이트
+                let newPlan = planStr;
+                // 기존 tv_text, tv_ref, column_title, column_content, today_quote, column_ai 제거 후 새로 추가
+                newPlan = newPlan.split('|').filter((p: string) => 
+                    !p.startsWith('tv_text:') && 
+                    !p.startsWith('tv_ref:') && 
+                    !p.startsWith('column_title:') && 
+                    !p.startsWith('column_content:') &&
+                    !p.startsWith('today_quote:') &&
+                    !p.startsWith('column_ai:')
+                ).join('|');
+                
+                newPlan += `|tv_text:${encodeURIComponent(verseJson.verse)}`;
+                newPlan += `|tv_ref:${encodeURIComponent(verseJson.reference)}`;
+                newPlan += `|column_title:${encodeURIComponent(columnJson.title)}`;
+                newPlan += `|column_content:${encodeURIComponent(columnJson.content)}`;
+                newPlan += `|today_quote:${encodeURIComponent(quoteJson.quote)}`;
+                newPlan += `|column_ai:true`;
+
+                await supabaseAdmin
+                    .from('church_settings')
+                    .update({
+                        today_verse_text: verseJson.verse,
+                        today_verse_ref: verseJson.reference,
+                        pastor_column_title: columnJson.title,
+                        pastor_column_content: columnJson.content,
+                        plan: newPlan
+                    })
+                    .eq('id', 1);
+
+                console.log('[Cron] Weekly Memorization Verse, Pastor Column & Daily Quote updated successfully.');
+            } else {
+                console.log(`[Cron] Day ${dayOfWeek}: Skipping Weekly Generation (Only on Mondays).`);
+            }
 
         } catch (e) {
-            console.error('오늘의 말씀/칼럼 생성 실패:', e);
+            console.error('이번주 암송구절/칼럼 생성 실패:', e);
         }
 
         return NextResponse.json({
