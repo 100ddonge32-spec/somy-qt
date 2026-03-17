@@ -66,7 +66,8 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             count: count || 0,
-            isLiked
+            isLiked,
+            liker_ids: likes.map(l => l.user_id)
         });
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });

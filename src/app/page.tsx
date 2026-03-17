@@ -597,6 +597,8 @@ export default function App() {
     const [isDirectLoggingIn, setIsDirectLoggingIn] = useState(false); // ✅ 로그인 처리 중 상태
     const [editingAdminId, setEditingAdminId] = useState<string | null>(null); // ✅ 수정 중인 관리자 ID
     const [isLinking, setIsLinking] = useState(false); // ✅ 링크 처리 중 상태
+    const [showLikersModal, setShowLikersModal] = useState(false);
+    const [selectedLikers, setSelectedLikers] = useState<string[]>([]);
     const dragOffset = useRef({ x: 0, y: 0 });
     const playerRef = useRef<any>(null);
 
@@ -2267,7 +2269,7 @@ export default function App() {
 
     // [기능] 좋아요 누른 사람 이름 목록 가져오기 (김부장의 디테일)
     const getLikerInfo = (likerIds: string[]) => {
-        if (!likerIds || !Array.isArray(likerIds) || likerIds.length === 0) return { text: null, count: 0, isLikedByMe: false };
+        if (!likerIds || !Array.isArray(likerIds) || likerIds.length === 0) return { text: null, count: 0, isLikedByMe: false, likerNames: [] };
 
         // 1. 중복 제거된 유효한 ID만 추출
         const uniqueIds = Array.from(new Set(likerIds));
@@ -2282,12 +2284,12 @@ export default function App() {
 
             const m = memberList.find(member => member.id === id) || allAdminList.find(a => a.id === id || a.user_id === id);
             return m?.full_name || m?.name || null;
-        }).filter(Boolean);
+        }).filter(Boolean) as string[];
 
         const uniqueNames = Array.from(new Set(validNames));
         const nameCount = uniqueNames.length;
 
-        if (totalCount === 0) return { text: null, count: 0, isLikedByMe };
+        if (totalCount === 0) return { text: null, count: 0, isLikedByMe, likerNames: [] };
 
         let text = "";
         if (nameCount > 0) {
@@ -2301,7 +2303,7 @@ export default function App() {
             text = `${totalCount}명이 좋아합니다`;
         }
 
-        return { text, count: totalCount, isLikedByMe };
+        return { text, count: totalCount, isLikedByMe, likerNames: uniqueNames };
     };
 
     const handleAnswerChange = (index: number, value: string) => {
@@ -2390,6 +2392,7 @@ export default function App() {
       @keyframes halo-pulse { 0%, 100% { opacity: 0.6; transform: translateX(-50%) scaleX(1) translateY(0px); } 50% { opacity: 1; transform: translateX(-50%) scaleX(1.15) translateY(-5px); } }
       @keyframes shadow-pulse { 0%, 100% { transform: translateX(-50%) scaleX(1); opacity: 0.3; } 50% { transform: translateX(-50%) scaleX(0.7); opacity: 0.1; } }
       @keyframes fade-in { from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
+      @keyframes fade-up { from{ opacity:0; transform:translateY(30px); } to{ opacity:1; transform:translateY(0); } }
       @keyframes slide-right { from{ opacity:0; transform:translateX(10px); } to{ opacity:1; transform:translateX(0); } }
       @keyframes bounce-dot { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-7px); } }
       @keyframes bell-swing {
@@ -4833,7 +4836,15 @@ export default function App() {
 
                                             {/* 좋아요 명단 표시 */}
                                             {likerInfo.count > 0 && likerInfo.text && (
-                                                <div style={{ fontSize: '11px', color: '#999', marginBottom: '12px', padding: '0 4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <div
+                                                    onClick={() => {
+                                                        if (likerInfo.likerNames.length > 0) {
+                                                            setSelectedLikers(likerInfo.likerNames);
+                                                            setShowLikersModal(true);
+                                                        }
+                                                    }}
+                                                    style={{ fontSize: '11px', color: '#999', marginBottom: '12px', padding: '0 4px', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                                                >
                                                     <span>❤️</span> {likerInfo.text}
                                                 </div>
                                             )}
@@ -5398,7 +5409,15 @@ export default function App() {
 
                                             {/* 좋아요 명단 표시 */}
                                             {likerInfo.count > 0 && likerInfo.text && (
-                                                <div style={{ fontSize: '11px', color: '#E07A5F', marginBottom: '12px', padding: '0 4px', display: 'flex', alignItems: 'center', gap: '4px', opacity: 0.8 }}>
+                                                <div
+                                                    onClick={() => {
+                                                        if (likerInfo.likerNames.length > 0) {
+                                                            setSelectedLikers(likerInfo.likerNames);
+                                                            setShowLikersModal(true);
+                                                        }
+                                                    }}
+                                                    style={{ fontSize: '11px', color: '#E07A5F', marginBottom: '12px', padding: '0 4px', display: 'flex', alignItems: 'center', gap: '4px', opacity: 0.8, cursor: 'pointer' }}
+                                                >
                                                     <span>❤️</span> {likerInfo.text}
                                                 </div>
                                             )}
@@ -8001,6 +8020,14 @@ export default function App() {
                 </div>
             </div>
             {renderContent()}
+
+            {/* 좋아요 명단 모달 (통합) */}
+            {showLikersModal && (
+                <LikersModal
+                    likers={selectedLikers}
+                    onClose={() => setShowLikersModal(false)}
+                />
+            )}
  
             {/* 갤러리 업로드 모달 */}
             {isUploadingGallery && (
@@ -8024,6 +8051,9 @@ export default function App() {
                     isAdmin={isAdmin}
                     onLike={handleGalleryLike}
                     onDelete={handleGalleryDelete}
+                    getLikerInfo={getLikerInfo}
+                    setSelectedLikers={setSelectedLikers}
+                    setShowLikersModal={setShowLikersModal}
                 />
             )}
 
@@ -10271,9 +10301,37 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
     );
 };
 
+// 좋아요 명단 모달
+function LikersModal({ likers, onClose }: { likers: string[], onClose: () => void }) {
+    return (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(4px)' }} onClick={onClose}>
+            <div style={{ background: 'white', borderRadius: '24px', width: '100%', maxWidth: '360px', overflow: 'hidden', animation: 'fade-up 0.2s ease-out' }} onClick={e => e.stopPropagation()}>
+                <div style={{ padding: '20px', borderBottom: '1px solid #F0F0F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>좋아요 누른 분들</h3>
+                    <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '24px', color: '#999', cursor: 'pointer', lineHeight: 1 }}>×</button>
+                </div>
+                <div style={{ maxHeight: '60vh', overflowY: 'auto', padding: '8px 0' }}>
+                    {likers.map((name, i) => (
+                        <div key={i} style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: i === likers.length - 1 ? 'none' : '1px solid #F8F8F8' }}>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>👤</div>
+                            <span style={{ fontSize: '15px', fontWeight: 600, color: '#333' }}>{name}</span>
+                        </div>
+                    ))}
+                    {likers.length === 0 && (
+                        <div style={{ padding: '40px 20px', textAlign: 'center', color: '#999', fontSize: '14px' }}>좋아요를 누른 분이 없습니다.</div>
+                    )}
+                </div>
+                <div style={{ padding: '12px 20px', background: '#F8F9FA', textAlign: 'center' }}>
+                    <button onClick={onClose} style={{ width: '100%', padding: '12px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>확인</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // 갤러리 상세 모달
-function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: any) {
-    const [likes, setLikes] = useState({ count: 0, isLiked: false });
+function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete, getLikerInfo, setSelectedLikers, setShowLikersModal }: any) {
+    const [likes, setLikes] = useState({ count: 0, isLiked: false, liker_ids: [] as string[] });
     const [comments, setComments] = useState<any[]>([]);
     const [commentText, setCommentText] = useState("");
     const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
@@ -10524,15 +10582,36 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete }: 
                         )}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
-                        <div onClick={handleLike} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', background: '#F8F9FA', padding: '8px 14px', borderRadius: '14px' }}>
-                            <span style={{ fontSize: '18px' }}>{likes.isLiked ? '❤️' : '🤍'}</span>
-                            <span style={{ fontWeight: 800, fontSize: '14px' }}>{likes.count}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+                        <div style={{ display: 'flex', gap: '15px' }}>
+                            <div onClick={handleLike} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', background: '#F8F9FA', padding: '8px 14px', borderRadius: '14px' }}>
+                                <span style={{ fontSize: '18px' }}>{likes.isLiked ? '❤️' : '🤍'}</span>
+                                <span style={{ fontWeight: 800, fontSize: '14px' }}>{likes.count}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#F8F9FA', padding: '8px 14px', borderRadius: '14px' }}>
+                                <span style={{ fontSize: '18px' }}>💬</span>
+                                <span style={{ fontWeight: 800, fontSize: '14px' }}>{comments.length}</span>
+                            </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#F8F9FA', padding: '8px 14px', borderRadius: '14px' }}>
-                            <span style={{ fontSize: '18px' }}>💬</span>
-                            <span style={{ fontWeight: 800, fontSize: '14px' }}>{comments.length}</span>
-                        </div>
+                        {(() => {
+                            const likerInfo = getLikerInfo ? getLikerInfo(likes.liker_ids || []) : { text: null, likerNames: [] };
+                            if (likerInfo.text) {
+                                return (
+                                    <div 
+                                        onClick={() => {
+                                            if (likerInfo.likerNames.length > 0) {
+                                                setSelectedLikers(likerInfo.likerNames);
+                                                setShowLikersModal(true);
+                                            }
+                                        }}
+                                        style={{ fontSize: '11px', color: '#999', padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                    >
+                                        <span>❤️</span> {likerInfo.text}
+                                    </div>
+                                );
+                            }
+                            return null;
+                        })()}
                     </div>
 
                     <div style={{ fontSize: '15px', lineHeight: 1.6, color: '#333', whiteSpace: 'pre-wrap', marginBottom: '25px' }}>{post.description}</div>
