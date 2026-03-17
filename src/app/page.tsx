@@ -3217,112 +3217,6 @@ export default function App() {
                                         <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>성도 주소록</span>
                                     </button>
 
-                                    {/* 담임목사 설교 */}
-                                    <button onClick={() => {
-                                        if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
-                                            playerRef.current.pauseVideo();
-                                            setPlayRequested(false);
-                                        }
-                                        setView('sermon');
-                                        setHasNewSermon(false);
-                                        localStorage.setItem(`last_view_sermon_${churchId}`, Date.now().toString());
-                                    }} className="main-action-button" style={{
-                                        padding: "16px 12px",
-                                        background: "linear-gradient(145deg, #ffffff 0%, #fff4f2 100%)", color: "#BA2D0B",
-                                        fontWeight: 800, fontSize: "15px", borderRadius: "18px",
-                                        border: "1px solid #fcd3c8", cursor: "pointer",
-                                        boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
-                                        display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
-                                        transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                                        position: 'relative', justifyContent: 'flex-start'
-                                    }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                        <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#FF0000"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" /></svg>
-                                        </div>
-                                        <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>담임목사 설교</span>
-                                        {hasNewSermon && <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px' }}>N</div>}
-                                    </button>
-
-                                    {/* 상담/기도 요청 */}
-                                    <div style={{ position: 'relative' }}>
-                                        <button onClick={async () => {
-                                            setView('counseling');
-                                            const counselingNotis = notifications.filter(n => !n.is_read && (
-                                                isMainAdmin ? (n.type === 'counseling_req' || n.type === 'counseling_user_reply')
-                                                    : (n.type === 'counseling_reply')
-                                            ));
-                                            for (const n of counselingNotis) {
-                                                fetch('/api/notifications', { method: 'PATCH', body: JSON.stringify({ id: n.id }) });
-                                            }
-                                            if (counselingNotis.length > 0) {
-                                                setNotifications(notifications.map(n =>
-                                                    counselingNotis.some(cn => cn.id === n.id) ? { ...n, is_read: true } : n
-                                                ));
-                                            }
-
-                                            try {
-                                                const res = await fetch(`/api/counseling?church_id=${churchId}&user_id=${user?.id}&admin=${isMainAdmin}`);
-                                                const data = await res.json();
-                                                if (Array.isArray(data)) setCounselingRequests(data);
-                                            } catch (e) { console.error("상담 로드 실패", e); }
-                                        }} className="main-action-button" style={{
-                                            width: "100%", padding: "16px 12px",
-                                            background: "linear-gradient(145deg, #ffffff 0%, #f6f0ff 100%)", color: "#4A148C",
-                                            fontWeight: 800, fontSize: "15px", borderRadius: "18px",
-                                            border: "1px solid #e1bee7", cursor: "pointer",
-                                            boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
-                                            display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
-                                            transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                                            position: 'relative', justifyContent: 'flex-start'
-                                        }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                            <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🙏</div>
-                                            <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>상담/기도 요청</span>
-                                            {notifications.some(n => !n.is_read && (
-                                                isMainAdmin ? (n.type === 'counseling_req' || n.type === 'counseling_user_reply')
-                                                    : (n.type === 'counseling_reply')
-                                            )) && (
-                                                    <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px' }}>N</div>
-                                                )}
-                                        </button>
-                                    </div>
-
-                                    {/* 추억나눔(갤러리) */}
-                                    <div style={{ position: 'relative' }}>
-                                        <button onClick={async () => {
-                                            setView('gallery');
-                                            setHasNewGallery(false);
-                                            localStorage.setItem(`last_view_gallery_${churchId}`, Date.now().toString());
-                                            fetchGalleryPosts();
-                                        }} className="main-action-button" style={{
-                                            width: "100%", padding: "16px 12px",
-                                            background: "linear-gradient(145deg, #ffffff 0%, #f0f7ff 100%)", color: "#0D47A1",
-                                            fontWeight: 800, fontSize: "15px", borderRadius: "18px",
-                                            border: "1px solid #bbdefb", cursor: "pointer",
-                                            boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
-                                            display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
-                                            transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                                            position: 'relative', justifyContent: 'flex-start'
-                                        }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                            <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>📸</div>
-                                            <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>추억나눔(갤러리)</span>
-                                            {hasNewGallery && <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px' }}>N</div>}
-                                        </button>
-                                    </div>
-
-                                    {/* 성도 주소록 */}
-                                    <button onClick={() => setView('memberSearch')} className="main-action-button" style={{
-                                        padding: "16px 12px",
-                                        background: "linear-gradient(145deg, #ffffff 0%, #f1f8f3 100%)", color: "#2E7D32",
-                                        fontWeight: 800, fontSize: "15px", borderRadius: "18px",
-                                        border: "1px solid #C8E6C9", cursor: "pointer",
-                                        boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
-                                        display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
-                                        transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                                        justifyContent: 'flex-start'
-                                    }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                        <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🔎</div>
-                                        <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>성도 주소록</span>
-                                    </button>
                                 </div>
 
 
@@ -3337,21 +3231,21 @@ export default function App() {
                                 }}>
                                     {/* 이달의 책 추천 카드 */}
                                     <div onClick={() => setView('book')} className="sub-action-button" style={{
-                                        background: 'linear-gradient(135deg, #FFF 0%, #FAFAFA 100%)',
+                                        background: 'linear-gradient(135deg, #FFF 0%, #FDFDFD 100%)',
                                         borderRadius: '24px',
-                                        padding: '16px 20px',
+                                        padding: '18px 20px',
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: '15px',
                                         cursor: 'pointer',
-                                        boxShadow: '0 8px 25px rgba(0,0,0,0.04)',
-                                        border: '1px solid #F0ECE4',
+                                        boxShadow: '0 12px 24px rgba(0,0,0,0.05), inset 0 2px 3px rgba(255,255,255,0.9), 0 3px 0 #EBE5D8',
+                                        border: '1.5px solid #F2EFE9',
                                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                         flexDirection: 'column',
                                         textAlign: 'center',
-                                        minHeight: '140px',
+                                        minHeight: '150px',
                                         justifyContent: 'center'
-                                    }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.08)'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.04)'; }}>
+                                    }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 15px 35px rgba(0,0,0,0.1), inset 0 2px 3px rgba(255,255,255,0.9), 0 2px 0 #EBE5D8'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.05), inset 0 2px 3px rgba(255,255,255,0.9), 0 3px 0 #EBE5D8'; }}>
                                         <div style={{ width: '40px', height: '56px', background: '#F5F5F3', borderRadius: '6px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', flexShrink: 0 }}>
                                             {churchSettings.today_book_image_url ? (
                                                 <img src={churchSettings.today_book_image_url} alt="책" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -3367,22 +3261,22 @@ export default function App() {
 
                                     {/* 담임목사 칼럼 카드 */}
                                     <div onClick={() => setView('pastorColumn')} className="sub-action-button" style={{
-                                        background: 'linear-gradient(135deg, #FFF 0%, #FDF8F0 100%)',
+                                        background: 'linear-gradient(135deg, #FFF 0%, #FDFBF7 100%)',
                                         borderRadius: '24px',
-                                        padding: '16px 20px',
+                                        padding: '18px 20px',
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: '15px',
                                         cursor: 'pointer',
-                                        boxShadow: '0 8px 25px rgba(0,0,0,0.04)',
-                                        border: '1px solid #F0ECE4',
+                                        boxShadow: '0 12px 24px rgba(0,0,0,0.05), inset 0 2px 3px rgba(255,255,255,0.9), 0 3px 0 #EBE5D8',
+                                        border: '1.5px solid #F2EFE9',
                                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                         flexDirection: 'column',
                                         textAlign: 'center',
                                         position: 'relative',
-                                        minHeight: '140px',
+                                        minHeight: '150px',
                                         justifyContent: 'center'
-                                    }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,0.08)'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.04)'; }}>
+                                    }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 15px 35px rgba(0,0,0,0.1), inset 0 2px 3px rgba(255,255,255,0.9), 0 2px 0 #EBE5D8'; }} onMouseOut={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.05), inset 0 2px 3px rgba(255,255,255,0.9), 0 3px 0 #EBE5D8'; }}>
                                         <div style={{ width: '40px', height: '56px', background: '#FFFDF7', borderRadius: '6px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', border: '1px solid #FAF0D7' }}>✍️</div>
                                         <div>
                                             <div className="label" style={{ fontSize: '13px', color: '#B8924A', fontWeight: 800, marginBottom: '2px', wordBreak: 'keep-all' }}>이번주 암송구절 칼럼</div>
@@ -3404,8 +3298,8 @@ export default function App() {
                                 </div>
 
                                 {/* 이번주 암송구절 섹션 - 동기화된 데이터 사용 */}
-                                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", flex: 1, justifyContent: 'center', width: "100%", marginTop: '10px', marginBottom: '10px' }}>
-                                    <div style={{ background: "rgba(255, 255, 255, 0.9)", borderRadius: "24px", padding: "24px", width: "100%", maxWidth: "320px", boxShadow: "0 10px 30px rgba(0,0,0,0.06)", border: "1px solid #F0ECE4", animation: "fade-in 0.8s ease-out", display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', textAlign: 'left', backdropFilter: 'blur(10px)', userSelect: 'none' }}>
+                                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", textAlign: "center", flex: 1, justifyContent: 'center', width: "100%", marginTop: '16px', marginBottom: '16px' }}>
+                                    <div style={{ background: "rgba(255, 255, 255, 0.95)", borderRadius: "28px", padding: "28px", width: "100%", maxWidth: "330px", boxShadow: "0 15px 35px rgba(0,0,0,0.08), inset 0 2px 4px rgba(255,255,255,1), 0 4px 0 #F0EAE0", border: "1.5px solid #F2EFE9", animation: "fade-in 0.8s ease-out", display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', textAlign: 'left', backdropFilter: 'blur(15px)', userSelect: 'none' }}>
                                         {(() => {
                                             const autoVerse = getGraceVerse();
                                             const isCustom = !!churchSettings?.today_verse_text;
