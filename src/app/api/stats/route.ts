@@ -79,10 +79,16 @@ export async function GET(req: NextRequest) {
         // 1. 해당 교회의 사용자 ID 목록 먼저 가져오기 (매우 안전한 방식)
         const { data: churchProfiles } = await supabaseAdmin
             .from('profiles')
-            .select('id')
+            .select('id, full_name, avatar_url')
             .in('church_id', cids);
         
         const churchUserIds = (churchProfiles || []).map(p => p.id);
+        const nameMap: Record<string, string> = {};
+        const avatarMap: Record<string, string | null> = {};
+        (churchProfiles || []).forEach(p => {
+            if (p.full_name) nameMap[p.id] = p.full_name;
+            if (p.avatar_url) avatarMap[p.id] = p.avatar_url;
+        });
 
         // 큐티 완료 기록 가져오기 (데모는 user_name 기반으로 격리, 일반은 user_id 필터링)
         let completionsQuery = supabaseAdmin.from('qt_completions').select('*').gte('completed_date', firstOfMonth);
@@ -139,7 +145,8 @@ export async function GET(req: NextRequest) {
 
         // (1) 큐티 완료 기록 합산
         allCompletions.forEach(comp => {
-            const nameKey = (comp.user_name || '익명성도').trim();
+            const uid = comp.user_id;
+            const nameKey = (comp.user_name || nameMap[uid] || '익명성도').trim();
             if (nameKey === '익명성도' || EXCLUDED_NAMES.includes(nameKey)) return;
             
             if (!userStats[nameKey]) {
@@ -199,7 +206,7 @@ export async function GET(req: NextRequest) {
 
         let logsQuery = supabaseAdmin
             .from('activity_logs')
-            .select('user_name, created_at, activity_type')
+            .select('user_id, user_name, created_at, activity_type')
             .in('activity_type', ACTIVITY_TYPES)
             .gte('created_at', firstOfMonth)
             .order('created_at', { ascending: true });
@@ -222,7 +229,7 @@ export async function GET(req: NextRequest) {
             const date = kstDate.toISOString().split('T')[0];
             loginTrends[date] = (loginTrends[date] || 0) + 1;
             
-            const name = (log.user_name || '익명').trim();
+            const name = (log.user_name || nameMap[log.user_id] || '익명').trim();
             loginUserCounts[name] = (loginUserCounts[name] || 0) + 1;
         });
 
@@ -290,7 +297,7 @@ export async function GET(req: NextRequest) {
                 trends: formattedTrends,
                 topUsers: topLoginUsers,
                 recent: (recentLogins || []).map(l => ({
-                    name: l.user_name || '익명',
+                    name: l.user_name || nameMap[l.user_id] || '익명',
                     time: l.created_at,
                     userId: l.user_id,
                     activityType: l.activity_type
