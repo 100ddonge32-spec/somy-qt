@@ -2546,9 +2546,28 @@ export default function App() {
                                     <span style={{ color: '#333', fontWeight: 800 }}>{profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}님</span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    {/* 알림종: 신규 소식이 있으면 흔들리는 애니메이션 */}
+                                    <div onClick={(e) => { e.stopPropagation(); setShowNotiList(!showNotiList); }} style={{
+                                        position: 'relative',
+                                        cursor: 'pointer',
+                                        width: '28px',
+                                        height: '28px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        animation: notifications.filter(n => !n.is_read).length > 0 ? 'bell-swing 2s infinite ease-in-out' : 'none',
+                                        transition: 'all 0.2s',
+                                        opacity: 0.8
+                                    }} onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.8'}>
+                                        <span style={{ fontSize: '18px' }}>🔔</span>
+                                        {notifications.filter(n => !n.is_read).length > 0 && (
+                                            <div style={{ position: 'absolute', top: '-1px', right: '-1px', background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, minWidth: '14px', height: '14px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                                                {notifications.filter(n => !n.is_read).length}
+                                            </div>
+                                        )}
+                                    </div>
                                     {isAdmin && (
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-
                                             <button
                                                 onClick={() => setView('admin')}
                                                 style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
@@ -6895,7 +6914,7 @@ export default function App() {
         return (
             <>
                 <div onClick={() => setShowNotiList(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.1)', zIndex: 1999 }} />
-                <div style={{ position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)', width: '90%', maxWidth: '340px', background: 'white', borderRadius: '24px', boxShadow: '0 15px 50px rgba(0,0,0,0.2)', zIndex: 2000, border: '2px solid #E6A4B4', overflow: 'hidden', animation: 'slide-up 0.3s ease-out' }}>
+                <div style={{ position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)', width: '90%', maxWidth: '340px', background: 'white', borderRadius: '24px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', zIndex: 9999, border: '2px solid #E6A4B4', overflow: 'hidden', animation: 'slide-up 0.3s ease-out' }}>
                     <div style={{ padding: '15px', borderBottom: '1px solid #F5F5F5', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FDFCFB' }}>
                         <span style={{ fontSize: '14px', fontWeight: 700, color: '#333' }}>🔔 새 소식</span>
                         <button onClick={() => setShowNotiList(false)} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>닫기</button>
