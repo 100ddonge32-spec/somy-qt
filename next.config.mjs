@@ -1,18 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    output: 'export',
     typescript: {
         ignoreBuildErrors: true,
     },
     eslint: {
         ignoreDuringBuilds: true,
     },
-    async rewrites() {
-        return [
-            {
-                source: '/:church_id',
-                destination: '/?church_id=:church_id',
-            },
-        ];
+    images: {
+        unoptimized: true,
     },
 };
 
