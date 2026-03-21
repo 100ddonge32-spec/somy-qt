@@ -3450,7 +3450,7 @@ export default function App() {
                                     {/* 나의 묵상 기록 */}
                                     <button onClick={() => {
                                         setView('history');
-                                        if (user?.id) fetchHistory(user.id);
+                                        if (user?.id) fetchHistory(user?.id);
                                     }} className="main-action-button" style={{
                                         padding: "16px 12px",
                                         background: "linear-gradient(145deg, #ffffff 0%, #f1f8f3 100%)", color: "#507558",
@@ -3565,9 +3565,9 @@ export default function App() {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                user_id: user.id,
-                                user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '성도',
-                                avatar_url: profileAvatar || user.user_metadata?.avatar_url || null,
+                                user_id: user?.id,
+                                user_name: profileName || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '성도',
+                                avatar_url: profileAvatar || user?.user_metadata?.avatar_url || null,
                                 church_id: effectiveChurchId,
                                 answers: answers || ["", "", ""] // ✅ 답변이 비어있어도 최소 구조 유지
                             }),
@@ -3576,7 +3576,7 @@ export default function App() {
                         if (res.ok) {
                             console.log("📊 Meditation record saved successfully");
                             setIsStatsSaved(true); // ✅ 중간 기록 성공 표시
-                            if (user?.id) fetchHistory(user.id); // 히스토리 즉시 동기화
+                            if (user?.id) fetchHistory(user?.id); // 히스토리 즉시 동기화
                         } else {
                             const err = await res.json().catch(() => ({}));
                             console.error("📊 Saving failed:", err);
@@ -3600,9 +3600,9 @@ export default function App() {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                user_id: user.id,
-                                user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
-                                avatar_url: profileAvatar || user.user_metadata?.avatar_url || null,
+                                user_id: user?.id,
+                                user_name: profileName || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "익명의 성도",
+                                avatar_url: profileAvatar || user?.user_metadata?.avatar_url || null,
                                 content: graceInput,
                                 church_id: churchId || 'jesus-in',
                                 is_private: isPrivatePost,
@@ -3940,7 +3940,7 @@ export default function App() {
                                             setIsStatsSaved(true);
                                             alert("오늘의 묵상이 성공적으로 기록되었습니다! 📜✨");
                                             await new Promise(r => setTimeout(r, 500));
-                                            if (user?.id) fetchHistory(user.id);
+                                            if (user?.id) fetchHistory(user?.id);
                                         } else {
                                             console.error("📊 Final save failed");
                                         }
@@ -4439,7 +4439,7 @@ export default function App() {
                     const res = await fetch('/api/community/reaction', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ post_id: postId, user_id: user.id, type })
+                        body: JSON.stringify({ post_id: postId, user_id: user?.id, type })
                     });
                     const data = await res.json();
                     if (res.ok) {
@@ -4475,7 +4475,7 @@ export default function App() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             post_id: postId,
-                            user_id: user.id,
+                            user_id: user?.id,
                             user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
                             content: commentText,
                             is_private: isPrivate,
@@ -5101,7 +5101,7 @@ export default function App() {
                     const res = await fetch('/api/community/reaction', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ post_id: postId, user_id: user.id, type })
+                        body: JSON.stringify({ post_id: postId, user_id: user?.id, type })
                     });
                     const data = await res.json();
                     if (res.ok) {
@@ -5136,7 +5136,7 @@ export default function App() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             diary_id: diaryId,
-                            user_id: user.id,
+                            user_id: user?.id,
                             user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
                             content: commentText,
                             is_private: isPrivate,
@@ -6283,7 +6283,7 @@ export default function App() {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({
-                                            user_id: user.id,
+                                            user_id: user?.id,
                                             user_name,
                                             avatar_url,
                                             content: '[말씀묵상] \n' + combinedContent.trim(),
@@ -10234,7 +10234,7 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
             for (let i = 0; i < selectedFiles.length; i++) {
                 const file = selectedFiles[i];
                 const fileExt = file.name.split('.').pop();
-                const fileName = `${user.id}_${Date.now()}_${i}.${fileExt}`;
+                const fileName = `${user?.id || 'anon'}_${Date.now()}_${i}.${fileExt}`;
                 const filePath = `gallery/${churchId || 'jesus-in'}/${fileName}`;
 
                 // 1. 스토리지 업로드
@@ -10262,9 +10262,9 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        user_id: user.id,
-                        user_name: user.user_metadata?.full_name || user.email,
-                        avatar_url: user.user_metadata?.avatar_url,
+                        user_id: user?.id,
+                        user_name: user?.user_metadata?.full_name || user?.email,
+                        avatar_url: user?.user_metadata?.avatar_url,
                         image_url: uploadedUrls[0], // 대표 이미지
                         image_urls: uploadedUrls,    // 전체 이미지 목록
                         description: description,
@@ -10402,8 +10402,8 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete, ge
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     post_id: post.id,
-                    user_id: user.id,
-                    user_name: user.user_metadata?.full_name || user.email,
+                    user_id: user?.id,
+                    user_name: user?.user_metadata?.full_name || user?.email,
                     comment: commentText,
                     parent_id: replyingToId // 답글일 경우 부모 ID 전송
                 })
@@ -10431,7 +10431,7 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete, ge
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 id: commentId,
-                user_id: user.id,
+                user_id: user?.id,
                 comment: editCommentText,
                 is_admin: isAdmin
             })
@@ -10449,7 +10449,7 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete, ge
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 id: commentId,
-                user_id: user.id,
+                user_id: user?.id,
                 is_admin: isAdmin
             })
         });
