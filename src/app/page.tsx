@@ -535,8 +535,8 @@ export default function App() {
         : CCM_LIST;
 
     const [isApiReady, setIsApiReady] = useState(false);
-    const [playRequested, _setPlayRequested] = useState(true); // 처음부터 재생 의도 On
-    const playRequestedRef = useRef(true);
+    const [playRequested, _setPlayRequested] = useState(false); // 처음부터 재생 의도 Off
+    const playRequestedRef = useRef(false);
     const hasInteracted = useRef(false); // 사용자 터치 여부 (오디오 잠금 해제용)
     const setPlayRequested = (val: boolean) => {
         playRequestedRef.current = val;
@@ -1589,6 +1589,9 @@ export default function App() {
     const [adminTab, setAdminTab] = useState<"settings" | "members" | "master" | "stats" | "reset" | "admins" | "community" | "thanksgiving" | "activities" | "gallery">("settings");
 
     const [isHistoryMode, setIsHistoryMode] = useState(false);
+    const [historyEditRecord, setHistoryEditRecord] = useState<any>(null);
+    const [historyEditAnswers, setHistoryEditAnswers] = useState<string[]>([]);
+    const [historyEditReflection, setHistoryEditReflection] = useState<string>('');
     const [churchStats, setChurchStats] = useState<any>(null); // ✅ { registered: [], orphans: [] }
     const [showAddMemberModal, setShowAddMemberModal] = useState(false);
     const [isBulkProcessing, setIsBulkProcessing] = useState(false);
@@ -5759,47 +5762,130 @@ export default function App() {
                                                 )}
                                             </div>
 
-                                            <button
-                                                onClick={() => {
-                                                    const qt = h.daily_qt;
-                                                    if (qt) {
-                                                        const { fullPassage, interpretation } = parsePassage(qt.passage);
-                                                        setQtData({
-                                                            date: new Date(qt.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
-                                                            reference: qt.reference,
-                                                            fullPassage,
-                                                            interpretation,
-                                                            verse: (fullPassage || "").split('\n')[0],
-                                                            questions: [qt.question1, qt.question2, qt.question3].filter(Boolean),
-                                                            prayer: qt.prayer,
+                                            <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                                                <button
+                                                    onClick={() => {
+                                                        const qt = h.daily_qt;
+                                                        if (qt) {
+                                                            const { fullPassage, interpretation } = parsePassage(qt.passage);
+                                                            setQtData({
+                                                                date: new Date(qt.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
+                                                                reference: qt.reference,
+                                                                fullPassage,
+                                                                interpretation,
+                                                                verse: (fullPassage || "").split('\n')[0],
+                                                                questions: [qt.question1, qt.question2, qt.question3].filter(Boolean),
+                                                                prayer: qt.prayer,
+                                                            });
+                                                        } else {
+                                                            setQtData({
+                                                                date: new Date(h.completed_date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
+                                                                reference: "말씀 정보 없음",
+                                                                fullPassage: "기록된 말씀 본문이 없습니다.",
+                                                                interpretation: "본문 해설이 없습니다.",
+                                                                verse: "기록된 말씀이 없습니다.",
+                                                                questions: ["질문 1", "질문 2", "질문 3"],
+                                                                prayer: "",
+                                                            });
+                                                        }
+                                                        setAnswers(h.answers || []);
+                                                        setGraceInput(h.reflection || ""); // 은혜나눔 복원
+                                                        setIsHistoryMode(true);
+                                                        setQtStep('read');
+                                                        setView('qt');
+                                                    }}
+                                                    style={{ flex: 1, padding: '12px', background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '12px', color: '#666', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                                                >
+                                                    내용 보기
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setHistoryEditRecord(h);
+                                                        setHistoryEditAnswers(h.answers || ["", "", ""]);
+                                                        setHistoryEditReflection(h.reflection || "");
+                                                    }}
+                                                    style={{ width: '60px', padding: '12px', background: '#FFF3E0', border: '1px solid #FFE0B2', borderRadius: '12px', color: '#E65100', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                                                >
+                                                    수정
+                                                </button>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (!confirm('정말 이 묵상 기록을 삭제하시겠습니까? (나눔 게시판 글도 함께 삭제됩니다)')) return;
+                                                        const res = await fetch('/api/qt/history/edit', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({ action: 'delete', user_id: user?.id, date: h.completed_date })
                                                         });
-                                                    } else {
-                                                        setQtData({
-                                                            date: new Date(h.completed_date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
-                                                            reference: "말씀 정보 없음",
-                                                            fullPassage: "기록된 말씀 본문이 없습니다.",
-                                                            interpretation: "본문 해설이 없습니다.",
-                                                            verse: "기록된 말씀이 없습니다.",
-                                                            questions: ["질문 1", "질문 2", "질문 3"],
-                                                            prayer: "",
-                                                        });
-                                                    }
-                                                    setAnswers(h.answers || []);
-                                                    setGraceInput(h.reflection || ""); // 은혜나눔 복원
-                                                    setIsHistoryMode(true);
-                                                    setQtStep('read');
-                                                    setView('qt');
-                                                }}
-                                                style={{ width: '100%', marginTop: '5px', padding: '12px', background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '12px', color: '#666', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
-                                            >
-                                                전체 내용 다시보기
-                                            </button>
+                                                        if (res.ok) {
+                                                            alert('삭제되었습니다.');
+                                                            if (user?.id) fetchHistory(user?.id);
+                                                        } else {
+                                                            alert('삭제 중 오류가 발생했습니다.');
+                                                        }
+                                                    }}
+                                                    style={{ width: '60px', padding: '12px', background: '#FFEBEE', border: '1px solid #FFCDD2', borderRadius: '12px', color: '#C62828', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                                                >
+                                                    삭제
+                                                </button>
+                                            </div>
                                         </div>
                                     ))
                                 )}
                             </>
                         )}
                     </div>
+
+                        {historyEditRecord && (
+                            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                                <div style={{ background: 'white', width: '100%', maxWidth: '500px', borderRadius: '24px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
+                                    <h3 style={{ margin: '0 0 15px 0', color: '#333' }}>📝 묵상 기록 수정</h3>
+                                    <div style={{ fontSize: '13px', color: '#666', marginBottom: '20px' }}>{historyEditRecord.completed_date} 기록을 수정합니다. 수정 후 저장 버튼을 눌러주세요.</div>
+                                    
+                                    <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '8px' }}>묵상 답변</div>
+                                    {historyEditAnswers.map((ans, idx) => (
+                                        <textarea
+                                            key={idx}
+                                            value={ans}
+                                            onChange={e => {
+                                                const newAns = [...historyEditAnswers];
+                                                newAns[idx] = e.target.value;
+                                                setHistoryEditAnswers(newAns);
+                                            }}
+                                            placeholder={`${idx + 1}번 질문 답변`}
+                                            style={{ width: '100%', height: '80px', marginBottom: '10px', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none', background: '#FDFDFD', fontSize: '14px', fontFamily: 'inherit', resize: 'none' }}
+                                        />
+                                    ))}
+
+                                    <div style={{ fontWeight: 700, fontSize: '14px', marginTop: '10px', marginBottom: '8px' }}>나눔 게시판 은혜 나눔</div>
+                                    <textarea
+                                        value={historyEditReflection}
+                                        onChange={e => setHistoryEditReflection(e.target.value)}
+                                        placeholder="게시판에 남길 은혜 나눔 (비워두면 글이 삭제됩니다)"
+                                        style={{ width: '100%', height: '120px', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none', background: '#FDFDFD', fontSize: '14px', fontFamily: 'inherit', resize: 'none' }}
+                                    />
+
+                                    <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                                        <button onClick={() => setHistoryEditRecord(null)} style={{ flex: 1, padding: '14px', borderRadius: '15px', border: 'none', background: '#F5F5F5', color: '#666', fontWeight: 700, fontSize: '15px', cursor: 'pointer' }}>취소</button>
+                                        <button onClick={async () => {
+                                            const effectiveChurchId = churchId || (typeof window !== 'undefined' ? localStorage.getItem('church_id') : null) || 'jesus-in';
+                                            const res = await fetch('/api/qt/history/edit', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ action: 'update', user_id: user?.id, user_name: profileName || '성도', church_id: effectiveChurchId, date: historyEditRecord.completed_date, answers: historyEditAnswers, reflection: historyEditReflection })
+                                            });
+                                            if (res.ok) {
+                                                alert('수정되었습니다.');
+                                                setHistoryEditRecord(null);
+                                                if (user?.id) fetchHistory(user?.id);
+                                            } else {
+                                                alert('수정 중 오류가 발생했습니다.');
+                                            }
+                                        }} style={{ flex: 1, padding: '14px', borderRadius: '15px', border: 'none', background: '#333', color: 'white', fontWeight: 700, fontSize: '15px', cursor: 'pointer' }}>저장</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                     <div style={{ padding: '0 20px 40px 20px', display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '100px' }}>
                         <button onClick={() => setView('home')} style={{ marginTop: '10px', width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 돌아가기</button>
                     </div>
