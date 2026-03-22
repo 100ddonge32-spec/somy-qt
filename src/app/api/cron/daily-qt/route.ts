@@ -29,6 +29,8 @@ export async function GET(req: NextRequest) {
     }
 
     const today = getKoreaDateString();
+    const { searchParams } = new URL(req.url);
+    const force = searchParams.get('force') === 'true';
 
     // 이미 오늘 큐티가 있는지 확인
     const { data: existing } = await supabaseAdmin
@@ -37,7 +39,7 @@ export async function GET(req: NextRequest) {
         .eq('date', today)
         .single();
 
-    if (existing) {
+    if (existing && !force) {
         return NextResponse.json({ message: '오늘 큐티가 이미 존재합니다.', date: today });
     }
 
@@ -151,7 +153,7 @@ export async function GET(req: NextRequest) {
             }
         } catch (e) { }
 
-        // [신규] '이번주 암송구절' & 담임목사 칼럼 자동 생성 (한 주에 한 번, 월요일 또는 데이터 부재 시)
+        // [신규] '이번주 암송구절' & 개혁주의 칼럼 자동 생성 (한 주에 2번, 월/목요일 또는 데이터 부재 시)
         try {
             const now = new Date();
             const dayOfWeek = now.getDay(); // 0: 일, 1: 월, ...
@@ -168,11 +170,11 @@ export async function GET(req: NextRequest) {
             // 관리자가 직접 입력했는지 여부 확인: AI 생성 플래그가 없고 내용이 있으면 관리자 입력으로 간주
             const isManuallySet = !isAiGenerated && !!currentSettings?.pastor_column_content;
 
-            // 월요일(1)이거나, 필수 데이터(암송구절/칼럼)가 하나라도 없는 경우 생성 수행
-            const shouldGenerateWeekly = dayOfWeek === 1 || !currentSettings?.today_verse_text || !currentSettings?.pastor_column_content;
+            // 월요일(1) 또는 목요일(4)이거나, 필수 데이터(암송구절/칼럼)가 하나라도 없는 경우 생성 수행
+            const shouldGenerateBiWeekly = dayOfWeek === 1 || dayOfWeek === 4 || !currentSettings?.today_verse_text || !currentSettings?.pastor_column_content;
 
-            if (shouldGenerateWeekly) {
-                console.log(`[Cron] Day ${dayOfWeek}: Generating Weekly Memorization Verse & Pastor Column...`);
+            if (shouldGenerateBiWeekly) {
+                console.log(`[Cron] Day ${dayOfWeek}: Generating Memorization Verse & Reformed Column...`);
                 
                 // 4. 이번주 암송구절 생성
                 const verseRes = await openai.chat.completions.create({
@@ -202,16 +204,16 @@ export async function GET(req: NextRequest) {
                         messages: [
                             {
                                 role: 'system',
-                                content: `당신은 교회의 담임목사입니다. 이번주 암송구절 [${verseJson.reference}: ${verseJson.verse}]을 바탕으로 성도들에게 한 주간의 삶에 깊은 위로와 영적 도전을 주는 '목양 칼럼'을 작성해주세요. 
+                                content: `당신은 개혁주의 신학자이자 날카로운 사회 평론가입니다. 현대 사회에서 이슈가 되고 있는 주제(사회, 문화, 윤리, 성결, 신앙의 위기 등) 중 성도들이 고민할 법한 하나를 선정하여, 개혁주의 신학의 관점(하나님의 주권, 성경의 권위, 전적 타락 등)으로 명쾌하게 풀어내는 칼럼을 작성해주세요. 
 
 [작성 가이드라인]
-1. 분량: 약 500자 내외로 풍성하게 작성하세요.
-2. 구조: 말씀의 의미 설명 - 한 주간 삶의 적용점 - 따뜻한 격려와 축복의 순서로 구성하세요.
-3. 말투: 성도를 진심으로 아끼는 마음이 담긴 자애롭고 은혜로운 목소리(존댓말)를 사용하세요.
-4. 내용: 한 주 동안 성도들이 암송구절을 되새기며 승리할 수 있도록 돕는 실질적인 조언을 포함하세요.
+1. 주제 선정: 현대인들이 공감하거나 세상 속에서 고민할 법한 시의성 있는 최근 이슈를 자유롭게 선정하세요. (설교와 같은 단순 권면보다는 지적인 통찰과 성경적 세계관을 제공하세요.)
+2. 관점: 반드시 개혁주의적 논리(Reformed Logic)를 바탕으로 신학적 해답을 제시하세요.
+3. 분량: 약 800자 내외로 깊이 있고 설득력 있게 작성하세요.
+4. 말투: 논리적이고 지적이면서도, 독자들에게 영적 각성을 주는 단호하고 따뜻한 어조(존댓말)를 사용하세요.
 
 반드시 아래 JSON 형식으로만 답하세요:
-{"title":"목양 칼럼: ${verseJson.reference}","content":"내용"}`
+{"title":"[개혁주의 논단] 주제 제목","content":"내용"}`
                             }
                         ],
                         temperature: 0.7,
@@ -271,9 +273,9 @@ export async function GET(req: NextRequest) {
                     })
                     .eq('id', 1);
 
-                console.log('[Cron] Weekly Memorization Verse, Pastor Column & Daily Quote updated successfully.');
+                console.log('[Cron] Memorization Verse, Reformed Column & Daily Quote updated successfully.');
             } else {
-                console.log(`[Cron] Day ${dayOfWeek}: Skipping Weekly Generation (Only on Mondays).`);
+                console.log(`[Cron] Day ${dayOfWeek}: Skipping Bi-Weekly Generation (Only on Mon/Thu).`);
             }
 
         } catch (e) {

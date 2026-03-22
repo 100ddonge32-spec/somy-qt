@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "push": "node send_push.js",
+    "qt-gen": "curl -X GET http://localhost:3000/api/cron/daily-qt"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.97.0",
