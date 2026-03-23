@@ -2189,20 +2189,19 @@ export default function App() {
             const verseRef = churchSettings.today_verse_text ? churchSettings.today_verse_ref || '직접 입력' : `${autoVerse.book} ${autoVerse.ref}`;
 
             // ✅ 프롬프트를 더 풍성하고 깊이 있게 수정
-            const prompt = `당신은 ${settingsForm.church_name || CHURCH_NAME}의 담임목사입니다. 이번주 암송구절 [${verseRef}: ${verseText}]을 바탕으로 성도들에게 깊은 위로와 영적 도전을 주는 '목양 칼럼'을 작성해주세요. 
+            const prompt = `당신은 담임목사의 페르소나를 가진 개혁주의 신학자이자 날카로운 사회 평론가입니다. 현대 사회에서 이슈가 되고 있는 주제(사회, 문화, 윤리, 신앙의 위기 등) 중 성도들이 고민할 법한 하나를 선정하여, 이를 개혁주의 신학의 관점(하나님의 주권, 성경의 권위 등)으로 명쾌하게 풀어내는 '담임목사 칼럼'을 작성해주세요.
 
 [작성 가이드라인]
-1. 분량: 약 500자 내외로 풍성하게 작성하세요.
-2. 구조: 말씀의 의미 설명 - 한 주간 삶의 적용점 - 따뜻한 격려와 축복의 순서로 구성하세요.
-3. 말투: 성도를 진심으로 아끼는 마음이 담긴 자애롭고 은혜로운 목소리(존댓말)를 사용하세요.
-4. 내용: 한 주 동안 성도들이 암송구절을 되새기며 승리할 수 있도록 돕는 실질적인 조언을 포함하세요.
-5. 주의사항: 칼럼 형식이므로 글의 마지막에 '아멘'을 사용하지 말고 담백하고 우아하게 마무리하세요.
+1. 주제 선정: 현대인들이 공감하거나 세상 속에서 고민할 법한 시의성 있는 이슈를 자유롭게 선정하세요. 단순 설교보다는 지적인 통찰을 제공하세요.
+2. 관점: 반드시 개혁주의적 논리(Reformed Logic)를 바탕으로 신학적 해답을 제시하세요.
+3. 분량: 약 600자 내외로 깊이 있고 설득력 있게 작성하세요.
+4. 말투: 성도들을 향한 따뜻한 목화적 어조와 지적인 통찰이 공존하는 단호하고 품격 있는 존댓말을 사용하세요.
 
 반드시 아래 형식을 엄격히 지켜서 출력하세요:
-제목: (강렬하고 은혜로운 제목)
-내용: (깊이 있고 풍성한 권면의 글)
+제목: [담임목사 칼럼] (주제 제목)
+내용: (작성된 칼럼 본문)
 
-마크다운 기호(** 등)는 사용하지 말고 텍스트로만 정성스럽게 작성해주세요.`;
+마크다운 기호(** 등)는 사용하지 말고 텍스트로만 정합성 있게 작성해주세요.`;
 
             const res = await fetch("/api/chat", {
                 method: "POST",
@@ -8500,10 +8499,9 @@ export default function App() {
                                                         </div>
                                                     )}
                                                 </div>
-                                                {/* ✅ 담임목사 칼럼 관리 섹션 추가 */}
                                                 <div style={{ marginTop: '10px', padding: '15px', background: '#FDF8F0', borderRadius: '15px', border: '1px solid #FAF0D7' }}>
                                                     <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>✍️ 이번주 암송 칼럼 관리</div>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>✍️ 담임목사 칼럼 관리</div>
                                                         <button
                                                             disabled={isGeneratingColumn}
                                                             onClick={(e) => { e.preventDefault(); handleGenerateColumn(); }}
@@ -8511,19 +8509,18 @@ export default function App() {
                                                             {isGeneratingColumn ? '생성 중...' : '✨ AI 생성'}
                                                         </button>
                                                     </div>
-                                                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>* 비워두면 이번주 암송구절을 바탕으로 매주 새로운 메시지가 AI에 의해 자동 생성됩니다.</div>
+                                                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>* 비워두면 현대 이슈를 개혁주의 논리로 분석한 칼럼이 매주 자동 생성됩니다.</div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                         <input type="text" value={settingsForm.pastor_column_title || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, pastor_column_title: e.target.value }))} placeholder="칼럼 제목" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
                                                         <textarea value={settingsForm.pastor_column_content || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, pastor_column_content: e.target.value }))} placeholder="칼럼 내용 (직접 입력 또는 AI 생성)" style={{ width: '100%', minHeight: '100px', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px', resize: 'none', lineHeight: 1.6 }} />
                                                     </div>
                                                 </div>
 
-                                                {/* ✅ 이번주 암송구절 개별 설정 추가 */}
                                                 <div style={{ marginTop: '10px', padding: '15px', background: '#F8F9FA', borderRadius: '15px', border: '1px solid #E9ECEF' }}>
                                                     <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        📖 이번주 암송구절 커스텀 (옵션)
+                                                        📖 암송구절 커스텀 (옵션)
                                                     </div>
-                                                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>* 비워두면 매주 새로운 은혜의 말씀으로 별도 자동 업데이트됩니다. 직접 입력 시 해당 말씀이 고정 노출됩니다.</div>
+                                                    <div style={{ fontSize: '11px', color: '#888', marginBottom: '10px' }}>* 비워두면 매주 새로운 말씀으로 자동 업데이트됩니다. 직접 입력 시 해당 말씀이 고정됩니다.</div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                                         <input type="text" value={settingsForm.today_verse_text || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, today_verse_text: e.target.value }))} placeholder="예: 여호와는 나의 목자시니..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
                                                         <input type="text" value={settingsForm.today_verse_ref || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, today_verse_ref: e.target.value }))} placeholder="출처 (예: 시편 23:1)" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', fontSize: '13px' }} />
