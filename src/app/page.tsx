@@ -960,8 +960,8 @@ export default function App() {
                         await new Promise(res => setTimeout(res, 3000));
                         return performSubscribe(retryCount + 1);
                     }
-                    console.error('[Push Subscription Error]', err.message);
-                    return false;
+                    // 오류를 상위로 전파 (return false 대신 throw)
+                    throw err;
                 }
             };
 
@@ -10360,8 +10360,8 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
                         user_id: user?.id,
                         user_name: user?.user_metadata?.full_name || user?.email,
                         avatar_url: user?.user_metadata?.avatar_url,
-                        image_url: uploadedUrls[0], // 대표 이미지
-                        image_urls: uploadedUrls,    // 전체 이미지 목록
+                        image_url: uploadedUrls[0],
+                        image_urls: uploadedUrls,
                         description: description,
                         church_id: churchId || 'jesus-in'
                     })
