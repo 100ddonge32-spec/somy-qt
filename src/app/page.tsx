@@ -942,18 +942,25 @@ export default function App() {
                         applicationServerKey: urlBase64ToUint8Array(VAPID_KEY)
                     });
 
-                    await fetch('/api/push-subscribe', {
+                    const saveRes = await fetch('/api/push-subscribe', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ user_id: userId, subscription })
                     });
+
+                    if (!saveRes.ok) {
+                        const errData = await saveRes.json().catch(() => ({}));
+                        throw new Error(`DB 저장 실패: ${errData.error || saveRes.status}`);
+                    }
+
+                    console.log('[Push] ✅ 구독 정보 DB 저장 완료!');
                     return true;
                 } catch (err: any) {
-                    if (retryCount < 1 && (err.name === 'AbortError' || err.message.includes('service error'))) {
+                    if (retryCount < 1 && (err.name === 'AbortError' || err.message?.includes('service error'))) {
                         await new Promise(res => setTimeout(res, 3000));
                         return performSubscribe(retryCount + 1);
                     }
-                    console.error('[Push Subscription Error]', err);
+                    console.error('[Push Subscription Error]', err.message);
                     return false;
                 }
             };
