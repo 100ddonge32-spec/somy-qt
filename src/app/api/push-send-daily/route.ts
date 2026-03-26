@@ -34,12 +34,17 @@ export async function GET(req: NextRequest) {
         // 1. 해당 교회의 오늘 날짜 큐티 제목 가져오기
         const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
         const normChurchId = normalizeId(churchId) || 'jesus-in';
+        
+        let churchIdsToSearch = [churchId]; // 기본적으로 현재 접속한 ID 사용
+        if (normChurchId === 'jesus-in') {
+            churchIdsToSearch = ['jesus-in', '예수인교회', '예수인'];
+        }
 
         const { data: qtData } = await supabaseAdmin
             .from('daily_qt')
             .select('reference')
             .eq('date', today)
-            .eq('church_id', normChurchId)
+            .in('church_id', churchIdsToSearch)
             .maybeSingle();
 
         const messageTitle = '오늘의 큐티말씀이 도착했습니다 🐑';
@@ -49,7 +54,7 @@ export async function GET(req: NextRequest) {
         const { data: approvedProfiles, error: profileError } = await supabaseAdmin
             .from('profiles')
             .select('id')
-            .eq('church_id', normChurchId)
+            .in('church_id', churchIdsToSearch)
             .eq('is_approved', true);
 
         if (profileError) throw profileError;
