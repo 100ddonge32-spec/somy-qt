@@ -967,9 +967,9 @@ export default function App() {
 
             const result = await performSubscribe();
             return result;
-        } catch (error) {
+        } catch (error: any) {
             console.error("❌ 푸시 알림 프로세스 중단:", error);
-            return false;
+            throw error; // 상위 호출부(버튼 핸들러)에서 실제 오류를 표시하도록 전파
         } finally {
             isSubscribing.current = false;
         }
