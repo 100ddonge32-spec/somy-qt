@@ -192,6 +192,33 @@ export async function POST(req: NextRequest) {
 
                 for (const table of migrateTables) {
                     try {
+                        // [특수 처리] 좋아요(liker_ids 배열) 이관 로직
+                        if (table === 'community_posts' || table === 'thanksgiving_diaries') {
+                            const { data: toUpdate } = await supabaseAdmin
+                                .from(table)
+                                .select('id, liker_ids')
+                                .filter('liker_ids', 'cs', `{"${match.id}"}`);
+
+                            if (toUpdate && toUpdate.length > 0) {
+                                for (const row of toUpdate) {
+                                    let newLikerIds = row.liker_ids.map((id: string) => id === match.id ? user_id : id);
+                                    newLikerIds = Array.from(new Set(newLikerIds));
+                                    await supabaseAdmin.from(table).update({ liker_ids: newLikerIds }).eq('id', row.id);
+                                }
+                            }
+                        }
+
+                        // [특수 처리] gallery_likes 중복 충돌 방지
+                        if (table === 'gallery_likes') {
+                            // 기존(새 ID)에 이미 이 게시물의 좋아요가 있다면 이전(구 ID) 기록은 삭제하여 유니크 제약 충돌 방지
+                            const { data: existingNewLikes } = await supabaseAdmin.from('gallery_likes').select('post_id').eq('user_id', user_id);
+                            const existingPostIds = new Set(existingNewLikes?.map(l => l.post_id) || []);
+                            
+                            if (existingPostIds.size > 0) {
+                                await supabaseAdmin.from('gallery_likes').delete().eq('user_id', match.id).in('post_id', Array.from(existingPostIds));
+                            }
+                        }
+
                         const { error: migrationError } = await supabaseAdmin
                             .from(table)
                             .update({ user_id: user_id })
