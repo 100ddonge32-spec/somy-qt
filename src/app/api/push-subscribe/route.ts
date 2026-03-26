@@ -26,8 +26,7 @@ export async function POST(req: NextRequest) {
             .from('push_subscriptions')
             .upsert({
                 user_id,
-                subscription,
-                updated_at: new Date().toISOString()
+                subscription
             }, {
                 onConflict: 'user_id'
             });
