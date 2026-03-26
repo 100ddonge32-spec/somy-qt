@@ -127,6 +127,8 @@ export async function GET(req: NextRequest) {
             sentCount,
             failedCount,
             totalApprovedCount: approvedIds.length,
+            totalSubscriptionsFound: subscriptions.length,
+            churchIdsSearched: churchIdsToSearch,
             errorSamples: errorMessages.slice(0, 3),
             today
         });

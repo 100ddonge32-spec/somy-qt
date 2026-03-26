@@ -6123,8 +6123,9 @@ export default function App() {
                                         const res = await fetch(`/api/push-send-daily?secret=somy-push-secret-123&church_id=${churchId}`);
                                         const data = await res.json();
                                         if (data.success) {
-                                            if (data.sentCount === 0 && data.failedCount === 0 && (data.totalApprovedCount === 0 || data.totalApprovedCount === undefined)) {
-                                                alert('알림을 보낼 성도님이 없습니다. 먼저 성도 관리에서 승인을 해주세요.');
+                                            if (data.sentCount === 0 && data.failedCount === 0) {
+                                                const debugInfo = `\n\n🔍 진단 정보:\n• 승인된 성도: ${data.totalApprovedCount ?? 0}명\n• 구독 기기: ${data.totalSubscriptionsFound ?? 0}개\n• 검색된 교회코드: ${(data.churchIdsSearched || []).join(', ')}`;
+                                                alert('📢 알림 발송 완료!\n\n✅ 성공: 0명\n❌ 실패: 0명' + debugInfo);
                                             } else {
                                                 let msg = `📢 알림 발송 완료!\n\n✅ 성공: ${data.sentCount}명\n❌ 실패: ${data.failedCount}명`;
                                                 if (data.errorSamples && data.errorSamples.length > 0) {
