@@ -3,6 +3,10 @@
     {
       "path": "/api/push-send-daily?secret=somy-push-secret-123",
       "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/cron/push-scheduler?secret=somy-push-secret-123",
+      "schedule": "0 * * * *"
     }
   ]
 }

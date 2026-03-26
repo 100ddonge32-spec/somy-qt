@@ -370,6 +370,7 @@ export default function App() {
     const [thanksgivingDiaries, setThanksgivingDiaries] = useState<Post[]>([]);
     const [counselingRequests, setCounselingRequests] = useState<any[]>([]);
     const isSubscribing = useRef(false); // [추가] 중복 구독 시도 방지용 락
+    const [showPushPrompt, setShowPushPrompt] = useState(false); // ✅ 푸시 알림 권장 모달 제어
     const [counselingInput, setCounselingInput] = useState('');
     const [counselingReplyInput, setCounselingReplyInput] = useState<{ [id: string]: string }>({});
     const [isPrivateThanksgiving, setIsPrivateThanksgiving] = useState(false);
@@ -501,6 +502,7 @@ export default function App() {
         event_poster_visible: false,
         pastor_column_title: '',
         pastor_column_content: '',
+        qt_notification_time: '08:00',
     });
     const [settingsForm, setSettingsForm] = useState<any>({
         church_name: CHURCH_NAME,
@@ -526,6 +528,7 @@ export default function App() {
         event_poster_visible: false,
         pastor_column_title: '',
         pastor_column_content: '',
+        qt_notification_time: '08:00', // [추가] 큐티 알림 시간 (기본값 8시)
     });
     const [isGeneratingColumn, setIsGeneratingColumn] = useState(false);
 
@@ -907,9 +910,18 @@ export default function App() {
     }, [ccmVolume]);
 
     // [이과장의 푸시 엔진] 브라우저 알림 권한을 얻고 서버에 구독 정보를 저장합니다.
-    const subscribePush = useCallback(async (userId: string) => {
-        if (isSubscribing.current) return;
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    const subscribePush = useCallback(async (userId: string, force = false): Promise<boolean> => {
+        if (isSubscribing.current) return false;
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+
+        // 권한 상태 확인
+        const permission = Notification.permission;
+
+        // [커스텀 안내] 권한이 default이고 force가 아닐 경우, 안내 모달을 먼저 띄웁니다.
+        if (permission === 'default' && !force) {
+            setShowPushPrompt(true);
+            return false;
+        }
 
         isSubscribing.current = true;
         try {
@@ -950,6 +962,7 @@ export default function App() {
                         body: JSON.stringify({ user_id: userId, subscription })
                     });
                     console.log("✅ 푸시 알림 등록 완료!");
+                    return true;
                 } catch (err: any) {
                     console.error(`[Push] Trial ${retryCount + 1} Error:`, err.name, err.message);
 
@@ -966,6 +979,7 @@ export default function App() {
             await performSubscribe();
         } catch (error) {
             console.error("❌ 푸시 알림 프로세스 중단:", error);
+            return false;
         } finally {
             setTimeout(() => { isSubscribing.current = false; }, 2000);
         }
@@ -8269,6 +8283,18 @@ export default function App() {
                                                 <input type="text" value={settingsForm.app_subtitle} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, app_subtitle: e.target.value }))} placeholder="예: 말씀과 기도로 거룩해지는 공동체" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                <label style={{ fontSize: '12px', fontWeight: 700, color: '#9E7B31' }}>⏰ 매일 큐티 알림 발송 시간</label>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <input 
+                                                        type="time" 
+                                                        value={settingsForm.qt_notification_time || '08:00'} 
+                                                        onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, qt_notification_time: e.target.value }))} 
+                                                        style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none', background: 'white', flex: 1 }} 
+                                                    />
+                                                    <div style={{ fontSize: '11px', color: '#999', flex: 1.5 }}>※ 설정된 시간에 푸시 알림을 자동으로 발송합니다.</div>
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                 <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <span>유튜브 채널 ID (자동 업데이트용)</span>
                                                     <span style={{ fontSize: '10px', color: '#999', fontWeight: 400 }}>예: UC4UTt4...</span>
@@ -11031,20 +11057,26 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
                         setIsPushEnabling(true);
                         const userId = user?.id;
                         if (!userId) return;
-                        const success = await subscribePush(userId);
+                        // 프로필 화면에서는 'force'로 바로 시스템 팝업을 띄우거나, 이미 모달이 있으므로 바로 실행
+                        const success = await subscribePush(userId, true);
                         if (success) {
                             alert("축하합니다! 이제 실시간 알림을 받으실 수 있습니다. ✅");
                         } else {
-                            alert("알림 설정에 실패했습니다. 브라우저의 알림 권한 설정을 확인해 주세요. ⚠️");
+                            const perm = Notification.permission;
+                            if (perm === 'denied') {
+                                alert("알림 권한이 거부되어 있습니다. 브라우저 설정에서 알림을 허용해 주세요! ⚠️");
+                            } else {
+                                alert("알림 설정에 실패했습니다. 다시 시도해 주세요. ⚠️");
+                            }
                         }
                         setIsPushEnabling(false);
                     }}
                     disabled={isPushEnabling}
                     style={{
-                        width: '100%', padding: '14px', background: '#F5F5F5', color: '#333', border: '1px solid #DDD', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px'
+                        width: '100%', padding: '16px', background: 'linear-gradient(135deg, #333 0%, #555 100%)', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 800, cursor: 'pointer', fontSize: '14px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                     }}
                 >
-                    {isPushEnabling ? '설정 중...' : '📲 핸드폰 알림 활성화 하기'}
+                    {isPushEnabling ? '설정 중...' : '📲 실시간 알림 활성화 하기'}
                 </button>
             </div>
 
@@ -11776,6 +11808,60 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
                                     </div>
                                 </>
                             )}
+                        </div>
+                    </div>
+                )}
+
+                {/* 푸시 알림 권장 커스텀 모달 (김부장의 UX 개선) */}
+                {showPushPrompt && (
+                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', backdropFilter: 'blur(10px)' }}>
+                        <div style={{ 
+                            background: 'white', borderRadius: '32px', padding: '36px 32px', maxWidth: '380px', width: '100%', 
+                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', textAlign: 'center', 
+                            animation: 'scale-up-center 0.4s cubic-bezier(0.4, 0, 0.2, 1)' 
+                        }}>
+                            <div style={{ fontSize: '64px', marginBottom: '24px', animation: 'bounce-light 2s infinite' }}>🔔</div>
+                            <h3 style={{ fontSize: '22px', fontWeight: 900, marginBottom: '16px', color: '#333', wordBreak: 'keep-all' }}>실시간 알림을 켜두실까요?</h3>
+                            <p style={{ fontSize: '15px', color: '#666', lineHeight: '1.7', marginBottom: '32px', wordBreak: 'keep-all' }}>
+                                소중한 <b>은혜나눔의 글</b>이 올라왔을 때,<br/>
+                                그리고 <b>큐티 알림 시간</b>(매일 아침)을<br/>
+                                놓치지 않도록 소미가 알려드릴게요! 🐑
+                            </p>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                <button 
+                                    onClick={() => {
+                                        setShowPushPrompt(false);
+                                        localStorage.setItem('somy_push_prompt_dismissed', new Date().toDateString());
+                                    }} 
+                                    style={{ flex: 1, padding: '16px', borderRadius: '18px', border: '1px solid #EEE', background: '#F9F9F9', color: '#999', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                    나중에요
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        setShowPushPrompt(false);
+                                        if (user) subscribePush(user.id, true);
+                                    }} 
+                                    style={{ 
+                                        flex: 2, padding: '16px', borderRadius: '18px', border: 'none', 
+                                        background: 'linear-gradient(135deg, #ECC94B 0%, #D4AF37 100%)', 
+                                        color: 'white', fontSize: '15px', fontWeight: 800, cursor: 'pointer', 
+                                        boxShadow: '0 8px 20px rgba(212, 175, 55, 0.3)' 
+                                    }}
+                                >
+                                    알림 켜기
+                                </button>
+                            </div>
+                            <style>{`
+                                @keyframes scale-up-center {
+                                    0% { transform: scale(0.5); opacity: 0; }
+                                    100% { transform: scale(1); opacity: 1; }
+                                }
+                                @keyframes bounce-light {
+                                    0%, 100% { transform: translateY(0); }
+                                    50% { transform: translateY(-10px); }
+                                }
+                            `}</style>
                         </div>
                     </div>
                 )}

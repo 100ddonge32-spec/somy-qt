@@ -173,6 +173,12 @@ export async function GET(req: NextRequest) {
             if (match) data.today_quote = decodeURIComponent(match[1]);
         }
 
+        // 9. 큐티 알림 시간
+        if (planStr.includes('qt_time:')) {
+            const match = planStr.match(/qt_time:([^|]+)/);
+            if (match) data.qt_notification_time = decodeURIComponent(match[1]);
+        }
+
         data.plan = data.plan.split('|')[0]; // 원래 plan 값만 추출 (ui용)
     }
 
@@ -205,6 +211,7 @@ export async function POST(req: NextRequest) {
         pastor_column_content,
         today_verse_text, // [추가] 커스텀 오늘의 말씀 텍스트
         today_verse_ref,  // [추가] 커스텀 오늘의 말씀 구절
+        qt_notification_time, // [추가] 큐티 알림 시간
         church_id: body_church_id,
         requester_id,
         requester_email: body_requester_email // [추가] 클라이언트에서 넘어온 이메일
@@ -349,6 +356,7 @@ export async function POST(req: NextRequest) {
 
     if (cleanTodayVerseText) encodedPlan += `|tv_text:${encodeURIComponent(cleanTodayVerseText)}`;
     if (cleanTodayVerseRef) encodedPlan += `|tv_ref:${encodeURIComponent(cleanTodayVerseRef)}`;
+    if (qt_notification_time) encodedPlan += `|qt_time:${encodeURIComponent(qt_notification_time)}`;
 
     const safeBaseData: any = {
         church_id: normTargetId, // [필수] 항상 표준화된 아이디로 저장하여 파편화 방지
@@ -398,7 +406,8 @@ export async function POST(req: NextRequest) {
         event_poster_url,
         event_poster_visible: event_poster_visible ?? false,
         pastor_column_title: cleanColumnTitle,
-        pastor_column_content: cleanColumnContent
+        pastor_column_content: cleanColumnContent,
+        qt_notification_time // 직접 저장 시도
     };
 
     // 1차 시도: 모든 컬럼 포함하여 저장
