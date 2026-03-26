@@ -1548,7 +1548,7 @@ export default function App() {
         }
     };
 
-    const handleGalleryLike = async (postId: string) => {
+    const handleGalleryLike = async (postId: string, action?: string) => {
         if (!user) {
             alert("로그인이 필요합니다.");
             return;
@@ -1557,7 +1557,7 @@ export default function App() {
             const res = await fetch('/api/gallery/likes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ post_id: postId, user_id: user.id })
+                body: JSON.stringify({ post_id: postId, user_id: user.id, action })
             });
             if (res.ok) {
                 // 성공 시 목록 다시 불러오기 (또는 로컬 상태 업데이트)
@@ -4427,7 +4427,7 @@ export default function App() {
            COMMUNITY PAGE
         ══════════════════════════════ */
         if (view === "community") {
-            const handleReaction = async (postId: string, type: 'community' | 'thanksgiving') => {
+            const handleReaction = async (postId: string, type: 'community' | 'thanksgiving', action?: string) => {
                 if (!user) {
                     alert("로그인이 필요합니다.");
                     return;
@@ -4436,7 +4436,7 @@ export default function App() {
                     const res = await fetch('/api/community/reaction', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ post_id: postId, user_id: user?.id, type })
+                        body: JSON.stringify({ post_id: postId, user_id: user?.id, type, action })
                     });
                     const data = await res.json();
                     if (res.ok) {
@@ -4839,7 +4839,7 @@ export default function App() {
                                             {/* Reactions & Comments Count row */}
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '12px', borderTop: '1px solid #F8F8F8', paddingTop: '12px' }}>
                                                 <div
-                                                    onClick={() => handleReaction(post.id, 'community')}
+                                                    onClick={() => handleReaction(post.id, 'community', likerInfo.isLikedByMe ? 'unliked' : 'liked')}
                                                     style={{
                                                         display: 'flex',
                                                         alignItems: 'center',
@@ -5089,7 +5089,7 @@ export default function App() {
            THANKSGIVING DIARY PAGE
         ══════════════════════════════ */
         if (view === "thanksgiving") {
-            const handleReaction = async (postId: string, type: 'community' | 'thanksgiving') => {
+            const handleReaction = async (postId: string, type: 'community' | 'thanksgiving', action?: string) => {
                 if (!user) {
                     alert("로그인이 필요합니다.");
                     return;
@@ -5098,7 +5098,7 @@ export default function App() {
                     const res = await fetch('/api/community/reaction', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ post_id: postId, user_id: user?.id, type })
+                        body: JSON.stringify({ post_id: postId, user_id: user?.id, type, action })
                     });
                     const data = await res.json();
                     if (res.ok) {
@@ -5412,7 +5412,7 @@ export default function App() {
                                             {/* Reactions & Comments Count row */}
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '12px', borderTop: '1px solid #FFF1E6', paddingTop: '12px' }}>
                                                 <div
-                                                    onClick={() => handleReaction(diary.id, 'thanksgiving')}
+                                                    onClick={() => handleReaction(diary.id, 'thanksgiving', likerInfo.isLikedByMe ? 'unliked' : 'liked')}
                                                     style={{
                                                         display: 'flex',
                                                         alignItems: 'center',
@@ -10461,7 +10461,8 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete, ge
     }, [post, user]);
 
     const handleLike = async () => {
-        await onLike(post.id);
+        const action = likes.isLiked ? 'unliked' : 'liked';
+        await onLike(post.id, action);
         fetch(`/api/gallery/likes?post_id=${post.id}&user_id=${user?.id}`).then(r => r.json()).then(setLikes);
     };
 

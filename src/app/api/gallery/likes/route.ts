@@ -13,7 +13,7 @@ const supabaseAdmin = createClient(
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { post_id, user_id } = body;
+        const { post_id, user_id, action } = body; // action: 'liked' | 'unliked' (optional)
 
         if (!post_id || !user_id) return NextResponse.json({ error: 'Post ID and User ID required' }, { status: 400 });
 
@@ -25,8 +25,17 @@ export async function POST(req: NextRequest) {
             .eq('user_id', user_id)
             .maybeSingle();
 
-        if (existingLike) {
-            // 좋아요 취소 (삭제)
+        if (action === 'liked') {
+            // 명시적으로 좋아요를 누른 경우 (🤍 -> ❤️ 클릭)
+            if (existingLike) return NextResponse.json({ action: 'liked', note: 'already existed' });
+            const { error } = await supabaseAdmin
+                .from('gallery_likes')
+                .insert([{ post_id, user_id }]);
+            if (error) throw error;
+            return NextResponse.json({ action: 'liked' });
+        } else if (action === 'unliked') {
+            // 명시적으로 좋아요 취소를 누른 경우 (❤️ -> 🤍 클릭)
+            if (!existingLike) return NextResponse.json({ action: 'unliked', note: 'already unliked' });
             const { error } = await supabaseAdmin
                 .from('gallery_likes')
                 .delete()
@@ -34,12 +43,21 @@ export async function POST(req: NextRequest) {
             if (error) throw error;
             return NextResponse.json({ action: 'unliked' });
         } else {
-            // 좋아요 등록
-            const { error } = await supabaseAdmin
-                .from('gallery_likes')
-                .insert([{ post_id, user_id }]);
-            if (error) throw error;
-            return NextResponse.json({ action: 'liked' });
+            // 기존 토글 방식 (레거시 지원)
+            if (existingLike) {
+                const { error } = await supabaseAdmin
+                    .from('gallery_likes')
+                    .delete()
+                    .eq('id', existingLike.id);
+                if (error) throw error;
+                return NextResponse.json({ action: 'unliked' });
+            } else {
+                const { error } = await supabaseAdmin
+                    .from('gallery_likes')
+                    .insert([{ post_id, user_id }]);
+                if (error) throw error;
+                return NextResponse.json({ action: 'liked' });
+            }
         }
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });

@@ -14,13 +14,13 @@ const supabaseAdmin = createClient(
 
 export async function POST(req: NextRequest) {
     try {
-        const { post_id, user_id, type = 'community' } = await req.json();
+        const { post_id, user_id, type = 'community', action } = await req.json(); // action: 'liked' | 'unliked' (optional)
         const tableName = type === 'community' ? 'community_posts' : 'thanksgiving_diaries';
 
         // 1. 현재 게시글의 liker_ids 가져오기
         const { data: post, error: fetchError } = await supabaseAdmin
             .from(tableName)
-            .select('liker_ids')
+            .select('liker_ids, user_id')
             .eq('id', post_id)
             .single();
 
@@ -31,14 +31,28 @@ export async function POST(req: NextRequest) {
         }
 
         let likerIds = post.liker_ids || [];
-        const isLiked = likerIds.includes(user_id);
+        const isCurrentlyLiked = likerIds.includes(user_id);
+        let finalIsLiked = isCurrentlyLiked;
 
-        if (isLiked) {
-            // 좋아요 취소
-            likerIds = likerIds.filter((id: string) => id !== user_id);
+        if (action === 'liked') {
+            if (!isCurrentlyLiked) {
+                likerIds.push(user_id);
+                finalIsLiked = true;
+            }
+        } else if (action === 'unliked') {
+            if (isCurrentlyLiked) {
+                likerIds = likerIds.filter((id: string) => id !== user_id);
+                finalIsLiked = false;
+            }
         } else {
-            // 좋아요 추가
-            likerIds.push(user_id);
+            // 기존 토글 방식
+            if (isCurrentlyLiked) {
+                likerIds = likerIds.filter((id: string) => id !== user_id);
+                finalIsLiked = false;
+            } else {
+                likerIds.push(user_id);
+                finalIsLiked = true;
+            }
         }
 
         const { data: updated, error: updateError } = await supabaseAdmin
@@ -51,7 +65,7 @@ export async function POST(req: NextRequest) {
         if (updateError) throw updateError;
 
         // 3. 좋아요 추가 시 작성자에게 알림 발송 (취소가 아닐 때만)
-        if (!isLiked && user_id !== updated.user_id) {
+        if (finalIsLiked && !isCurrentlyLiked && user_id !== updated.user_id) {
             try {
                 const title = type === 'community' ? '❤️ 새로운 좋아요' : '❤️ 감사일기 응원';
                 const body = type === 'community'
@@ -83,7 +97,7 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        return NextResponse.json({ success: true, isLiked: !isLiked, count: likerIds.length, liker_ids: likerIds });
+        return NextResponse.json({ success: true, isLiked: finalIsLiked, count: likerIds.length, liker_ids: likerIds });
     } catch (err: any) {
         console.error('[Reaction Error]', err);
         return NextResponse.json({ error: err.message }, { status: 500 });
