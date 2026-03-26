@@ -10,6 +10,14 @@ const supabaseAdmin = createClient(
     { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
+// [표준화] 교회 식별자 정규화
+const normalizeId = (id: string | null) => {
+    if (!id) return null;
+    const s = id.toLowerCase().trim();
+    if (s === '예수인교회' || s === 'jesus-in' || s === '예수인') return 'jesus-in';
+    return s;
+};
+
 
 
 export async function GET(req: NextRequest) {
@@ -25,11 +33,13 @@ export async function GET(req: NextRequest) {
 
         // 1. 해당 교회의 오늘 날짜 큐티 제목 가져오기
         const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const normChurchId = normalizeId(churchId) || 'jesus-in';
+
         const { data: qtData } = await supabaseAdmin
             .from('daily_qt')
             .select('reference')
             .eq('date', today)
-            .eq('church_id', churchId)
+            .eq('church_id', normChurchId)
             .maybeSingle();
 
         const messageTitle = '오늘의 큐티말씀이 도착했습니다 🐑';
@@ -39,7 +49,7 @@ export async function GET(req: NextRequest) {
         const { data: approvedProfiles, error: profileError } = await supabaseAdmin
             .from('profiles')
             .select('id')
-            .eq('church_id', churchId)
+            .eq('church_id', normChurchId)
             .eq('is_approved', true);
 
         if (profileError) throw profileError;
