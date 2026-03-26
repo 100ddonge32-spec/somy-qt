@@ -927,63 +927,46 @@ export default function App() {
         try {
             console.log('[Push] Registration attempt started...');
 
-            const permission = Notification.permission;
-            if (permission === 'denied') {
-                console.warn('[Push] Permission denied');
-                isSubscribing.current = false;
-                return;
-            }
-
             const VAPID_KEY = 'BCb9VfYqqCOBO2MhVKC65TP2eAQw_bJoFRl4JgqU64ze2AImucB1H6GV1m78F7BuxPaGGRvETl1ACMdkVwTxIKQ';
+            if (permission === 'denied') return false;
 
-            const performSubscribe = async (retryCount = 0): Promise<void> => {
-                // 브라우저 안정화 대기
-                await new Promise(res => setTimeout(res, 3000));
-
-                const reg = await navigator.serviceWorker.ready;
-
+            const performSubscribe = async (retryCount = 0): Promise<boolean> => {
+                await new Promise(res => setTimeout(res, 2000));
                 try {
-                    // [Clean State] 기존 구독 명시적 해제
+                    const reg = await navigator.serviceWorker.ready;
                     const existing = await reg.pushManager.getSubscription();
-                    if (existing) {
-                        console.log('[Push] Found existing subscription, renewing...');
-                        await existing.unsubscribe();
-                    }
+                    if (existing) await existing.unsubscribe();
 
                     const subscription = await reg.pushManager.subscribe({
                         userVisibleOnly: true,
                         applicationServerKey: urlBase64ToUint8Array(VAPID_KEY)
                     });
 
-                    console.log('[Push] SUCCESS!');
                     await fetch('/api/push-subscribe', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ user_id: userId, subscription })
                     });
-                    console.log("✅ 푸시 알림 등록 완료!");
                     return true;
                 } catch (err: any) {
-                    console.error(`[Push] Trial ${retryCount + 1} Error:`, err.name, err.message);
-
                     if (retryCount < 1 && (err.name === 'AbortError' || err.message.includes('service error'))) {
-                        console.warn('[Push] Retrying subscription...');
-                        await new Promise(res => setTimeout(res, 5000));
+                        await new Promise(res => setTimeout(res, 3000));
                         return performSubscribe(retryCount + 1);
                     }
-                    // 무한 리로드는 중단합니다.
-                    throw err;
+                    console.error('[Push Subscription Error]', err);
+                    return false;
                 }
             };
 
-            await performSubscribe();
+            const result = await performSubscribe();
+            return result;
         } catch (error) {
             console.error("❌ 푸시 알림 프로세스 중단:", error);
             return false;
         } finally {
-            setTimeout(() => { isSubscribing.current = false; }, 2000);
+            isSubscribing.current = false;
         }
-    }, []);
+    }, [setShowPushPrompt]);
 
     // [이과장의 배지 시스템] 새로운 글이 있는지 시간을 비교하여 N 배지를 결정합니다.
     const fetchCounseling = useCallback(async () => {
@@ -11058,16 +11041,24 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
                         const userId = user?.id;
                         if (!userId) return;
                         // 프로필 화면에서는 'force'로 바로 시스템 팝업을 띄우거나, 이미 모달이 있으므로 바로 실행
-                        const success = await subscribePush(userId, true);
-                        if (success) {
-                            alert("축하합니다! 이제 실시간 알림을 받으실 수 있습니다. ✅");
-                        } else {
-                            const perm = Notification.permission;
-                            if (perm === 'denied') {
-                                alert("알림 권한이 거부되어 있습니다. 브라우저 설정에서 알림을 허용해 주세요! ⚠️");
+                        try {
+                            const success = await subscribePush(userId, true);
+                            if (success) {
+                                alert("축하합니다! 이제 실시간 알림을 받으실 수 있습니다. ✅");
                             } else {
-                                alert("알림 설정에 실패했습니다. 다시 시도해 주세요. ⚠️");
+                                // subscribePush 내부에서 이미 구체적인 alert를 띄웠을 수 있지만, 
+                                // 아예 도달하지 못한 경우에 대한 최후의 보루
+                                const perm = Notification.permission;
+                                if (perm === 'denied') {
+                                    alert("알림 권한이 거부되어 있습니다. 브라우저 설정에서 알림을 허용해 주세요! ⚠️");
+                                } else if (perm === 'default') {
+                                    // 권한이 거부되지 않았는데 실패했다면 네트워크나 서비스워커 문제입니다.
+                                } else {
+                                    alert("알림 설정 중 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요. ⚠️");
+                                }
                             }
+                        } catch (e: any) {
+                            alert(`알림 설정 실패: ${e.message || '알 수 없는 오류'} ⚠️`);
                         }
                         setIsPushEnabling(false);
                     }}
