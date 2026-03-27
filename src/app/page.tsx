@@ -444,6 +444,7 @@ export default function App() {
     const [editCommentContent, setEditCommentContent] = useState("");
     const [isEditPrivate, setIsEditPrivate] = useState(false);
     const [replyingToCommentId, setReplyingToCommentId] = useState<any>(null);
+    const [replyingToPostId, setReplyingToPostId] = useState<any>(null);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [showNotiList, setShowNotiList] = useState(false);
     const [ccmIndex, setCcmIndex] = useState<number | null>(null);
@@ -4497,6 +4498,7 @@ export default function App() {
                         setCommentInputs((prev: any) => ({ ...prev, [postId]: "" }));
                         setCommentPrivateStates((prev: any) => ({ ...prev, [postId]: false }));
                         setReplyingToCommentId(null); // ✅ 상태 초기화
+                        setReplyingToPostId(null);
                     } else {
                         const errData = await res.json().catch(() => ({}));
                         alert("댓글 등록에 실패했어요: " + (errData.error || "알 수 없는 오류"));
@@ -4906,7 +4908,7 @@ export default function App() {
                                                                                 <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                                                     {comment.created_at ? new Date(comment.created_at).toLocaleTimeString() : '방금 전'}
                                                                                     {editingCommentId !== comment.id && (
-                                                                                        <span onClick={() => { setReplyingToCommentId(comment.id); setCommentInputs({ ...commentInputs, [post.id]: `@${comment.user_name} ` }); }} style={{ cursor: 'pointer', color: '#B8924A', fontWeight: 700 }}>답글</span>
+                                                                                        <span onClick={() => { setReplyingToCommentId(comment.id); setReplyingToPostId(post.id); setCommentInputs({ ...commentInputs, [post.id]: `@${comment.user_name} ` }); }} style={{ cursor: 'pointer', color: '#B8924A', fontWeight: 700 }}>답글</span>
                                                                                     )}
                                                                                     {user?.id === comment.user_id && editingCommentId !== comment.id && (
                                                                                         <button onClick={() => { setEditingCommentId(comment.id); setEditCommentContent(comment.content); setIsEditPrivate(!!comment.is_private); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#B8924A', padding: 0, fontWeight: 600 }}>수정</button>
@@ -5000,12 +5002,12 @@ export default function App() {
                                                     </div>
                                                     
                                                     {/* 답글 안내 문구 */}
-                                                    {replyingToCommentId && (
+                                                    {replyingToCommentId && replyingToPostId === post.id && (
                                                         <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFF8E1', padding: '8px 12px', borderRadius: '10px', border: '1px solid #FFE082' }}>
                                                             <span style={{ fontSize: '12px', color: '#856404', fontWeight: 700 }}>
                                                                 💬 답글 남기는 중...
                                                             </span>
-                                                            <button onClick={() => { setReplyingToCommentId(null); setCommentInputs({ ...commentInputs, [post.id]: "" }); }} style={{ background: 'none', border: 'none', color: '#A57224', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>취소</button>
+                                                            <button onClick={() => { setReplyingToCommentId(null); setReplyingToPostId(null); setCommentInputs({ ...commentInputs, [post.id]: "" }); }} style={{ background: 'none', border: 'none', color: '#A57224', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>취소</button>
                                                         </div>
                                                     )}
 
@@ -5155,6 +5157,7 @@ export default function App() {
                         setCommentInputs((prev: any) => ({ ...prev, [diaryId]: "" }));
                         setCommentPrivateStates((prev: any) => ({ ...prev, [diaryId]: false }));
                         setReplyingToCommentId(null); // ✅ 초기화
+                        setReplyingToPostId(null);
                     } else {
                         const errData = await res.json().catch(() => ({}));
                         alert("댓글 등록에 실패했어요: " + (errData.error || "알 수 없는 오류"));
@@ -5479,7 +5482,7 @@ export default function App() {
                                                                             <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                                                 {comment.created_at ? new Date(comment.created_at).toLocaleTimeString() : '방금 전'}
                                                                                 {editingCommentId !== comment.id && (
-                                                                                    <span onClick={() => { setReplyingToCommentId(comment.id); setCommentInputs({ ...commentInputs, [diary.id]: `@${comment.user_name} ` }); }} style={{ cursor: 'pointer', color: '#E07A5F', fontWeight: 700 }}>답글</span>
+                                                                                    <span onClick={() => { setReplyingToCommentId(comment.id); setReplyingToPostId(diary.id); setCommentInputs({ ...commentInputs, [diary.id]: `@${comment.user_name} ` }); }} style={{ cursor: 'pointer', color: '#E07A5F', fontWeight: 700 }}>답글</span>
                                                                                 )}
                                                                                 {user?.id === comment.user_id && editingCommentId !== comment.id && (
                                                                                     <button onClick={() => { setEditingCommentId(comment.id); setEditCommentContent(comment.content); setIsEditPrivate(!!comment.is_private); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#B8924A', padding: 0, fontWeight: 600 }}>수정</button>
@@ -5561,12 +5564,12 @@ export default function App() {
                                                 </div>
 
                                                 {/* 답글 안내 문구 */}
-                                                {replyingToCommentId && (
+                                                {replyingToCommentId && replyingToPostId === diary.id && (
                                                     <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFF8E1', padding: '8px 12px', borderRadius: '10px', border: '1px solid #FFE082' }}>
                                                         <span style={{ fontSize: '12px', color: '#856404', fontWeight: 700 }}>
                                                             💬 답글 남기는 중...
                                                         </span>
-                                                        <button onClick={() => { setReplyingToCommentId(null); setCommentInputs({ ...commentInputs, [diary.id]: "" }); }} style={{ background: 'none', border: 'none', color: '#A57224', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>취소</button>
+                                                        <button onClick={() => { setReplyingToCommentId(null); setReplyingToPostId(null); setCommentInputs({ ...commentInputs, [diary.id]: "" }); }} style={{ background: 'none', border: 'none', color: '#A57224', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>취소</button>
                                                     </div>
                                                 )}
 
