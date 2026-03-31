@@ -8335,6 +8335,42 @@ export default function App() {
                                 ) : adminTab === 'settings' ? (
                                     <>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                            {isSuperAdmin && (
+                                                <div style={{
+                                                    background: '#FFF9C4',
+                                                    padding: '12px 16px',
+                                                    borderRadius: '15px',
+                                                    border: '1px solid #FFF176',
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center',
+                                                    marginBottom: '5px'
+                                                }}>
+                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                        <span style={{ fontSize: '12px', fontWeight: 800, color: '#856404' }}>🔗 교회 접속 주소</span>
+                                                        <span style={{ fontSize: '10px', color: '#B8924A' }}>{window.location.origin}{churchId === 'somy-main' ? '' : `/?church_id=${churchId}`}</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => {
+                                                            const link = window.location.origin + (churchId === 'somy-main' ? '/' : `/?church_id=${churchId}`);
+                                                            navigator.clipboard.writeText(link).then(() => alert('교회 접속 주소가 복사되었습니다! 🔗'));
+                                                        }}
+                                                        style={{
+                                                            padding: '6px 12px',
+                                                            background: '#D4AF37',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            borderRadius: '8px',
+                                                            fontSize: '11px',
+                                                            fontWeight: 800,
+                                                            cursor: 'pointer',
+                                                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                        }}
+                                                    >
+                                                        주소 복사
+                                                    </button>
+                                                </div>
+                                            )}
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                 <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>교회 이름</label>
                                                 <input type="text" value={settingsForm.church_name} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, church_name: e.target.value }))} placeholder="앱 메인에 표시될 교회 이름 (예: 샘플교회)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
@@ -9943,6 +9979,15 @@ export default function App() {
                                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                                                                             <span style={{ fontSize: '13px', fontWeight: 800, color: '#D4AF37', whiteSpace: 'nowrap' }}>{ch.count}명</span>
                                                                             <div style={{ display: 'flex', gap: '4px' }}>
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        const link = window.location.origin + (ch.church_id === 'somy-main' ? '/' : `/?church_id=${ch.church_id}`);
+                                                                                        navigator.clipboard.writeText(link).then(() => alert(`${ch.church_name || ch.church_id} 접속 주소가 복사되었습니다! 🔗`));
+                                                                                    }}
+                                                                                    style={{ padding: '6px 10px', background: '#F5F5F3', color: '#555', border: '1px solid #DDD', borderRadius: '8px', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}
+                                                                                >
+                                                                                    복사
+                                                                                </button>
                                                                                 <a href={ch.church_id === 'somy-main' ? '/' : `/?church_id=${ch.church_id}`} target="_blank" title="새 탭에서 보기" style={{ padding: '6px 10px', background: '#E3F2FD', color: '#1565C0', textDecoration: 'none', borderRadius: '8px', fontSize: '10px', fontWeight: 800, display: 'inline-block' }}>조회</a>
                                                                                 <button onClick={() => {
                                                                                     if (confirm(`${ch.church_id} 교회를 현재 화면에서 관리하시겠습니까?`)) {
