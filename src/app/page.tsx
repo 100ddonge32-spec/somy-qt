@@ -460,6 +460,8 @@ export default function App() {
     const [isBookUploading, setIsBookUploading] = useState(false); // ✅ 책 이미지 업로드 중
     const [isBookAiLoading, setIsBookAiLoading] = useState(false); // ✅ 책 소개 AI 생성 중
     const [isPosterUploading, setIsPosterUploading] = useState(false); // ✅ 포스터 업로드 중
+    const [pastoralInsights, setPastoralInsights] = useState<string | null>(null); // ✅ 목회 인사이트 (AI 분석)
+    const [isPastoralLoading, setIsPastoralLoading] = useState(false); // ✅ 목회 인사이트 로딩 중
     const [showEventPopup, setShowEventPopup] = useState(false); // ✅ 이벤트 팝업 노출 여부 (유저 클라이언트용)
     const [isManualSermon, setIsManualSermon] = useState(false); // ✅ 수동 설교 지정 모드 여부
     const [hasNewCommunity, setHasNewCommunity] = useState(false);
@@ -532,6 +534,24 @@ export default function App() {
         qt_notification_time: '08:00', // [추가] 큐티 알림 시간 (기본값 8시)
     });
     const [isGeneratingColumn, setIsGeneratingColumn] = useState(false);
+
+    const fetchPastoralInsights = async () => {
+        setAdminTab('pastoralInsights');
+        setShowSettings(true);
+        setIsPastoralLoading(true);
+        setPastoralInsights(null);
+        try {
+            const res = await fetch(`/api/admin/pastoral-insights?church_id=${churchId}&user_id=${user?.id}`);
+            const data = await res.json();
+            if (data.insights) setPastoralInsights(data.insights);
+            else if (data.error) setPastoralInsights(`⚠️ 오류: ${data.error}`);
+            else setPastoralInsights("활동 데이터가 부족하여 분석을 생성할 수 없습니다.");
+        } catch (e) {
+            setPastoralInsights("인사이트를 가져오는 중 오류가 발생했습니다.");
+        } finally {
+            setIsPastoralLoading(false);
+        }
+    };
 
     // [최적화] 커스텀 CCM 목록 우선순위 결정 로직
     const activeCcmList = (churchSettings?.custom_ccm_list && Array.isArray(churchSettings.custom_ccm_list) && churchSettings.custom_ccm_list.length > 0)
@@ -1591,7 +1611,7 @@ export default function App() {
         }
     };
     const [settingsSaving, setSettingsSaving] = useState(false);
-    const [adminTab, setAdminTab] = useState<"settings" | "members" | "master" | "stats" | "reset" | "admins" | "community" | "thanksgiving" | "activities" | "gallery">("settings");
+    const [adminTab, setAdminTab] = useState<"settings" | "members" | "master" | "stats" | "reset" | "admins" | "community" | "thanksgiving" | "activities" | "gallery" | "pastoralInsights">("settings");
 
     const [isHistoryMode, setIsHistoryMode] = useState(false);
     const [historyEditRecord, setHistoryEditRecord] = useState<any>(null);
@@ -6198,6 +6218,14 @@ export default function App() {
                             </button>
 
 
+                            <button onClick={fetchPastoralInsights} style={{ padding: '24px 8px', background: 'linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(46,125,50,0.1)' }}>
+                                <div style={{ width: '40px', height: '40px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>💡</div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#2E7D32', marginBottom: '2px', wordBreak: 'keep-all' }}>목회 인사이트</div>
+                                    <div style={{ fontSize: '9px', color: '#2E7D32', wordBreak: 'keep-all' }}>AI 성도 분석</div>
+                                </div>
+                            </button>
+
                             <button onClick={() => setView('brandGuide')} style={{ padding: '16px 8px', background: 'linear-gradient(135deg, #FFF9C4 0%, #FFF176 100%)', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(212,175,55,0.15)' }}>
                                 <div style={{ width: '40px', height: '40px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>✨</div>
                                 <div style={{ textAlign: 'center' }}>
@@ -8205,7 +8233,7 @@ export default function App() {
                             {/* 고정되는 헤더 영역 */}
                             <div style={{ padding: '28px 28px 15px 28px', flexShrink: 0, borderBottom: '1px solid #F0F0F0', zIndex: 10 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>⚙️ {adminTab === 'settings' ? '교회 설정' : adminTab === 'members' ? '성도 관리' : adminTab === 'community' ? '은혜나눔 관리' : adminTab === 'thanksgiving' ? '감사일기 관리' : adminTab === 'stats' ? '활동 통계' : adminTab === 'admins' ? '권한 관리' : adminTab === 'activities' ? '활동 내역' : adminTab === 'reset' ? '데이터 초기화' : '슈퍼 관리'}</h2>
+                                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>⚙️ {adminTab === 'settings' ? '교회 설정' : adminTab === 'members' ? '성도 관리' : adminTab === 'community' ? '은혜나눔 관리' : adminTab === 'thanksgiving' ? '감사일기 관리' : adminTab === 'stats' ? '활동 통계' : adminTab === 'pastoralInsights' ? '목회 영성 인사이트' : adminTab === 'admins' ? '권한 관리' : adminTab === 'activities' ? '활동 내역' : adminTab === 'reset' ? '데이터 초기화' : '슈퍼 관리'}</h2>
                                     <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>X</button>
                                 </div>
 
@@ -8231,6 +8259,7 @@ export default function App() {
                                         } catch (e) { }
                                         setIsAdminsLoading(false);
                                     }} style={{ flex: '0 0 auto', padding: '8px 12px', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 600, background: adminTab === 'stats' ? 'white' : 'transparent', boxShadow: adminTab === 'stats' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'stats' ? '#333' : '#777', whiteSpace: 'nowrap' }}>📊 통계</button>
+                                    <button onClick={fetchPastoralInsights} style={{ flex: '0 0 auto', padding: '8px 12px', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 600, background: adminTab === 'pastoralInsights' ? 'white' : 'transparent', boxShadow: adminTab === 'pastoralInsights' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'pastoralInsights' ? '#333' : '#777', whiteSpace: 'nowrap' }}>💡 인사이트</button>
                                     <button onClick={async () => {
                                         setAdminTab('gallery');
                                         fetchGalleryPosts();
@@ -8265,7 +8294,45 @@ export default function App() {
                                     </div>
                                 )}
 
-                                {adminTab === 'settings' ? (
+                                {adminTab === 'pastoralInsights' ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fade-in 0.4s ease-out' }}>
+                                        <div style={{ background: 'linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)', padding: '20px', borderRadius: '20px', textAlign: 'center', border: '1px solid #C8E6C9' }}>
+                                            <div style={{ fontSize: '24px', marginBottom: '8px' }}>💡</div>
+                                            <div style={{ fontSize: '15px', fontWeight: 800, color: '#2E7D32', marginBottom: '4px' }}>AI 목회 인사이트 리포트</div>
+                                            <div style={{ fontSize: '11px', color: '#666' }}>성도들의 최근 14일 활동 데이터를 분석합니다.</div>
+                                        </div>
+
+                                        {isPastoralLoading ? (
+                                            <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+                                                <div style={{ width: '40px', height: '40px', border: '4px solid #F3F3F3', borderTop: '4px solid #2E7D32', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }}></div>
+                                                <div style={{ fontSize: '14px', color: '#666', fontWeight: 600 }}>성도들의 마음을 읽는 중입니다...</div>
+                                                <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>잠시만 기다려주세요. 약 10~20초 정도 소요될 수 있습니다.</div>
+                                            </div>
+                                        ) : (
+                                            <div style={{ background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
+                                                <div style={{ 
+                                                    fontSize: '14px', 
+                                                    color: '#333', 
+                                                    lineHeight: 1.7, 
+                                                    whiteSpace: 'pre-wrap',
+                                                    wordBreak: 'keep-all'
+                                                }}>
+                                                    {pastoralInsights || "분석된 내용이 없습니다."}
+                                                </div>
+                                                <button 
+                                                    onClick={fetchPastoralInsights}
+                                                    style={{ marginTop: '20px', width: '100%', padding: '12px', background: 'white', border: '1px solid #EEE', borderRadius: '12px', fontSize: '13px', fontWeight: 700, color: '#666', cursor: 'pointer' }}
+                                                >
+                                                    새로 분석하기
+                                                </button>
+                                            </div>
+                                        )}
+                                        
+                                        <div style={{ fontSize: '11px', color: '#999', padding: '15px', background: '#F5F5F5', borderRadius: '12px', lineHeight: 1.5 }}>
+                                            ⚠️ 본 분석은 성도들의 익명성을 보장하며, 전체적인 영적 분위기와 주요 키워드를 파악하는 용도로 사용해 주세요. AI의 제언은 목회적 판단의 참고 자료입니다.
+                                        </div>
+                                    </div>
+                                ) : adminTab === 'settings' ? (
                                     <>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
