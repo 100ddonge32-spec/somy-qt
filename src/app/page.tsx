@@ -11466,8 +11466,9 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
             const data = await res.json();
             if (Array.isArray(data)) {
                 setResults(data);
+                console.log(`[MemberSearch] Loaded ${data.length} members.`);
             }
-        } catch (e) { console.error("검색 실패:", e); }
+        } catch (e) { console.error("성도 검색 실패:", e); }
         finally { setIsSearching(false); }
     };
 
@@ -11515,7 +11516,6 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
         }
     };
 
-
     // [핀셋수정] 필터링된 결과 계산 시 데이터 무결성 보호 강화
     const filteredResults = useMemo(() => {
         if (!results || !Array.isArray(results)) return [];
@@ -11553,9 +11553,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
         });
     }, [filteredResults, adminFilter]);
 
-    console.log(`[MemberSearch] Results: ${results.length}, Filtered: ${finalResults.length}`);
-
-    // [최적화] 상태 변경에 따른 잦은 리렌더링 방지
+    // [최적화] 생일자 로직
     const birthdayMembers = useMemo(() => {
         const kstBase = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
         const todaySolarMMDD = kstBase.toISOString().slice(5, 10);
@@ -11565,37 +11563,11 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
         });
     }, [finalResults]);
 
-    const handleSearch = async () => {
-        if (!searchTerm.trim()) {
-            fetchInitial();
-            return;
-        }
-        setIsSearching(true);
-        const isAdminQuery = isAdmin || isSuperAdmin;
-        const apiUrl = `/api/members?church_id=${churchId}&query=${encodeURIComponent(searchTerm)}${isAdminQuery ? '&admin=true' : ''}`;
-        console.log(`[MemberSearch] Searching members from: ${apiUrl}`);
-        try {
-            const res = await fetch(apiUrl, { cache: 'no-store' });
-            const data = await res.json();
-            if (Array.isArray(data)) {
-                setResults(data);
-                console.log(`[MemberSearch] Loaded ${data.length} members.`);
-            }
-        } catch (e) { console.error("성도 검색 실패:", e); }
-        finally { setIsSearching(false); }
-    };
-
-    const handleClearSearch = () => {
-        setSearchTerm("");
-        fetchInitial();
-    };
-
-
     const handleDelete = async () => {
         if (selectedIds.length === 0) return;
         if (!confirm(`${selectedIds.length}명의 데이터를 정말 삭제하시겠습니까?`)) return;
 
-        setIsSaving(false);
+        setIsSaving(true);
         try {
             const { error } = await supabase.from('profiles').delete().in('id', selectedIds);
             if (error) throw error;
@@ -11603,6 +11575,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
             setSelectedIds([]);
             fetchInitial();
         } catch (e) { alert('삭제 실패'); }
+        finally { setIsSaving(false); }
     };
 
     const handleBulkAuth = async (isAuth: boolean) => {
@@ -11619,6 +11592,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
         } catch (e) { alert('변경 실패'); }
         finally { setIsSaving(false); }
     };
+
 
     return (
         <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", padding: "20px", ...baseFont }}>
