@@ -4368,6 +4368,70 @@ export default function App() {
                     ) : (
                         <div style={{ padding: "24px 20px", display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
+                            {/* 정책 안내 */}
+                            <div style={{ background: '#FDFCFB', borderRadius: '16px', padding: '15px', border: '1px solid #F0ECE4', marginBottom: '10px' }}>
+                                <div style={{ fontSize: '13px', color: '#666', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span>💡</span> 랭킹은 매월 1일 오전 5시에 자동으로 초기화됩니다.
+                                </div>
+                            </div>
+
+                            {/* 우승자 축하 모달 / 안내 (1일 9시 이후) */}
+                            {stats?.previousMonthRanking && stats?.isFirstDay && stats?.currentHour >= 9 && (
+                                <div style={{ background: 'linear-gradient(135deg, #FFF9C4, #FFF59D)', borderRadius: '20px', padding: '24px', border: '1px solid #FBC02D', marginBottom: '20px', textAlign: 'center', boxShadow: '0 10px 30px rgba(251,192,45,0.2)', position: 'relative', overflow: 'hidden' }}>
+                                    <div style={{ position: 'absolute', top: '-10px', right: '-10px', fontSize: '60px', opacity: 0.1 }}>🏆</div>
+                                    <h2 style={{ margin: '0 0 10px 0', fontSize: '18px', fontWeight: 800, color: '#F57F17' }}>🎊 지난달 묵상 우승자 축하 🎊</h2>
+                                    <p style={{ fontSize: '13px', color: '#795548', marginBottom: '20px' }}>성실하게 묵상에 참여해주신 모든 성도님들께 감사드립니다!</p>
+                                    
+                                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '15px', margin: '20px 0' }}>
+                                        {/* 2위 */}
+                                        {stats.previousMonthRanking[1] && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '80px' }}>
+                                                <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#EEE', marginBottom: '8px', border: '3px solid #E0E0E0', overflow: 'hidden' }}>
+                                                    {stats.previousMonthRanking[1].avatar ? <img src={stats.previousMonthRanking[1].avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🥈</div>}
+                                                </div>
+                                                <div style={{ fontSize: '12px', fontWeight: 700, color: '#333' }}>{stats.previousMonthRanking[1].name}</div>
+                                                <div style={{ fontSize: '11px', color: '#999' }}>{stats.previousMonthRanking[1].count}회</div>
+                                            </div>
+                                        )}
+                                        {/* 1위 */}
+                                        {stats.previousMonthRanking[0] && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100px', transform: 'translateY(-10px)' }}>
+                                                <div style={{ position: 'absolute', top: '-25px', fontSize: '30px' }}>👑</div>
+                                                <div style={{ width: '70px', height: '70px', borderRadius: '50%', background: '#FFF7E0', marginBottom: '8px', border: '4px solid #FBC02D', overflow: 'hidden', boxShadow: '0 4px 15px rgba(251,192,45,0.4)' }}>
+                                                    {stats.previousMonthRanking[0].avatar ? <img src={stats.previousMonthRanking[0].avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '30px' }}>🥇</div>}
+                                                </div>
+                                                <div style={{ fontSize: '14px', fontWeight: 900, color: '#F57F17' }}>{stats.previousMonthRanking[0].name}</div>
+                                                <div style={{ fontSize: '12px', fontWeight: 800, color: '#F9A825' }}>{stats.previousMonthRanking[0].count}회</div>
+                                            </div>
+                                        )}
+                                        {/* 3위 */}
+                                        {stats.previousMonthRanking[2] && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '80px' }}>
+                                                <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#EEE', marginBottom: '8px', border: '3px solid #CD7F32', overflow: 'hidden' }}>
+                                                    {stats.previousMonthRanking[2].avatar ? <img src={stats.previousMonthRanking[2].avatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🥉</div>}
+                                                </div>
+                                                <div style={{ fontSize: '12px', fontWeight: 700, color: '#333' }}>{stats.previousMonthRanking[2].name}</div>
+                                                <div style={{ fontSize: '11px', color: '#999' }}>{stats.previousMonthRanking[2].count}회</div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* 4위 이하 전체 명단 기록 레이아웃 */}
+                                    {stats.previousMonthRanking.length > 3 && (
+                                        <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.6)', borderRadius: '12px', textAlign: 'left' }}>
+                                            <div style={{ fontSize: '12px', fontWeight: 800, color: '#666', marginBottom: '10px' }}>✨ 4위 이하 전체 명단</div>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                                {stats.previousMonthRanking.slice(3, 100).map((r: any, idx: number) => (
+                                                    <div key={idx} style={{ fontSize: '11px', color: '#777', background: 'white', padding: '4px 10px', borderRadius: '15px', border: '1px solid #EEE' }}>
+                                                        <span style={{ fontWeight: 800, marginRight: '3px' }}>{idx + 4}위</span> {r.name}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                             {/* 전체 통계 카드 */}
                             <div style={{ display: 'flex', gap: '12px' }}>
                                 <div style={{ flex: 1, background: 'linear-gradient(135deg, #D4AF37, #B8924A)', borderRadius: '16px', padding: '20px', color: 'white', textAlign: 'center' }}>
@@ -9588,7 +9652,19 @@ export default function App() {
                                                     </div>
 
                                                     <div style={{ marginTop: '10px' }}>
-                                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '15px' }}>✨ 이달의 묵상 상위 성도 (TOP 10)</div>
+                                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '4px' }}>✨ 이달의 묵상 성도 명단</div>
+                                                        <div style={{ fontSize: '11px', color: '#999', marginBottom: '12px' }}>💡 랭킹은 매월 1일 오전 5시에 자동으로 초기화됩니다.</div>
+                                                        {stats?.previousMonthRanking && (
+                                                            <div style={{ background: '#FFFDF0', border: '1px solid #FFE082', borderRadius: '12px', padding: '12px', marginBottom: '15px' }}>
+                                                                <div style={{ fontSize: '12px', fontWeight: 800, color: '#F57C00', marginBottom: '6px' }}>👑 지난달 최종 랭킹 결과</div>
+                                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                                                    {stats.previousMonthRanking.slice(0, 5).map((r: any, i: number) => (
+                                                                        <span key={i} style={{ fontSize: '10px', background: 'white', padding: '2px 8px', borderRadius: '10px', border: '1px solid #EEE' }}>{i+1}위 {r.name}</span>
+                                                                    ))}
+                                                                    {stats.previousMonthRanking.length > 5 && <span style={{ fontSize: '10px', color: '#999' }}>...외 {stats.previousMonthRanking.length - 5}명</span>}
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                         {stats.ranking.length === 0 ? (
                                                             <div style={{ fontSize: '13px', color: '#999', textAlign: 'center', padding: '20px 0' }}>아직 이번 달 기록이 없습니다.</div>
                                                         ) : (

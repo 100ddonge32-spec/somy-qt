@@ -72,14 +72,31 @@ export async function GET(req: NextRequest) {
         }
 
         const today = getKoreaDateString();
-        const firstOfMonth = searchParams.get('month') 
-            ? `${searchParams.get('month')}-01` 
-            : today.slice(0, 7) + '-01';
-
         const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
-        const isFirstDay = now.getDate() === 1;
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1; // 1-12
+        const currentDate = now.getDate();
+        const currentHour = now.getHours();
 
-        console.log(`[Stats API] CIDs: ${cids}, Month Start: ${firstOfMonth}, isFirstDay: ${isFirstDay}`);
+        // 랭킹 초기화 시간 설정: 매월 1일 오전 5시
+        const RESET_HOUR = 5;
+        const isResetTimePassed = currentDate > 1 || (currentDate === 1 && currentHour >= RESET_HOUR);
+        
+        // 실제 통계에 사용될 시작일 (오전 5시 이전이면 지난달 말일처럼 취급)
+        let firstOfMonth: string;
+        if (isResetTimePassed) {
+            // 이번 달 1일 오전 5시 이후 -> 이번 달 데이터 집계
+            firstOfMonth = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
+        } else {
+            // 이번 달 1일 오전 5시 이전 -> 지난 달 데이터 집계 유지
+            const prevMonthDate = new Date(now);
+            prevMonthDate.setMonth(prevMonthDate.getMonth() - 1);
+            firstOfMonth = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}-01`;
+        }
+
+        const isFirstDay = currentDate === 1;
+
+        console.log(`[Stats API] CIDs: ${cids}, Month Start: ${firstOfMonth}, isFirstDay: ${isFirstDay}, Hour: ${currentHour}`);
 
         // 1. 해당 교회의 사용자 ID 목록 먼저 가져오기 (매우 안전한 방식)
         const { data: churchProfiles } = await supabaseAdmin
@@ -273,26 +290,52 @@ export async function GET(req: NextRequest) {
 
         // 6. 랭킹 생성 및 정렬
         const ranking = Object.values(userStats)
-            .map(u => {
-                const newDatesCount = Array.from(u.dates).filter(d => {
-                    if (u.baseCount > 0) return d > '2026-03-14';
-                    return true;
-                }).length;
-
-                return {
-                    name: u.name,
-                    avatar: u.avatar,
-                    count: u.baseCount + newDatesCount
-                };
-            })
+            .map(u => ({
+                name: u.name,
+                avatar: u.avatar,
+                count: u.baseCount + Array.from(u.dates).length
+            }))
             .sort((a, b) => {
                 if (b.count !== a.count) return b.count - a.count;
                 return a.name.localeCompare(b.name);
             })
             .slice(0, 100);
 
-        // 7. 이전 달 우승자 (미사용 - 원상복구)
+        // 7. [추가] 매월 1일 오전 9시 이후 우승자 축하를 위한 이전 달 데이터 산출
         let previousMonthRanking = null;
+        if (isFirstDay && currentHour >= 9) {
+            console.log("[Stats API] Calculating Previous Month Winners...");
+            const prevMonthDate = new Date(now);
+            prevMonthDate.setMonth(prevMonthDate.getMonth() - 1);
+            const prevMonthStart = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}-01`;
+            const prevMonthEnd = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
+
+            const { data: prevCompletions } = await supabaseAdmin.from('qt_completions').select('*').gte('completed_date', prevMonthStart).lt('completed_date', prevMonthEnd).in('user_id', churchUserIds);
+            const { data: prevPosts } = await supabaseAdmin.from('community_posts').select('user_name, avatar_url, created_at, is_qt').in('church_id', cids).gte('created_at', prevMonthStart).lt('created_at', prevMonthEnd);
+            
+            const prevStats: Record<string, { name: string; avatar: string | null; dates: Set<string> }> = {};
+            (prevCompletions || []).forEach(c => {
+                const name = (c.user_name || nameMap[c.user_id] || '익명').trim();
+                if (!prevStats[name]) prevStats[name] = { name, avatar: c.avatar_url, dates: new Set() };
+                prevStats[name].dates.add(c.completed_date);
+            });
+            (prevPosts || []).filter(p => (p.is_qt === true || p.is_qt === 'true' || p.is_qt === 1)).forEach(p => {
+                const name = (p.user_name || '익명').trim();
+                const kstDate = new Date(new Date(p.created_at).getTime() + 9 * 60 * 60 * 1000);
+                const dateStr = kstDate.toISOString().split('T')[0];
+                if (!prevStats[name]) prevStats[name] = { name, avatar: p.avatar_url, dates: new Set() };
+                prevStats[name].dates.add(dateStr);
+            });
+
+            previousMonthRanking = Object.values(prevStats)
+                .map(u => ({
+                    name: u.name,
+                    avatar: u.avatar,
+                    count: u.dates.size
+                }))
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 100);
+        }
 
         const result = {
             today: {
@@ -302,6 +345,7 @@ export async function GET(req: NextRequest) {
             ranking,
             previousMonthRanking,
             isFirstDay,
+            currentHour,
             totalCompletions: ranking.reduce((acc: number, cur: any) => acc + cur.count, 0),
             loginStats: {
                 trends: formattedTrends,
@@ -312,13 +356,6 @@ export async function GET(req: NextRequest) {
                     userId: l.user_id,
                     activityType: l.activity_type
                 }))
-            },
-            _debug: {
-                koreaTime: today,
-                completionsCount: allCompletions.length,
-                qtPostsCount: qtPosts.length,
-                uniqueUsers: Object.keys(userStats).length,
-                loginLogsCount: (loginLogs || []).length
             }
         };
 
