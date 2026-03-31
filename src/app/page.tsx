@@ -11438,13 +11438,16 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
 
     useEffect(() => {
         fetchInitial();
-        if (isSuperAdmin && onRefreshAdmins && (!allAdminList || allAdminList.length === 0)) {
+    }, [churchId, isAdmin, isSuperAdmin]);
+
+    // [최적화] 관리자 명단 로드는 별도 useEffect로 분리하고 로딩 상태를 체크하여 무한 루프를 방지합니다.
+    useEffect(() => {
+        const canFetchAdmins = isSuperAdmin || isMainAdmin;
+        if (canFetchAdmins && onRefreshAdmins && !isAdminsLoading && (!allAdminList || allAdminList.length === 0)) {
+            console.log("[MemberSearch] Triggering admin list refresh...");
             onRefreshAdmins();
         }
-        if (allAdminList && allAdminList.length > 0) {
-            console.log("MemberSearchView - allAdminList sample:", allAdminList[0]);
-        }
-    }, [churchId, isAdmin, isSuperAdmin, allAdminList]);
+    }, [isSuperAdmin, isMainAdmin, allAdminList, isAdminsLoading]);
 
     const handleSearch = async () => {
         if (!searchTerm.trim()) {
@@ -11513,13 +11516,17 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
 
     const filteredResults = results.map(m => {
         const mEmail = (m.email || "").toLowerCase().trim();
+        const mPhone = (m.phone || "").replace(/[^0-9]/g, "");
+
         const isAdminFound = (allAdminList || []).some((a: any) => {
             const aEmail = (a.email || "").toLowerCase().trim();
-            if (mEmail && aEmail && mEmail === aEmail) {
-                console.log(`[AdminMatch] YES: ${m.full_name} (${mEmail})`);
-                return true;
-            }
-            return false;
+            const aPhone = (a.phone || "").replace(/[^0-9]/g, "");
+            
+            // 이메일 또는 전화번호 중 하나라도 일치하면 관리자로 간주
+            const emailMatch = mEmail && aEmail && mEmail === aEmail;
+            const phoneMatch = mPhone && aPhone && mPhone === aPhone;
+            
+            return emailMatch || phoneMatch;
         });
         return {
             ...m,
@@ -11783,7 +11790,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
                                 {member.is_system_admin && (
                                     <div style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '10px', background: '#333', color: 'white', padding: '3px 8px', borderRadius: '6px', fontWeight: 800 }}>👑 관리자</div>
                                 )}
-                                {true && (
+                                {isAdmin && (
                                     <div
                                         onClick={(e) => {
                                             e.stopPropagation();
