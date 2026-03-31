@@ -42,9 +42,17 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { user_id, user_name, church_id, content } = body;
 
+        // [이름 복원] user_name이 숫자로 오거나 비어있는 경우 DB 프로필에서 성함 조회
+        let finalUserName = user_name;
+        if (!finalUserName || /^[0-9]+$/.test(String(finalUserName)) || String(finalUserName).length > 20) {
+            const { data: profile } = await supabaseAdmin.from('profiles').select('full_name').eq('id', user_id).single();
+            if (profile?.full_name) finalUserName = profile.full_name;
+            else if (!finalUserName) finalUserName = '성도';
+        }
+
         const { data, error } = await supabaseAdmin
             .from('counseling_requests')
-            .insert([{ user_id, user_name, church_id: church_id || 'jesus-in', content }])
+            .insert([{ user_id, user_name: finalUserName, church_id: church_id || 'jesus-in', content }])
             .select()
             .single();
 
@@ -83,7 +91,7 @@ export async function POST(req: NextRequest) {
                 // 내부 알림함 저장 (여기가 채워져야 'N' 표기가 나타남)
                 await supabaseAdmin.from('notifications').insert([{
                     user_id: p.id,
-                    actor_name: user_name,
+                    actor_name: finalUserName,
                     type: 'counseling_req',
                     post_id: data.id,
                     is_read: false
@@ -97,7 +105,7 @@ export async function POST(req: NextRequest) {
                         try {
                             const payload = JSON.stringify({
                                 title: '🙏 새 상담/기도 요청',
-                                body: `${user_name} 성도님의 요청이 도착했습니다.`,
+                                body: `${finalUserName} 성도님의 요청이 도착했습니다.`,
                                 url: '/?view=counseling',
                                 userId: p.id
                             });
@@ -121,6 +129,9 @@ export async function PATCH(req: NextRequest) {
         const body = await req.json();
         const { id, reply, user_reply, content, admin_name, user_name, overwrite } = body;
 
+        // [이름 복원] user_name이 숫자로 오거나 비어있는 경우 DB 프로필에서 성함 조회
+        let finalUserName = user_name;
+
         // 기존 데이터 가져오기 (추가 답글인 경우를 위해) - user_id, church_id 포함해서 가져옴
         const { data: existing, error: fetchError } = await supabaseAdmin
             .from('counseling_requests')
@@ -131,6 +142,12 @@ export async function PATCH(req: NextRequest) {
         if (fetchError) {
             console.error("[Counseling PATCH] Fetch Error:", fetchError);
             throw fetchError;
+        }
+
+        if (user_reply && (!finalUserName || /^[0-9]+$/.test(String(finalUserName)) || String(finalUserName).length > 20)) {
+            const { data: profile } = await supabaseAdmin.from('profiles').select('full_name').eq('id', existing.user_id).single();
+            if (profile?.full_name) finalUserName = profile.full_name;
+            else if (!finalUserName) finalUserName = '성도';
         }
 
         const updateData: any = {};
@@ -220,7 +237,7 @@ export async function PATCH(req: NextRequest) {
                     // 내부 알림함 저장 (N 표기 발생 지점)
                     await supabaseAdmin.from('notifications').insert([{
                         user_id: p.id,
-                        actor_name: user_name || '성도',
+                        actor_name: finalUserName || '성도',
                         type: 'counseling_user_reply',
                         post_id: data.id,
                         is_read: false
@@ -233,7 +250,7 @@ export async function PATCH(req: NextRequest) {
                             try {
                                 const payload = JSON.stringify({
                                     title: '🙏 상담/기도 추가 답글',
-                                    body: `${user_name || '성도'}님의 추가 답글이 도착했습니다.`,
+                                    body: `${finalUserName || '성도'}님의 추가 답글이 도착했습니다.`,
                                     url: '/?view=counseling',
                                     userId: p.id
                                 });

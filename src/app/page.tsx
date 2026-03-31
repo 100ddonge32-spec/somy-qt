@@ -7103,7 +7103,16 @@ export default function App() {
             if (n.type === 'counseling_req' || n.type === 'counseling_user_reply') return isMainAdmin;
             return true;
         });
-        const allNotis = [...virtualBirthNotis, ...[...filteredNotis].reverse()];
+        const allNotis = [...virtualBirthNotis, ...[...filteredNotis].reverse()].map(n => {
+            // [핀셋수정] 알림 발신자 이름이 숫자로 나오거나 비어있는 경우 memberList에서 성함 복원
+            let resolvedName = n.actor_name;
+            if (!resolvedName || /^[0-9]+$/.test(String(resolvedName)) || String(resolvedName).length > 20) {
+                const found = memberList.find(m => m.id === n.actor_name || m.user_id === n.actor_name);
+                if (found) resolvedName = found.full_name;
+                else if (!n.actor_name) resolvedName = "익명의 성도";
+            }
+            return { ...n, resolved_name: resolvedName };
+        });
 
         return (
             <>
@@ -7136,13 +7145,13 @@ export default function App() {
                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: n.is_read ? 'transparent' : '#FF3D00', marginTop: '5px', flexShrink: 0 }} />
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontSize: '13px', color: '#333', lineHeight: 1.5 }}>
-                                            {n.type === 'birthday' && <>🎂 오늘은 <strong>{n.actor_name}</strong> 성도님의 생일입니다! 🎉</>}
-                                            {n.type === 'comment' && <><strong>{n.actor_name}</strong>님이 은혜나눔에 댓글을 남기셨습니다.</>}
-                                            {n.type === 'community_post' && <>✨ <strong>{n.actor_name}</strong>님이 새로운 은혜를 나누셨습니다.</>}
+                                            {n.type === 'birthday' && <>🎂 오늘은 <strong>{n.resolved_name}</strong> 성도님의 생일입니다! 🎉</>}
+                                            {n.type === 'comment' && <><strong>{n.resolved_name}</strong>님이 은혜나눔에 댓글을 남기셨습니다.</>}
+                                            {n.type === 'community_post' && <>✨ <strong>{n.resolved_name}</strong>님이 새로운 은혜를 나누셨습니다.</>}
                                             {n.type === 'counseling_req' && <>🙏 새로운 <strong>상담 및 기도 요청</strong>이 도착했습니다.</>}
-                                            {n.type === 'counseling_user_reply' && <>💬 <strong>{n.actor_name}</strong> 성도님이 상담에 추가 답글을 남기셨습니다.</>}
+                                            {n.type === 'counseling_user_reply' && <>💬 <strong>{n.resolved_name}</strong> 성도님이 상담에 추가 답글을 남기셨습니다.</>}
                                             {n.type === 'counseling_reply' && <>🙏 <strong>목사님</strong>의 상담 답변이 도착했습니다. 확인해 보세요.</>}
-                                            {(!['birthday', 'comment', 'community_post', 'counseling_req', 'counseling_user_reply', 'counseling_reply'].includes(n.type)) && <><strong>{n.actor_name}</strong>님이 새로운 소식을 보내셨습니다.</>}
+                                            {(!['birthday', 'comment', 'community_post', 'counseling_req', 'counseling_user_reply', 'counseling_reply'].includes(n.type)) && <><strong>{n.resolved_name}</strong>님이 새로운 소식을 보내셨습니다.</>}
                                         </div>
                                     </div>
                                 </div>

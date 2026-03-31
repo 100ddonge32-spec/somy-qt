@@ -20,7 +20,15 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { post_id, user_id, user_name, content, is_private, parent_id } = body;
 
-        const insertData: any = { post_id, user_id, user_name, content, is_private: !!is_private };
+        // [이름 복원] user_name이 숫자로 오거나 비어있는 경우 DB 프로필에서 성함 조회
+        let finalUserName = user_name;
+        if (!finalUserName || /^[0-9]+$/.test(String(finalUserName)) || String(finalUserName).length > 20) {
+            const { data: profile } = await supabaseAdmin.from('profiles').select('full_name').eq('id', user_id).single();
+            if (profile?.full_name) finalUserName = profile.full_name;
+            else if (!finalUserName) finalUserName = '성도';
+        }
+
+        const insertData: any = { post_id, user_id, user_name: finalUserName, content, is_private: !!is_private };
         if (parent_id) insertData.parent_id = parent_id;
 
         const { data: comment, error: commentError } = await supabaseAdmin
@@ -40,7 +48,7 @@ export async function POST(req: NextRequest) {
 
         // 활동 기록 남기기 (로거 추가)
         if (post?.church_id) {
-            logActivity(user_id, user_name, 'COMMENT_CREATED', post.church_id, content.slice(0, 50));
+            logActivity(user_id, finalUserName, 'COMMENT_CREATED', post.church_id, content.slice(0, 50));
         }
 
         // 3. 알림 생성 및 푸시 전송 (자신이 쓴 댓글은 알림 제외)
@@ -50,7 +58,7 @@ export async function POST(req: NextRequest) {
                 .from('notifications')
                 .insert([{
                     user_id: post.user_id, // 받는 사람 (원글 작성자)
-                    actor_name: user_name, // 행위자 (댓글 작성자)
+                    actor_name: finalUserName, // 행위자 (댓글 작성자)
                     type: 'comment',
                     post_id: post_id,
                     is_read: false
@@ -68,7 +76,7 @@ export async function POST(req: NextRequest) {
                     try {
                         const pushPayload = JSON.stringify({
                             title: '🔔 새로운 댓글이 달렸어요!',
-                            body: `${user_name}님이 성도님의 은혜나눔에 댓글을 남기셨습니다.`,
+                            body: `${finalUserName}님이 성도님의 은혜나눔에 댓글을 남기셨습니다.`,
                             url: '/?view=community',
                             userId: post.user_id
                         });
