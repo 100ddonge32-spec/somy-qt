@@ -1418,6 +1418,7 @@ export default function App() {
     const [activityLogs, setActivityLogs] = useState<any[]>([]);
     const [isActivitiesLoading, setIsActivitiesLoading] = useState(false);
     const [statsError, setStatsError] = useState<string | null>(null);
+    const [showWinnersModal, setShowWinnersModal] = useState(false);
 
     const [showSettings, setShowSettings] = useState(false);
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -4398,7 +4399,35 @@ export default function App() {
 
                             {/* 이번 달 랭킹 */}
                             <div style={{ background: '#FDFCFB', borderRadius: '16px', padding: '20px', border: '1px solid #F0ECE4' }}>
-                                <h3 style={{ margin: '0 0 14px 0', fontSize: '14px', fontWeight: 700 }}>🏆 이번 달 묵상 랭킹</h3>
+                             {/* [추가] 1일 우승자 축하 섹션 */}
+                            {stats?.isFirstDay && stats?.previousMonthRanking && (
+                                <div style={{ 
+                                    background: 'linear-gradient(135deg, #FFD700, #FFA500)', 
+                                    padding: '24px', 
+                                    borderRadius: '20px', 
+                                    color: 'white', 
+                                    textAlign: 'center', 
+                                    boxShadow: '0 8px 24px rgba(255,215,0,0.3)',
+                                    marginBottom: '20px'
+                                }}>
+                                    <div style={{ fontSize: '32px', marginBottom: '10px' }}>🎊 👑 🎊</div>
+                                    <div style={{ fontSize: '18px', fontWeight: 900, marginBottom: '4px' }}>지난 달 묵상왕을 축하합니다!</div>
+                                    <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '20px' }}>한 달 동안 성실하게 묵상에 참여해 주셔서 감사합니다.</div>
+                                    
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {stats.previousMonthRanking.slice(0, 3).map((r: any, i: number) => (
+                                            <div key={i} style={{ background: 'white', padding: '12px', borderRadius: '12px', color: '#333', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <div style={{ fontSize: '20px' }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</div>
+                                                <div style={{ flex: 1, fontWeight: 800, textAlign: 'left' }}>{r.name} 성도님</div>
+                                                <div style={{ fontWeight: 800, color: '#D4AF37' }}>{r.count}회</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <h3 style={{ margin: '0 0 6px 0', fontSize: '14px', fontWeight: 700 }}>🏆 이번 달 묵상 랭킹</h3>
+                                <div style={{ fontSize: '11px', color: '#999', marginBottom: '16px' }}>💡 랭킹은 매월 1일 새벽 0시에 자동으로 초기화됩니다.</div>
                                 {(stats?.ranking?.length || 0) === 0 ? (
                                     <div style={{ fontSize: '13px', color: '#999', textAlign: 'center', padding: '10px 0' }}>이번 달 기록이 없습니다</div>
                                 ) : (
@@ -9587,7 +9616,8 @@ export default function App() {
                                                     </div>
 
                                                     <div style={{ marginTop: '10px' }}>
-                                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '12px' }}>✨ 이달의 묵상 상위 성도 (TOP 10)</div>
+                                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '4px' }}>✨ 이달의 묵상 성도 명단</div>
+                                                        <div style={{ fontSize: '11px', color: '#999', marginBottom: '12px' }}>💡 랭킹은 매월 1일 새벽 0시에 자동으로 초기화됩니다.</div>
                                                         {stats.ranking.length === 0 ? (
                                                             <div style={{ fontSize: '13px', color: '#999', textAlign: 'center', padding: '20px 0' }}>아직 이번 달 기록이 없습니다.</div>
                                                         ) : (

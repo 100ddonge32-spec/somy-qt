@@ -72,9 +72,14 @@ export async function GET(req: NextRequest) {
         }
 
         const today = getKoreaDateString();
-        const firstOfMonth = today.slice(0, 7) + '-01';
+        const firstOfMonth = searchParams.get('month') 
+            ? `${searchParams.get('month')}-01` 
+            : today.slice(0, 7) + '-01';
 
-        console.log(`[Stats API] CIDs: ${cids}, Month Start: ${firstOfMonth}`);
+        const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
+        const isFirstDay = now.getDate() === 1;
+
+        console.log(`[Stats API] CIDs: ${cids}, Month Start: ${firstOfMonth}, isFirstDay: ${isFirstDay}`);
 
         // 1. 해당 교회의 사용자 ID 목록 먼저 가져오기 (매우 안전한 방식)
         const { data: churchProfiles } = await supabaseAdmin
@@ -284,7 +289,35 @@ export async function GET(req: NextRequest) {
                 if (b.count !== a.count) return b.count - a.count;
                 return a.name.localeCompare(b.name);
             })
-            .slice(0, 20);
+            .slice(0, 100);
+
+        // 7. 이전 달 우승자 (1일에만 특별히 계산하거나 요청 시 계산)
+        let previousMonthRanking = null;
+        if (isFirstDay || searchParams.get('include_prev') === 'true') {
+            const d = new Date(now);
+            d.setMonth(d.getMonth() - 1);
+            const prevMonthStr = d.toISOString().slice(0, 7);
+            const prevFirstOfMonth = prevMonthStr + '-01';
+            const prevLastOfMonth = firstOfMonth; // 현재 달 1일 미만
+
+            const { data: prevCompletions } = await supabaseAdmin
+                .from('qt_completions')
+                .select('user_name, completed_date, avatar_url')
+                .in('user_id', churchUserIds)
+                .gte('completed_date', prevFirstOfMonth)
+                .lt('completed_date', prevLastOfMonth);
+
+            const prevStats: Record<string, { name: string; avatar: string | null; count: number }> = {};
+            (prevCompletions || []).forEach(c => {
+                const name = (c.user_name || '익명').trim();
+                if (!prevStats[name]) prevStats[name] = { name, avatar: c.avatar_url, count: 0 };
+                prevStats[name].count++;
+            });
+
+            previousMonthRanking = Object.values(prevStats)
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 10);
+        }
 
         const result = {
             today: {
@@ -292,6 +325,8 @@ export async function GET(req: NextRequest) {
                 members: todayMembers,
             },
             ranking,
+            previousMonthRanking,
+            isFirstDay,
             totalCompletions: ranking.reduce((acc: number, cur: any) => acc + cur.count, 0),
             loginStats: {
                 trends: formattedTrends,
