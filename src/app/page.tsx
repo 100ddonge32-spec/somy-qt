@@ -1147,11 +1147,11 @@ export default function App() {
                     }
 
                     setProfileName(syncData.full_name || syncData.name || metaName);
-                    
+
                     if (syncData.is_approved) {
                         subscribePush(user.id);
                         checkNewContent();
-                        
+
                         // ✅ 하루 한 번 접속 로그 남기기 (중복 방지)
                         const todayStr = new Date().toISOString().split('T')[0];
                         const lastLoggedVisit = localStorage.getItem(`last_visit_log_${user.id}`);
@@ -1159,15 +1159,15 @@ export default function App() {
                             fetch('/api/auth/sync', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                    user_id: user.id, 
-                                    email: user.email, 
+                                body: JSON.stringify({
+                                    user_id: user.id,
+                                    email: user.email,
                                     name: syncData.full_name || metaName || '성도',
-                                    church_id: safeChurch 
+                                    church_id: safeChurch
                                 })
                             }).then(() => {
                                 localStorage.setItem(`last_visit_log_${user.id}`, todayStr);
-                            }).catch(() => {});
+                            }).catch(() => { });
                         }
                     }
                 }
@@ -1405,9 +1405,9 @@ export default function App() {
     });
     const [sermonManageForm, setSermonManageForm] = useState({ script: '', summary: '', q1: '', q2: '', q3: '', videoUrl: '', inputType: 'text' as 'text' | 'video' });
     const [aiLoading, setAiLoading] = useState(false);
-    const [stats, setStats] = useState<{ 
-        today: { count: number; members: { user_name: string; avatar_url: string | null }[] }; 
-        ranking: { name: string; avatar: string | null; count: number }[]; 
+    const [stats, setStats] = useState<{
+        today: { count: number; members: { user_name: string; avatar_url: string | null }[] };
+        ranking: { name: string; avatar: string | null; count: number }[];
         totalCompletions: number;
         loginStats?: {
             trends: { date: string; count: number }[];
@@ -2915,53 +2915,53 @@ export default function App() {
 
 
                                     <button
-                                         onClick={handleDirectLogin}
-                                         disabled={isDirectLoggingIn}
-                                         style={{
-                                             marginTop: '10px',
-                                             width: '100%',
-                                             padding: '18px',
-                                             background: ((loginName && loginPhoneTail.length >= 4) || loginName === '백동희' || loginName === '동희') ? '#333' : '#AAA',
-                                             color: 'white',
-                                             border: 'none',
-                                             borderRadius: '18px',
-                                             fontSize: '16px',
-                                             fontWeight: 800,
-                                             cursor: ((loginName && loginPhoneTail.length >= 4) || loginName === '백동희' || loginName === '동희') ? 'pointer' : 'default',
-                                             boxShadow: ((loginName && loginPhoneTail.length >= 4) || loginName === '백동희' || loginName === '동희') ? '0 10px 20px rgba(0,0,0,0.15)' : 'none',
-                                             transition: 'all 0.3s'
-                                         }}
-                                     >
-                                         {isDirectLoggingIn ? '정보 확인 중...' : '교인 정보로 바로 시작하기'}
-                                     </button>
+                                        onClick={handleDirectLogin}
+                                        disabled={isDirectLoggingIn}
+                                        style={{
+                                            marginTop: '10px',
+                                            width: '100%',
+                                            padding: '18px',
+                                            background: ((loginName && loginPhoneTail.length >= 4) || loginName === '백동희' || loginName === '동희') ? '#333' : '#AAA',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '18px',
+                                            fontSize: '16px',
+                                            fontWeight: 800,
+                                            cursor: ((loginName && loginPhoneTail.length >= 4) || loginName === '백동희' || loginName === '동희') ? 'pointer' : 'default',
+                                            boxShadow: ((loginName && loginPhoneTail.length >= 4) || loginName === '백동희' || loginName === '동희') ? '0 10px 20px rgba(0,0,0,0.15)' : 'none',
+                                            transition: 'all 0.3s'
+                                        }}
+                                    >
+                                        {isDirectLoggingIn ? '정보 확인 중...' : '교인 정보로 바로 시작하기'}
+                                    </button>
 
-                                     {/* 데모 체험 버튼 */}
-                                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '8px 0' }}>
-                                         <div style={{ flex: 1, height: '1px', background: '#EEE' }} />
-                                         <span style={{ fontSize: '11px', color: '#BBB', fontWeight: 600 }}>또는</span>
-                                         <div style={{ flex: 1, height: '1px', background: '#EEE' }} />
-                                     </div>
-                                     <button
-                                         onClick={() => setShowDemoModal(true)}
-                                         style={{
-                                             width: '100%',
-                                             padding: '16px',
-                                             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                             color: 'white',
-                                             border: 'none',
-                                             borderRadius: '18px',
-                                             fontSize: '15px',
-                                             fontWeight: 800,
-                                             cursor: 'pointer',
-                                             boxShadow: '0 8px 20px rgba(102,126,234,0.4)',
-                                             transition: 'all 0.3s'
-                                         }}
-                                     >
-                                         ✨ 소미 앱 무료 체험하기
-                                     </button>
-                                     <p style={{ textAlign: 'center', fontSize: '11px', color: '#BBB', margin: '6px 0 0', lineHeight: 1.5 }}>
-                                         닉네임만 입력하면 바로 시작! 가입 불필요
-                                     </p>
+                                    {/* 데모 체험 버튼 */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '8px 0' }}>
+                                        <div style={{ flex: 1, height: '1px', background: '#EEE' }} />
+                                        <span style={{ fontSize: '11px', color: '#BBB', fontWeight: 600 }}>또는</span>
+                                        <div style={{ flex: 1, height: '1px', background: '#EEE' }} />
+                                    </div>
+                                    <button
+                                        onClick={() => setShowDemoModal(true)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '16px',
+                                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '18px',
+                                            fontSize: '15px',
+                                            fontWeight: 800,
+                                            cursor: 'pointer',
+                                            boxShadow: '0 8px 20px rgba(102,126,234,0.4)',
+                                            transition: 'all 0.3s'
+                                        }}
+                                    >
+                                        ✨ 소미 앱 무료 체험하기
+                                    </button>
+                                    <p style={{ textAlign: 'center', fontSize: '11px', color: '#BBB', margin: '6px 0 0', lineHeight: 1.5 }}>
+                                        닉네임만 입력하면 바로 시작! 가입 불필요
+                                    </p>
                                 </div>
                             </div>
                         ) : (!isApproved && !isAdmin && !isSuperAdmin && !isDemoMode) ? (
@@ -3990,7 +3990,7 @@ export default function App() {
                         zIndex: 100,
                         animation: 'fade-in 0.5s ease'
                     }}>
-                        <button 
+                        <button
                             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                             style={{
                                 width: '48px', height: '48px', borderRadius: '50%',
@@ -4005,7 +4005,7 @@ export default function App() {
                         >
                             ↑
                         </button>
-                        <button 
+                        <button
                             onClick={handleBack}
                             style={{
                                 width: '48px', height: '48px', borderRadius: '50%',
@@ -4381,7 +4381,7 @@ export default function App() {
                                     <div style={{ position: 'absolute', top: '-10px', right: '-10px', fontSize: '60px', opacity: 0.1 }}>🏆</div>
                                     <h2 style={{ margin: '0 0 10px 0', fontSize: '18px', fontWeight: 800, color: '#F57F17' }}>🎊 지난달 묵상 우승자 축하 🎊</h2>
                                     <p style={{ fontSize: '13px', color: '#795548', marginBottom: '20px' }}>성실하게 묵상에 참여해주신 모든 성도님들께 감사드립니다!</p>
-                                    
+
                                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '15px', margin: '20px 0' }}>
                                         {/* 2위 */}
                                         {stats.previousMonthRanking[1] && (
@@ -4974,202 +4974,202 @@ export default function App() {
                                                 </div>
                                             )}
 
-                                                {/* Comments Section */}
-                                                <div style={{ borderTop: '1px solid #F5F5F5', paddingTop: '15px' }}>
-                                                    <div style={{ display: 'none' }}>댓글 {post.comments?.length || 0}개</div>
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '15px' }}>
-                                                        {post.comments && Array.isArray(post.comments) && (() => {
-                                                            const rootComments = post.comments.filter((c: any) => !c.parent_id);
-                                                            return rootComments.map((comment: any) => {
-                                                                const replies = post.comments.filter((r: any) => r.parent_id === comment.id);
-                                                                const isCommentVisible = !comment.is_private || isAdmin || user?.id === comment.user_id || user?.id === post.user_id;
-                                                                
-                                                                return (
-                                                                    <div key={comment.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                                        {/* 부모 댓글 */}
-                                                                        <div style={{ background: '#FAFAFA', padding: '10px 15px', borderRadius: '12px', fontSize: '13px', opacity: comment.is_private ? 0.9 : 1 }}>
-                                                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                                                                <span style={{ fontWeight: 700, color: '#555', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                                    {comment.user_name || '성도'}
-                                                                                    {comment.is_private && <span style={{ fontSize: '10px', color: '#9E2A5B' }}>🔒</span>}
-                                                                                </span>
-                                                                                <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                                    {comment.created_at ? new Date(comment.created_at).toLocaleTimeString() : '방금 전'}
-                                                                                    {editingCommentId !== comment.id && (
-                                                                                        <span onClick={() => { setReplyingToCommentId(comment.id); setReplyingToPostId(post.id); setCommentInputs({ ...commentInputs, [post.id]: `@${comment.user_name} ` }); }} style={{ cursor: 'pointer', color: '#B8924A', fontWeight: 700 }}>답글</span>
-                                                                                    )}
-                                                                                    {user?.id === comment.user_id && editingCommentId !== comment.id && (
-                                                                                        <button onClick={() => { setEditingCommentId(comment.id); setEditCommentContent(comment.content); setIsEditPrivate(!!comment.is_private); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#B8924A', padding: 0, fontWeight: 600 }}>수정</button>
-                                                                                    )}
-                                                                                    {(isAdmin || user?.id === comment.user_id || user?.id === post.user_id) && editingCommentId !== comment.id && (
-                                                                                        <button onClick={() => handleDeleteComment(post.id, comment.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>X</button>
-                                                                                    )}
-                                                                                </span>
-                                                                            </div>
-                                                                            {editingCommentId === comment.id ? (
-                                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-                                                                                    <textarea
-                                                                                        value={editCommentContent}
-                                                                                        onChange={(e) => { setEditCommentContent(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
-                                                                                        onKeyDown={(e) => {
-                                                                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                                                                e.preventDefault();
-                                                                                                handleUpdateComment(post.id, comment.id);
-                                                                                            }
-                                                                                        }}
-                                                                                        autoFocus
-                                                                                        style={{ width: '100%', padding: '8px 10px', border: '1px solid #DDD', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'none', height: '40px', minHeight: '40px', fontFamily: 'inherit' }}
-                                                                                    />
-                                                                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                                                                        <button onClick={() => handleUpdateComment(post.id, comment.id)} style={{ background: '#333', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>저장</button>
-                                                                                        <button onClick={() => setEditingCommentId(null)} style={{ background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>취소</button>
-                                                                                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginLeft: 'auto' }}>
-                                                                                            <input type="checkbox" checked={isEditPrivate} onChange={(e: any) => setIsEditPrivate(e.target.checked)} />
-                                                                                            <span style={{ fontSize: '11px', color: '#777' }}>비공개</span>
-                                                                                        </label>
-                                                                                    </div>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <div style={{ color: isCommentVisible ? '#666' : '#AAA', whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontStyle: isCommentVisible ? 'normal' : 'italic' }}>
-                                                                                    {isCommentVisible ? comment.content : '🔒 비공개 댓글입니다.'}
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                        
-                                                                        {/* 대댓글 리스트 */}
-                                                                        {replies.map((reply: any) => {
-                                                                            const isReplyVisible = !reply.is_private || isAdmin || user?.id === reply.user_id || user?.id === post.user_id || user?.id === comment.user_id;
-                                                                            return (
-                                                                                <div key={reply.id} style={{ marginLeft: '24px', padding: '8px 12px', background: '#F5F5F5', borderRadius: '12px', fontSize: '13px', borderLeft: '3px solid #E6A4B4', opacity: reply.is_private ? 0.9 : 1 }}>
-                                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                                                                        <span style={{ fontWeight: 700, color: '#777', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}>
-                                                                                            {reply.user_name || '성도'}
-                                                                                            {reply.is_private && <span style={{ fontSize: '10px', color: '#9E2A5B' }}>🔒</span>}
-                                                                                        </span>
-                                                                                        <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                                            {reply.created_at ? new Date(reply.created_at).toLocaleTimeString() : '방금 전'}
-                                                                                            {user?.id === reply.user_id && editingCommentId !== reply.id && (
-                                                                                                <button onClick={() => { setEditingCommentId(reply.id); setEditCommentContent(reply.content); setIsEditPrivate(!!reply.is_private); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#B8924A', padding: 0, fontWeight: 600 }}>수정</button>
-                                                                                            )}
-                                                                                            {(isAdmin || user?.id === reply.user_id || user?.id === post.user_id) && editingCommentId !== reply.id && (
-                                                                                                <button onClick={() => handleDeleteComment(post.id, reply.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>X</button>
-                                                                                            )}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                    {editingCommentId === reply.id ? (
-                                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-                                                                                            <textarea
-                                                                                                value={editCommentContent}
-                                                                                                onChange={(e) => { setEditCommentContent(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
-                                                                                                onKeyDown={(e) => {
-                                                                                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                                                                                        e.preventDefault();
-                                                                                                        handleUpdateComment(post.id, reply.id);
-                                                                                                    }
-                                                                                                }}
-                                                                                                autoFocus
-                                                                                                style={{ width: '100%', padding: '8px 10px', border: '1px solid #DDD', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'none', height: '40px', minHeight: '40px', fontFamily: 'inherit' }}
-                                                                                            />
-                                                                                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                                                                                <button onClick={() => handleUpdateComment(post.id, reply.id)} style={{ background: '#333', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>저장</button>
-                                                                                                <button onClick={() => setEditingCommentId(null)} style={{ background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>취소</button>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    ) : (
-                                                                                        <div style={{ color: isReplyVisible ? '#777' : '#AAA', whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontStyle: isReplyVisible ? 'normal' : 'italic' }}>
-                                                                                            {isReplyVisible ? reply.content : '🔒 비공개 답글입니다.'}
-                                                                                        </div>
-                                                                                    )}
-                                                                                </div>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                );
-                                                            });
-                                                        })()}
-                                                    </div>
-                                                    
-                                                    {/* 답글 안내 문구 */}
-                                                    {replyingToCommentId && replyingToPostId === post.id && (
-                                                        <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFF8E1', padding: '8px 12px', borderRadius: '10px', border: '1px solid #FFE082' }}>
-                                                            <span style={{ fontSize: '12px', color: '#856404', fontWeight: 700 }}>
-                                                                💬 답글 남기는 중...
-                                                            </span>
-                                                            <button onClick={() => { setReplyingToCommentId(null); setReplyingToPostId(null); setCommentInputs({ ...commentInputs, [post.id]: "" }); }} style={{ background: 'none', border: 'none', color: '#A57224', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>취소</button>
-                                                        </div>
-                                                    )}
+                                            {/* Comments Section */}
+                                            <div style={{ borderTop: '1px solid #F5F5F5', paddingTop: '15px' }}>
+                                                <div style={{ display: 'none' }}>댓글 {post.comments?.length || 0}개</div>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '15px' }}>
+                                                    {post.comments && Array.isArray(post.comments) && (() => {
+                                                        const rootComments = post.comments.filter((c: any) => !c.parent_id);
+                                                        return rootComments.map((comment: any) => {
+                                                            const replies = post.comments.filter((r: any) => r.parent_id === comment.id);
+                                                            const isCommentVisible = !comment.is_private || isAdmin || user?.id === comment.user_id || user?.id === post.user_id;
 
-                                                    {/* Comment Input */}
-                                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
-                                                        <textarea
-                                                            value={commentInputs[post.id] || ""}
-                                                            onChange={(e) => {
-                                                                setCommentInputs({ ...commentInputs, [post.id]: e.target.value });
-                                                                e.target.style.height = 'auto';
-                                                                e.target.style.height = e.target.scrollHeight + 'px';
-                                                            }}
-                                                            onKeyDown={(e) => {
-                                                                if (e.key === 'Enter' && !e.shiftKey) {
-                                                                    // handleAddComment(post.id); // 개행 허용 원할 경우 주석 처리
-                                                                }
-                                                            }}
-                                                            placeholder={replyingToCommentId ? "답글을 입력하세요..." : "따뜻한 격려의 댓글..."}
-                                                            disabled={submittingCommentId === post.id}
-                                                            style={{
-                                                                flex: 1,
-                                                                padding: '10px 12px',
-                                                                borderRadius: '12px',
-                                                                border: '1px solid #EEE',
-                                                                fontSize: '14px',
-                                                                outline: 'none',
-                                                                background: submittingCommentId === post.id ? '#FAFAFA' : 'white',
-                                                                resize: 'none',
-                                                                height: '40px',
-                                                                minHeight: '40px',
-                                                                maxHeight: '120px',
-                                                                fontFamily: 'inherit',
-                                                                lineHeight: '1.5'
-                                                            }}
-                                                        />
-                                                        <button
-                                                            onClick={() => setCommentPrivateStates((prev: any) => ({ ...prev, [post.id]: !prev[post.id] }))}
-                                                            style={{
-                                                                background: commentPrivateStates[post.id] ? '#F3E5F5' : '#F5F5F5',
-                                                                border: 'none',
-                                                                borderRadius: '10px',
-                                                                width: '40px',
-                                                                height: '40px',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                cursor: 'pointer',
-                                                                fontSize: '16px',
-                                                                transition: 'all 0.2s'
-                                                            }}
-                                                            title={commentPrivateStates[post.id] ? "비공개" : "공개"}
-                                                        >
-                                                            {commentPrivateStates[post.id] ? '🔒' : '🔓'}
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleAddComment(post.id)}
-                                                            disabled={submittingCommentId === post.id}
-                                                            style={{
-                                                                background: '#333',
-                                                                color: 'white',
-                                                                border: 'none',
-                                                                borderRadius: '10px',
-                                                                padding: '0 12px',
-                                                                height: '40px',
-                                                                fontSize: '12px',
-                                                                fontWeight: 700,
-                                                                cursor: submittingCommentId === post.id ? 'default' : 'pointer',
-                                                                opacity: submittingCommentId === post.id ? 0.7 : 1
-                                                            }}
-                                                        >
-                                                            {submittingCommentId === post.id ? '...' : (replyingToCommentId ? '답글' : '등록')}
-                                                        </button>
-                                                    </div>
+                                                            return (
+                                                                <div key={comment.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                                    {/* 부모 댓글 */}
+                                                                    <div style={{ background: '#FAFAFA', padding: '10px 15px', borderRadius: '12px', fontSize: '13px', opacity: comment.is_private ? 0.9 : 1 }}>
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                                            <span style={{ fontWeight: 700, color: '#555', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                                {comment.user_name || '성도'}
+                                                                                {comment.is_private && <span style={{ fontSize: '10px', color: '#9E2A5B' }}>🔒</span>}
+                                                                            </span>
+                                                                            <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                {comment.created_at ? new Date(comment.created_at).toLocaleTimeString() : '방금 전'}
+                                                                                {editingCommentId !== comment.id && (
+                                                                                    <span onClick={() => { setReplyingToCommentId(comment.id); setReplyingToPostId(post.id); setCommentInputs({ ...commentInputs, [post.id]: `@${comment.user_name} ` }); }} style={{ cursor: 'pointer', color: '#B8924A', fontWeight: 700 }}>답글</span>
+                                                                                )}
+                                                                                {user?.id === comment.user_id && editingCommentId !== comment.id && (
+                                                                                    <button onClick={() => { setEditingCommentId(comment.id); setEditCommentContent(comment.content); setIsEditPrivate(!!comment.is_private); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#B8924A', padding: 0, fontWeight: 600 }}>수정</button>
+                                                                                )}
+                                                                                {(isAdmin || user?.id === comment.user_id || user?.id === post.user_id) && editingCommentId !== comment.id && (
+                                                                                    <button onClick={() => handleDeleteComment(post.id, comment.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>X</button>
+                                                                                )}
+                                                                            </span>
+                                                                        </div>
+                                                                        {editingCommentId === comment.id ? (
+                                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                                                                                <textarea
+                                                                                    value={editCommentContent}
+                                                                                    onChange={(e) => { setEditCommentContent(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
+                                                                                    onKeyDown={(e) => {
+                                                                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                                                                            e.preventDefault();
+                                                                                            handleUpdateComment(post.id, comment.id);
+                                                                                        }
+                                                                                    }}
+                                                                                    autoFocus
+                                                                                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #DDD', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'none', height: '40px', minHeight: '40px', fontFamily: 'inherit' }}
+                                                                                />
+                                                                                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                                                                    <button onClick={() => handleUpdateComment(post.id, comment.id)} style={{ background: '#333', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>저장</button>
+                                                                                    <button onClick={() => setEditingCommentId(null)} style={{ background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>취소</button>
+                                                                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginLeft: 'auto' }}>
+                                                                                        <input type="checkbox" checked={isEditPrivate} onChange={(e: any) => setIsEditPrivate(e.target.checked)} />
+                                                                                        <span style={{ fontSize: '11px', color: '#777' }}>비공개</span>
+                                                                                    </label>
+                                                                                </div>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div style={{ color: isCommentVisible ? '#666' : '#AAA', whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontStyle: isCommentVisible ? 'normal' : 'italic' }}>
+                                                                                {isCommentVisible ? comment.content : '🔒 비공개 댓글입니다.'}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* 대댓글 리스트 */}
+                                                                    {replies.map((reply: any) => {
+                                                                        const isReplyVisible = !reply.is_private || isAdmin || user?.id === reply.user_id || user?.id === post.user_id || user?.id === comment.user_id;
+                                                                        return (
+                                                                            <div key={reply.id} style={{ marginLeft: '24px', padding: '8px 12px', background: '#F5F5F5', borderRadius: '12px', fontSize: '13px', borderLeft: '3px solid #E6A4B4', opacity: reply.is_private ? 0.9 : 1 }}>
+                                                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                                                    <span style={{ fontWeight: 700, color: '#777', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}>
+                                                                                        {reply.user_name || '성도'}
+                                                                                        {reply.is_private && <span style={{ fontSize: '10px', color: '#9E2A5B' }}>🔒</span>}
+                                                                                    </span>
+                                                                                    <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                        {reply.created_at ? new Date(reply.created_at).toLocaleTimeString() : '방금 전'}
+                                                                                        {user?.id === reply.user_id && editingCommentId !== reply.id && (
+                                                                                            <button onClick={() => { setEditingCommentId(reply.id); setEditCommentContent(reply.content); setIsEditPrivate(!!reply.is_private); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#B8924A', padding: 0, fontWeight: 600 }}>수정</button>
+                                                                                        )}
+                                                                                        {(isAdmin || user?.id === reply.user_id || user?.id === post.user_id) && editingCommentId !== reply.id && (
+                                                                                            <button onClick={() => handleDeleteComment(post.id, reply.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>X</button>
+                                                                                        )}
+                                                                                    </span>
+                                                                                </div>
+                                                                                {editingCommentId === reply.id ? (
+                                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                                                                                        <textarea
+                                                                                            value={editCommentContent}
+                                                                                            onChange={(e) => { setEditCommentContent(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
+                                                                                            onKeyDown={(e) => {
+                                                                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                                                                    e.preventDefault();
+                                                                                                    handleUpdateComment(post.id, reply.id);
+                                                                                                }
+                                                                                            }}
+                                                                                            autoFocus
+                                                                                            style={{ width: '100%', padding: '8px 10px', border: '1px solid #DDD', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'none', height: '40px', minHeight: '40px', fontFamily: 'inherit' }}
+                                                                                        />
+                                                                                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                                                                            <button onClick={() => handleUpdateComment(post.id, reply.id)} style={{ background: '#333', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>저장</button>
+                                                                                            <button onClick={() => setEditingCommentId(null)} style={{ background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>취소</button>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <div style={{ color: isReplyVisible ? '#777' : '#AAA', whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontStyle: isReplyVisible ? 'normal' : 'italic' }}>
+                                                                                        {isReplyVisible ? reply.content : '🔒 비공개 답글입니다.'}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            );
+                                                        });
+                                                    })()}
                                                 </div>
+
+                                                {/* 답글 안내 문구 */}
+                                                {replyingToCommentId && replyingToPostId === post.id && (
+                                                    <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFF8E1', padding: '8px 12px', borderRadius: '10px', border: '1px solid #FFE082' }}>
+                                                        <span style={{ fontSize: '12px', color: '#856404', fontWeight: 700 }}>
+                                                            💬 답글 남기는 중...
+                                                        </span>
+                                                        <button onClick={() => { setReplyingToCommentId(null); setReplyingToPostId(null); setCommentInputs({ ...commentInputs, [post.id]: "" }); }} style={{ background: 'none', border: 'none', color: '#A57224', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>취소</button>
+                                                    </div>
+                                                )}
+
+                                                {/* Comment Input */}
+                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+                                                    <textarea
+                                                        value={commentInputs[post.id] || ""}
+                                                        onChange={(e) => {
+                                                            setCommentInputs({ ...commentInputs, [post.id]: e.target.value });
+                                                            e.target.style.height = 'auto';
+                                                            e.target.style.height = e.target.scrollHeight + 'px';
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                                // handleAddComment(post.id); // 개행 허용 원할 경우 주석 처리
+                                                            }
+                                                        }}
+                                                        placeholder={replyingToCommentId ? "답글을 입력하세요..." : "따뜻한 격려의 댓글..."}
+                                                        disabled={submittingCommentId === post.id}
+                                                        style={{
+                                                            flex: 1,
+                                                            padding: '10px 12px',
+                                                            borderRadius: '12px',
+                                                            border: '1px solid #EEE',
+                                                            fontSize: '14px',
+                                                            outline: 'none',
+                                                            background: submittingCommentId === post.id ? '#FAFAFA' : 'white',
+                                                            resize: 'none',
+                                                            height: '40px',
+                                                            minHeight: '40px',
+                                                            maxHeight: '120px',
+                                                            fontFamily: 'inherit',
+                                                            lineHeight: '1.5'
+                                                        }}
+                                                    />
+                                                    <button
+                                                        onClick={() => setCommentPrivateStates((prev: any) => ({ ...prev, [post.id]: !prev[post.id] }))}
+                                                        style={{
+                                                            background: commentPrivateStates[post.id] ? '#F3E5F5' : '#F5F5F5',
+                                                            border: 'none',
+                                                            borderRadius: '10px',
+                                                            width: '40px',
+                                                            height: '40px',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            cursor: 'pointer',
+                                                            fontSize: '16px',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                        title={commentPrivateStates[post.id] ? "비공개" : "공개"}
+                                                    >
+                                                        {commentPrivateStates[post.id] ? '🔒' : '🔓'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleAddComment(post.id)}
+                                                        disabled={submittingCommentId === post.id}
+                                                        style={{
+                                                            background: '#333',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            borderRadius: '10px',
+                                                            padding: '0 12px',
+                                                            height: '40px',
+                                                            fontSize: '12px',
+                                                            fontWeight: 700,
+                                                            cursor: submittingCommentId === post.id ? 'default' : 'pointer',
+                                                            opacity: submittingCommentId === post.id ? 0.7 : 1
+                                                        }}
+                                                    >
+                                                        {submittingCommentId === post.id ? '...' : (replyingToCommentId ? '답글' : '등록')}
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     );
                                 })}
@@ -5929,56 +5929,56 @@ export default function App() {
                         )}
                     </div>
 
-                        {historyEditRecord && (
-                            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                                <div style={{ background: 'white', width: '100%', maxWidth: '500px', borderRadius: '24px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
-                                    <h3 style={{ margin: '0 0 15px 0', color: '#333' }}>📝 묵상 기록 수정</h3>
-                                    <div style={{ fontSize: '13px', color: '#666', marginBottom: '20px' }}>{historyEditRecord.completed_date} 기록을 수정합니다. 수정 후 저장 버튼을 눌러주세요.</div>
-                                    
-                                    <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '8px' }}>묵상 답변</div>
-                                    {historyEditAnswers.map((ans, idx) => (
-                                        <textarea
-                                            key={idx}
-                                            value={ans}
-                                            onChange={e => {
-                                                const newAns = [...historyEditAnswers];
-                                                newAns[idx] = e.target.value;
-                                                setHistoryEditAnswers(newAns);
-                                            }}
-                                            placeholder={`${idx + 1}번 질문 답변`}
-                                            style={{ width: '100%', height: '80px', marginBottom: '10px', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none', background: '#FDFDFD', fontSize: '14px', fontFamily: 'inherit', resize: 'none' }}
-                                        />
-                                    ))}
+                    {historyEditRecord && (
+                        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                            <div style={{ background: 'white', width: '100%', maxWidth: '500px', borderRadius: '24px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
+                                <h3 style={{ margin: '0 0 15px 0', color: '#333' }}>📝 묵상 기록 수정</h3>
+                                <div style={{ fontSize: '13px', color: '#666', marginBottom: '20px' }}>{historyEditRecord.completed_date} 기록을 수정합니다. 수정 후 저장 버튼을 눌러주세요.</div>
 
-                                    <div style={{ fontWeight: 700, fontSize: '14px', marginTop: '10px', marginBottom: '8px' }}>나눔 게시판 은혜 나눔</div>
+                                <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '8px' }}>묵상 답변</div>
+                                {historyEditAnswers.map((ans, idx) => (
                                     <textarea
-                                        value={historyEditReflection}
-                                        onChange={e => setHistoryEditReflection(e.target.value)}
-                                        placeholder="게시판에 남길 은혜 나눔 (비워두면 글이 삭제됩니다)"
-                                        style={{ width: '100%', height: '120px', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none', background: '#FDFDFD', fontSize: '14px', fontFamily: 'inherit', resize: 'none' }}
+                                        key={idx}
+                                        value={ans}
+                                        onChange={e => {
+                                            const newAns = [...historyEditAnswers];
+                                            newAns[idx] = e.target.value;
+                                            setHistoryEditAnswers(newAns);
+                                        }}
+                                        placeholder={`${idx + 1}번 질문 답변`}
+                                        style={{ width: '100%', height: '80px', marginBottom: '10px', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none', background: '#FDFDFD', fontSize: '14px', fontFamily: 'inherit', resize: 'none' }}
                                     />
+                                ))}
 
-                                    <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                                        <button onClick={() => setHistoryEditRecord(null)} style={{ flex: 1, padding: '14px', borderRadius: '15px', border: 'none', background: '#F5F5F5', color: '#666', fontWeight: 700, fontSize: '15px', cursor: 'pointer' }}>취소</button>
-                                        <button onClick={async () => {
-                                            const effectiveChurchId = churchId || (typeof window !== 'undefined' ? localStorage.getItem('church_id') : null) || 'jesus-in';
-                                            const res = await fetch('/api/qt/history/edit', {
-                                                method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({ action: 'update', user_id: user?.id, user_name: profileName || '성도', church_id: effectiveChurchId, date: historyEditRecord.completed_date, answers: historyEditAnswers, reflection: historyEditReflection })
-                                            });
-                                            if (res.ok) {
-                                                alert('수정되었습니다.');
-                                                setHistoryEditRecord(null);
-                                                if (user?.id) fetchHistory(user?.id);
-                                            } else {
-                                                alert('수정 중 오류가 발생했습니다.');
-                                            }
-                                        }} style={{ flex: 1, padding: '14px', borderRadius: '15px', border: 'none', background: '#333', color: 'white', fontWeight: 700, fontSize: '15px', cursor: 'pointer' }}>저장</button>
-                                    </div>
+                                <div style={{ fontWeight: 700, fontSize: '14px', marginTop: '10px', marginBottom: '8px' }}>나눔 게시판 은혜 나눔</div>
+                                <textarea
+                                    value={historyEditReflection}
+                                    onChange={e => setHistoryEditReflection(e.target.value)}
+                                    placeholder="게시판에 남길 은혜 나눔 (비워두면 글이 삭제됩니다)"
+                                    style={{ width: '100%', height: '120px', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none', background: '#FDFDFD', fontSize: '14px', fontFamily: 'inherit', resize: 'none' }}
+                                />
+
+                                <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                                    <button onClick={() => setHistoryEditRecord(null)} style={{ flex: 1, padding: '14px', borderRadius: '15px', border: 'none', background: '#F5F5F5', color: '#666', fontWeight: 700, fontSize: '15px', cursor: 'pointer' }}>취소</button>
+                                    <button onClick={async () => {
+                                        const effectiveChurchId = churchId || (typeof window !== 'undefined' ? localStorage.getItem('church_id') : null) || 'jesus-in';
+                                        const res = await fetch('/api/qt/history/edit', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ action: 'update', user_id: user?.id, user_name: profileName || '성도', church_id: effectiveChurchId, date: historyEditRecord.completed_date, answers: historyEditAnswers, reflection: historyEditReflection })
+                                        });
+                                        if (res.ok) {
+                                            alert('수정되었습니다.');
+                                            setHistoryEditRecord(null);
+                                            if (user?.id) fetchHistory(user?.id);
+                                        } else {
+                                            alert('수정 중 오류가 발생했습니다.');
+                                        }
+                                    }} style={{ flex: 1, padding: '14px', borderRadius: '15px', border: 'none', background: '#333', color: 'white', fontWeight: 700, fontSize: '15px', cursor: 'pointer' }}>저장</button>
                                 </div>
                             </div>
-                        )}
+                        </div>
+                    )}
 
                     <div style={{ padding: '0 20px 40px 20px', display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '100px' }}>
                         <button onClick={() => setView('home')} style={{ marginTop: '10px', width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 돌아가기</button>
@@ -7028,12 +7028,12 @@ export default function App() {
 
             // ✅ [동기화] 칼럼이 입력되지 않았을 경우, 오늘의 말씀을 바탕으로 한 자동 묵상 메시지 노출
             const hasCustomColumn = !!churchSettings?.pastor_column_content?.trim();
-            const columnTitle = hasCustomColumn 
+            const columnTitle = hasCustomColumn
                 ? (churchSettings.pastor_column_title || "🕊️ 오늘의 목양 메시지")
                 : `📖 이번주 암송구절 (${verseRef})`;
-            
-            const columnContent = hasCustomColumn 
-                ? churchSettings.pastor_column_content 
+
+            const columnContent = hasCustomColumn
+                ? churchSettings.pastor_column_content
                 : `"${verseText}"\n\n- ${verseRef}\n\n사랑하는 성도 여러분, 이번 한 주간 우리에게 주신 이 생명의 암송구절을 마음 깊이 새기길 원합니다.\n\n하나님의 말씀은 우리 삶의 등불입니다. 때로는 앞이 보이지 않는 막막한 순간에도 주님은 항상 말씀으로 우리를 가장 선한 길로 인도하고 계심을 확신할 수 있습니다.\n\n이번 주 내내 이 말씀을 묵상하고 암송하며, 내 생각보다 크신 하나님의 완전하신 계획을 신뢰합시다. 우리가 주님의 약속을 온전히 붙들고 나아갈 때, 주님께서 친히 우리의 모든 걸음을 지키시고 평안을 베풀어 주실 것입니다.\n\n한 주간의 삶 속에서도 주님의 은혜 안에서 승리하시고, 암송한 말씀의 능력으로 힘을 얻는 복된 나날 되시기를 간절히 기도하며 축복합니다.`;
 
             return (
@@ -8246,7 +8246,7 @@ export default function App() {
                     onClose={() => setShowLikersModal(false)}
                 />
             )}
- 
+
             {/* 갤러리 업로드 모달 */}
             {isUploadingGallery && (
                 <GalleryUploadModal
@@ -8378,16 +8378,16 @@ export default function App() {
                                             </div>
                                         ) : (
                                             <div style={{ background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
-                                                <div style={{ 
-                                                    fontSize: '14px', 
-                                                    color: '#333', 
-                                                    lineHeight: 1.7, 
+                                                <div style={{
+                                                    fontSize: '14px',
+                                                    color: '#333',
+                                                    lineHeight: 1.7,
                                                     whiteSpace: 'pre-wrap',
                                                     wordBreak: 'keep-all'
                                                 }}>
                                                     {pastoralInsights || "분석된 내용이 없습니다."}
                                                 </div>
-                                                <button 
+                                                <button
                                                     onClick={fetchPastoralInsights}
                                                     style={{ marginTop: '20px', width: '100%', padding: '12px', background: 'white', border: '1px solid #EEE', borderRadius: '12px', fontSize: '13px', fontWeight: 700, color: '#666', cursor: 'pointer' }}
                                                 >
@@ -8395,7 +8395,7 @@ export default function App() {
                                                 </button>
                                             </div>
                                         )}
-                                        
+
                                         <div style={{ fontSize: '11px', color: '#999', padding: '15px', background: '#F5F5F5', borderRadius: '12px', lineHeight: 1.5 }}>
                                             ⚠️ 본 분석은 성도들의 익명성을 보장하며, 전체적인 영적 분위기와 주요 키워드를 파악하는 용도로 사용해 주세요. AI의 제언은 목회적 판단의 참고 자료입니다.
                                         </div>
@@ -8450,11 +8450,11 @@ export default function App() {
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                 <label style={{ fontSize: '12px', fontWeight: 700, color: '#9E7B31' }}>⏰ 매일 큐티 알림 발송 시간</label>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <input 
-                                                        type="time" 
-                                                        value={settingsForm.qt_notification_time || '08:00'} 
-                                                        onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, qt_notification_time: e.target.value }))} 
-                                                        style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none', background: 'white', flex: 1 }} 
+                                                    <input
+                                                        type="time"
+                                                        value={settingsForm.qt_notification_time || '08:00'}
+                                                        onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, qt_notification_time: e.target.value }))}
+                                                        style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none', background: 'white', flex: 1 }}
                                                     />
                                                     <div style={{ fontSize: '11px', color: '#999', flex: 1.5 }}>※ 설정된 시간에 푸시 알림을 자동으로 발송합니다.</div>
                                                 </div>
@@ -9662,7 +9662,7 @@ export default function App() {
                                                                 <div style={{ fontSize: '12px', fontWeight: 800, color: '#F57C00', marginBottom: '6px' }}>👑 지난달 최종 랭킹 결과</div>
                                                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                                                                     {stats.previousMonthRanking.slice(0, 5).map((r: any, i: number) => (
-                                                                        <span key={i} style={{ fontSize: '10px', background: 'white', padding: '2px 8px', borderRadius: '10px', border: '1px solid #EEE' }}>{i+1}위 {r.name}</span>
+                                                                        <span key={i} style={{ fontSize: '10px', background: 'white', padding: '2px 8px', borderRadius: '10px', border: '1px solid #EEE' }}>{i + 1}위 {r.name}</span>
                                                                     ))}
                                                                     {stats.previousMonthRanking.length > 5 && <span style={{ fontSize: '10px', color: '#999' }}>...외 {stats.previousMonthRanking.length - 5}명</span>}
                                                                 </div>
@@ -9712,7 +9712,7 @@ export default function App() {
                                                                 const maxCount = Math.max(...trends.map((d: any) => d.count), 1);
                                                                 const barHeight = (t.count / maxCount) * 80;
                                                                 const isToday = t.date === new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
-                                                                
+
                                                                 return (
                                                                     <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', height: '100%' }}>
                                                                         <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'flex-end' }}>
@@ -9779,11 +9779,11 @@ export default function App() {
                                                                         const activity = typeMap[l.activityType] || { icon: '✨', label: '활동', color: '#999' };
 
                                                                         return (
-                                                                            <div key={i} style={{ 
-                                                                                display: 'flex', 
-                                                                                justifyContent: 'space-between', 
-                                                                                alignItems: 'center', 
-                                                                                padding: '12px 16px', 
+                                                                            <div key={i} style={{
+                                                                                display: 'flex',
+                                                                                justifyContent: 'space-between',
+                                                                                alignItems: 'center',
+                                                                                padding: '12px 16px',
                                                                                 borderBottom: i === (stats?.loginStats?.recent?.length || 0) - 1 ? 'none' : '1px solid #EEE',
                                                                                 animation: 'fade-in 0.3s ease-out'
                                                                             }}>
@@ -9990,20 +9990,20 @@ export default function App() {
                                                 🧹 저장소 자동 정리 (90일 정책)
                                             </div>
                                             <p style={{ fontSize: '13px', color: '#666', marginBottom: '20px' }}>
-                                                현재 설정된 정책에 따라 90일이 지난 사진은 자동으로 삭제됩니다. 
+                                                현재 설정된 정책에 따라 90일이 지난 사진은 자동으로 삭제됩니다.
                                                 아래 버튼을 눌러 지금 즉시 정리를 실행할 수 있습니다.
                                             </p>
-                                            <button 
-                                              onClick={async () => {
-                                                  if(!confirm("90일 이상 된 오래된 사진들을 모두 정리하시겠습니까?")) return;
-                                                  try {
-                                                      const res = await fetch('/api/gallery/cleanup', { method: 'POST' });
-                                                      const data = await res.json();
-                                                      alert(data.message || "정리가 완료되었습니다.");
-                                                      fetchGalleryPosts();
-                                                  } catch (e) { alert("처리 중 오류 발생"); }
-                                              }}
-                                              style={{ width: '100%', padding: '14px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
+                                            <button
+                                                onClick={async () => {
+                                                    if (!confirm("90일 이상 된 오래된 사진들을 모두 정리하시겠습니까?")) return;
+                                                    try {
+                                                        const res = await fetch('/api/gallery/cleanup', { method: 'POST' });
+                                                        const data = await res.json();
+                                                        alert(data.message || "정리가 완료되었습니다.");
+                                                        fetchGalleryPosts();
+                                                    } catch (e) { alert("처리 중 오류 발생"); }
+                                                }}
+                                                style={{ width: '100%', padding: '14px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
                                             >
                                                 오래된 사진 수동 정리 실행
                                             </button>
@@ -10013,10 +10013,10 @@ export default function App() {
                                             <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', marginBottom: '15px' }}>🖼️ 최근 공유된 사진 (모니터링)</div>
                                             <div style={{ display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', scrollBehavior: 'smooth', gap: '8px' }}>
                                                 {galleryPosts.slice(0, 12).map((post: any) => (
-                                                    <div 
-                                                      key={post.id} 
-                                                      onClick={() => setSelectedGalleryPost(post)}
-                                                      style={{ minWidth: 'calc(25% - 6px)', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer', background: '#F5F5F5', scrollSnapAlign: 'start' }}
+                                                    <div
+                                                        key={post.id}
+                                                        onClick={() => setSelectedGalleryPost(post)}
+                                                        style={{ minWidth: 'calc(25% - 6px)', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer', background: '#F5F5F5', scrollSnapAlign: 'start' }}
                                                     >
                                                         <img src={post.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                     </div>
@@ -10056,29 +10056,29 @@ export default function App() {
                                                                         <span style={{ fontSize: '13px', fontWeight: 800, color: '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ch.church_name || ch.church_id}</span>
                                                                         <span style={{ fontSize: '10px', color: '#888', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>ID: {ch.church_id} | {ch.plan?.split('|')[0] || 'free'}</span>
                                                                     </div>
-                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                                                                            <span style={{ fontSize: '13px', fontWeight: 800, color: '#D4AF37', whiteSpace: 'nowrap' }}>{ch.count}명</span>
-                                                                            <div style={{ display: 'flex', gap: '4px' }}>
-                                                                                <button
-                                                                                    onClick={() => {
-                                                                                        const link = window.location.origin + (ch.church_id === 'somy-main' ? '/' : `/?church_id=${ch.church_id}`);
-                                                                                        navigator.clipboard.writeText(link).then(() => alert(`${ch.church_name || ch.church_id} 접속 주소가 복사되었습니다! 🔗`));
-                                                                                    }}
-                                                                                    style={{ padding: '6px 10px', background: '#F5F5F3', color: '#555', border: '1px solid #DDD', borderRadius: '8px', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}
-                                                                                >
-                                                                                    복사
-                                                                                </button>
-                                                                                <a href={ch.church_id === 'somy-main' ? '/' : `/?church_id=${ch.church_id}`} target="_blank" title="새 탭에서 보기" style={{ padding: '6px 10px', background: '#E3F2FD', color: '#1565C0', textDecoration: 'none', borderRadius: '8px', fontSize: '10px', fontWeight: 800, display: 'inline-block' }}>조회</a>
-                                                                                <button onClick={() => {
-                                                                                    if (confirm(`${ch.church_id} 교회를 현재 화면에서 관리하시겠습니까?`)) {
-                                                                                        window.location.href = ch.church_id === 'somy-main' ? '/' : `/?church_id=${ch.church_id}`;
-                                                                                    }
-                                                                                }} style={{ padding: '6px 10px', background: '#E8F5E9', color: '#2E7D32', border: 'none', borderRadius: '8px', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}>관리</button>
-                                                                                {ch.church_id !== 'jesus-in' && ch.church_id !== 'demo' && (
-                                                                                    <button onClick={() => handleDeleteChurch(ch.church_id)} style={{ padding: '6px 10px', background: '#FEE', color: '#C62828', border: 'none', borderRadius: '8px', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}>삭제</button>
-                                                                                )}
-                                                                            </div>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                                                                        <span style={{ fontSize: '13px', fontWeight: 800, color: '#D4AF37', whiteSpace: 'nowrap' }}>{ch.count}명</span>
+                                                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    const link = window.location.origin + (ch.church_id === 'somy-main' ? '/' : `/?church_id=${ch.church_id}`);
+                                                                                    navigator.clipboard.writeText(link).then(() => alert(`${ch.church_name || ch.church_id} 접속 주소가 복사되었습니다! 🔗`));
+                                                                                }}
+                                                                                style={{ padding: '6px 10px', background: '#F5F5F3', color: '#555', border: '1px solid #DDD', borderRadius: '8px', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}
+                                                                            >
+                                                                                복사
+                                                                            </button>
+                                                                            <a href={ch.church_id === 'somy-main' ? '/' : `/?church_id=${ch.church_id}`} target="_blank" title="새 탭에서 보기" style={{ padding: '6px 10px', background: '#E3F2FD', color: '#1565C0', textDecoration: 'none', borderRadius: '8px', fontSize: '10px', fontWeight: 800, display: 'inline-block' }}>조회</a>
+                                                                            <button onClick={() => {
+                                                                                if (confirm(`${ch.church_id} 교회를 현재 화면에서 관리하시겠습니까?`)) {
+                                                                                    window.location.href = ch.church_id === 'somy-main' ? '/' : `/?church_id=${ch.church_id}`;
+                                                                                }
+                                                                            }} style={{ padding: '6px 10px', background: '#E8F5E9', color: '#2E7D32', border: 'none', borderRadius: '8px', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}>관리</button>
+                                                                            {ch.church_id !== 'jesus-in' && ch.church_id !== 'demo' && (
+                                                                                <button onClick={() => handleDeleteChurch(ch.church_id)} style={{ padding: '6px 10px', background: '#FEE', color: '#C62828', border: 'none', borderRadius: '8px', fontSize: '10px', fontWeight: 800, cursor: 'pointer' }}>삭제</button>
+                                                                            )}
                                                                         </div>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         ))
@@ -10314,19 +10314,19 @@ function GalleryView({ posts, isLoading, onBack, onUpload, onSelectPost, isAdmin
                     <button onClick={onBack} style={{ background: '#F5F5F5', border: 'none', width: '36px', height: '36px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '18px' }}>←</button>
                     <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>📸 추억나눔(갤러리)</h2>
                 </div>
-                <button 
-                  onClick={onUpload}
-                  style={{ background: '#D4AF37', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '14px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(212,175,55,0.3)' }}
+                <button
+                    onClick={onUpload}
+                    style={{ background: '#D4AF37', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '14px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(212,175,55,0.3)' }}
                 >
-                  사진 공유하기
+                    사진 공유하기
                 </button>
             </div>
 
             <div style={{ background: 'rgba(212, 175, 55, 0.08)', padding: '16px', borderRadius: '20px', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
-              <p style={{ margin: 0, fontSize: '13px', color: '#8B6E3F', lineHeight: 1.5, wordBreak: 'keep-all' }}>
-                ✨ 성도님들의 아름다운 추억과 은혜를 사진으로 나눠보세요! <br/>
-                (사진은 게시 후 90일이 지나면 추억 저장소에서 자동 정리됩니다.)
-              </p>
+                <p style={{ margin: 0, fontSize: '13px', color: '#8B6E3F', lineHeight: 1.5, wordBreak: 'keep-all' }}>
+                    ✨ 성도님들의 아름다운 추억과 은혜를 사진으로 나눠보세요! <br />
+                    (사진은 게시 후 90일이 지나면 추억 저장소에서 자동 정리됩니다.)
+                </p>
             </div>
 
             {isLoading ? (
@@ -10337,15 +10337,15 @@ function GalleryView({ posts, isLoading, onBack, onUpload, onSelectPost, isAdmin
             ) : posts.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '100px 20px', color: '#AAA' }}>
                     <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎞️</div>
-                    <p style={{ fontSize: '15px', fontWeight: 600 }}>아직 공유된 사진이 없네요.<br/>첫 번째 주인공이 되어보세요!</p>
+                    <p style={{ fontSize: '15px', fontWeight: 600 }}>아직 공유된 사진이 없네요.<br />첫 번째 주인공이 되어보세요!</p>
                 </div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', borderRadius: '16px', overflow: 'hidden' }}>
                     {posts.map((post: any) => (
-                        <GalleryGridItem 
-                          key={post.id} 
-                          post={post} 
-                          onClick={() => onSelectPost(post)} 
+                        <GalleryGridItem
+                            key={post.id}
+                            post={post}
+                            onClick={() => onSelectPost(post)}
                         />
                     ))}
                 </div>
@@ -10369,26 +10369,26 @@ function GalleryGridItem({ post, onClick }: any) {
         }
     }
     if (images.length === 0 && post.image_url) images = [post.image_url];
-    
+
     return (
-        <div 
-          onClick={onClick}
-          style={{ 
-            position: 'relative', 
-            width: '100%', 
-            paddingBottom: '100%', 
-            cursor: 'pointer', 
-            overflow: 'hidden', 
-            background: '#F5F5F3',
-            borderRadius: '12px' 
-          }}
+        <div
+            onClick={onClick}
+            style={{
+                position: 'relative',
+                width: '100%',
+                paddingBottom: '100%',
+                cursor: 'pointer',
+                overflow: 'hidden',
+                background: '#F5F5F3',
+                borderRadius: '12px'
+            }}
         >
-            <img 
-              src={images[0]} 
-              alt={post.description} 
-              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+            <img
+                src={images[0]}
+                alt={post.description}
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
             />
-            
+
             {/* 여러 장일 경우 장수 배지 표시 (더 시인성 좋게) */}
             {images.length > 1 && (
                 <div style={{
@@ -10495,10 +10495,10 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
     const handleFileChange = async (e: any) => {
         const files = Array.from(e.target.files) as File[];
         if (files.length === 0) return;
-        
+
         const newPreviewUrls = files.map(file => URL.createObjectURL(file));
         setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
-        
+
         const compressedFiles = await Promise.all(files.map(file => compressImage(file)));
         setSelectedFiles(prev => [...prev, ...compressedFiles]);
     };
@@ -10515,12 +10515,12 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
         }
         setIsUploading(true);
         setUploadProgress(0);
-        
+
         let successCount = 0;
         try {
             // [수정] 성도 요청: 여러 장의 사진을 하나의 게시물로 묶어서 업로드
             const uploadedUrls: string[] = [];
-            
+
             for (let i = 0; i < selectedFiles.length; i++) {
                 const file = selectedFiles[i];
                 const fileExt = file.name.split('.').pop();
@@ -10534,14 +10534,14 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
                         cacheControl: '3600',
                         upsert: false
                     });
-                
+
                 if (uploadError) throw uploadError;
 
                 // 2. 공개 URL 획득
                 const { data: { publicUrl } } = supabase.storage
                     .from('church-assets')
                     .getPublicUrl(filePath);
-                
+
                 uploadedUrls.push(publicUrl);
                 setUploadProgress(Math.round(((i + 1) / (selectedFiles.length + 1)) * 100));
             }
@@ -10594,9 +10594,9 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
                             </div>
                         ))}
                         {previewUrls.length < 9 && (
-                            <div 
-                              onClick={() => document.getElementById('gallery-upload-input')?.click()}
-                              style={{ width: '100%', aspectRatio: '1/1', background: '#F8F9FA', borderRadius: '12px', border: '2px dashed #DDD', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                            <div
+                                onClick={() => document.getElementById('gallery-upload-input')?.click()}
+                                style={{ width: '100%', aspectRatio: '1/1', background: '#F8F9FA', borderRadius: '12px', border: '2px dashed #DDD', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                             >
                                 <div style={{ textAlign: 'center', color: '#AAA' }}>
                                     <div style={{ fontSize: '24px' }}>➕</div>
@@ -10606,13 +10606,13 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
                         )}
                     </div>
                     <input id="gallery-upload-input" type="file" multiple accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
-                    <textarea 
+                    <textarea
                         placeholder="이 사진에 담긴 은혜의 소감을 적어주세요..."
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         style={{ width: '100%', height: '100px', padding: '16px', borderRadius: '18px', border: '1.5px solid #EEE', background: '#F9F9F9', fontSize: '14px', resize: 'none', outline: 'none', color: '#333' }}
                     />
-                    <button 
+                    <button
                         onClick={handleUpload}
                         disabled={selectedFiles.length === 0 || isUploading}
                         style={{ width: '100%', padding: '18px', background: isUploading || selectedFiles.length === 0 ? '#CCC' : '#333', color: 'white', border: 'none', borderRadius: '20px', fontSize: '16px', fontWeight: 800, cursor: 'pointer', boxShadow: '0 8px 16px rgba(0,0,0,0.1)' }}
@@ -10755,7 +10755,7 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete, ge
                 <div style={{ position: 'absolute', top: '15px', right: '15px', zIndex: 10 }}>
                     <button onClick={onClose} style={{ background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white', width: '36px', height: '36px', borderRadius: '50%', fontSize: '18px', cursor: 'pointer', backdropFilter: 'blur(5px)' }}>✕</button>
                 </div>
-                
+
                 {/* 이미지 슬라이더 영역 */}
                 {(() => {
                     let images = [];
@@ -10786,29 +10786,29 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete, ge
                     };
 
                     return (
-                        <div style={{ 
-                            position: 'relative', 
-                            flexShrink: 0, 
+                        <div style={{
+                            position: 'relative',
+                            flexShrink: 0,
                             width: '100%',
                             height: '45vh', // 크기를 더 줄여서 전체가 잘 보이게 함
-                            background: '#000', 
-                            display: 'flex', 
+                            background: '#000',
+                            display: 'flex',
                             flexDirection: 'column',
                             overflow: 'hidden'
                         }}>
                             {/* 좌측 화살표 */}
                             {images.length > 1 && currentIndex > 0 && (
-                                <button 
+                                <button
                                     onClick={() => scrollTo(currentIndex - 1)}
                                     style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', zIndex: 15, background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}
                                 >
                                     ‹
                                 </button>
                             )}
-                            
+
                             {/* 우측 화살표 */}
                             {images.length > 1 && currentIndex < images.length - 1 && (
-                                <button 
+                                <button
                                     onClick={() => scrollTo(currentIndex + 1)}
                                     style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', zIndex: 15, background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}
                                 >
@@ -10816,56 +10816,56 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete, ge
                                 </button>
                             )}
 
-                            <div 
+                            <div
                                 ref={scrollRef}
                                 onScroll={handleScroll}
-                                style={{ 
-                                    width: '100%', 
-                                    height: '100%', 
-                                    display: 'flex', 
-                                    overflowX: 'scroll', 
-                                    scrollSnapType: 'x mandatory', 
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    display: 'flex',
+                                    overflowX: 'scroll',
+                                    scrollSnapType: 'x mandatory',
                                     WebkitOverflowScrolling: 'touch',
                                     scrollbarWidth: 'none',
                                     msOverflowStyle: 'none'
                                 }}
                             >
                                 {images.map((url: string, idx: number) => (
-                                    <div key={idx} style={{ 
-                                        minWidth: '100%', 
-                                        height: '100%', 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
-                                        justifyContent: 'center', 
-                                        scrollSnapAlign: 'start', 
+                                    <div key={idx} style={{
+                                        minWidth: '100%',
+                                        height: '100%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        scrollSnapAlign: 'start',
                                         flexShrink: 0,
                                         padding: '20px 40px' // 좌우 여백을 크게 주어 사진이 가운데 작게 보이게 함
                                     }}>
-                                        <img 
-                                            src={url} 
-                                            style={{ 
-                                                maxWidth: '100%', 
-                                                maxHeight: '100%', 
-                                                objectFit: 'contain', 
+                                        <img
+                                            src={url}
+                                            style={{
+                                                maxWidth: '100%',
+                                                maxHeight: '100%',
+                                                objectFit: 'contain',
                                                 display: 'block',
                                                 boxShadow: '0 10px 40px rgba(0,0,0,0.6)',
                                                 borderRadius: '8px'
-                                            }} 
+                                            }}
                                             alt={`공유 사진 ${idx + 1}`}
                                         />
                                     </div>
                                 ))}
                             </div>
-                            
+
                             {/* 페이지 인디케이터 */}
                             {images.length > 1 && (
-                                <div style={{ 
-                                    position: 'absolute', 
-                                    bottom: '15px', 
-                                    left: '50%', 
-                                    transform: 'translateX(-50%)', 
-                                    display: 'flex', 
-                                    gap: '6px', 
+                                <div style={{
+                                    position: 'absolute',
+                                    bottom: '15px',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)',
+                                    display: 'flex',
+                                    gap: '6px',
                                     zIndex: 10,
                                     background: 'rgba(0,0,0,0.4)',
                                     padding: '5px 10px',
@@ -10873,10 +10873,10 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete, ge
                                     backdropFilter: 'blur(4px)'
                                 }}>
                                     {images.map((_: any, i: number) => (
-                                        <div key={i} style={{ 
-                                            width: '6px', 
-                                            height: '6px', 
-                                            borderRadius: '50%', 
+                                        <div key={i} style={{
+                                            width: '6px',
+                                            height: '6px',
+                                            borderRadius: '50%',
                                             background: i === currentIndex ? '#D4AF37' : 'white',
                                             opacity: i === currentIndex ? 1 : 0.5,
                                             transition: 'all 0.3s'
@@ -10922,7 +10922,7 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete, ge
                             const likerInfo = getLikerInfo ? getLikerInfo(likes.liker_ids || []) : { text: null, likerNames: [] };
                             if (likerInfo.text) {
                                 return (
-                                    <div 
+                                    <div
                                         onClick={() => {
                                             if (likerInfo.likerNames.length > 0) {
                                                 setSelectedLikers(likerInfo.likerNames);
@@ -10956,10 +10956,10 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete, ge
                                                 <div style={{ flex: 1 }}>
                                                     {editingCommentId === c.id ? (
                                                         <div style={{ display: 'flex', gap: '8px' }}>
-                                                            <input 
-                                                              value={editCommentText} 
-                                                              onChange={(e) => setEditCommentText(e.target.value)}
-                                                              style={{ flex: 1, border: '1px solid #EEE', borderRadius: '8px', padding: '4px 8px', fontSize: '13px' }}
+                                                            <input
+                                                                value={editCommentText}
+                                                                onChange={(e) => setEditCommentText(e.target.value)}
+                                                                style={{ flex: 1, border: '1px solid #EEE', borderRadius: '8px', padding: '4px 8px', fontSize: '13px' }}
                                                             />
                                                             <button onClick={() => handleUpdateComment(c.id)} style={{ padding: '4px 8px', background: '#333', color: 'white', border: 'none', borderRadius: '6px', fontSize: '11px' }}>저장</button>
                                                             <button onClick={() => setEditingCommentId(null)} style={{ padding: '4px 8px', background: '#EEE', color: '#666', border: 'none', borderRadius: '6px', fontSize: '11px' }}>취소</button>
@@ -10987,8 +10987,8 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete, ge
                                                     <div style={{ flex: 1 }}>
                                                         {editingCommentId === r.id ? (
                                                             <div style={{ display: 'flex', gap: '8px' }}>
-                                                                <input 
-                                                                    value={editCommentText} 
+                                                                <input
+                                                                    value={editCommentText}
                                                                     onChange={(e) => setEditCommentText(e.target.value)}
                                                                     style={{ flex: 1, border: '1px solid #EEE', borderRadius: '8px', padding: '4px 8px', fontSize: '13px' }}
                                                                 />
@@ -11016,7 +11016,7 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete, ge
                                 });
                             })()}
                         </div>
-                        
+
                         {replyingToId && (
                             <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8F9FA', padding: '8px 12px', borderRadius: '10px' }}>
                                 <span style={{ fontSize: '12px', color: '#666' }}><b>{comments.find(c => c.id === replyingToId)?.user_name}</b>님에게 답글 남기는 중...</span>
@@ -11025,7 +11025,7 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete, ge
                         )}
 
                         <div style={{ display: 'flex', gap: '10px' }}>
-                            <input 
+                            <input
                                 placeholder={replyingToId ? "답글을 남겨주세요..." : "따뜻한 댓글을 남겨주세요..."}
                                 value={commentText}
                                 onChange={(e) => setCommentText(e.target.value)}
@@ -11033,16 +11033,16 @@ function GalleryDetailModal({ post, onClose, user, isAdmin, onLike, onDelete, ge
                                 disabled={isSubmitting}
                                 style={{ flex: 1, border: 'none', background: '#F5F5F5', padding: '14px 18px', borderRadius: '16px', fontSize: '14px', outline: 'none', opacity: isSubmitting ? 0.7 : 1 }}
                             />
-                            <button 
-                                onClick={handleAddComment} 
+                            <button
+                                onClick={handleAddComment}
                                 disabled={isSubmitting || !commentText.trim()}
-                                style={{ 
-                                    background: isSubmitting || !commentText.trim() ? '#CCC' : '#D4AF37', 
-                                    border: 'none', 
-                                    color: 'white', 
-                                    padding: '0 20px', 
-                                    borderRadius: '16px', 
-                                    fontWeight: 800, 
+                                style={{
+                                    background: isSubmitting || !commentText.trim() ? '#CCC' : '#D4AF37',
+                                    border: 'none',
+                                    color: 'white',
+                                    padding: '0 20px',
+                                    borderRadius: '16px',
+                                    fontWeight: 800,
                                     cursor: isSubmitting ? 'default' : 'pointer',
                                     transition: 'all 0.2s'
                                 }}
@@ -11519,7 +11519,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
     // [핀셋수정] 필터링된 결과 계산 시 데이터 무결성 보호 강화
     const filteredResults = useMemo(() => {
         if (!results || !Array.isArray(results)) return [];
-        
+
         return results.filter(m => m).map(m => {
             const mEmail = String(m.email || "").toLowerCase().trim();
             const mPhone = String(m.phone || "").replace(/[^0-9]/g, "");
@@ -11528,11 +11528,11 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
                 if (!a) return false;
                 const aEmail = String(a.email || "").toLowerCase().trim();
                 const aPhone = String(a.phone || "").replace(/[^0-9]/g, "");
-                
+
                 // 이메일 또는 전화번호 중 하나라도 일치하면 관리자로 간주
                 const emailMatch = mEmail && aEmail && mEmail === aEmail;
                 const phoneMatch = mPhone && aPhone && mPhone === aPhone;
-                
+
                 return emailMatch || phoneMatch;
             });
             return {
@@ -11594,7 +11594,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
     const handleDelete = async () => {
         if (selectedIds.length === 0) return;
         if (!confirm(`${selectedIds.length}명의 데이터를 정말 삭제하시겠습니까?`)) return;
-        
+
         setIsSaving(false);
         try {
             const { error } = await supabase.from('profiles').delete().in('id', selectedIds);
@@ -11608,7 +11608,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
     const handleBulkAuth = async (isAuth: boolean) => {
         if (selectedIds.length === 0) return;
         if (!confirm(`${selectedIds.length}명의 인증 상태를 ${isAuth ? '인증완료' : '인증해제'}로 변경하시겠습니까?`)) return;
-        
+
         setIsSaving(true);
         try {
             const { error } = await supabase.from('profiles').update({ is_approved: isAuth }).in('id', selectedIds);
@@ -12090,38 +12090,38 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
                 {/* 푸시 알림 권장 커스텀 모달 (김부장의 UX 개선) */}
                 {showPushPrompt && (
                     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', backdropFilter: 'blur(10px)' }}>
-                        <div style={{ 
-                            background: 'white', borderRadius: '32px', padding: '36px 32px', maxWidth: '380px', width: '100%', 
-                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', textAlign: 'center', 
-                            animation: 'scale-up-center 0.4s cubic-bezier(0.4, 0, 0.2, 1)' 
+                        <div style={{
+                            background: 'white', borderRadius: '32px', padding: '36px 32px', maxWidth: '380px', width: '100%',
+                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', textAlign: 'center',
+                            animation: 'scale-up-center 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
                         }}>
                             <div style={{ fontSize: '64px', marginBottom: '24px', animation: 'bounce-light 2s infinite' }}>🔔</div>
                             <h3 style={{ fontSize: '22px', fontWeight: 900, marginBottom: '16px', color: '#333', wordBreak: 'keep-all' }}>실시간 알림을 켜두실까요?</h3>
                             <p style={{ fontSize: '15px', color: '#666', lineHeight: '1.7', marginBottom: '32px', wordBreak: 'keep-all' }}>
-                                소중한 <b>은혜나눔의 글</b>이 올라왔을 때,<br/>
-                                그리고 <b>큐티 알림 시간</b>(매일 아침)을<br/>
+                                소중한 <b>은혜나눔의 글</b>이 올라왔을 때,<br />
+                                그리고 <b>큐티 알림 시간</b>(매일 아침)을<br />
                                 놓치지 않도록 소미가 알려드릴게요! 🐑
                             </p>
                             <div style={{ display: 'flex', gap: '12px' }}>
-                                <button 
+                                <button
                                     onClick={() => {
                                         setShowPushPrompt(false);
                                         localStorage.setItem('somy_push_prompt_dismissed', new Date().toDateString());
-                                    }} 
+                                    }}
                                     style={{ flex: 1, padding: '16px', borderRadius: '18px', border: '1px solid #EEE', background: '#F9F9F9', color: '#999', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
                                 >
                                     나중에요
                                 </button>
-                                <button 
+                                <button
                                     onClick={() => {
                                         setShowPushPrompt(false);
                                         if (user) subscribePush(user.id, true);
-                                    }} 
-                                    style={{ 
-                                        flex: 2, padding: '16px', borderRadius: '18px', border: 'none', 
-                                        background: 'linear-gradient(135deg, #ECC94B 0%, #D4AF37 100%)', 
-                                        color: 'white', fontSize: '15px', fontWeight: 800, cursor: 'pointer', 
-                                        boxShadow: '0 8px 20px rgba(212, 175, 55, 0.3)' 
+                                    }}
+                                    style={{
+                                        flex: 2, padding: '16px', borderRadius: '18px', border: 'none',
+                                        background: 'linear-gradient(135deg, #ECC94B 0%, #D4AF37 100%)',
+                                        color: 'white', fontSize: '15px', fontWeight: 800, cursor: 'pointer',
+                                        boxShadow: '0 8px 20px rgba(212, 175, 55, 0.3)'
                                     }}
                                 >
                                     알림 켜기
@@ -12145,3 +12145,4 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
         </div>
     );
 }
+
