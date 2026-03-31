@@ -29,19 +29,42 @@ export async function GET(req: NextRequest) {
     if (!userId) return NextResponse.json({ error: 'User ID is required' }, { status: 401 });
 
     try {
-        // [1] 관리자 권한 확인
-        const { data: admin } = await supabaseAdmin
-            .from('app_admins')
-            .select('*')
-            .eq('user_id', userId)
-            .maybeSingle();
-
+        // [1] 관리자 권한 확인 (강화된 로직)
         const HARDCODED_ADMINS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
-        const { data: profile } = await supabaseAdmin.from('profiles').select('email').eq('id', userId).maybeSingle();
-        const isMaster = HARDCODED_ADMINS.includes(profile?.email?.toLowerCase() || '');
+        const { data: profile } = await supabaseAdmin.from('profiles').select('email, full_name').eq('id', userId).maybeSingle();
+        const userEmail = profile?.email?.toLowerCase().trim() || "";
+        
+        // 마스터 권한 확인 (이메일 및 성함)
+        const isMaster = HARDCODED_ADMINS.includes(userEmail) || 
+                         (profile?.full_name === '백동희' || profile?.full_name === '동희');
 
-        if (!isMaster && (!admin || admin.church_id !== churchId)) {
-            return NextResponse.json({ error: '권한이 없습니다.' }, { status: 403 });
+        if (isMaster) {
+            // 마스터는 통과
+        } else {
+            // 개별 교회 관리자 확인 (ID 또는 이메일 모두 확인)
+            let adminQuery = supabaseAdmin.from('app_admins').select('*');
+            
+            if (userEmail && userEmail !== 'undefined' && userEmail !== 'null') {
+                adminQuery = adminQuery.or(`user_id.eq.${userId},email.eq.${userEmail}`);
+            } else {
+                adminQuery = adminQuery.eq('user_id', userId);
+            }
+
+            const { data: admin } = await adminQuery.maybeSingle();
+
+            if (!admin) {
+                return NextResponse.json({ error: '관리자 권한이 없습니다. (사유: 관리자 명단에 없음)' }, { status: 403 });
+            }
+
+            // 슈퍼 어드민은 모든 교회 접근 가능
+            if (admin.role === 'super_admin') {
+                // 통과
+            } else {
+                // 일반 교회 관리자는 소속 확인 (교회 ID 정규화 비교)
+                if (normalizeId(admin.church_id) !== normalizeId(churchId)) {
+                    return NextResponse.json({ error: `해당 교회의 관리자 권한이 없습니다. (소속 불일치: ${admin.church_id} vs ${churchId})` }, { status: 403 });
+                }
+            }
         }
 
         // [2] 최근 성도 데이터 수집 (최근 14일)
