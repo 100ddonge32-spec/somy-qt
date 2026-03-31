@@ -11450,7 +11450,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
             console.log("[MemberSearch] Triggering admin list refresh...");
             onRefreshAdmins();
         }
-    }, [isSuperAdmin, isMainAdmin, allAdminList, isAdminsLoading, onRefreshAdmins]);
+    }, [isSuperAdmin, isMainAdmin, allAdminList, isAdminsLoading]);
 
     const handleSearch = async () => {
         if (!searchTerm.trim()) {
