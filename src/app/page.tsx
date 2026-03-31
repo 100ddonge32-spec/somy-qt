@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { getGraceVerse } from '@/lib/navigator-verses';
 import { getTodayCcm, CcmVideo, CCM_LIST } from "@/lib/ccm";
@@ -4417,15 +4417,18 @@ export default function App() {
                                     </div>
 
                                     {/* 4위 이하 전체 명단 기록 레이아웃 */}
-                                    {stats.previousMonthRanking.length > 3 && (
+                                    {Array.isArray(stats?.previousMonthRanking) && stats.previousMonthRanking.length > 3 && (
                                         <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.6)', borderRadius: '12px', textAlign: 'left' }}>
                                             <div style={{ fontSize: '12px', fontWeight: 800, color: '#666', marginBottom: '10px' }}>✨ 4위 이하 전체 명단</div>
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                                {stats.previousMonthRanking.slice(3, 100).map((r: any, idx: number) => (
-                                                    <div key={idx} style={{ fontSize: '11px', color: '#777', background: 'white', padding: '4px 10px', borderRadius: '15px', border: '1px solid #EEE' }}>
-                                                        <span style={{ fontWeight: 800, marginRight: '3px' }}>{idx + 4}위</span> {r.name}
-                                                    </div>
-                                                ))}
+                                                {stats.previousMonthRanking.slice(3, 100).map((r: any, idx: number) => {
+                                                    if (!r) return null;
+                                                    return (
+                                                        <div key={idx} style={{ fontSize: '11px', color: '#777', background: 'white', padding: '4px 10px', borderRadius: '15px', border: '1px solid #EEE' }}>
+                                                            <span style={{ fontWeight: 800, marginRight: '3px' }}>{idx + 4}위</span> {r.name || '익명'}
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     )}
@@ -11443,11 +11446,11 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
     // [최적화] 관리자 명단 로드는 별도 useEffect로 분리하고 로딩 상태를 체크하여 무한 루프를 방지합니다.
     useEffect(() => {
         const canFetchAdmins = isSuperAdmin || isMainAdmin;
-        if (canFetchAdmins && onRefreshAdmins && !isAdminsLoading && (!allAdminList || allAdminList.length === 0)) {
+        if (canFetchAdmins && onRefreshAdmins && !isAdminsLoading && (!allAdminList || (Array.isArray(allAdminList) && allAdminList.length === 0))) {
             console.log("[MemberSearch] Triggering admin list refresh...");
             onRefreshAdmins();
         }
-    }, [isSuperAdmin, isMainAdmin, allAdminList, isAdminsLoading]);
+    }, [isSuperAdmin, isMainAdmin, allAdminList, isAdminsLoading, onRefreshAdmins]);
 
     const handleSearch = async () => {
         if (!searchTerm.trim()) {
@@ -11513,35 +11516,109 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
     };
 
 
+    // [핀셋수정] 필터링된 결과 계산 시 데이터 무결성 보호 강화
+    const filteredResults = useMemo(() => {
+        if (!results || !Array.isArray(results)) return [];
+        
+        return results.filter(m => m).map(m => {
+            const mEmail = String(m.email || "").toLowerCase().trim();
+            const mPhone = String(m.phone || "").replace(/[^0-9]/g, "");
 
-    const filteredResults = results.map(m => {
-        const mEmail = (m.email || "").toLowerCase().trim();
-        const mPhone = (m.phone || "").replace(/[^0-9]/g, "");
-
-        const isAdminFound = (allAdminList || []).some((a: any) => {
-            const aEmail = (a.email || "").toLowerCase().trim();
-            const aPhone = (a.phone || "").replace(/[^0-9]/g, "");
-            
-            // 이메일 또는 전화번호 중 하나라도 일치하면 관리자로 간주
-            const emailMatch = mEmail && aEmail && mEmail === aEmail;
-            const phoneMatch = mPhone && aPhone && mPhone === aPhone;
-            
-            return emailMatch || phoneMatch;
+            const isAdminFound = (allAdminList || []).some((a: any) => {
+                if (!a) return false;
+                const aEmail = String(a.email || "").toLowerCase().trim();
+                const aPhone = String(a.phone || "").replace(/[^0-9]/g, "");
+                
+                // 이메일 또는 전화번호 중 하나라도 일치하면 관리자로 간주
+                const emailMatch = mEmail && aEmail && mEmail === aEmail;
+                const phoneMatch = mPhone && aPhone && mPhone === aPhone;
+                
+                return emailMatch || phoneMatch;
+            });
+            return {
+                ...m,
+                is_system_admin: isAdminFound
+            };
         });
-        return {
-            ...m,
-            is_system_admin: isAdminFound
-        };
-    });
+    }, [results, allAdminList]);
 
-    console.log(`[MemberSearch] Filtered results count: ${filteredResults.length}, Admin count: ${filteredResults.filter(m => m.is_system_admin).length}`);
+    const finalResults = useMemo(() => {
+        if (!filteredResults || !Array.isArray(filteredResults)) return [];
+        return filteredResults.filter(m => {
+            if (!m) return false;
+            if (adminFilter === "all") return true;
+            if (adminFilter === "admin") return m.is_system_admin;
+            if (adminFilter === "user") return !m.is_system_admin;
+            return true;
+        });
+    }, [filteredResults, adminFilter]);
 
-    const finalResults = filteredResults.filter(m => {
-        if (adminFilter === "all") return true;
-        if (adminFilter === "admin") return m.is_system_admin;
-        if (adminFilter === "user") return !m.is_system_admin;
-        return true;
-    });
+    console.log(`[MemberSearch] Results: ${results.length}, Filtered: ${finalResults.length}`);
+
+    // [최적화] 상태 변경에 따른 잦은 리렌더링 방지
+    const birthdayMembers = useMemo(() => {
+        const kstBase = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+        const todaySolarMMDD = kstBase.toISOString().slice(5, 10);
+        return (finalResults || []).filter(m => {
+            if (!m || !m.birthdate) return false;
+            return m.birthdate.slice(5, 10) === todaySolarMMDD;
+        });
+    }, [finalResults]);
+
+    const handleSearch = async () => {
+        if (!searchTerm.trim()) {
+            fetchInitial();
+            return;
+        }
+        setIsSearching(true);
+        const isAdminQuery = isAdmin || isSuperAdmin;
+        const apiUrl = `/api/members?church_id=${churchId}&query=${encodeURIComponent(searchTerm)}${isAdminQuery ? '&admin=true' : ''}`;
+        console.log(`[MemberSearch] Searching members from: ${apiUrl}`);
+        try {
+            const res = await fetch(apiUrl, { cache: 'no-store' });
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                setResults(data);
+                console.log(`[MemberSearch] Loaded ${data.length} members.`);
+            }
+        } catch (e) { console.error("성도 검색 실패:", e); }
+        finally { setIsSearching(false); }
+    };
+
+    const handleClearSearch = () => {
+        setSearchTerm("");
+        fetchInitial();
+    };
+
+
+    const handleDelete = async () => {
+        if (selectedIds.length === 0) return;
+        if (!confirm(`${selectedIds.length}명의 데이터를 정말 삭제하시겠습니까?`)) return;
+        
+        setIsSaving(false);
+        try {
+            const { error } = await supabase.from('profiles').delete().in('id', selectedIds);
+            if (error) throw error;
+            alert('삭제되었습니다.');
+            setSelectedIds([]);
+            fetchInitial();
+        } catch (e) { alert('삭제 실패'); }
+    };
+
+    const handleBulkAuth = async (isAuth: boolean) => {
+        if (selectedIds.length === 0) return;
+        if (!confirm(`${selectedIds.length}명의 인증 상태를 ${isAuth ? '인증완료' : '인증해제'}로 변경하시겠습니까?`)) return;
+        
+        setIsSaving(true);
+        try {
+            const { error } = await supabase.from('profiles').update({ is_approved: isAuth }).in('id', selectedIds);
+            if (error) throw error;
+            alert('변경되었습니다.');
+            setSelectedIds([]);
+            fetchInitial();
+        } catch (e) { alert('변경 실패'); }
+        finally { setIsSaving(false); }
+    };
 
     return (
         <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", padding: "20px", ...baseFont }}>
@@ -11790,7 +11867,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
                                 {member.is_system_admin && (
                                     <div style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '10px', background: '#333', color: 'white', padding: '3px 8px', borderRadius: '6px', fontWeight: 800 }}>👑 관리자</div>
                                 )}
-                                {isAdmin && (
+                                {(isAdmin || isMainAdmin || isSuperAdmin) && (
                                     <div
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -11951,7 +12028,7 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
 
 
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '24px' }}>
-                                        {isAdmin && (
+                                        {(isAdmin || isMainAdmin || isSuperAdmin) && (
                                             <>
                                                 <button
                                                     onClick={() => {
