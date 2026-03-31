@@ -291,33 +291,8 @@ export async function GET(req: NextRequest) {
             })
             .slice(0, 100);
 
-        // 7. 이전 달 우승자 (1일에만 특별히 계산하거나 요청 시 계산)
+        // 7. 이전 달 우승자 (미사용 - 원상복구)
         let previousMonthRanking = null;
-        if (isFirstDay || searchParams.get('include_prev') === 'true') {
-            const d = new Date(now);
-            d.setMonth(d.getMonth() - 1);
-            const prevMonthStr = d.toISOString().slice(0, 7);
-            const prevFirstOfMonth = prevMonthStr + '-01';
-            const prevLastOfMonth = firstOfMonth; // 현재 달 1일 미만
-
-            const { data: prevCompletions } = await supabaseAdmin
-                .from('qt_completions')
-                .select('user_name, completed_date, avatar_url')
-                .in('user_id', churchUserIds)
-                .gte('completed_date', prevFirstOfMonth)
-                .lt('completed_date', prevLastOfMonth);
-
-            const prevStats: Record<string, { name: string; avatar: string | null; count: number }> = {};
-            (prevCompletions || []).forEach(c => {
-                const name = (c.user_name || '익명').trim();
-                if (!prevStats[name]) prevStats[name] = { name, avatar: c.avatar_url, count: 0 };
-                prevStats[name].count++;
-            });
-
-            previousMonthRanking = Object.values(prevStats)
-                .sort((a, b) => b.count - a.count)
-                .slice(0, 10);
-        }
 
         const result = {
             today: {
