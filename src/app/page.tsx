@@ -12061,60 +12061,6 @@ function MemberSearchView({ churchId, setView, baseFont, isAdmin, isMainAdmin, i
                     </div>
                 )}
 
-                {/* 푸시 알림 권장 커스텀 모달 (김부장의 UX 개선) */}
-                {showPushPrompt && (
-                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', backdropFilter: 'blur(10px)' }}>
-                        <div style={{
-                            background: 'white', borderRadius: '32px', padding: '36px 32px', maxWidth: '380px', width: '100%',
-                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', textAlign: 'center',
-                            animation: 'scale-up-center 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-                        }}>
-                            <div style={{ fontSize: '64px', marginBottom: '24px', animation: 'bounce-light 2s infinite' }}>🔔</div>
-                            <h3 style={{ fontSize: '22px', fontWeight: 900, marginBottom: '16px', color: '#333', wordBreak: 'keep-all' }}>실시간 알림을 켜두실까요?</h3>
-                            <p style={{ fontSize: '15px', color: '#666', lineHeight: '1.7', marginBottom: '32px', wordBreak: 'keep-all' }}>
-                                소중한 <b>은혜나눔의 글</b>이 올라왔을 때,<br />
-                                그리고 <b>큐티 알림 시간</b>(매일 아침)을<br />
-                                놓치지 않도록 소미가 알려드릴게요! 🐑
-                            </p>
-                            <div style={{ display: 'flex', gap: '12px' }}>
-                                <button
-                                    onClick={() => {
-                                        setShowPushPrompt(false);
-                                        localStorage.setItem('somy_push_prompt_dismissed', new Date().toDateString());
-                                    }}
-                                    style={{ flex: 1, padding: '16px', borderRadius: '18px', border: '1px solid #EEE', background: '#F9F9F9', color: '#999', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
-                                >
-                                    나중에요
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setShowPushPrompt(false);
-                                        if (user) subscribePush(user.id, true);
-                                    }}
-                                    style={{
-                                        flex: 2, padding: '16px', borderRadius: '18px', border: 'none',
-                                        background: 'linear-gradient(135deg, #ECC94B 0%, #D4AF37 100%)',
-                                        color: 'white', fontSize: '15px', fontWeight: 800, cursor: 'pointer',
-                                        boxShadow: '0 8px 20px rgba(212, 175, 55, 0.3)'
-                                    }}
-                                >
-                                    알림 켜기
-                                </button>
-                            </div>
-                            <style>{`
-                                @keyframes scale-up-center {
-                                    0% { transform: scale(0.5); opacity: 0; }
-                                    100% { transform: scale(1); opacity: 1; }
-                                }
-                                @keyframes bounce-light {
-                                    0%, 100% { transform: translateY(0); }
-                                    50% { transform: translateY(-10px); }
-                                }
-                            `}</style>
-                        </div>
-                    </div>
-                )}
-
             </div>
         </div>
     );
