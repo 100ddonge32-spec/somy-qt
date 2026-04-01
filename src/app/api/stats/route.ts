@@ -78,22 +78,10 @@ export async function GET(req: NextRequest) {
         const currentDate = now.getDate();
         const currentHour = now.getHours();
 
-        // 랭킹 초기화 시간 설정: 매월 1일 오전 5시
-        const RESET_HOUR = 5;
-        const isResetTimePassed = currentDate > 1 || (currentDate === 1 && currentHour >= RESET_HOUR);
+        // 랭킹 초기화 및 집계 시작일 설정
+        // MARCH_BASE가 3월의 최종 합산본이므로, DB에서는 4월 1일 이후의 기록만 가져와 합산하여 중복을 방지합니다.
+        let firstOfMonth = `2026-04-01`;
         
-        // 실제 통계에 사용될 시작일 (오전 5시 이전이면 지난달 말일처럼 취급)
-        let firstOfMonth: string;
-        if (isResetTimePassed) {
-            // 이번 달 1일 오전 5시 이후 -> 이번 달 데이터 집계
-            firstOfMonth = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
-        } else {
-            // 이번 달 1일 오전 5시 이전 -> 지난 달 데이터 집계 유지
-            const prevMonthDate = new Date(now);
-            prevMonthDate.setMonth(prevMonthDate.getMonth() - 1);
-            firstOfMonth = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}-01`;
-        }
-
         const isFirstDay = currentDate === 1;
 
         console.log(`[Stats API] CIDs: ${cids}, Month Start: ${firstOfMonth}, isFirstDay: ${isFirstDay}, Hour: ${currentHour}`);
@@ -143,19 +131,20 @@ export async function GET(req: NextRequest) {
 
         const allCompletions = completions || [];
 
-        // --- 3월 수동 복구 데이터 기점 (2026-03-11 기준) ---
-        // [수정] 성도 명단 기반 하드코딩 데이터 격리: 예수인교회인 경우에만 기본 실적 부여 (보호막)
+        // --- 3월 수동 복구 데이터 최종 버전 (사용자 제공 스크린샷 기준 2026-04-01 반영) ---
         const isJesusIn = cids.includes('jesus-in') || cids.includes('예수인교회');
         const MARCH_BASE: Record<string, number> = isJesusIn ? {
-            '강혜진': 11,
-            '백동희': 9,
-            '이미경': 8,
-            '김은영': 8,
-            '최말례': 7,
-            '장경하': 4,
-            '박영희': 4,
-            '안유리': 3,
-            '최성은': 3
+            '강혜진': 27,
+            '백동희': 26,
+            '김은영': 24,
+            '최말례': 23,
+            '이미경': 22,
+            '박영희': 14,
+            '안유리': 9,
+            '백동환': 8,
+            '장경하': 8,
+            '최성은': 6,
+            '김혜윤': 1
         } : {};
 
         // 제외할 명단
