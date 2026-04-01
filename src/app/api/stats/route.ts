@@ -277,12 +277,26 @@ export async function GET(req: NextRequest) {
 
         if (recentError) console.error("[Stats API] Recent logins fetch error:", recentError);
 
-        // 6. 랭킹 생성 및 정렬
+        // 6. [중요] 3월 최종 시상 데이터 (사용자 요청 반영)
+        const FINAL_MARCH_DATA = [
+            { name: '강혜진', count: 27 },
+            { name: '백동희', count: 26 },
+            { name: '김은영', count: 24 },
+            { name: '최말례', count: 23 },
+            { name: '이미경', count: 22 },
+            { name: '박영희', count: 14 },
+            { name: '안유리', count: 9 },
+            { name: '백동환', count: 8 },
+            { name: '장경하', count: 8 },
+            { name: '최성은', count: 6 },
+            { name: '김혜윤', count: 1 }
+        ];
+
         const ranking = Object.values(userStats)
             .map(u => ({
                 name: u.name,
                 avatar: u.avatar,
-                count: u.baseCount + Array.from(u.dates).length
+                count: Array.from(u.dates).length // 4월부터의 순수 실적 (MARCH_BASE 제외)
             }))
             .sort((a, b) => {
                 if (b.count !== a.count) return b.count - a.count;
@@ -290,40 +304,10 @@ export async function GET(req: NextRequest) {
             })
             .slice(0, 100);
 
-        // 7. [추가] 매월 1일 오전 9시 이후 우승자 축하를 위한 이전 달 데이터 산출
+        // 7. [추가] 4월 초순(7일까지)에는 3월의 영광을 상단에 '시상' 형식으로 노출
         let previousMonthRanking = null;
-        if (isFirstDay && currentHour >= 9) {
-            console.log("[Stats API] Calculating Previous Month Winners...");
-            const prevMonthDate = new Date(now);
-            prevMonthDate.setMonth(prevMonthDate.getMonth() - 1);
-            const prevMonthStart = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}-01`;
-            const prevMonthEnd = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
-
-            const { data: prevCompletions } = await supabaseAdmin.from('qt_completions').select('*').gte('completed_date', prevMonthStart).lt('completed_date', prevMonthEnd).in('user_id', churchUserIds);
-            const { data: prevPosts } = await supabaseAdmin.from('community_posts').select('user_name, avatar_url, created_at, is_qt').in('church_id', cids).gte('created_at', prevMonthStart).lt('created_at', prevMonthEnd);
-            
-            const prevStats: Record<string, { name: string; avatar: string | null; dates: Set<string> }> = {};
-            (prevCompletions || []).forEach(c => {
-                const name = (c.user_name || nameMap[c.user_id] || '익명').trim();
-                if (!prevStats[name]) prevStats[name] = { name, avatar: c.avatar_url, dates: new Set() };
-                prevStats[name].dates.add(c.completed_date);
-            });
-            (prevPosts || []).filter(p => (p.is_qt === true || p.is_qt === 'true' || p.is_qt === 1)).forEach(p => {
-                const name = (p.user_name || '익명').trim();
-                const kstDate = new Date(new Date(p.created_at).getTime() + 9 * 60 * 60 * 1000);
-                const dateStr = kstDate.toISOString().split('T')[0];
-                if (!prevStats[name]) prevStats[name] = { name, avatar: p.avatar_url, dates: new Set() };
-                prevStats[name].dates.add(dateStr);
-            });
-
-            previousMonthRanking = Object.values(prevStats)
-                .map(u => ({
-                    name: u.name,
-                    avatar: u.avatar,
-                    count: u.dates.size
-                }))
-                .sort((a, b) => b.count - a.count)
-                .slice(0, 100);
+        if (currentDate <= 7) {
+            previousMonthRanking = FINAL_MARCH_DATA;
         }
 
         const result = {

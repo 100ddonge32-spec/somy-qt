@@ -4376,11 +4376,11 @@ export default function App() {
                             </div>
 
                             {/* 우승자 축하 모달 / 안내 (1일 9시 이후) */}
-                            {stats?.previousMonthRanking && stats?.isFirstDay && stats?.currentHour >= 9 && (
+                            {stats?.previousMonthRanking && (
                                 <div style={{ background: 'linear-gradient(135deg, #FFF9C4, #FFF59D)', borderRadius: '20px', padding: '24px', border: '1px solid #FBC02D', marginBottom: '20px', textAlign: 'center', boxShadow: '0 10px 30px rgba(251,192,45,0.2)', position: 'relative', overflow: 'hidden' }}>
                                     <div style={{ position: 'absolute', top: '-10px', right: '-10px', fontSize: '60px', opacity: 0.1 }}>🏆</div>
-                                    <h2 style={{ margin: '0 0 10px 0', fontSize: '18px', fontWeight: 800, color: '#F57F17' }}>🎊 지난달 묵상 우승자 축하 🎊</h2>
-                                    <p style={{ fontSize: '13px', color: '#795548', marginBottom: '20px' }}>성실하게 묵상에 참여해주신 모든 성도님들께 감사드립니다!</p>
+                                    <h2 style={{ margin: '0 0 10px 0', fontSize: '18px', fontWeight: 800, color: '#F57F17' }}>🎊 3월 묵상 명예의 전당 (시상) 🎊</h2>
+                                    <p style={{ fontSize: '13px', color: '#795548', marginBottom: '20px' }}>성실하게 3월 묵상에 참여해주신 모든 성도님들께 감사드립니다!</p>
 
                                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '15px', margin: '20px 0' }}>
                                         {/* 2위 */}
@@ -4464,11 +4464,11 @@ export default function App() {
                                 )}
                             </div>
 
-                            {/* 이번 달 랭킹 */}
+                            {/* 묵상 랭킹 - 월 명시 보강 */}
                             <div style={{ background: '#FDFCFB', borderRadius: '16px', padding: '20px', border: '1px solid #F0ECE4' }}>
-                                <h3 style={{ margin: '0 0 14px 0', fontSize: '14px', fontWeight: 700 }}>🏆 이번 달 묵상 랭킹</h3>
+                                <h3 style={{ margin: '0 0 14px 0', fontSize: '14px', fontWeight: 700 }}>🏆 4월 묵상 랭킹</h3>
                                 {(stats?.ranking?.length || 0) === 0 ? (
-                                    <div style={{ fontSize: '13px', color: '#999', textAlign: 'center', padding: '10px 0' }}>이번 달 기록이 없습니다</div>
+                                    <div style={{ fontSize: '13px', color: '#999', textAlign: 'center', padding: '10px 0' }}>4월 묵상 기록이 없습니다.</div>
                                 ) : (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                         {stats?.ranking?.map((r: any, i: number) => (
