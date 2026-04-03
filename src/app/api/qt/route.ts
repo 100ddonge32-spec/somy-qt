@@ -156,41 +156,44 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    // [푸시 알림] 새로운 큐티 등록 알림 전송
-    try {
-        const { data: subscriptions } = await supabaseAdmin
-            .from('push_subscriptions')
-            .select('user_id, subscription');
+    // [푸시 알림] 새로운 큐티 등록 알림 전송 (당일 등록인 경우에만 즉시 발송)
+    const today = getKoreaDateString();
+    if (date === today) {
+        try {
+            const { data: subscriptions } = await supabaseAdmin
+                .from('push_subscriptions')
+                .select('user_id, subscription');
 
-        if (subscriptions && subscriptions.length > 0) {
-            await Promise.all(subscriptions.map(async (sub) => {
-                if (sub.subscription) {
-                    try {
-                        const payload = JSON.stringify({
-                            title: '📖 오늘의 큐티가 도착했습니다!',
-                            body: `${date} ${reference} 말씀이 등록되었습니다.`,
-                            url: '/',
-                            userId: sub.user_id
-                        });
-                        await webpush.sendNotification(sub.subscription, payload);
-                    } catch (e) { }
-                }
-            }));
-        }
+            if (subscriptions && subscriptions.length > 0) {
+                await Promise.all(subscriptions.map(async (sub) => {
+                    if (sub.subscription) {
+                        try {
+                            const payload = JSON.stringify({
+                                title: '📖 오늘의 큐티가 도착했습니다!',
+                                body: `${date} ${reference} 말씀이 등록되었습니다.`,
+                                url: '/',
+                                userId: sub.user_id
+                            });
+                            await webpush.sendNotification(sub.subscription, payload);
+                        } catch (e) { }
+                    }
+                }));
+            }
 
-        // [DB 알림] 모든 사용자에게 알림 저장
-        const { data: profiles } = await supabaseAdmin.from('profiles').select('id');
-        if (profiles && profiles.length > 0) {
-            const notis = profiles.map(p => ({
-                user_id: p.id,
-                type: 'qt',
-                actor_name: `${date} ${reference}`,
-                is_read: false
-            }));
-            await supabaseAdmin.from('notifications').insert(notis);
+            // [DB 알림] 모든 사용자에게 알림 저장
+            const { data: profiles } = await supabaseAdmin.from('profiles').select('id');
+            if (profiles && profiles.length > 0) {
+                const notis = profiles.map(p => ({
+                    user_id: p.id,
+                    type: 'qt',
+                    actor_name: `${date} ${reference}`,
+                    is_read: false
+                }));
+                await supabaseAdmin.from('notifications').insert(notis);
+            }
+        } catch (pushErr) {
+            console.error('Notification logic error:', pushErr);
         }
-    } catch (pushErr) {
-        console.error('Notification logic error:', pushErr);
     }
 
     return NextResponse.json({ success: true });

@@ -95,21 +95,8 @@ export async function GET(req: NextRequest) {
                     ai_generated: true,
                 }, { onConflict: 'date' });
 
-                // 푸시 알림 생략 불가 (중요)
-                const { data: subs } = await supabaseAdmin.from('push_subscriptions').select('subscription');
-                if (subs) {
-                    await Promise.all(subs.map(async (s) => {
-                        if (s.subscription) {
-                            try {
-                                await webpush.sendNotification(s.subscription, JSON.stringify({
-                                    title: '📖 오늘의 큐티가 준비되었습니다!',
-                                    body: `${today} 묵상과 칼럼을 확인하세요.`,
-                                    url: '/'
-                                }));
-                            } catch (e) { }
-                        }
-                    }));
-                }
+                // [알림 안내] 자동 생성된 큐티의 알림은 정해진 시간에 스케줄러(push-scheduler)를 통해 발송됩니다.
+                // 중복 발송 방지를 위해 이곳의 즉시 발송 로직은 제거합니다.
             } catch (err) {
                 console.error('Daily QT failed:', err);
                 if (!forceWeekly) throw err;
