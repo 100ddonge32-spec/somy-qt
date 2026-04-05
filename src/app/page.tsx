@@ -8589,18 +8589,73 @@ export default function App() {
                                                         <input type="file" id="poster-img-upload" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
                                                             const file = e.target.files?.[0];
                                                             if (!file) return;
+                                                            
+                                                            // 10MB 이상 체크
+                                                            if (file.size > 10 * 1024 * 1024) {
+                                                                alert('파일 크기가 너무 큽니다. 다른 이미지를 선택해 주세요.');
+                                                                return;
+                                                            }
+
                                                             setIsPosterUploading(true);
-                                                            try {
-                                                                const formData = new FormData();
-                                                                formData.append('file', file);
-                                                                formData.append('church_id', churchId);
-                                                                const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
-                                                                const data = await res.json();
-                                                                if (data.url) {
-                                                                    setSettingsForm((prev: any) => ({ ...prev, event_poster_url: data.url }));
-                                                                }
-                                                            } catch (e) { alert('이미지 업로드 실패'); }
-                                                            finally { setIsPosterUploading(false); }
+                                                            const reader = new FileReader();
+                                                            reader.onload = async (ev) => {
+                                                                const img = new Image();
+                                                                img.onload = async () => {
+                                                                    try {
+                                                                        const canvas = document.createElement('canvas');
+                                                                        const MAX_SIZE = 1200; // 포스터는 고해상도 필요하므로 1200 정도로 설정
+                                                                        let width = img.width;
+                                                                        let height = img.height;
+                                                                        if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } }
+                                                                        else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
+                                                                        canvas.width = width;
+                                                                        canvas.height = height;
+                                                                        const ctx = canvas.getContext('2d');
+                                                                        ctx?.drawImage(img, 0, 0, width, height);
+
+                                                                        // Blob으로 변환하여 FormData에 첨부
+                                                                        canvas.toBlob(async (blob) => {
+                                                                            if (!blob) {
+                                                                                alert('이미지 최적화에 실패했습니다.');
+                                                                                setIsPosterUploading(false);
+                                                                                return;
+                                                                            }
+                                                                            
+                                                                            try {
+                                                                                const resizedFile = new File([blob], file.name, { type: 'image/jpeg' });
+                                                                                const formData = new FormData();
+                                                                                formData.append('file', resizedFile);
+                                                                                formData.append('church_id', churchId);
+                                                                                
+                                                                                const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
+                                                                                const data = await res.json();
+                                                                                if (data.url) {
+                                                                                    setSettingsForm((prev: any) => ({ ...prev, event_poster_url: data.url }));
+                                                                                } else {
+                                                                                    alert('서버 응답 오류: ' + (data.error || '알 수 없는 이유'));
+                                                                                }
+                                                                            } catch (apiErr) {
+                                                                                alert('서버 업로드 중 오류가 발생했습니다.');
+                                                                            } finally {
+                                                                                setIsPosterUploading(false);
+                                                                            }
+                                                                        }, 'image/jpeg', 0.85);
+                                                                    } catch (canvasErr) {
+                                                                        alert('이미지 처리 중 오류가 발생했습니다.');
+                                                                        setIsPosterUploading(false);
+                                                                    }
+                                                                };
+                                                                img.onerror = () => {
+                                                                    alert('이미지를 불러오지 못했습니다.');
+                                                                    setIsPosterUploading(false);
+                                                                };
+                                                                img.src = ev.target?.result as string;
+                                                            };
+                                                            reader.onerror = () => {
+                                                                alert('파일 읽기 오류');
+                                                                setIsPosterUploading(false);
+                                                            };
+                                                            reader.readAsDataURL(file);
                                                         }} />
                                                         <button
                                                             onClick={() => document.getElementById('poster-img-upload')?.click()}
