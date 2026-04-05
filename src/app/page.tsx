@@ -11308,26 +11308,53 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
                             <input type="file" accept="image/jpeg, image/png, image/jpg" style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (!file) return;
+                                
+                                // 파일 크기 제한 (예: 10MB 이상은 브라우저 부하 가능성 있음)
+                                if (file.size > 10 * 1024 * 1024) {
+                                    alert('파일 크기가 너무 큽니다. 10MB 이하의 이미지를 선택해주세요.');
+                                    return;
+                                }
+
                                 const reader = new FileReader();
                                 reader.onload = (ev) => {
                                     const img = new Image();
                                     img.onload = () => {
-                                        const canvas = document.createElement('canvas');
-                                        const MAX_SIZE = 400;
-                                        let width = img.width;
-                                        let height = img.height;
-                                        if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } }
-                                        else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
-                                        canvas.width = width;
-                                        canvas.height = height;
-                                        const ctx = canvas.getContext('2d');
-                                        ctx?.drawImage(img, 0, 0, width, height);
-                                        const base64Str = canvas.toDataURL('image/jpeg', 0.8);
-                                        setProfileForm((prev: any) => ({ ...prev, avatar_url: base64Str }));
+                                        try {
+                                            const canvas = document.createElement('canvas');
+                                            const MAX_SIZE = 400;
+                                            let width = img.width;
+                                            let height = img.height;
+                                            if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } }
+                                            else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
+                                            canvas.width = width;
+                                            canvas.height = height;
+                                            const ctx = canvas.getContext('2d');
+                                            ctx?.drawImage(img, 0, 0, width, height);
+                                            const base64Str = canvas.toDataURL('image/jpeg', 0.8);
+                                            
+                                            if (!base64Str || base64Str === 'data:,') {
+                                                throw new Error('이미지 처리 중 문제가 발생했습니다.');
+                                            }
+                                            
+                                            setProfileForm((prev: any) => ({ ...prev, avatar_url: base64Str }));
+                                        } catch (canvasErr: any) {
+                                            console.error('[Canvas Error]', canvasErr);
+                                            alert('이미지 최적화 중 오류가 발생했습니다. 다른 사진을 시도해주세요.');
+                                        }
+                                    };
+                                    img.onerror = () => {
+                                        alert('이미지를 불러오지 못했습니다. 파일이 손상되었거나 지원되지 않는 형식일 수 있습니다.');
                                     };
                                     img.src = ev.target?.result as string;
                                 };
-                                reader.readAsDataURL(file);
+                                reader.onerror = () => {
+                                    alert('파일 읽기 오류가 발생했습니다.');
+                                };
+                                try {
+                                    reader.readAsDataURL(file);
+                                } catch (readErr) {
+                                    alert('파일에 접근하지 못했습니다.');
+                                }
                             }} />
                         </div>
                         <div style={{ fontSize: '11px', color: '#888', marginTop: '8px' }}>사진 클릭 시 변경 (JPG/PNG)</div>

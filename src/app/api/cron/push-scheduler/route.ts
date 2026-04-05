@@ -22,6 +22,8 @@ export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const secret = searchParams.get('secret');
+        const targetChurchId = searchParams.get('church_id');
+        const force = searchParams.get('force') === 'true';
 
         // 보안 체크 (Vercel Cron Secret 또는 커스텀 시크릿)
         const CRON_SECRET = process.env.CRON_SECRET || 'somy-push-secret-123';
@@ -34,49 +36,56 @@ export async function GET(req: NextRequest) {
         const currentHour = now.getHours();
         const today = now.toISOString().split('T')[0];
 
-        console.log(`[Push-Scheduler] Checking notifications for ${today} ${currentHour}:00 KST`);
-
-        // 2. 모든 교회 설정 가져오기
-        const { data: churches, error: churchError } = await supabaseAdmin
-            .from('church_settings')
-            .select('*');
-
-        if (churchError) throw churchError;
+        console.log(`[Push-Scheduler] Request received. TargetChurch: ${targetChurchId || 'ALL'}, Force: ${force}, Time: ${today} ${currentHour}:00 KST`);
 
         const results = [];
 
-        for (const church of churches) {
-            let targetHour = 8; // 기본값 8시
-            
-            // qt_notification_time 필드 또는 plan 필드 파싱
-            let configTime = church.qt_notification_time;
-            if (!configTime && church.plan && church.plan.includes('qt_time:')) {
-                const match = church.plan.match(/qt_time:([^|]+)/);
-                if (match) configTime = decodeURIComponent(match[1]);
-            }
+        if (targetChurchId) {
+            // 특정 교회만 발송 (기존 push-send-daily 역할 대체)
+            console.log(`[Push-Scheduler] Manual trigger for church: ${targetChurchId}`);
+            const pushResult = await triggerPushForChurch(targetChurchId, today);
+            results.push({ church_id: targetChurchId, status: 'success', ...pushResult });
+        } else {
+            // 모든 교회 설정 가져오기 (자동 스케줄링)
+            const { data: churches, error: churchError } = await supabaseAdmin
+                .from('church_settings')
+                .select('*');
 
-            if (configTime) {
-                const hourPart = configTime.split(':')[0];
-                targetHour = parseInt(hourPart, 10);
-            }
+            if (churchError) throw churchError;
 
-            // 현재 시간이 설정된 시간(시간 단위)과 일치하는지 확인
-            if (currentHour === targetHour) {
-                console.log(`[Push-Scheduler] Triggering push for church: ${church.church_id} (Config Time: ${configTime || '08:00'})`);
+            // Hobby 플랜의 10초 타임아웃을 고려하여 병렬 처리 시도 (단, 너무 많으면 부하 조절 필요)
+            // 현재는 서비스 규모가 작으므로 한꺼번에 실행
+            const taskPromises = churches.map(async (church) => {
+                let targetHour = 8; // 기본값 8시
                 
-                try {
-                    // 해당 교회의 푸시 발송 로직 실행
-                    const pushResult = await triggerPushForChurch(church.church_id, today);
-                    results.push({ church_id: church.church_id, status: 'success', ...pushResult });
-                } catch (err: any) {
-                    console.error(`[Push-Scheduler] Failed for ${church.church_id}:`, err.message);
-                    results.push({ church_id: church.church_id, status: 'failed', error: err.message });
+                let configTime = church.qt_notification_time;
+                if (!configTime && church.plan && church.plan.includes('qt_time:')) {
+                    const match = church.plan.match(/qt_time:([^|]+)/);
+                    if (match) configTime = decodeURIComponent(match[1]);
                 }
-            }
+
+                if (configTime) {
+                    const hourPart = configTime.split(':')[0];
+                    targetHour = parseInt(hourPart, 10);
+                }
+
+                if (currentHour === targetHour || force) {
+                    try {
+                        return await triggerPushForChurch(church.church_id, today);
+                    } catch (err: any) {
+                        return { church_id: church.church_id, status: 'failed', error: err.message };
+                    }
+                }
+                return null;
+            });
+
+            const settledResults = await Promise.all(taskPromises);
+            results.push(...settledResults.filter(Boolean));
         }
 
         return NextResponse.json({
             success: true,
+            today,
             currentTime: `${currentHour}:00`,
             processedCount: results.length,
             details: results
@@ -89,21 +98,29 @@ export async function GET(req: NextRequest) {
 }
 
 async function triggerPushForChurch(churchId: string, today: string) {
+    const normChurchId = normalizeId(churchId) || churchId;
+    
     // 1. 해당 교회의 오늘 날짜 큐티 정보 가져오기
+    let churchIdsToSearch = [churchId];
+    if (normChurchId === 'jesus-in') {
+        churchIdsToSearch = ['jesus-in', '예수인교회', '예수인'];
+    }
+
     const { data: qtData } = await supabaseAdmin
         .from('daily_qt')
         .select('reference')
         .eq('date', today)
-        .eq('church_id', churchId)
+        .in('church_id', churchIdsToSearch)
         .maybeSingle();
 
-    // 혹시라도 개별 교회 큐티가 없으면 공용(예수인교회 등) 큐티가 있는지 확인 (폴백)
+    // 폴백: 공용 큐티 확인
     let reference = qtData?.reference;
     if (!reference) {
         const { data: globalQt } = await supabaseAdmin
             .from('daily_qt')
             .select('reference')
             .eq('date', today)
+            .eq('church_id', 'jesus-in')
             .maybeSingle();
         reference = globalQt?.reference;
     }
@@ -115,11 +132,11 @@ async function triggerPushForChurch(churchId: string, today: string) {
     const { data: approvedProfiles } = await supabaseAdmin
         .from('profiles')
         .select('id')
-        .eq('church_id', churchId)
+        .in('church_id', churchIdsToSearch)
         .eq('is_approved', true);
 
     const approvedIds = (approvedProfiles || []).map(p => p.id);
-    if (approvedIds.length === 0) return { sentCount: 0, reason: 'No approved members' };
+    if (approvedIds.length === 0) return { church_id: churchId, sentCount: 0, reason: 'No approved members' };
 
     // 3. 구독 정보 가져오기
     const { data: subscriptions } = await supabaseAdmin
@@ -127,22 +144,34 @@ async function triggerPushForChurch(churchId: string, today: string) {
         .select('user_id, subscription')
         .in('user_id', approvedIds);
 
-    if (!subscriptions || subscriptions.length === 0) return { sentCount: 0, reason: 'No subscriptions' };
+    if (!subscriptions || subscriptions.length === 0) return { church_id: churchId, sentCount: 0, reason: 'No subscriptions' };
 
-    // 4. 발송
+    // 4. 발송 및 관리 (무결성 체크 포함)
     const sendResults = await Promise.allSettled(
         subscriptions.map(async (sub) => {
-            await webpush.sendNotification(
-                sub.subscription,
-                JSON.stringify({
-                    title: messageTitle,
-                    body: messageBody,
-                    url: '/?view=qt'
-                })
-            );
+            try {
+                await webpush.sendNotification(
+                    sub.subscription,
+                    JSON.stringify({
+                        title: messageTitle,
+                        body: messageBody,
+                        url: '/?view=qt'
+                    })
+                );
+            } catch (err: any) {
+                const statusCode = err.statusCode || (err.response && err.response.statusCode);
+                // 만료된 구독 정보 삭제 (Hobby 플랜 효율성 및 데이터 정리)
+                if (statusCode === 410 || statusCode === 404 || statusCode === 400) {
+                    await supabaseAdmin
+                        .from('push_subscriptions')
+                        .delete()
+                        .eq('user_id', sub.user_id);
+                }
+                throw err;
+            }
         })
     );
 
     const sentCount = sendResults.filter(r => r.status === 'fulfilled').length;
-    return { sentCount, total: subscriptions.length };
+    return { church_id: churchId, sentCount, total: subscriptions.length };
 }
