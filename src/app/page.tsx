@@ -364,10 +364,72 @@ export default function App() {
     const [qtStep, setQtStep] = useState<"read" | "interpret" | "reflect" | "grace" | "pray" | "done">("read");
     const [isMounted, setIsMounted] = useState(false); // 마운트 상태 추적
     const [communityPosts, setCommunityPosts] = useState<Post[]>([]);
+    const [communityPage, setCommunityPage] = useState(1); // ✅ 게시판 페이지 번호
+    const [hasMoreCommunity, setHasMoreCommunity] = useState(true); // ✅ 더 불러올 데이터 있는지 여부
+    const [isCommunityLoading, setIsCommunityLoading] = useState(false); // ✅ 게시판 로딩 중 여부
     const [isPrivatePost, setIsPrivatePost] = useState(false); // 은혜나눔 비공개 여부
+
+    // ✅ [성능 최적화] 게시판 데이터 페이지네이션 로딩 함수
+    const handleLoadCommunity = useCallback(async (isInitial = true) => {
+        if (isCommunityLoading) return;
+        setIsCommunityLoading(true);
+
+        const targetPage = isInitial ? 1 : communityPage + 1;
+        try {
+            const res = await fetch(`/api/community?church_id=${churchId}&page=${targetPage}&limit=15`);
+            const data = await res.json();
+
+            if (Array.isArray(data)) {
+                if (isInitial) {
+                    setCommunityPosts(data);
+                    setCommunityPage(1);
+                    setHasMoreCommunity(data.length === 15);
+                } else {
+                    setCommunityPosts(prev => [...prev, ...data]);
+                    setCommunityPage(targetPage);
+                    setHasMoreCommunity(data.length === 15);
+                }
+            }
+        } catch (e) {
+            console.error("게시판 로드 실패:", e);
+        } finally {
+            setIsCommunityLoading(false);
+        }
+    }, [churchId, communityPage, isCommunityLoading]);
 
     // 감사일기 상태
     const [thanksgivingDiaries, setThanksgivingDiaries] = useState<Post[]>([]);
+    const [thanksgivingPage, setThanksgivingPage] = useState(1); // ✅ 감사일기 페이지 번호
+    const [hasMoreThanksgiving, setHasMoreThanksgiving] = useState(true); // ✅ 더 불러올 데이터 있는지 여부
+    const [isThanksgivingLoading, setIsThanksgivingLoading] = useState(false); // ✅ 감사일기 로딩 중 여부
+
+    // ✅ [성능 최적화] 감사일기 데이터 페이지네이션 로딩 함수
+    const handleLoadThanksgiving = useCallback(async (isInitial = true) => {
+        if (isThanksgivingLoading) return;
+        setIsThanksgivingLoading(true);
+
+        const targetPage = isInitial ? 1 : thanksgivingPage + 1;
+        try {
+            const res = await fetch(`/api/thanksgiving?church_id=${churchId}&page=${targetPage}&limit=15`);
+            const data = await res.json();
+
+            if (Array.isArray(data)) {
+                if (isInitial) {
+                    setThanksgivingDiaries(data);
+                    setThanksgivingPage(1);
+                    setHasMoreThanksgiving(data.length === 15);
+                } else {
+                    setThanksgivingDiaries(prev => [...prev, ...data]);
+                    setThanksgivingPage(targetPage);
+                    setHasMoreThanksgiving(data.length === 15);
+                }
+            }
+        } catch (e) {
+            console.error("감사일기 로드 실패:", e);
+        } finally {
+            setIsThanksgivingLoading(false);
+        }
+    }, [churchId, thanksgivingPage, isThanksgivingLoading]);
     const [counselingRequests, setCounselingRequests] = useState<any[]>([]);
     const isSubscribing = useRef(false); // [추가] 중복 구독 시도 방지용 락
     const [showPushPrompt, setShowPushPrompt] = useState(false); // ✅ 푸시 알림 권장 모달 제어
@@ -3109,11 +3171,7 @@ export default function App() {
                                             setView("community");
                                             setHasNewCommunity(false);
                                             localStorage.setItem(`last_view_community_${churchId}`, Date.now().toString());
-                                            try {
-                                                const res = await fetch(`/api/community?church_id=${churchId}`);
-                                                const data = await res.json();
-                                                if (Array.isArray(data)) setCommunityPosts(data);
-                                            } catch (e) { console.error("게시판 로드 실패:", e); }
+                                            handleLoadCommunity(true);
                                         }} className="main-action-button" style={{
                                             width: "100%", padding: "16px 12px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #fff0f5 100%)", color: "#9E2A5B",
@@ -3136,11 +3194,7 @@ export default function App() {
                                             setView("thanksgiving");
                                             setHasNewThanksgiving(false);
                                             localStorage.setItem(`last_view_thanks_${churchId}`, Date.now().toString());
-                                            try {
-                                                const res = await fetch(`/api/thanksgiving?church_id=${churchId}`);
-                                                const data = await res.json();
-                                                if (Array.isArray(data)) setThanksgivingDiaries(data);
-                                            } catch (e) { console.error("감사일기 로드 실패:", e); }
+                                            handleLoadThanksgiving(true);
                                         }} className="main-action-button" style={{
                                             width: "100%", padding: "16px 12px",
                                             background: "linear-gradient(145deg, #ffffff 0%, #fff6e5 100%)", color: "#E07A5F",
@@ -5173,6 +5227,40 @@ export default function App() {
                                         </div>
                                     );
                                 })}
+
+                                {/* ✅ 더보기 버튼 */}
+                                {hasMoreCommunity && (
+                                    <div style={{ padding: '10px 0 20px', textAlign: 'center' }}>
+                                        <button 
+                                            onClick={() => handleLoadCommunity(false)}
+                                            disabled={isCommunityLoading}
+                                            style={{
+                                                padding: '12px 30px',
+                                                background: 'white',
+                                                color: '#333',
+                                                border: '1px solid #EEE',
+                                                borderRadius: '15px',
+                                                fontSize: '14px',
+                                                fontWeight: 700,
+                                                cursor: isCommunityLoading ? 'default' : 'pointer',
+                                                boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                margin: '0 auto'
+                                            }}
+                                        >
+                                            {isCommunityLoading ? (
+                                                <>
+                                                    <span style={{ animation: 'spin 1s linear infinite' }}>⏳</span>
+                                                    불러오는 중...
+                                                </>
+                                            ) : (
+                                                <>더 많은 은혜 보기 ⬇️</>
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
                         </div>
                     )}
                 </div>
@@ -5697,6 +5785,40 @@ export default function App() {
                                         </div>
                                     );
                                 })}
+
+                                {/* ✅ 더보기 버튼 */}
+                                {hasMoreThanksgiving && (
+                                    <div style={{ padding: '10px 0 20px', textAlign: 'center' }}>
+                                        <button 
+                                            onClick={() => handleLoadThanksgiving(false)}
+                                            disabled={isThanksgivingLoading}
+                                            style={{
+                                                padding: '12px 30px',
+                                                background: 'white',
+                                                color: '#333',
+                                                border: '1px solid #fae1cd',
+                                                borderRadius: '15px',
+                                                fontSize: '14px',
+                                                fontWeight: 700,
+                                                cursor: isThanksgivingLoading ? 'default' : 'pointer',
+                                                boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                margin: '0 auto'
+                                            }}
+                                        >
+                                            {isThanksgivingLoading ? (
+                                                <>
+                                                    <span style={{ animation: 'spin 1s linear infinite' }}>⏳</span>
+                                                    불러오는 중...
+                                                </>
+                                            ) : (
+                                                <>더 많은 감사 보기 ⬇️</>
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
                         </div>
                     )}
                 </div>
@@ -6478,9 +6600,7 @@ export default function App() {
                                     if (postRes.ok) {
                                         setSermonReflection({ q1: '', q2: '', q3: '', mainGrace: '', isPrivate: false });
                                         setView("community");
-                                        const res = await fetch(`/api/community?church_id=${churchId}`);
-                                        const data = await res.json();
-                                        if (Array.isArray(data)) setCommunityPosts(data);
+                                        handleLoadCommunity(true);
                                     } else {
                                         alert("게시물 등록에 실패했습니다.");
                                     }
@@ -7135,9 +7255,8 @@ export default function App() {
                                     }
                                     try {
                                         if (['comment', 'community_post', 'community_like'].includes(n.type)) {
-                                            const res = await fetch(`/api/community?church_id=${churchId}`);
-                                            const data = await res.json();
-                                            if (Array.isArray(data)) setCommunityPosts(data); setView('community');
+                                            handleLoadCommunity(true); 
+                                            setView('community');
                                         } else if (n.type === 'qt') { setView('qt'); } else { setView('home'); }
                                     } catch (e) { }
                                     setShowNotiList(false);

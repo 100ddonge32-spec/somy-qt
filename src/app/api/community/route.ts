@@ -13,11 +13,14 @@ const supabaseAdmin = createClient(
 
 
 
-// 게시글 목록 및 댓글 불러오기 (교회별 격리)
+// 게시글 목록 및 댓글 불러오기 (교회별 격리 + 페이지네이션)
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const churchId = searchParams.get('church_id') || 'jesus-in';
+        const page = parseInt(searchParams.get('page') || '1');
+        const limit = parseInt(searchParams.get('limit') || '15');
+        const offset = (page - 1) * limit;
 
         const { data: posts, error: postsError } = await supabaseAdmin
             .from('community_posts')
@@ -26,7 +29,8 @@ export async function GET(req: NextRequest) {
                 comments:community_comments(*)
             `)
             .eq('church_id', churchId)
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1);
 
         if (postsError) throw postsError;
         return NextResponse.json(posts);
