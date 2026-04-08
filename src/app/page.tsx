@@ -66,7 +66,7 @@ interface Post {
     comment_count?: number;
 }
 
-interface Notification {
+interface SomyNotification {
     id: number;
     user_id: string;
     actor_name: string;
@@ -363,73 +363,6 @@ export default function App() {
     const [sermonReflection, setSermonReflection] = useState({ q1: '', q2: '', q3: '', mainGrace: '', isPrivate: false });
     const [qtStep, setQtStep] = useState<"read" | "interpret" | "reflect" | "grace" | "pray" | "done">("read");
     const [isMounted, setIsMounted] = useState(false); // 마운트 상태 추적
-    const [communityPosts, setCommunityPosts] = useState<Post[]>([]);
-    const [communityPage, setCommunityPage] = useState(1); // ✅ 게시판 페이지 번호
-    const [hasMoreCommunity, setHasMoreCommunity] = useState(true); // ✅ 더 불러올 데이터 있는지 여부
-    const [isCommunityLoading, setIsCommunityLoading] = useState(false); // ✅ 게시판 로딩 중 여부
-    const [isPrivatePost, setIsPrivatePost] = useState(false); // 은혜나눔 비공개 여부
-
-    // ✅ [성능 최적화] 게시판 데이터 페이지네이션 로딩 함수
-    const handleLoadCommunity = useCallback(async (isInitial = true) => {
-        if (isCommunityLoading) return;
-        setIsCommunityLoading(true);
-
-        const targetPage = isInitial ? 1 : communityPage + 1;
-        try {
-            const res = await fetch(`/api/community?church_id=${churchId}&page=${targetPage}&limit=15`);
-            const data = await res.json();
-
-            if (Array.isArray(data)) {
-                if (isInitial) {
-                    setCommunityPosts(data);
-                    setCommunityPage(1);
-                    setHasMoreCommunity(data.length === 15);
-                } else {
-                    setCommunityPosts(prev => [...prev, ...data]);
-                    setCommunityPage(targetPage);
-                    setHasMoreCommunity(data.length === 15);
-                }
-            }
-        } catch (e) {
-            console.error("게시판 로드 실패:", e);
-        } finally {
-            setIsCommunityLoading(false);
-        }
-    }, [churchId, communityPage, isCommunityLoading]);
-
-    // 감사일기 상태
-    const [thanksgivingDiaries, setThanksgivingDiaries] = useState<Post[]>([]);
-    const [thanksgivingPage, setThanksgivingPage] = useState(1); // ✅ 감사일기 페이지 번호
-    const [hasMoreThanksgiving, setHasMoreThanksgiving] = useState(true); // ✅ 더 불러올 데이터 있는지 여부
-    const [isThanksgivingLoading, setIsThanksgivingLoading] = useState(false); // ✅ 감사일기 로딩 중 여부
-
-    // ✅ [성능 최적화] 감사일기 데이터 페이지네이션 로딩 함수
-    const handleLoadThanksgiving = useCallback(async (isInitial = true) => {
-        if (isThanksgivingLoading) return;
-        setIsThanksgivingLoading(true);
-
-        const targetPage = isInitial ? 1 : thanksgivingPage + 1;
-        try {
-            const res = await fetch(`/api/thanksgiving?church_id=${churchId}&page=${targetPage}&limit=15`);
-            const data = await res.json();
-
-            if (Array.isArray(data)) {
-                if (isInitial) {
-                    setThanksgivingDiaries(data);
-                    setThanksgivingPage(1);
-                    setHasMoreThanksgiving(data.length === 15);
-                } else {
-                    setThanksgivingDiaries(prev => [...prev, ...data]);
-                    setThanksgivingPage(targetPage);
-                    setHasMoreThanksgiving(data.length === 15);
-                }
-            }
-        } catch (e) {
-            console.error("감사일기 로드 실패:", e);
-        } finally {
-            setIsThanksgivingLoading(false);
-        }
-    }, [churchId, thanksgivingPage, isThanksgivingLoading]);
     const [counselingRequests, setCounselingRequests] = useState<any[]>([]);
     const isSubscribing = useRef(false); // [추가] 중복 구독 시도 방지용 락
     const [showPushPrompt, setShowPushPrompt] = useState(false); // ✅ 푸시 알림 권장 모달 제어
@@ -507,7 +440,75 @@ export default function App() {
     const [isEditPrivate, setIsEditPrivate] = useState(false);
     const [replyingToCommentId, setReplyingToCommentId] = useState<any>(null);
     const [replyingToPostId, setReplyingToPostId] = useState<any>(null);
-    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [notifications, setNotifications] = useState<SomyNotification[]>([]);
+
+    const [communityPosts, setCommunityPosts] = useState<Post[]>([]);
+    const [communityPage, setCommunityPage] = useState(1); // ✅ 게시판 페이지 번호
+    const [hasMoreCommunity, setHasMoreCommunity] = useState(true); // ✅ 더 불러올 데이터 있는지 여부
+    const [isCommunityLoading, setIsCommunityLoading] = useState(false); // ✅ 게시판 로딩 중 여부
+    const [isPrivatePost, setIsPrivatePost] = useState(false); // 은혜나눔 비공개 여부
+
+    // ✅ [성능 최적화] 게시판 데이터 페이지네이션 로딩 함수
+    const handleLoadCommunity = useCallback(async (isInitial = true) => {
+        if (isCommunityLoading) return;
+        setIsCommunityLoading(true);
+
+        const targetPage = isInitial ? 1 : communityPage + 1;
+        try {
+            const res = await fetch(`/api/community?church_id=${churchId}&page=${targetPage}&limit=15`);
+            const data = await res.json();
+
+            if (Array.isArray(data)) {
+                if (isInitial) {
+                    setCommunityPosts(data);
+                    setCommunityPage(1);
+                    setHasMoreCommunity(data.length === 15);
+                } else {
+                    setCommunityPosts(prev => [...prev, ...data]);
+                    setCommunityPage(targetPage);
+                    setHasMoreCommunity(data.length === 15);
+                }
+            }
+        } catch (e) {
+            console.error("게시판 로드 실패:", e);
+        } finally {
+            setIsCommunityLoading(false);
+        }
+    }, [churchId, communityPage, isCommunityLoading]);
+
+    // 감사일기 상태
+    const [thanksgivingDiaries, setThanksgivingDiaries] = useState<Post[]>([]);
+    const [thanksgivingPage, setThanksgivingPage] = useState(1); // ✅ 감사일기 페이지 번호
+    const [hasMoreThanksgiving, setHasMoreThanksgiving] = useState(true); // ✅ 더 불러올 데이터 있는지 여부
+    const [isThanksgivingLoading, setIsThanksgivingLoading] = useState(false); // ✅ 감사일기 로딩 중 여부
+
+    // ✅ [성능 최적화] 감사일기 데이터 페이지네이션 로딩 함수
+    const handleLoadThanksgiving = useCallback(async (isInitial = true) => {
+        if (isThanksgivingLoading) return;
+        setIsThanksgivingLoading(true);
+
+        const targetPage = isInitial ? 1 : thanksgivingPage + 1;
+        try {
+            const res = await fetch(`/api/thanksgiving?church_id=${churchId}&page=${targetPage}&limit=15`);
+            const data = await res.json();
+
+            if (Array.isArray(data)) {
+                if (isInitial) {
+                    setThanksgivingDiaries(data);
+                    setThanksgivingPage(1);
+                    setHasMoreThanksgiving(data.length === 15);
+                } else {
+                    setThanksgivingDiaries(prev => [...prev, ...data]);
+                    setThanksgivingPage(targetPage);
+                    setHasMoreThanksgiving(data.length === 15);
+                }
+            }
+        } catch (e) {
+            console.error("감사일기 로드 실패:", e);
+        } finally {
+            setIsThanksgivingLoading(false);
+        }
+    }, [churchId, thanksgivingPage, isThanksgivingLoading]);
     const [showNotiList, setShowNotiList] = useState(false);
     const [ccmIndex, setCcmIndex] = useState<number | null>(null);
     const [todayCcm, setTodayCcm] = useState<CcmVideo | null>(null);
