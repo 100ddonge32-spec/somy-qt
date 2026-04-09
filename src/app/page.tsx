@@ -455,18 +455,18 @@ export default function App() {
 
         const targetPage = isInitial ? 1 : communityPage + 1;
         try {
-            const res = await fetch(`/api/community?church_id=${churchId}&page=${targetPage}&limit=15`);
+            const res = await fetch(`/api/community?church_id=${churchId}&page=${targetPage}&limit=5`);
             const data = await res.json();
 
             if (Array.isArray(data)) {
                 if (isInitial) {
                     setCommunityPosts(data);
                     setCommunityPage(1);
-                    setHasMoreCommunity(data.length === 15);
+                    setHasMoreCommunity(data.length === 5);
                 } else {
                     setCommunityPosts(prev => [...prev, ...data]);
                     setCommunityPage(targetPage);
-                    setHasMoreCommunity(data.length === 15);
+                    setHasMoreCommunity(data.length === 5);
                 }
             }
         } catch (e) {
@@ -489,18 +489,18 @@ export default function App() {
 
         const targetPage = isInitial ? 1 : thanksgivingPage + 1;
         try {
-            const res = await fetch(`/api/thanksgiving?church_id=${churchId}&page=${targetPage}&limit=15`);
+            const res = await fetch(`/api/thanksgiving?church_id=${churchId}&page=${targetPage}&limit=5`);
             const data = await res.json();
 
             if (Array.isArray(data)) {
                 if (isInitial) {
                     setThanksgivingDiaries(data);
                     setThanksgivingPage(1);
-                    setHasMoreThanksgiving(data.length === 15);
+                    setHasMoreThanksgiving(data.length === 5);
                 } else {
                     setThanksgivingDiaries(prev => [...prev, ...data]);
                     setThanksgivingPage(targetPage);
-                    setHasMoreThanksgiving(data.length === 15);
+                    setHasMoreThanksgiving(data.length === 5);
                 }
             }
         } catch (e) {
