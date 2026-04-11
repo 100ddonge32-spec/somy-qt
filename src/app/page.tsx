@@ -1332,7 +1332,11 @@ export default function App() {
                     const bd = String(m.birthdate).slice(5, 10);
                     return m.is_birthdate_lunar ? (todayLunarMMDD && bd === todayLunarMMDD) : bd === todaySolarMMDD;
                 });
-                if (bMembers.length > 0 && kstToday !== birthdayPopupRef.current) {
+
+                // 오늘 하루 안보기 체크
+                const hideDate = typeof window !== 'undefined' ? localStorage.getItem('somy_hide_birthday_date') : null;
+
+                if (bMembers.length > 0 && kstToday !== birthdayPopupRef.current && hideDate !== kstToday) {
                     setTodayBirthdayMembers(bMembers);
                     setShowBirthdayPopup(true);
                     birthdayPopupRef.current = kstToday;
@@ -2877,6 +2881,20 @@ export default function App() {
                                         cursor: 'pointer', boxShadow: '0 8px 15px rgba(0,0,0,0.2)'
                                     }}>
                                     축하하며 닫기
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                        const kstNow = new Date(new Date().getTime() + (9 * 60 * 60 * 1000));
+                                        const kstToday = kstNow.toISOString().slice(0, 10);
+                                        localStorage.setItem('somy_hide_birthday_date', kstToday);
+                                        setShowBirthdayPopup(false);
+                                    }}
+                                    style={{
+                                        marginTop: '16px', background: 'none', border: 'none', color: '#999', fontSize: '13px', 
+                                        textDecoration: 'underline', cursor: 'pointer', fontWeight: 500
+                                    }}>
+                                    오늘 하루 안보기
                                 </button>
                             </div>
                         </div>
