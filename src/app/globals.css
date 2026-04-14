@@ -46,3 +46,18 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #D4AF37;
 }
+
+.bible-verse-click-effect {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.bible-verse-click-effect:hover {
+  background-color: rgba(212, 175, 55, 0.08);
+}
+
+.bible-verse-click-effect:active {
+  background-color: rgba(212, 175, 55, 0.15);
+  transform: scale(0.985);
+}

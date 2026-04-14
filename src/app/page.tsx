@@ -2411,6 +2411,11 @@ export default function App() {
         const query = typeof directInput === 'string' ? directInput : passageInput;
         if (!query.trim() || isPassageLoading) return;
 
+        // 구절 클릭 시 대화창으로 부드럽게 이동
+        if (directInput && passageRef.current) {
+            passageRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
         const userMsg = { role: "user", content: query };
         setPassageChat((prev: any) => [...prev, userMsg]);
         if (!directInput) setPassageInput("");
@@ -3816,10 +3821,11 @@ export default function App() {
                                                             {label}
                                                         </span>
                                                         <span
+                                                            className="bible-verse-click-effect"
                                                             onClick={() => {
                                                                 handlePassageAsk(`[${label}절] "${content}" 이 구절에 대해 깊이 있는 신학적 해설과 묵상 가이드를 알려줘.`);
                                                             }}
-                                                            style={{ fontSize: '16px', lineHeight: 1.8, color: '#333', flex: 1, wordBreak: 'keep-all', fontWeight: 500, cursor: 'pointer' }}
+                                                            style={{ fontSize: '16px', lineHeight: 1.8, color: '#333', flex: 1, wordBreak: 'keep-all', fontWeight: 500, padding: '4px 8px', margin: '0 -4px' }}
                                                             title="AI 소미에게 물어보기"
                                                         >
                                                             {content}
@@ -3830,10 +3836,11 @@ export default function App() {
                                             return (
                                                 <p
                                                     key={idx}
+                                                    className="bible-verse-click-effect"
                                                     onClick={() => {
                                                         handlePassageAsk(`"${line}" 이 내용에 대해 깊이 있는 신학적 해설과 묵상 가이드를 알려줘.`);
                                                     }}
-                                                    style={{ margin: 0, fontSize: '16px', lineHeight: 1.8, color: '#333', wordBreak: 'keep-all', fontWeight: 500, paddingLeft: '30px', cursor: 'pointer' }}
+                                                    style={{ margin: '0 0 0 -4px', fontSize: '16px', lineHeight: 1.8, color: '#333', wordBreak: 'keep-all', fontWeight: 500, padding: '4px 4px 4px 30px' }}
                                                     title="AI 소미에게 물어보기"
                                                 >
                                                     {line}
