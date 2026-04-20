@@ -129,7 +129,8 @@ export async function POST(req: NextRequest) {
                 // 기존 데이터의 유니크 필드를 먼저 제거/변경한 후 새 ID로 이관합니다.
                 const { error: clearError } = await supabaseAdmin.from('profiles').update({
                     email: null,
-                    phone: null
+                    phone: null,
+                    member_no: null
                 }).eq('id', match.id);
 
                 if (clearError) {
@@ -144,6 +145,13 @@ export async function POST(req: NextRequest) {
                 });
 
                 if (upsertError) {
+                    // [복구 로직] upsert 실패 시 삭제했던 유니크 컬럼 원상복구
+                    await supabaseAdmin.from('profiles').update({
+                        email: match.email,
+                        phone: match.phone,
+                        member_no: match.member_no
+                    }).eq('id', match.id);
+
                     console.error(`[DirectAuth] 프로필 이관 실패:`, upsertError);
                     // [개선] 사용자에게 실제 실패 원인을 조금 더 구체적으로 노출 (디버깅용)
                     throw new Error(`프로필 연결 실패: ${upsertError.message || '데이터베이스 오류'}`);

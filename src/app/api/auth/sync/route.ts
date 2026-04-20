@@ -253,6 +253,15 @@ export async function POST(req: NextRequest) {
                 await supabaseAdmin.from('profiles').delete().eq('id', oldId);
             };
 
+            // [수정] 이관 시 유니크 제약조건(email, phone 등) 충돌 방지
+            if (match && match.id !== user_id) {
+                await supabaseAdmin.from('profiles').update({
+                    email: null,
+                    phone: null,
+                    member_no: null
+                }).eq('id', match.id);
+            }
+
             if (profileById) {
                 await supabaseAdmin.from('profiles').update(updateFields).eq('id', user_id);
                 if (match.id !== user_id) {
@@ -263,7 +272,7 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ ...responseData, name: responseData.full_name, status: 'merged' });
             } else { // 1
                 const newProfile = { ...responseData, id: user_id };
-                await supabaseAdmin.from('profiles').insert([updateFields]); // DB에는 permanentChurch가 담긴 updateFields 저장
+                await supabaseAdmin.from('profiles').insert([{ ...updateFields, id: user_id }]); // DB에는 permanentChurch가 담긴 updateFields 저장
                 if (match.id !== user_id) { // 2
                     console.log(`[Sync] Migrating data (new profile case) from old ID ${match.id} to new ID ${user_id}`);
                     // 1. 소유권 이전
