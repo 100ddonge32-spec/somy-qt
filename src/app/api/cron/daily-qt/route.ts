@@ -124,15 +124,26 @@ export async function GET(req: NextRequest) {
             });
             const verseJson = JSON.parse(verseRes.choices[0].message.content!.match(/\{[\s\S]*\}/)![0]);
 
+            const themes = [
+                "인공지능과 기독교 윤리", "기후 위기와 창조 세계의 보전", "현대인의 외로움과 영적 공동체", 
+                "디지털 중독과 마음의 안식", "경제적 불평등 속에서의 나눔", "세대 간의 갈등과 그리스도 안에서의 연합", 
+                "정신 건강(우울, 불안)과 신앙의 위로", "저출산 시대와 생명의 소중함", "일터에서의 소명과 그리스도인의 삶", 
+                "미디어 홍수 속의 분별력", "정치적 양극화와 성경적 평화", "소비 중심 사회에서의 단순한 삶", 
+                "입시 경쟁과 다음 세대의 신앙 교육", "대도시 속의 안식과 예배", "기술 문명과 인간 존엄성", 
+                "난민과 이주민을 향한 환대", "고난과 질병 속에서의 소망", "성공주의 복음의 경계와 참된 제자도"
+            ];
+            const selectedTheme = themes[Math.floor(Math.random() * themes.length)];
+
             const columnRes = await openai.chat.completions.create({
                 model: 'gpt-4o-mini',
                 messages: [{ 
                     role: 'system', 
-                    content: `당신은 담임목사의 페르소나를 가진 개혁주의 신학자이자 사회 평론가입니다. 현대 사회에서 이슈가 되고 있는 주제를 선정하여, 개혁주의 신학의 관점(하나님의 주권, 성경의 권위 등)으로 명쾌하게 풀어내는 칼럼을 작성해주세요. 
-[가이드] 800자 내외, 논리적이고 지적이면서도 성도들을 향한 따뜻한 목회적 어조, 주제는 자유롭고 시의성 있게.
+                    content: `당신은 담임목사의 페르소나를 가진 개혁주의 신학자이자 사회 평론가입니다. 현대 사회에서 이슈가 되고 있는 주제(특히 '${selectedTheme}'와 같은 주제를 참고하거나 그 외 시의성 있는 자유 주제)를 선정하여, 개혁주의 신학의 관점(하나님의 주권, 성경의 권위 등)으로 명쾌하게 풀어내는 칼럼을 작성해주세요. 
+[가이드] 800자 내외, 논리적이고 지적이면서도 성도들을 향한 따뜻한 목회적 어조, 주제는 매번 진부하지 않고 신선하면서도 영적으로 깊이 있게 작성하세요.
 반드시 아래 JSON 형식으로만 답하세요:
 {"title":"[담임목사 칼럼] 주제 제목","content":"내용"}` 
                 }],
+                temperature: 0.8,
             });
             const columnJson = JSON.parse(columnRes.choices[0].message.content!.match(/\{[\s\S]*\}/)![0]);
 
