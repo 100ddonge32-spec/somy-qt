@@ -343,6 +343,16 @@ const StatsView = ({ memberList }: { memberList: any[] }) => {
     );
 };
 
+// [표준화] 교회 식별자 정규화 (전문화된 데이터 매칭용)
+const normalizeId = (id: string | null) => {
+    if (!id) return 'jesus-in';
+    const s = id.toLowerCase().trim();
+    if (s === '예수인교회' || s === 'jesus-in' || s === '예수인' || s === 'jesus' || s === 'default' || s === 'somy-main' || s === '') {
+        return 'jesus-in';
+    }
+    return s;
+};
+
 export default function App() {
     const [isStatsSaved, setIsStatsSaved] = useState(false); // ✅ 통계 중복 기록 방지 플래그 (최상위)
     const [isSubmittingGrace, setIsSubmittingGrace] = useState(false); // ✅ 은혜나눔 이중 제출 방지
@@ -403,15 +413,6 @@ export default function App() {
             outputArray[i] = rawData.charCodeAt(i);
         }
         return outputArray;
-    };
-    // [표준화] 교회 식별자 정규화 (전문화된 데이터 매칭용)
-    const normalizeId = (id: string | null) => {
-        if (!id) return 'jesus-in';
-        const s = id.toLowerCase().trim();
-        if (s === '예수인교회' || s === 'jesus-in' || s === '예수인' || s === 'jesus' || s === 'default' || s === 'somy-main' || s === '') {
-            return 'jesus-in';
-        }
-        return s;
     };
 
     const [passageChat, setPassageChat] = useState<{ role: string; content: string }[]>([]);
@@ -1078,7 +1079,7 @@ export default function App() {
 
     const checkNewContent = useCallback(async () => {
         if (!churchId) return;
-        const cId = churchId;
+        const cId = normalizeId(churchId);
         const kstOffset = 9 * 60 * 60 * 1000;
         const today = new Date(Date.now() + kstOffset).toISOString().split('T')[0];
 
@@ -1629,7 +1630,7 @@ export default function App() {
         if (!churchId) return;
         setIsGalleryLoading(true);
         try {
-            const res = await fetch(`/api/gallery/posts?church_id=${churchId}&t=${Date.now()}`, { cache: 'no-store' });
+            const res = await fetch(`/api/gallery/posts?church_id=${normalizeId(churchId)}&t=${Date.now()}`, { cache: 'no-store' });
             const data = await res.json();
             if (Array.isArray(data)) {
                 setGalleryPosts(data);
@@ -10753,7 +10754,7 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
                 const file = selectedFiles[i];
                 const fileExt = file.name.split('.').pop();
                 const fileName = `${user?.id || 'anon'}_${Date.now()}_${i}.${fileExt}`;
-                const filePath = `gallery/${churchId || 'jesus-in'}/${fileName}`;
+                const filePath = `gallery/${normalizeId(churchId)}/${fileName}`;
 
                 // 1. 스토리지 업로드
                 const { error: uploadError } = await supabase.storage
@@ -10786,7 +10787,7 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
                         image_url: uploadedUrls[0],
                         image_urls: uploadedUrls,
                         description: description,
-                        church_id: churchId || 'jesus-in'
+                        church_id: normalizeId(churchId)
                     })
                 });
 
