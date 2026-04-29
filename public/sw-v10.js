@@ -53,6 +53,10 @@ self.addEventListener('push', function (event) {
     }
 });
 
+// [PWA Fix] fetch 핸들러 추가
+self.addEventListener('fetch', (event) => {
+});
+
 self.addEventListener('notificationclick', function (event) {
     event.notification.close();
     event.waitUntil(

@@ -53,6 +53,7 @@ export async function GET(req: NextRequest) {
     }
 
     const manifest = {
+        id: normalizedId === 'jesus-in' ? 'somy-qt-jesus-in' : `somy-qt-${normalizedId}`,
         name: churchName,
         short_name: churchName,
         description: `${churchName} 성도님들을 위한 큐티 서비스`,

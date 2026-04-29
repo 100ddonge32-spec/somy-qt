@@ -54,6 +54,13 @@ self.addEventListener('push', function (event) {
     }
 });
 
+// [PWA Fix] fetch 핸들러를 추가하여 안드로이드에서 '앱 설치'가 가능하도록 합니다.
+// 이 핸들러가 없으면 크롬은 단순한 바로가기만 생성하며, 이는 홈화면에서 쉽게 사라질 수 있습니다.
+self.addEventListener('fetch', (event) => {
+    // 기본적으로 네트워크 요청을 그대로 통과시킵니다.
+    // 향후 오프라인 캐싱이 필요하면 이 부분을 확장할 수 있습니다.
+});
+
 self.addEventListener('notificationclick', function (event) {
     event.notification.close();
     event.waitUntil(
