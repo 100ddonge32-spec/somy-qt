@@ -231,25 +231,66 @@ export async function POST(req: NextRequest) {
 
             const migrateData = async (oldId: string, newId: string) => {
                 console.log(`[Sync] Migrating data from old ID ${oldId} to new ID ${newId}`);
-                // 1. 일반 레코드 소유권 이전
-                await supabaseAdmin.from('thanksgiving_diaries').update({ user_id: newId }).eq('user_id', oldId);
-                await supabaseAdmin.from('thanksgiving_comments').update({ user_id: newId }).eq('user_id', oldId);
-                await supabaseAdmin.from('community_posts').update({ user_id: newId }).eq('user_id', oldId);
-                await supabaseAdmin.from('community_comments').update({ user_id: newId }).eq('user_id', oldId);
-                await supabaseAdmin.from('notifications').update({ user_id: newId }).eq('user_id', oldId);
+                
+                const migrateTables = [
+                    'thanksgiving_diaries',
+                    'thanksgiving_comments',
+                    'community_posts',
+                    'community_comments',
+                    'notifications',
+                    'qt_completions',
+                    'counseling_requests',
+                    'push_subscriptions',
+                    'gallery_posts',
+                    'gallery_likes',
+                    'gallery_comments',
+                    'activity_logs'
+                ];
 
-                // 2. 좋아요 배열(liker_ids) 치환 작업
-                for (const table of ['community_posts', 'thanksgiving_diaries']) {
-                    const { data: posts } = await supabaseAdmin.from(table).select('id, liker_ids').contains('liker_ids', [oldId]);
-                    if (posts && posts.length > 0) {
-                        for (const post of posts) {
-                            if (post.liker_ids) {
-                                const newLikes = Array.from(new Set(post.liker_ids.map((id: string) => id === oldId ? newId : id)));
-                                await supabaseAdmin.from(table).update({ liker_ids: newLikes }).eq('id', post.id);
+                for (const table of migrateTables) {
+                    try {
+                        // 1. [특수 처리] 좋아요 배열(liker_ids) 치환 작업
+                        if (table === 'community_posts' || table === 'thanksgiving_diaries') {
+                            const { data: posts } = await supabaseAdmin.from(table).select('id, liker_ids').contains('liker_ids', [oldId]);
+                            if (posts && posts.length > 0) {
+                                for (const post of posts) {
+                                    if (post.liker_ids) {
+                                        const newLikes = Array.from(new Set(post.liker_ids.map((id: string) => id === oldId ? newId : id)));
+                                        await supabaseAdmin.from(table).update({ liker_ids: newLikes }).eq('id', post.id);
+                                    }
+                                }
                             }
                         }
+
+                        // 2. [특수 처리] 유니크 제약조건이 있는 테이블 (중복 충돌 방지)
+                        if (table === 'gallery_likes') {
+                            const { data: existingNewLikes } = await supabaseAdmin.from('gallery_likes').select('post_id').eq('user_id', newId);
+                            const existingPostIds = new Set(existingNewLikes?.map(l => l.post_id) || []);
+                            if (existingPostIds.size > 0) {
+                                await supabaseAdmin.from('gallery_likes').delete().eq('user_id', oldId).in('post_id', Array.from(existingPostIds));
+                            }
+                        } else if (table === 'qt_completions') {
+                            // 큐티 기록 충돌 방지 (같은 날짜 기록이 있으면 구기록 삭제)
+                            const { data: newComps } = await supabaseAdmin.from('qt_completions').select('completed_date').eq('user_id', newId);
+                            const newDates = new Set(newComps?.map(c => c.completed_date) || []);
+                            if (newDates.size > 0) {
+                                await supabaseAdmin.from('qt_completions').delete().eq('user_id', oldId).in('completed_date', Array.from(newDates));
+                            }
+                        } else if (table === 'push_subscriptions') {
+                            // 푸시 구독은 한 명당 하나이므로, 새 ID에 이미 있으면 구 ID 기록 삭제
+                            const { data: newSub } = await supabaseAdmin.from('push_subscriptions').select('id').eq('user_id', newId).maybeSingle();
+                            if (newSub) {
+                                await supabaseAdmin.from('push_subscriptions').delete().eq('user_id', oldId);
+                            }
+                        }
+
+                        // 3. 일반 레코드 소유권 이전 (충돌하지 않는 나머지 레코드들)
+                        await supabaseAdmin.from(table).update({ user_id: newId }).eq('user_id', oldId);
+                    } catch (e) {
+                        console.error(`[Sync] Table ${table} migration error:`, e);
                     }
                 }
+
                 await supabaseAdmin.from('profiles').delete().eq('id', oldId);
             };
 
@@ -270,36 +311,16 @@ export async function POST(req: NextRequest) {
                 // 로그인 활동 기록 추가 ✅
                 await logActivity(user_id, responseData.full_name, 'LOGIN', permanentChurch);
                 return NextResponse.json({ ...responseData, name: responseData.full_name, status: 'merged' });
-            } else { // 1
+            } else {
                 const newProfile = { ...responseData, id: user_id };
-                await supabaseAdmin.from('profiles').insert([{ ...updateFields, id: user_id }]); // DB에는 permanentChurch가 담긴 updateFields 저장
-                if (match.id !== user_id) { // 2
-                    console.log(`[Sync] Migrating data (new profile case) from old ID ${match.id} to new ID ${user_id}`);
-                    // 1. 소유권 이전
-                    await supabaseAdmin.from('thanksgiving_diaries').update({ user_id: user_id }).eq('user_id', match.id);
-                    await supabaseAdmin.from('thanksgiving_comments').update({ user_id: user_id }).eq('user_id', match.id);
-                    await supabaseAdmin.from('community_posts').update({ user_id: user_id }).eq('user_id', match.id);
-                    await supabaseAdmin.from('community_comments').update({ user_id: user_id }).eq('user_id', match.id);
-                    await supabaseAdmin.from('notifications').update({ user_id: user_id }).eq('user_id', match.id);
-
-                    // 2. 좋아요 배열 치환
-                    for (const table of ['community_posts', 'thanksgiving_diaries']) { // 3
-                        const { data: posts } = await supabaseAdmin.from(table).select('id, liker_ids').contains('liker_ids', [match.id]);
-                        if (posts && posts.length > 0) { // 4
-                            for (const post of posts) { // 5
-                                if (post.liker_ids) { // 6
-                                    const newLikes = Array.from(new Set(post.liker_ids.map((id: string) => id === match.id ? user_id : id)));
-                                    await supabaseAdmin.from(table).update({ liker_ids: newLikes }).eq('id', post.id);
-                                } // 6 close
-                            } // 5 close
-                        } // 4 close
-                    } // 3 close
-                    await supabaseAdmin.from('profiles').delete().eq('id', match.id);
-                } // 2 close
+                await supabaseAdmin.from('profiles').insert([{ ...updateFields, id: user_id }]);
+                if (match.id !== user_id) {
+                    await migrateData(match.id, user_id);
+                }
                 // 로그인 활동 기록 추가 ✅
                 await logActivity(user_id, newProfile.full_name, 'LOGIN', permanentChurch);
                 return NextResponse.json({ ...newProfile, name: newProfile.full_name, status: 'linked' });
-            } // 1 close
+            }
         } // CLOSES `if (match)` FROM LINE 157!!
 
         const finalName = (nameForMatch && !isSystemGeneratedName) ? nameForMatch : (email ? email.split('@')[0] : '성도');
