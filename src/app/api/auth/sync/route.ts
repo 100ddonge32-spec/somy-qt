@@ -155,6 +155,18 @@ export async function POST(req: NextRequest) {
             }
         }
 
+        // [Boss Bypass] 목사님 성함이면 정보 부족해도 무조건 매칭 시도
+        if (!match && IS_BOSS) {
+            const { data: bossMatch } = await supabaseAdmin.from('profiles')
+                .select('*')
+                .eq('full_name', nameForMatch.trim())
+                .maybeSingle();
+            if (bossMatch) {
+                match = bossMatch;
+                console.log(`[Sync] Boss detected by backup match: ${match.full_name}`);
+            }
+        }
+
         if (match) {
             console.log(`[Sync] 학습 성공: ${match.full_name} (${match.id}) -> ${user_id}`);
             const finalAvatar = profileById?.avatar_url || match.avatar_url || rawAvatar;
