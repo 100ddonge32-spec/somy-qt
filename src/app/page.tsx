@@ -356,6 +356,8 @@ const normalizeId = (id: string | null) => {
 export default function App() {
     const [isStatsSaved, setIsStatsSaved] = useState(false); // ✅ 통계 중복 기록 방지 플래그 (최상위)
     const [isSubmittingGrace, setIsSubmittingGrace] = useState(false); // ✅ 은혜나눔 이중 제출 방지
+    const [isSubmittingCommunity, setIsSubmittingCommunity] = useState(false); // ✅ 게시판 이중 제출 방지
+    const [isSubmittingThanksgiving, setIsSubmittingThanksgiving] = useState(false); // ✅ 감사일기 이중 제출 방지
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [view, setView] = useState<View>("home");
     const [memberList, setMemberList] = useState<any[]>([]); // ✅ 성도 목록
@@ -4794,7 +4796,8 @@ export default function App() {
             };
 
             const handlePost = async () => {
-                if (!communityInput.trim() || !user) return; // ✅ communityInput 사용
+                if (!communityInput.trim() || !user || isSubmittingCommunity) return;
+                setIsSubmittingCommunity(true);
                 try {
                     const res = await fetch('/api/community', {
                         method: 'POST',
@@ -4814,7 +4817,11 @@ export default function App() {
                         setCommunityInput(""); // ✅ 게시판 입력창만 깔끔하게 비움
                         setIsPrivatePost(false);
                     }
-                } catch (e) { console.error("게시글 등록 실패:", e); }
+                } catch (e) { 
+                    console.error("게시글 등록 실패:", e); 
+                } finally {
+                    setIsSubmittingCommunity(false);
+                }
             };
 
             return (
@@ -4924,20 +4931,20 @@ export default function App() {
                                     </div>
                                     <button
                                         onClick={handlePost}
-                                        disabled={!communityInput.trim()}
+                                        disabled={!communityInput.trim() || isSubmittingCommunity}
                                         style={{
                                             padding: '8px 20px',
-                                            background: communityInput.trim() ? '#333' : '#EEE',
-                                            color: communityInput.trim() ? 'white' : '#AAA',
+                                            background: (communityInput.trim() && !isSubmittingCommunity) ? '#333' : '#EEE',
+                                            color: (communityInput.trim() && !isSubmittingCommunity) ? 'white' : '#AAA',
                                             border: 'none',
                                             borderRadius: '12px',
                                             fontSize: '13px',
                                             fontWeight: 800,
-                                            cursor: communityInput.trim() ? 'pointer' : 'default',
+                                            cursor: (communityInput.trim() && !isSubmittingCommunity) ? 'pointer' : 'default',
                                             transition: 'all 0.3s'
                                         }}
                                     >
-                                        은혜 나누기
+                                        {isSubmittingCommunity ? '나누는 중...' : '은혜 나누기'}
                                     </button>
                                 </div>
                             </div>
@@ -5482,7 +5489,8 @@ export default function App() {
             };
 
             const handleThanksgivingPost = async () => {
-                if (!thanksgivingInput.trim() || !user) return;
+                if (!thanksgivingInput.trim() || !user || isSubmittingThanksgiving) return;
+                setIsSubmittingThanksgiving(true);
                 try {
                     const res = await fetch('/api/thanksgiving', {
                         method: 'POST',
@@ -5502,7 +5510,11 @@ export default function App() {
                         setThanksgivingInput("");
                         setIsPrivateThanksgiving(false);
                     }
-                } catch (e) { console.error("감사일기 등록 실패:", e); }
+                } catch (e) { 
+                    console.error("감사일기 등록 실패:", e); 
+                } finally {
+                    setIsSubmittingThanksgiving(false);
+                }
             };
 
             return (
@@ -5578,12 +5590,12 @@ export default function App() {
                                     </div>
                                     <button
                                         onClick={handleThanksgivingPost}
-                                        disabled={!thanksgivingInput.trim()}
+                                        disabled={!thanksgivingInput.trim() || isSubmittingThanksgiving}
                                         style={{
-                                            padding: '8px 20px', background: thanksgivingInput.trim() ? '#E07A5F' : '#EEE', color: thanksgivingInput.trim() ? 'white' : '#AAA', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 800, cursor: thanksgivingInput.trim() ? 'pointer' : 'default', transition: 'all 0.3s'
+                                            padding: '8px 20px', background: (thanksgivingInput.trim() && !isSubmittingThanksgiving) ? '#E07A5F' : '#EEE', color: (thanksgivingInput.trim() && !isSubmittingThanksgiving) ? 'white' : '#AAA', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 800, cursor: (thanksgivingInput.trim() && !isSubmittingThanksgiving) ? 'pointer' : 'default', transition: 'all 0.3s'
                                         }}
                                     >
-                                        감사 올리기
+                                        {isSubmittingThanksgiving ? '올리는 중...' : '감사 올리기'}
                                     </button>
                                 </div>
                             </div>
