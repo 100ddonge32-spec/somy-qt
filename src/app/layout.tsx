@@ -18,8 +18,13 @@ const supabaseAdmin = createClient(
 );
 
 export async function generateMetadata(): Promise<Metadata> {
-  const headersList = headers();
-  const cid = headersList.get('x-church-id') || 'jesus-in';
+  let cid = 'jesus-in';
+  try {
+    const headersList = headers();
+    cid = headersList.get('x-church-id') || 'jesus-in';
+  } catch (e) {
+    // Next.js static export (Capacitor 빌드 등)에서는 headers() 사용 시 에러 발생하므로 무시
+  }
 
   const appName = process.env.NEXT_PUBLIC_APP_NAME || "소미 QT";
   let churchName = "";

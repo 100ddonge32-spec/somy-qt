@@ -573,6 +573,7 @@ export default function App() {
         pastor_column_content: '',
         qt_notification_time: '08:00',
     });
+    const [isSettingsSaving, setIsSettingsSaving] = useState(false);
     const [settingsForm, setSettingsForm] = useState<any>({
         church_name: CHURCH_NAME,
         church_logo_url: CHURCH_LOGO,
@@ -8925,7 +8926,7 @@ export default function App() {
                                                 }}>
                                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                                                         <span style={{ fontSize: '12px', fontWeight: 800, color: '#856404' }}>🔗 교회 접속 주소</span>
-                                                        <span style={{ fontSize: '10px', color: '#B8924A' }}>{window.location.origin}{churchId === 'somy-main' ? '' : `/?church_id=${churchId}`}</span>
+                                                        <span style={{ fontSize: '10px', color: '#B8924A' }}>{typeof window !== 'undefined' ? window.location.origin : ''}{churchId === 'somy-main' ? '' : `/?church_id=${churchId}`}</span>
                                                     </div>
                                                     <button
                                                         onClick={() => {
@@ -8950,33 +8951,33 @@ export default function App() {
                                             )}
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                 <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>교회 이름</label>
-                                                <input type="text" value={settingsForm.church_name} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, church_name: e.target.value }))} placeholder="앱 메인에 표시될 교회 이름 (예: 샘플교회)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                                <input type="text" value={settingsForm?.church_name || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, church_name: e.target.value }))} placeholder="앱 메인에 표시될 교회 이름 (예: 샘플교회)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                 <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>앱 부제목 (슬로건)</label>
-                                                <input type="text" value={settingsForm.app_subtitle} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, app_subtitle: e.target.value }))} placeholder="예: 말씀과 기도로 거룩해지는 공동체" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                                <input type="text" value={settingsForm?.app_subtitle || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, app_subtitle: e.target.value }))} placeholder="예: 말씀과 기도로 거룩해지는 공동체" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                 <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>교회 로고 이미지 URL (정사각형 권장)</label>
-                                                <input type="text" value={settingsForm.church_logo_url} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, church_logo_url: e.target.value }))} placeholder="https://..." style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                                <input type="text" value={settingsForm?.church_logo_url || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, church_logo_url: e.target.value }))} placeholder="https://..." style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                 <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>이벤트 팝업 포스터 URL</label>
-                                                <input type="text" value={settingsForm.event_poster_url} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, event_poster_url: e.target.value }))} placeholder="공지사항이나 이벤트 포스터 이미지 URL" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                                <input type="text" value={settingsForm?.event_poster_url || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, event_poster_url: e.target.value }))} placeholder="공지사항이나 이벤트 포스터 이미지 URL" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                                                    <input type="checkbox" id="poster_visible" checked={settingsForm.event_poster_visible} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, event_poster_visible: e.target.checked }))} />
+                                                    <input type="checkbox" id="poster_visible" checked={!!settingsForm?.event_poster_visible} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, event_poster_visible: e.target.checked }))} />
                                                     <label htmlFor="poster_visible" style={{ fontSize: '12px', color: '#666', cursor: 'pointer' }}>유저들에게 이 팝업을 노출합니다.</label>
                                                 </div>
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                 <label style={{ fontSize: '12px', fontWeight: 700, color: '#9E7B31' }}>⏰ 매일 큐티 알림 발송 시간</label>
-                                                <input type="time" value={settingsForm.qt_notification_time} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, qt_notification_time: e.target.value }))} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                                <input type="time" value={settingsForm?.qt_notification_time || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, qt_notification_time: e.target.value }))} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                                             </div>
                                         </div>
 
                                         <button
                                             onClick={async () => {
-                                                setIsSaving(true);
+                                                setIsSettingsSaving(true);
                                                 try {
                                                     const res = await fetch('/api/settings', {
                                                         method: 'POST',
@@ -8988,12 +8989,12 @@ export default function App() {
                                                         setChurchSettings(settingsForm);
                                                     }
                                                 } catch (e) { }
-                                                setIsSaving(false);
+                                                setIsSettingsSaving(false);
                                             }}
-                                            disabled={isSaving}
+                                            disabled={isSettingsSaving}
                                             style={{ marginTop: '10px', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 800, cursor: 'pointer' }}
                                         >
-                                            {isSaving ? '저장 중...' : '💾 설정 저장하기'}
+                                            {isSettingsSaving ? '저장 중...' : '💾 설정 저장하기'}
                                         </button>
                                 </>
                             ) : adminTab === 'members' ? (
