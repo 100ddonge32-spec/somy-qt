@@ -204,7 +204,7 @@ export async function GET(req: NextRequest) {
                     id: ch.id,
                     church_id: effectiveId,
                     church_name: ch.id === 1 ? (ch.church_name || '예수인교회') : (ch.church_name || ch.church_id),
-                    count: countMap[effectiveId] || 0,
+                    member_count: countMap[effectiveId] || 0,
                     plan: ch.plan
                 };
             });
@@ -214,7 +214,7 @@ export async function GET(req: NextRequest) {
             const orphans: any[] = [];
             Object.entries(countMap).forEach(([cid, count]) => {
                 if (!registeredIds.has(cid) && cid !== 'jesus-in' && cid !== 'demo') {
-                    orphans.push({ church_id: cid, church_name: `미등록 데이터 (${cid})`, count, is_orphan: true });
+                    orphans.push({ church_id: cid, church_name: `미등록 데이터 (${cid})`, member_count: count, is_orphan: true });
                 }
             });
 
@@ -224,13 +224,20 @@ export async function GET(req: NextRequest) {
                     id: 9999,
                     church_id: 'demo',
                     church_name: '소미 체험 교회 (데모)',
-                    count: countMap['demo'] || 0,
+                    member_count: countMap['demo'] || 0,
                     plan: 'demo|premium'
                 });
             }
 
+            const response = {
+                totalChurches: stats.length,
+                totalUsers: Object.values(countMap).reduce((a, b) => a + b, 0),
+                churches: stats,
+                orphans: orphans
+            };
+
             console.log(`[Admin API] Returning ${stats.length} registered stats and ${orphans.length} orphans`);
-            return NextResponse.json({ registered: stats, orphans });
+            return NextResponse.json(response);
         }
 
         // [4] 전체 관리자 목록 (Master 전용)
@@ -241,15 +248,15 @@ export async function GET(req: NextRequest) {
 
             // Step 2: 등록된 이메일 또는 user_id로 profiles 별도 조회
             const identifiers: any[] = admins.flatMap((a: any) => [a.email, a.user_id, a.id]).filter(Boolean);
-            const uniqueIdentifiers = Array.from(new Set(identifiers.map((i: any) => i.toString())))
+            const uniqueIdentifiers = Array.from(new Set(identifiers.map((i: any) => i.toString().toLowerCase())))
                 .filter((i: string) => i.length > 5);
 
             let profiles: any[] = [];
             if (uniqueIdentifiers.length > 0) {
                 const uuids = uniqueIdentifiers.filter(i => /^[0-9a-f-]{36}$/i.test(i));
                 const orConditions = [];
-                orConditions.push(`email.in.(${uniqueIdentifiers.map(i => `"${i}"`).join(',')})`);
-                if (uuids.length > 0) orConditions.push(`id.in.(${uuids.map(i => `"${i}"`).join(',')})`);
+                orConditions.push(`email.in.(${uniqueIdentifiers.join(',')})`);
+                if (uuids.length > 0) orConditions.push(`id.in.(${uuids.join(',')})`);
 
                 const { data: profileData } = await supabaseAdmin.from('profiles').select('id, email, full_name, avatar_url').or(orConditions.join(','));
                 profiles = profileData || [];
@@ -354,7 +361,7 @@ export async function POST(req: NextRequest) {
         console.log(`[Admin Debug/API] Requester: ${requester_id}, Email: ${reqEmail}, Role: ${adminInfo?.role}, isMaster: ${isGlobalMaster}`);
 
         // 1. 마스터 전용 액션 체크
-        const masterOnlyActions = ['create_church_admin', 'delete_admin', 'list_all_admins', 'get_church_stats', 'delete_church', 'update_admin_pin'];
+        const masterOnlyActions = ['create_church_admin', 'delete_admin', 'list_all_admins', 'get_church_stats', 'delete_church', 'update_admin_pin', 'register_church'];
         if (masterOnlyActions.includes(action) && !isGlobalMaster) {
             return NextResponse.json({ success: false, error: "마스터 권한이 필요한 작업입니다." }, { status: 403 });
         }
@@ -730,6 +737,37 @@ export async function POST(req: NextRequest) {
             } catch (notiErr) { console.error("Notification failed:", notiErr); }
 
             return NextResponse.json(data);
+        }
+        
+        // [마스터] 새 교회 등록 및 관리자 지정
+        if (action === 'register_church') {
+            const { target_church_id, target_church_name, target_admin_email, target_plan } = body;
+            
+            if (!target_church_id || !target_church_name || !target_admin_email) {
+                throw new Error('필수 정보(ID, 교회명, 관리자 이메일)가 누락되었습니다.');
+            }
+
+            const finalCid = target_church_id.toLowerCase().trim();
+
+            // 1. 교회 정보 등록 (church_settings)
+            const { error: chErr } = await supabaseAdmin.from('church_settings').upsert({
+                church_id: finalCid,
+                church_name: target_church_name,
+                plan: target_plan || 'free'
+            }, { onConflict: 'church_id' });
+            
+            if (chErr) throw chErr;
+
+            // 2. 해당 교회의 관리자 등록 (app_admins)
+            const { error: adminErr } = await supabaseAdmin.from('app_admins').upsert({
+                email: target_admin_email.toLowerCase().trim(),
+                church_id: finalCid,
+                role: 'church_admin'
+            }, { onConflict: 'email' });
+
+            if (adminErr) throw adminErr;
+
+            return NextResponse.json({ success: true, message: '교회 및 관리자가 성공적으로 등록되었습니다.' });
         }
 
         // 관리자 삭제 (슈퍼관리자용)

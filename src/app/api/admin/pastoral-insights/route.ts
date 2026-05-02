@@ -4,13 +4,11 @@ import OpenAI from 'openai';
 
 export const dynamic = 'force-dynamic';
 
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-);
+const supabaseAdmin = (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) 
+    ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } })
+    : null;
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
 const normalizeId = (id: string | null) => {
     if (!id) return 'jesus-in';
@@ -27,6 +25,7 @@ export async function GET(req: NextRequest) {
     const userId = searchParams.get('user_id');
 
     if (!userId) return NextResponse.json({ error: 'User ID is required' }, { status: 401 });
+    if (!supabaseAdmin || !openai) return NextResponse.json({ error: 'System configuration error' }, { status: 500 });
 
     try {
         // [1] 관리자 권한 확인 (강화된 로직)

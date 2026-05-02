@@ -1,0 +1,207 @@
+        if (view === "statsManage") {
+            return (
+                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", ...baseFont, paddingBottom: '80px', paddingTop: 'env(safe-area-inset-top)' }}>
+                    <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #F0F0F0", background: 'white', position: 'sticky', top: 0, zIndex: 10 }}>
+                        <button onClick={() => setView('admin')} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "15px" }}>📊 활동 통계 및 성도 분포</div>
+                    </div>
+                    <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                        {/* 성도 분포 */}
+                        <div style={{ background: 'white', padding: '24px', borderRadius: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #EEE' }}>
+                            <div style={{ fontSize: '15px', fontWeight: 900, color: '#333', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '20px' }}>📊</span> 성도 구성 통계
+                            </div>
+                            <StatsView memberList={memberList} />
+                        </div>
+
+                        {/* 묵상 참여 현황 */}
+                        <div style={{ background: 'white', padding: '24px', borderRadius: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #EEE' }}>
+                            <div style={{ fontSize: '15px', fontWeight: 900, color: '#333', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '20px' }}>🏆</span> 이번 달 묵상 참여 현황
+                            </div>
+                            {statsError ? <div style={{ textAlign: 'center', padding: '20px', color: '#E53935' }}>⚠️ {statsError}</div> : !stats ? <div style={{ textAlign: 'center', padding: '20px' }}>로딩 중...</div> : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                    <div style={{ display: 'flex', gap: '12px' }}>
+                                        <div style={{ flex: 1, background: 'linear-gradient(135deg, #D4AF37, #B8924A)', borderRadius: '16px', padding: '15px', color: 'white', textAlign: 'center' }}>
+                                            <div style={{ fontSize: '22px', fontWeight: 800 }}>{stats.today.count}</div>
+                                            <div style={{ fontSize: '11px', opacity: 0.9 }}>오늘 참여</div>
+                                        </div>
+                                        <div style={{ flex: 1, background: '#333', borderRadius: '16px', padding: '15px', color: 'white', textAlign: 'center' }}>
+                                            <div style={{ fontSize: '22px', fontWeight: 800 }}>{stats.totalCompletions}</div>
+                                            <div style={{ fontSize: '11px', opacity: 0.9 }}>누적 묵상합계</div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#666', marginBottom: '12px' }}>✨ 이달의 묵상 성도 랭킹</div>
+                                        {stats.ranking.map((r, i) => (
+                                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: i < 3 ? '#FFFDF0' : '#FAFAFA', borderRadius: '12px', marginBottom: '8px', border: '1px solid #F0F0F0' }}>
+                                                <div style={{ width: '24px', fontWeight: 900, fontSize: i < 3 ? '18px' : '14px', color: i === 0 ? '#D4AF37' : '#999' }}>{i + 1}</div>
+                                                <div style={{ flex: 1, fontSize: '14px', fontWeight: 700 }}>{r.name}</div>
+                                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#D4AF37' }}>{r.count}회</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (view === "pastoralInsightsManage") {
+            return (
+                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", ...baseFont, paddingBottom: '80px', paddingTop: 'env(safe-area-inset-top)' }}>
+                    <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #F0F0F0", background: 'white', position: 'sticky', top: 0, zIndex: 10 }}>
+                        <button onClick={() => setView('admin')} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer', color: '#333' }}>←</button>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "15px" }}>💡 목회 영성 인사이트 (AI)</div>
+                    </div>
+                    <div style={{ padding: '20px' }}>
+                        <div style={{ background: 'linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)', padding: '24px', borderRadius: '24px', textAlign: 'center', marginBottom: '24px' }}>
+                            <div style={{ fontSize: '32px', marginBottom: '12px' }}>💡</div>
+                            <div style={{ fontSize: '16px', fontWeight: 800, color: '#2E7D32', marginBottom: '4px' }}>AI 목회 인사이트 리포트</div>
+                            <div style={{ fontSize: '12px', color: '#666' }}>최근 14일 성도들의 영적 분위기를 분석합니다.</div>
+                        </div>
+
+                        {isPastoralLoading ? (
+                            <div style={{ textAlign: 'center', padding: '50px' }}>
+                                <div style={{ width: '40px', height: '40px', border: '4px solid #EEE', borderTop: '4px solid #2E7D32', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }}></div>
+                                <div style={{ fontSize: '14px', color: '#666' }}>분석 리포트를 생성하는 중입니다...</div>
+                            </div>
+                        ) : (
+                            <div style={{ background: 'white', padding: '24px', borderRadius: '24px', border: '1px solid #EEE', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', lineHeight: 1.7, fontSize: '14px', whiteSpace: 'pre-wrap' }}>
+                                {pastoralInsights || "분석 데이터가 부족합니다."}
+                                <button onClick={fetchPastoralInsights} style={{ marginTop: '24px', width: '100%', padding: '14px', background: '#F5F5F5', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>리포트 새로고침</button>
+                            </div>
+                        )}
+                        <div style={{ marginTop: '20px', padding: '15px', background: '#F5F5F5', borderRadius: '15px', fontSize: '11px', color: '#999', lineHeight: 1.5 }}>
+                            ⚠️ 본 분석은 성도들의 익명성을 보장하며, 전체적인 영적 분위기 파악 용도입니다. AI의 제언은 목회적 판단의 참고 자료로만 사용해 주세요.
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (view === "galleryManage") {
+            return (
+                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", ...baseFont, paddingBottom: '80px', paddingTop: 'env(safe-area-inset-top)' }}>
+                    <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #F0F0F0", background: 'white', position: 'sticky', top: 0, zIndex: 10 }}>
+                        <button onClick={() => setView('admin')} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer', color: '#333' }}>←</button>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "15px" }}>📸 갤러리 관리</div>
+                    </div>
+                    <div style={{ padding: '20px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                            {galleryPosts.map(post => (
+                                <div key={post.id} style={{ background: 'white', borderRadius: '16px', overflow: 'hidden', border: '1px solid #EEE', position: 'relative' }}>
+                                    <img src={post.image_url} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover' }} />
+                                    <div style={{ padding: '10px' }}>
+                                        <div style={{ fontSize: '12px', fontWeight: 800, marginBottom: '4px' }}>{post.user_name}</div>
+                                        <button onClick={async () => {
+                                            if (confirm('이 사진을 삭제할까요?')) {
+                                                const res = await fetch('/api/gallery', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', id: post.id, user_id: user?.id }) });
+                                                if (res.ok) fetchGalleryPosts();
+                                            }
+                                        }} style={{ width: '100%', padding: '6px', background: '#FFEBEF', color: '#E91E63', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 700 }}>삭제</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        {galleryPosts.length === 0 && <div style={{ textAlign: 'center', padding: '50px', color: '#999' }}>등록된 사진이 없습니다.</div>}
+                    </div>
+                </div>
+            );
+        }
+
+        if (view === "adminManage") {
+            return (
+                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", ...baseFont, paddingBottom: '80px', paddingTop: 'env(safe-area-inset-top)' }}>
+                    <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #F0F0F0", background: 'white', position: 'sticky', top: 0, zIndex: 10 }}>
+                        <button onClick={() => setView('admin')} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer', color: '#333' }}>←</button>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "15px" }}>🔐 부관리자 권한 관리</div>
+                    </div>
+                    <div style={{ padding: '20px' }}>
+                        <div style={{ background: '#F5F5F3', padding: '16px', borderRadius: '16px', fontSize: '13px', color: '#666', lineHeight: 1.6, marginBottom: '20px' }}>
+                            교회 운영을 도울 부관리자를 명단에서 선택하여 지정할 수 있습니다.
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {allAdminList.filter(a => normalizeId(a.church_id) === normalizeId(churchId)).map(admin => (
+                                <div key={admin.email} style={{ background: 'white', padding: '16px', borderRadius: '16px', border: '1px solid #EEE', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <div style={{ fontSize: '14px', fontWeight: 800 }}>{admin.email}</div>
+                                        <div style={{ fontSize: '11px', color: '#999' }}>권한: {admin.role === 'admin' ? '일반 관리자' : '최고 관리자'}</div>
+                                    </div>
+                                    {admin.role === 'admin' && (
+                                        <button onClick={async () => {
+                                            if (confirm('관리자 권한을 해제하시겠습니까?')) {
+                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'remove_admin', email: admin.email, church_id: churchId }) });
+                                                if (res.ok) fetchAllAdmins();
+                                            }
+                                        }} style={{ padding: '6px 12px', background: '#F5F5F5', border: 'none', borderRadius: '8px', fontSize: '11px' }}>해제</button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (view === "dataReset") {
+            return (
+                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", ...baseFont, paddingBottom: '80px', paddingTop: 'env(safe-area-inset-top)' }}>
+                    <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #F0F0F0", background: 'white', position: 'sticky', top: 0, zIndex: 10 }}>
+                        <button onClick={() => setView('admin')} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer', color: '#333' }}>←</button>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "15px" }}>🗑️ 데이터 초기화</div>
+                    </div>
+                    <div style={{ padding: '20px' }}>
+                        <div style={{ padding: '20px', background: '#FFF5F5', borderRadius: '24px', border: '1px solid #FFC9C9', marginBottom: '24px' }}>
+                            <div style={{ fontSize: '24px', marginBottom: '10px' }}>⚠️ 주의</div>
+                            <div style={{ fontSize: '14px', color: '#C62828', fontWeight: 800, marginBottom: '8px' }}>데이터 초기화는 되돌릴 수 없습니다.</div>
+                            <div style={{ fontSize: '12px', color: '#666', lineHeight: 1.5 }}>관리 중인 교회의 특정 데이터를 영구 삭제합니다. 신중히 결정해 주세요.</div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div style={{ background: 'white', padding: '20px', borderRadius: '20px', border: '1px solid #EEE' }}>
+                                <div style={{ fontSize: '15px', fontWeight: 800, marginBottom: '8px' }}>📔 감사일기 초기화</div>
+                                <div style={{ fontSize: '12px', color: '#999', marginBottom: '15px' }}>모든 감사일기 기록과 댓글을 삭제합니다.</div>
+                                <button onClick={async () => {
+                                    if (confirm('초기화할까요?')) {
+                                        const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reset_thanksgiving', church_id: churchId }) });
+                                        if (res.ok) alert('초기화 완료');
+                                    }
+                                }} style={{ width: '100%', padding: '12px', background: '#FFF5F5', color: '#C62828', border: 'none', borderRadius: '12px', fontWeight: 700 }}>리셋 실행</button>
+                            </div>
+                            <div style={{ background: 'white', padding: '20px', borderRadius: '20px', border: '1px solid #EEE' }}>
+                                <div style={{ fontSize: '15px', fontWeight: 800, marginBottom: '8px' }}>💬 은혜나눔 초기화</div>
+                                <div style={{ fontSize: '12px', color: '#999', marginBottom: '15px' }}>게시판의 모든 글과 댓글을 삭제합니다.</div>
+                                <button onClick={async () => {
+                                    if (confirm('초기화할까요?')) {
+                                        const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reset_community', church_id: churchId }) });
+                                        if (res.ok) alert('초기화 완료');
+                                    }
+                                }} style={{ width: '100%', padding: '12px', background: '#FFF5F5', color: '#C62828', border: 'none', borderRadius: '12px', fontWeight: 700 }}>리셋 실행</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (view === "masterManage") {
+             return (
+                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", ...baseFont, paddingBottom: '80px', paddingTop: 'env(safe-area-inset-top)' }}>
+                    <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #F0F0F0", background: 'white', position: 'sticky', top: 0, zIndex: 10 }}>
+                        <button onClick={() => setView('admin')} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer', color: '#333' }}>←</button>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "15px" }}>👑 마스터 시스템 관리</div>
+                    </div>
+                    <div style={{ padding: '20px' }}>
+                        <div style={{ background: '#333', color: 'white', padding: '24px', borderRadius: '24px', marginBottom: '24px' }}>
+                            <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '4px' }}>전체 시스템 현황</div>
+                            <div style={{ fontSize: '24px', fontWeight: 900 }}>관리중인 교회: {churchStats?.totalChurches || 0}개</div>
+                        </div>
+                        {/* 더 많은 마스터 관리 로직 추가 가능 */}
+                        <div style={{ fontSize: '13px', color: '#666' }}>여기는 슈퍼 어드민만 접속 가능한 공간입니다.</div>
+                    </div>
+                </div>
+            );
+        }

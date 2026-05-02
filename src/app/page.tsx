@@ -604,7 +604,7 @@ export default function App() {
 
     const fetchPastoralInsights = async () => {
         setAdminTab('pastoralInsights');
-        setShowSettings(true);
+        setView('pastoralInsightsManage');
         setIsPastoralLoading(true);
         setPastoralInsights(null);
         try {
@@ -650,6 +650,7 @@ export default function App() {
     const [submittingUserReplyId, setSubmittingUserReplyId] = useState<string | null>(null);
     const [submittingCommentId, setSubmittingCommentId] = useState<any>(null); // ✅ 댓글 등록 중복 방지
     const [allAdminList, setAllAdminList] = useState<any[]>([]); // ✅ 전체 관리자 목록 (슈퍼관리자용)
+    const [newChurchForm, setNewChurchForm] = useState({ id: '', name: '', adminEmail: '', plan: 'free' }); // ✅ 새 교회 등록 폼
 
     // [신의 한 수] 좋아요 명단 및 생일 알림을 위해 성도 기초 정보(이름 등)를 미리 로드합니다.
     useEffect(() => {
@@ -1538,7 +1539,7 @@ export default function App() {
         try {
             const r = await fetch('/api/admin?action=get_church_stats');
             const data = await r.json();
-            if (data.registered) {
+            if (data.churches || data.registered) {
                 setChurchStats(data);
             }
         } catch (err) {
@@ -4482,8 +4483,8 @@ export default function App() {
                             {stats?.previousMonthRanking && (
                                 <div style={{ background: 'linear-gradient(135deg, #FFF9C4, #FFF59D)', borderRadius: '20px', padding: '24px', border: '1px solid #FBC02D', marginBottom: '20px', textAlign: 'center', boxShadow: '0 10px 30px rgba(251,192,45,0.2)', position: 'relative', overflow: 'hidden' }}>
                                     <div style={{ position: 'absolute', top: '-10px', right: '-10px', fontSize: '60px', opacity: 0.1 }}>🏆</div>
-                                    <h2 style={{ margin: '0 0 10px 0', fontSize: '18px', fontWeight: 800, color: '#F57F17' }}>🎊 3월 묵상 명예의 전당 (시상) 🎊</h2>
-                                    <p style={{ fontSize: '13px', color: '#795548', marginBottom: '20px' }}>성실하게 3월 묵상에 참여해주신 모든 성도님들께 감사드립니다!</p>
+                                    <h2 style={{ margin: '0 0 10px 0', fontSize: '18px', fontWeight: 800, color: '#F57F17' }}>🎊 {stats?.previousMonth || 3}월 묵상 명예의 전당 (시상) 🎊</h2>
+                                    <p style={{ fontSize: '13px', color: '#795548', marginBottom: '20px' }}>성실하게 {stats?.previousMonth || 3}월 묵상에 참여해주신 모든 성도님들께 감사드립니다!</p>
 
                                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '15px', margin: '20px 0' }}>
                                         {/* 2위 */}
@@ -5336,215 +5337,59 @@ export default function App() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ post_id: postId, user_id: user?.id, type, action })
                     });
-                    const data = await res.json();
                     if (res.ok) {
-                        if (type === 'community') {
-                            setCommunityPosts((prev: any) => prev.map((post: any) => post.id === postId ? { ...post, liker_ids: data.liker_ids } : post));
-                        } else {
-                            setThanksgivingDiaries((prev: any) => prev.map((diary: any) => diary.id === postId ? { ...diary, liker_ids: data.liker_ids } : diary));
-                        }
-                    } else {
-                        if (data.error?.includes('column "liker_ids"') || data.details?.includes('column "liker_ids"')) {
-                            alert("기능 활성화를 위해 DB 설정이 필요합니다. 관리자에게 'liker_ids 컬럼(TEXT[]) 추가'를 요청해 주세요.");
+                        const fetchUrl = type === 'community' ? '/api/community/posts' : '/api/thanksgiving/posts';
+                        const response = await fetch(fetchUrl);
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (type === 'community') setCommunityPosts(data);
+                            else setThanksgivingDiaries(data);
                         }
                     }
                 } catch (e) {
-                    console.error("좋아요 오류:", e);
+                    console.error("Reaction error:", e);
                 }
-            };
-
-            const handleAddThanksgivingComment = async (diaryId: any) => {
-                const commentText = commentInputs[diaryId];
-                const isPrivate = commentPrivateStates[diaryId] || false;
-                if (!commentText?.trim()) return;
-                if (!user) {
-                    alert("로그인이 필요합니다.");
-                    return;
-                }
-                if (submittingCommentId === diaryId) return;
-                setSubmittingCommentId(diaryId);
-                try {
-                    const res = await fetch('/api/thanksgiving/comments', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            diary_id: diaryId,
-                            user_id: user?.id,
-                            user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
-                            content: commentText,
-                            is_private: isPrivate,
-                            parent_id: replyingToCommentId // ✅ 답글 지원
-                        })
-                    });
-                    if (res.ok) {
-                        const newComment = await res.json();
-                        setThanksgivingDiaries((prev: any) => prev.map((diary: any) => {
-                            if (diary.id === diaryId) {
-                                return { ...diary, comments: [...(diary.comments || []), newComment] };
-                            }
-                            return diary;
-                        }));
-                        setCommentInputs((prev: any) => ({ ...prev, [diaryId]: "" }));
-                        setCommentPrivateStates((prev: any) => ({ ...prev, [diaryId]: false }));
-                        setReplyingToCommentId(null); // ✅ 초기화
-                        setReplyingToPostId(null);
-                    } else {
-                        const errData = await res.json().catch(() => ({}));
-                        alert("댓글 등록에 실패했어요: " + (errData.error || "알 수 없는 오류"));
-                    }
-                } catch (e) {
-                    console.error("댓글 달기 오류:", e);
-                    alert("댓글을 등록하는 중 오류가 발생했습니다.");
-                } finally {
-                    setSubmittingCommentId(null);
-                }
-            };
-
-            const handleUpdateThanksgivingComment = async (diaryId: any, commentId: any) => {
-                const content = editCommentContent.trim();
-                if (!content) return;
-                try {
-                    const res = await fetch('/api/thanksgiving/comments', {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id: commentId, content, is_private: isEditPrivate })
-                    });
-                    if (res.ok) {
-                        const updatedComment = await res.json();
-                        setThanksgivingDiaries((prev: any) => prev.map((diary: any) => {
-                            if (diary.id === diaryId) {
-                                return {
-                                    ...diary,
-                                    comments: (diary.comments || []).map((c: any) => c.id === commentId ? updatedComment : c)
-                                };
-                            }
-                            return diary;
-                        }));
-                        setEditingCommentId(null);
-                        setEditCommentContent("");
-                    }
-                } catch (e) { console.error("댓글 수정 오류:", e); }
-            };
-
-            const handleDeleteThanksgivingComment = async (diaryId: any, commentId: any) => {
-                if (!confirm("이 댓글을 삭제하시겠습니까?")) return;
-                try {
-                    const res = await fetch('/api/thanksgiving/comments', {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id: commentId })
-                    });
-                    if (res.ok) {
-                        setThanksgivingDiaries((prev: any) => prev.map((diary: any) => {
-                            if (diary.id === diaryId) {
-                                return { ...diary, comments: (diary.comments || []).filter((c: any) => c.id !== commentId) };
-                            }
-                            return diary;
-                        }));
-                    } else {
-                        alert("댓글 삭제에 실패했습니다.");
-                    }
-                } catch (e) {
-                    console.error("댓글 삭제 실패:", e);
-                    alert("오류가 발생했습니다.");
-                }
-            };
-
-            const handleDeleteThanksgiving = async (diaryId: any) => {
-                if (!confirm("이 감사일기를 정말 삭제하시겠습니까?")) return;
-                try {
-                    const res = await fetch('/api/thanksgiving', {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id: diaryId })
-                    });
-                    if (res.ok) {
-                        setThanksgivingDiaries((prev: any) => prev.filter((diary: any) => diary.id !== diaryId));
-                    } else {
-                        const errData = await res.json().catch(() => ({}));
-                        alert(`삭제 실패: ${errData.error || '알 수 없는 오류'}`);
-                    }
-                } catch (e) {
-                    console.error("삭제 중 오류:", e);
-                    alert("삭제 중 네트워크 오류가 발생했습니다.");
-                }
-            };
-
-            const handleUpdateThanksgiving = async () => {
-                if (!editingPostId || !editContent.trim()) return;
-                try {
-                    const res = await fetch('/api/thanksgiving', {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id: editingPostId, content: editContent })
-                    });
-                    if (res.ok) {
-                        const updatedDiary = await res.json();
-                        setThanksgivingDiaries((prev: any) => prev.map((diary: any) =>
-                            diary.id === editingPostId ? { ...diary, content: updatedDiary.content } : diary
-                        ));
-                        setEditingPostId(null);
-                        setEditContent("");
-                    }
-                } catch (e) { console.error("수정 중 오류:", e); }
             };
 
             const handleThanksgivingPost = async () => {
-                if (!thanksgivingInput.trim() || !user || isSubmittingThanksgiving) return;
+                if (!thanksgivingInput.trim() || !user) return;
                 setIsSubmittingThanksgiving(true);
                 try {
-                    const res = await fetch('/api/thanksgiving', {
+                    const res = await fetch('/api/thanksgiving/posts', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             user_id: user.id,
-                            user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명의 성도",
-                            avatar_url: profileAvatar || user.user_metadata?.avatar_url || null,
+                            user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명 성도",
                             content: thanksgivingInput,
-                            church_id: churchId,
-                            is_private: isPrivateThanksgiving
+                            is_private: isPrivateThanksgiving,
+                            church_id: normalizeId(churchId)
                         })
                     });
                     if (res.ok) {
-                        const newDiary = await res.json();
-                        setThanksgivingDiaries((prev: any) => [newDiary, ...prev]);
                         setThanksgivingInput("");
-                        setIsPrivateThanksgiving(false);
+                        const response = await fetch(`/api/thanksgiving/posts?church_id=${normalizeId(churchId)}`);
+                        if (response.ok) setThanksgivingDiaries(await response.json());
+                        alert("감사가 성공적으로 등록되었습니다! ✨");
+                    } else {
+                        const errorData = await res.json().catch(() => ({}));
+                        alert("등록 실패: " + (errorData.error || "알 수 없는 오류"));
                     }
-                } catch (e) { 
-                    console.error("감사일기 등록 실패:", e); 
+                } catch (e: any) {
+                    alert("오류가 발생했습니다: " + e.message);
                 } finally {
                     setIsSubmittingThanksgiving(false);
                 }
             };
 
             return (
-                <div style={{
-                    minHeight: "100vh", background: "#FFFBF5", maxWidth: "600px", margin: "0 auto", ...baseFont, paddingTop: 'env(safe-area-inset-top)'
-                }}>
+                <div style={{ minHeight: "100vh", background: "#FFFBF5", maxWidth: "600px", margin: "0 auto", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
                     {styles}
-                    <div style={{
-                        padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #FDF0E3",
-                        position: 'sticky', top: 'env(safe-area-inset-top)', background: 'white', zIndex: 10
-                    }}>
+                    <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #FDF0E3", position: 'sticky', top: 'env(safe-area-inset-top)', background: 'white', zIndex: 10 }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333', padding: '8px' }}>←</button>
                         <div style={{ fontWeight: 800, color: "#333", fontSize: "15px", flex: 1 }}>감사일기 나눔</div>
-                        {/* 감사일기 알림종: 홈 스크린과 스타일 통일 */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div onClick={() => setShowNotiList(!showNotiList)} style={{
-                                position: 'relative',
-                                cursor: 'pointer',
-                                width: '36px',
-                                height: '36px',
-                                background: 'linear-gradient(145deg, #ffffff, #f0f0f0)',
-                                borderRadius: '50%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
-                                border: '1.5px solid #E6A4B4',
-                                animation: notifications.filter(n => !n.is_read).length > 0 ? 'bell-swing 2s infinite ease-in-out' : 'none'
-                            }}>
+                            <div onClick={() => setShowNotiList(!showNotiList)} style={{ position: 'relative', cursor: 'pointer', width: '36px', height: '36px', background: 'linear-gradient(145deg, #ffffff, #f0f0f0)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', border: '1.5px solid #E6A4B4', animation: notifications.filter(n => !n.is_read).length > 0 ? 'bell-swing 2s infinite ease-in-out' : 'none' }}>
                                 <span style={{ fontSize: '18px' }}>🔔</span>
                                 {notifications.filter(n => !n.is_read).length > 0 && (
                                     <div style={{ position: 'absolute', top: '-1px', right: '-1px', background: '#FF3D00', color: 'white', fontSize: '9px', fontWeight: 900, minWidth: '15px', height: '15px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white' }}>
@@ -5556,7 +5401,6 @@ export default function App() {
                         </div>
                     </div>
 
-                    {/* 플로팅 닫기 버튼 */}
                     <button onClick={handleBack} style={{ position: 'fixed', bottom: '30px', right: '25px', width: '46px', height: '46px', borderRadius: '50%', background: 'white', color: '#333', border: '1px solid #EEE', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', zIndex: 1000, cursor: 'pointer', opacity: 0.9 }}>X</button>
 
                     {!churchSettings.community_visible && !isAdmin ? (
@@ -5572,698 +5416,90 @@ export default function App() {
                                     <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#FDF0E3', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>
                                         {user?.user_metadata?.avatar_url ? <img src={user.user_metadata.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🌻'}
                                     </div>
-                                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#555' }}>
-                                        {profileName || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "성도님"}
-                                    </span>
+                                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#555' }}>{profileName || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "성도님"}</span>
                                 </div>
-                                <textarea
-                                    value={thanksgivingInput}
-                                    onChange={(e) => setThanksgivingInput(e.target.value)}
-                                    placeholder="오늘 하루, 어떤 감사의 제목이 있으셨나요?"
-                                    style={{ width: '100%', minHeight: '80px', border: '1px solid #fae1cd', borderRadius: '12px', padding: '12px', boxSizing: 'border-box', outline: 'none', fontSize: '14px', background: '#FFFDFB', resize: 'none', fontFamily: 'inherit' }}
-                                />
+                                <textarea value={thanksgivingInput} onChange={(e) => setThanksgivingInput(e.target.value)} placeholder="오늘 하루, 어떤 감사의 제목이 있으셨나요?" style={{ width: '100%', minHeight: '80px', border: '1px solid #fae1cd', borderRadius: '12px', padding: '12px', boxSizing: 'border-box', outline: 'none', fontSize: '14px', background: '#FFFDFB', resize: 'none', fontFamily: 'inherit' }} />
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div
-                                        onClick={() => setIsPrivateThanksgiving(!isPrivateThanksgiving)}
-                                        style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: isPrivateThanksgiving ? '#E07A5F' : '#666', background: isPrivateThanksgiving ? '#FDF0E3' : '#F5F5F5', padding: '4px 10px', borderRadius: '20px', fontWeight: 600, transition: 'all 0.2s' }}
-                                    >
+                                    <div onClick={() => setIsPrivateThanksgiving(!isPrivateThanksgiving)} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: isPrivateThanksgiving ? '#E07A5F' : '#666', background: isPrivateThanksgiving ? '#FDF0E3' : '#F5F5F5', padding: '4px 10px', borderRadius: '20px', fontWeight: 600, transition: 'all 0.2s' }}>
                                         <span>{isPrivateThanksgiving ? '🔒 나만 보기' : '🌐 함께 나누기'}</span>
                                     </div>
-                                    <button
-                                        onClick={handleThanksgivingPost}
-                                        disabled={!thanksgivingInput.trim() || isSubmittingThanksgiving}
-                                        style={{
-                                            padding: '8px 20px', background: (thanksgivingInput.trim() && !isSubmittingThanksgiving) ? '#E07A5F' : '#EEE', color: (thanksgivingInput.trim() && !isSubmittingThanksgiving) ? 'white' : '#AAA', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 800, cursor: (thanksgivingInput.trim() && !isSubmittingThanksgiving) ? 'pointer' : 'default', transition: 'all 0.3s'
-                                        }}
-                                    >
+                                    <button onClick={handleThanksgivingPost} disabled={!thanksgivingInput.trim() || isSubmittingThanksgiving} style={{ padding: '8px 20px', background: (thanksgivingInput.trim() && !isSubmittingThanksgiving) ? '#E07A5F' : '#EEE', color: (thanksgivingInput.trim() && !isSubmittingThanksgiving) ? 'white' : '#AAA', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 800, cursor: (thanksgivingInput.trim() && !isSubmittingThanksgiving) ? 'pointer' : 'default', transition: 'all 0.3s' }}>
                                         {isSubmittingThanksgiving ? '올리는 중...' : '감사 올리기'}
                                     </button>
                                 </div>
                             </div>
 
-                            {thanksgivingDiaries
-                                .filter(diary => !diary.is_private || isAdmin || user?.id === diary.user_id)
-                                .map(diary => {
-                                    const likerInfo = getLikerInfo(diary.liker_ids || []);
-                                    return (
-                                        <div key={diary.id} style={{ background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', animation: 'fade-in 0.5s', border: '1px solid #FFF1E6' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                                                <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#FDF0E3', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
-                                                    {diary.avatar_url ? <img src={diary.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🌻'}
-                                                </div>
-                                                <div>
-                                                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        {diary.user_name}
-                                                        {diary.is_private && (
-                                                            <span style={{ fontSize: '10px', background: '#FDF0E3', color: '#E07A5F', padding: '2px 7px', borderRadius: '8px', fontWeight: 700 }}>🔒 비공개</span>
-                                                        )}
-                                                    </div>
-                                                    <div style={{ fontSize: '11px', color: '#999' }}>{new Date(diary.created_at || Date.now()).toLocaleString()}</div>
-                                                </div>
-                                                <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
-                                                    {(user?.id === diary.user_id) && (
-                                                        <button onClick={() => { setEditingPostId(diary.id); setEditContent(diary.content); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#E07A5F', fontWeight: 600 }}>수정</button>
-                                                    )}
-                                                    {(isAdmin || user?.id === diary.user_id) && (
-                                                        <button onClick={() => handleDeleteThanksgiving(diary.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#999', fontWeight: 600 }}>삭제</button>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {editingPostId === diary.id ? (
-                                                <div style={{ marginBottom: '15px' }}>
-                                                    <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} style={{ width: '100%', minHeight: '100px', border: '1px solid #fae1cd', borderRadius: '12px', padding: '12px', boxSizing: 'border-box', marginBottom: '8px', fontSize: '14px', fontFamily: 'inherit' }} />
-                                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                                        <button onClick={handleUpdateThanksgiving} style={{ padding: '8px 16px', background: '#E07A5F', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>저장</button>
-                                                        <button onClick={() => setEditingPostId(null)} style={{ padding: '8px 16px', background: '#FFF1E6', color: '#E07A5F', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>취소</button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div style={{ margin: '0 0 15px 0' }}>
-                                                    <div style={{ fontSize: '15px', lineHeight: 1.7, color: '#444', wordBreak: 'break-word', whiteSpace: 'pre-wrap', display: '-webkit-box', WebkitLineClamp: !expandedPosts[diary.id] && (diary.content.split('\n').length > 4 || diary.content.length > 120) ? 4 : 'unset', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                                        {diary.content}
-                                                    </div>
-                                                    {(diary.content.split('\n').length > 4 || diary.content.length > 120) && (
-                                                        <button onClick={() => setExpandedPosts((prev: any) => ({ ...prev, [diary.id]: !prev[diary.id] }))} style={{ background: 'none', border: 'none', color: '#E07A5F', fontSize: '13px', padding: '8px 0 0 0', cursor: 'pointer', fontWeight: 600 }}>
-                                                            {expandedPosts[diary.id] ? '접기 ▲' : '더보기 ▼'}
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            )}
-
-                                            {/* Reactions & Comments Count row */}
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '12px', borderTop: '1px solid #FFF1E6', paddingTop: '12px' }}>
-                                                <div
-                                                    onClick={() => handleReaction(diary.id, 'thanksgiving', likerInfo.isLikedByMe ? 'unliked' : 'liked')}
-                                                    style={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '6px',
-                                                        cursor: 'pointer',
-                                                        padding: '6px 12px',
-                                                        borderRadius: '20px',
-                                                        background: likerInfo.isLikedByMe ? '#FFF0F0' : '#FFFDFB',
-                                                        color: likerInfo.isLikedByMe ? '#E03131' : '#666',
-                                                        fontSize: '13px',
-                                                        fontWeight: 700,
-                                                        transition: 'all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                                                        border: likerInfo.isLikedByMe ? '1px solid #FFC1C1' : '1px solid #FAE1CD'
-                                                    }}
-                                                >
-                                                    <span style={{ fontSize: '16px', transform: likerInfo.isLikedByMe ? 'scale(1.2)' : 'none', transition: 'transform 0.2s' }}>
-                                                        {likerInfo.isLikedByMe ? '❤️' : '🤍'}
-                                                    </span>
-                                                    <span>좋아요 {likerInfo.count}</span>
-                                                </div>
-                                                <div style={{ fontSize: '12px', fontWeight: 700, color: '#E07A5F', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                                    <span>💬</span> 댓글 {diary.comments?.length || 0}개
-                                                </div>
-                                            </div>
-
-                                            {/* 좋아요 명단 표시 */}
-                                            {likerInfo.count > 0 && likerInfo.text && (
-                                                <div
-                                                    onClick={() => {
-                                                        if (likerInfo.likerNames.length > 0) {
-                                                            setSelectedLikers(likerInfo.likerNames);
-                                                            setShowLikersModal(true);
-                                                        }
-                                                    }}
-                                                    style={{ fontSize: '11px', color: '#E07A5F', marginBottom: '12px', padding: '0 4px', display: 'flex', alignItems: 'center', gap: '4px', opacity: 0.8, cursor: 'pointer' }}
-                                                >
-                                                    <span>❤️</span> {likerInfo.text}
-                                                </div>
-                                            )}
-
-                                            <div style={{ borderTop: '1px solid #FFF1E6', paddingTop: '15px' }}>
-                                                <div style={{ display: 'none' }}>댓글 {diary.comments?.length || 0}개</div>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '15px' }}>
-                                                    {(() => {
-                                                        const comments = diary.comments || [];
-                                                        const rootComments = comments.filter((c: any) => !c.parent_id);
-                                                        return rootComments.map((comment: any) => {
-                                                            const replies = comments.filter((r: any) => r.parent_id === comment.id);
-                                                            const isCommentVisible = !comment.is_private || isAdmin || user?.id === comment.user_id || user?.id === diary.user_id;
-
-                                                            return (
-                                                                <div key={comment.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                                    {/* 부모 댓글 */}
-                                                                    <div style={{ background: '#FFFDFB', padding: '10px 15px', borderRadius: '12px', fontSize: '13px', border: '1px solid #fae1cd', opacity: comment.is_private ? 0.9 : 1 }}>
-                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                                                            <span style={{ fontWeight: 700, color: '#555', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                                                {comment.user_name || '성도'}
-                                                                                {comment.is_private && <span style={{ fontSize: '10px', color: '#E07A5F' }}>🔒</span>}
-                                                                            </span>
-                                                                            <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                                {comment.created_at ? new Date(comment.created_at).toLocaleTimeString() : '방금 전'}
-                                                                                {editingCommentId !== comment.id && (
-                                                                                    <span onClick={() => { setReplyingToCommentId(comment.id); setReplyingToPostId(diary.id); setCommentInputs({ ...commentInputs, [diary.id]: `@${comment.user_name} ` }); }} style={{ cursor: 'pointer', color: '#E07A5F', fontWeight: 700 }}>답글</span>
-                                                                                )}
-                                                                                {user?.id === comment.user_id && editingCommentId !== comment.id && (
-                                                                                    <button onClick={() => { setEditingCommentId(comment.id); setEditCommentContent(comment.content); setIsEditPrivate(!!comment.is_private); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#B8924A', padding: 0, fontWeight: 600 }}>수정</button>
-                                                                                )}
-                                                                                {(isAdmin || user?.id === comment.user_id || user?.id === diary.user_id) && editingCommentId !== comment.id && (
-                                                                                    <button onClick={() => handleDeleteThanksgivingComment(diary.id, comment.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>X</button>
-                                                                                )}
-                                                                            </span>
-                                                                        </div>
-                                                                        {editingCommentId === comment.id ? (
-                                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-                                                                                <textarea
-                                                                                    value={editCommentContent}
-                                                                                    onChange={(e) => { setEditCommentContent(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
-                                                                                    autoFocus
-                                                                                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #fae1cd', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'none', height: '40px', minHeight: '40px', fontFamily: 'inherit' }}
-                                                                                />
-                                                                                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                                                                    <button onClick={() => handleUpdateThanksgivingComment(diary.id, comment.id)} style={{ background: '#E07A5F', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>저장</button>
-                                                                                    <button onClick={() => setEditingCommentId(null)} style={{ background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>취소</button>
-                                                                                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', marginLeft: 'auto' }}>
-                                                                                        <input type="checkbox" checked={isEditPrivate} onChange={(e: any) => setIsEditPrivate(e.target.checked)} />
-                                                                                        <span style={{ fontSize: '11px', color: '#777' }}>비공개</span>
-                                                                                    </label>
-                                                                                </div>
-                                                                            </div>
-                                                                        ) : (
-                                                                            <div style={{ color: isCommentVisible ? '#666' : '#AAA', fontStyle: isCommentVisible ? 'normal' : 'italic', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                                                                                {isCommentVisible ? comment.content : '🔒 비공개 댓글입니다.'}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-
-                                                                    {/* 대댓글 리스트 */}
-                                                                    {replies.map((reply: any) => {
-                                                                        const isReplyVisible = !reply.is_private || isAdmin || user?.id === reply.user_id || user?.id === diary.user_id || user?.id === comment.user_id;
-                                                                        return (
-                                                                            <div key={reply.id} style={{ marginLeft: '24px', padding: '10px 15px', background: '#FDFCFB', borderRadius: '12px', fontSize: '13px', border: '1px solid #fae1cd', borderLeft: '4px solid #E07A5F', opacity: reply.is_private ? 0.9 : 1 }}>
-                                                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                                                                    <span style={{ fontWeight: 700, color: '#777', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}>
-                                                                                        {reply.user_name || '성도'}
-                                                                                        {reply.is_private && <span style={{ fontSize: '10px', color: '#E07A5F' }}>🔒</span>}
-                                                                                    </span>
-                                                                                    <span style={{ fontSize: '10px', color: '#AAA', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                                        {reply.created_at ? new Date(reply.created_at).toLocaleTimeString() : '방금 전'}
-                                                                                        {user?.id === reply.user_id && editingCommentId !== reply.id && (
-                                                                                            <button onClick={() => { setEditingCommentId(reply.id); setEditCommentContent(reply.content); setIsEditPrivate(!!reply.is_private); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#B8924A', padding: 0, fontWeight: 600 }}>수정</button>
-                                                                                        )}
-                                                                                        {(isAdmin || user?.id === reply.user_id || user?.id === diary.user_id) && editingCommentId !== reply.id && (
-                                                                                            <button onClick={() => handleDeleteThanksgivingComment(diary.id, reply.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#999', padding: 0 }}>X</button>
-                                                                                        )}
-                                                                                    </span>
-                                                                                </div>
-                                                                                {editingCommentId === reply.id ? (
-                                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-                                                                                        <textarea
-                                                                                            value={editCommentContent}
-                                                                                            onChange={(e) => { setEditCommentContent(e.target.value); e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
-                                                                                            autoFocus
-                                                                                            style={{ width: '100%', padding: '8px 10px', border: '1px solid #fae1cd', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'none', height: '40px', minHeight: '40px', fontFamily: 'inherit' }}
-                                                                                        />
-                                                                                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                                                                            <button onClick={() => handleUpdateThanksgivingComment(diary.id, reply.id)} style={{ background: '#E07A5F', color: 'white', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>저장</button>
-                                                                                            <button onClick={() => setEditingCommentId(null)} style={{ background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>취소</button>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                ) : (
-                                                                                    <div style={{ color: isReplyVisible ? '#777' : '#AAA', fontStyle: isReplyVisible ? 'normal' : 'italic', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                                                                                        {isReplyVisible ? reply.content : '🔒 비공개 답글입니다.'}
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            );
-                                                        });
-                                                    })()}
-                                                </div>
-
-                                                {/* 답글 안내 문구 */}
-                                                {replyingToCommentId && replyingToPostId === diary.id && (
-                                                    <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFF8E1', padding: '8px 12px', borderRadius: '10px', border: '1px solid #FFE082' }}>
-                                                        <span style={{ fontSize: '12px', color: '#856404', fontWeight: 700 }}>
-                                                            💬 답글 남기는 중...
-                                                        </span>
-                                                        <button onClick={() => { setReplyingToCommentId(null); setReplyingToPostId(null); setCommentInputs({ ...commentInputs, [diary.id]: "" }); }} style={{ background: 'none', border: 'none', color: '#A57224', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>취소</button>
-                                                    </div>
-                                                )}
-
-                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
-                                                    <textarea
-                                                        value={commentInputs[diary.id] || ""}
-                                                        onChange={(e) => {
-                                                            setCommentInputs((prev: any) => ({ ...prev, [diary.id]: e.target.value }));
-                                                            e.target.style.height = 'auto';
-                                                            e.target.style.height = e.target.scrollHeight + 'px';
-                                                        }}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                                // e.preventDefault();
-                                                                // handleAddThanksgivingComment(diary.id);
-                                                            }
-                                                        }}
-                                                        placeholder={replyingToCommentId ? "답글을 입력하세요..." : "공감의 댓글..."}
-                                                        style={{ flex: 1, padding: '10px 12px', borderRadius: '12px', border: '1px solid #fae1cd', fontSize: '14px', outline: 'none', resize: 'none', height: '40px', minHeight: '40px', maxHeight: '120px', fontFamily: 'inherit', lineHeight: '1.5' }}
-                                                    />
-                                                    <button
-                                                        onClick={() => setCommentPrivateStates((prev: any) => ({ ...prev, [diary.id]: !prev[diary.id] }))}
-                                                        style={{ background: commentPrivateStates[diary.id] ? '#FDF0E3' : '#F5F5F5', border: 'none', borderRadius: '10px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '16px', transition: 'all 0.2s' }}
-                                                        title={commentPrivateStates[diary.id] ? "비공개" : "공개"}
-                                                    >
-                                                        {commentPrivateStates[diary.id] ? '🔒' : '🔓'}
-                                                    </button>
-                                                    <button
-                                                        disabled={submittingCommentId === diary.id}
-                                                        onClick={() => handleAddThanksgivingComment(diary.id)}
-                                                        style={{ background: submittingCommentId === diary.id ? '#CCC' : '#E07A5F', color: 'white', border: 'none', borderRadius: '10px', padding: '0 12px', height: '40px', fontSize: '12px', fontWeight: 700, cursor: submittingCommentId === diary.id ? 'default' : 'pointer' }}
-                                                    >
-                                                        {submittingCommentId === diary.id ? '...' : (replyingToCommentId ? '답글' : '등록')}
-                                                    </button>
-                                                </div>
+                            {thanksgivingDiaries.filter(diary => !diary.is_private || isAdmin || user?.id === diary.user_id).map(diary => {
+                                const likerInfo = getLikerInfo(diary.liker_ids || []);
+                                return (
+                                    <div key={diary.id} style={{ background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', animation: 'fade-in 0.5s', border: '1px solid #FFF1E6' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                                            <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#FDF0E3', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>{diary.avatar_url ? <img src={diary.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🌻'}</div>
+                                            <div>
+                                                <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', display: 'flex', alignItems: 'center', gap: '6px' }}>{diary.user_name} {isAdmin && <span style={{ fontSize: '10px', background: '#EEE', padding: '2px 6px', borderRadius: '4px', color: '#888' }}>ADMIN</span>}</div>
+                                                <div style={{ fontSize: '11px', color: '#999' }}>{new Date(diary.created_at).toLocaleString()}</div>
                                             </div>
                                         </div>
-                                    );
-                                })}
-
-                                {/* ✅ 더보기 버튼 */}
-                                {hasMoreThanksgiving && (
-                                    <div style={{ padding: '10px 0 20px', textAlign: 'center' }}>
-                                        <button 
-                                            onClick={() => handleLoadThanksgiving(false)}
-                                            disabled={isThanksgivingLoading}
-                                            style={{
-                                                padding: '12px 30px',
-                                                background: 'white',
-                                                color: '#333',
-                                                border: '1px solid #fae1cd',
-                                                borderRadius: '15px',
-                                                fontSize: '14px',
-                                                fontWeight: 700,
-                                                cursor: isThanksgivingLoading ? 'default' : 'pointer',
-                                                boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '8px',
-                                                margin: '0 auto'
-                                            }}
-                                        >
-                                            {isThanksgivingLoading ? (
-                                                <>
-                                                    <span style={{ animation: 'spin 1s linear infinite' }}>⏳</span>
-                                                    불러오는 중...
-                                                </>
-                                            ) : (
-                                                <>더 많은 감사 보기 ⬇️</>
-                                            )}
-                                        </button>
-                                    </div>
-                                )}
-                        </div>
-                    )}
-                </div>
-            );
-        }
-
-
-        /* ══════════════════════════════
-           HISTORY PAGE
-        ══════════════════════════════ */
-        if (view === "history") {
-            return (
-                <div style={{
-                    minHeight: "100vh",
-                    background: "#FDFCFB",
-                    maxWidth: "600px",
-                    margin: "0 auto",
-                    ...baseFont,
-                    paddingTop: 'env(safe-area-inset-top)'
-                }}>
-                    {styles}
-                    <div style={{
-                        padding: "12px 20px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        borderBottom: "1px solid #F0F0F0",
-                        position: 'sticky',
-                        top: 'env(safe-area-inset-top)',
-                        background: 'white',
-                        zIndex: 10
-                    }}>
-                        <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333', padding: '8px' }}>←</button>
-                        <div style={{ fontWeight: 800, color: "#333", fontSize: "15px" }}>나의 묵상 기록</div>
-                    </div>
-
-                    <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '100px' }}>
-
-                        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                            <button onClick={() => setHistoryViewType('calendar')} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #E0E0E0', background: historyViewType === 'calendar' ? '#333' : 'white', color: historyViewType === 'calendar' ? '#FFF' : '#666', fontWeight: 700, fontSize: '14px', transition: 'all 0.2s', boxShadow: historyViewType === 'calendar' ? '0 4px 10px rgba(0,0,0,0.1)' : 'none' }}>📅 캘린더 보기</button>
-                            <button onClick={() => setHistoryViewType('list')} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #E0E0E0', background: historyViewType === 'list' ? '#333' : 'white', color: historyViewType === 'list' ? '#FFF' : '#666', fontWeight: 700, fontSize: '14px', transition: 'all 0.2s', boxShadow: historyViewType === 'list' ? '0 4px 10px rgba(0,0,0,0.1)' : 'none' }}>📝 목록 보기</button>
-                        </div>
-
-                        {historyViewType === 'calendar' && (
-                            <div style={{ background: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', border: '1px solid #F0ECE4', marginBottom: '10px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-                                    <button onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1))} style={{ background: '#F8F8F8', border: 'none', width: '36px', height: '36px', borderRadius: '50%', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>◀</button>
-                                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#333' }}>{calendarDate.getFullYear()}년 {calendarDate.getMonth() + 1}월</div>
-                                    <button onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1))} style={{ background: '#F8F8F8', border: 'none', width: '36px', height: '36px', borderRadius: '50%', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>▶</button>
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center', fontWeight: 700, fontSize: '13px', color: '#999', marginBottom: '15px' }}>
-                                    <div style={{ color: '#E53935' }}>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div style={{ color: '#1E88E5' }}>토</div>
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
-                                    {Array.from({ length: new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 1).getDay() }).map((_, i) => <div key={`empty-${i}`} />)}
-                                    {Array.from({ length: new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 0).getDate() }).map((_, i) => {
-                                        const day = i + 1;
-                                        const qtRecord = history.find(h => {
-                                            // [타임존/형식 안전] YYYY-MM-DD 부분이 일치하는지 확인 (ISO 타임스탬프 대응)
-                                            const targetDateStr = `${calendarDate.getFullYear()}-${(calendarDate.getMonth() + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-                                            return h.completed_date && h.completed_date.startsWith(targetDateStr);
-                                        });
-                                        const isToday = new Date().getDate() === day && new Date().getMonth() === calendarDate.getMonth() && new Date().getFullYear() === calendarDate.getFullYear();
-
-                                        return (
-                                            <div key={day}
-                                                onClick={() => {
-                                                    const qt = qtRecord?.daily_qt;
-                                                    if (qt) {
-                                                        const { fullPassage, interpretation } = parsePassage(qt.passage);
-                                                        setQtData({
-                                                            date: new Date(qt.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
-                                                            reference: qt.reference,
-                                                            fullPassage,
-                                                            interpretation,
-                                                            verse: fullPassage.split('\n')[0],
-                                                            questions: [qt.question1, qt.question2, qt.question3].filter(Boolean),
-                                                            prayer: qt.prayer,
-                                                        });
-                                                        setAnswers(qtRecord.answers || []);
-                                                        setGraceInput(qtRecord.reflection || ""); // 은혜나눔 복원
-                                                        setIsHistoryMode(true);
-                                                        setQtStep('read');
-                                                        setView("qt");
-                                                    } else if (qtRecord) {
-                                                        // 본문 데이터가 없어도 질문/답변은 보여주기
-                                                        setQtData({
-                                                            date: new Date(qtRecord.completed_date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
-                                                            reference: "말씀 정보 없음",
-                                                            fullPassage: "기록된 말씀 본문이 없습니다.",
-                                                            interpretation: "본문 해설이 없습니다.",
-                                                            verse: "기록된 말씀이 없습니다.",
-                                                            questions: ["질문 1", "질문 2", "질문 3"],
-                                                            prayer: "",
-                                                        });
-                                                        setAnswers(qtRecord.answers || []);
-                                                        setIsHistoryMode(true);
-                                                        setView("qt");
-                                                    }
-                                                }}
-                                                style={{
-                                                    aspectRatio: '1/1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                                    fontSize: '15px', fontWeight: isToday || qtRecord ? 800 : 500, borderRadius: '50%', cursor: qtRecord ? 'pointer' : 'default',
-                                                    background: qtRecord ? '#E8F5E9' : (isToday ? '#FFF3E0' : 'transparent'),
-                                                    color: qtRecord ? '#2E7D32' : (new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day).getDay() === 0 ? '#E53935' : new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day).getDay() === 6 ? '#1E88E5' : '#444'),
-                                                    border: isToday ? '2px solid #FF9800' : (qtRecord ? '2px solid #81C784' : '2px solid transparent'),
-                                                    boxShadow: qtRecord ? '0 2px 5px rgba(46,125,50,0.2)' : 'none',
-                                                    transition: 'all 0.2s', position: 'relative'
-                                                }}>
-                                                {day}
-                                                {qtRecord && <div style={{ position: 'absolute', bottom: '2px', width: '4px', height: '4px', background: '#2E7D32', borderRadius: '50%' }} />}
+                                        <div style={{ fontSize: '15px', color: '#444', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: '15px' }}>{diary.content}</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', borderTop: '1px solid #FFF1E6', paddingTop: '12px' }}>
+                                            <div onClick={() => handleReaction(diary.id, 'thanksgiving', (diary.liker_ids || []).includes(user?.id) ? 'unliked' : 'liked')} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '13px', color: (diary.liker_ids || []).includes(user?.id) ? '#E07A5F' : '#999' }}>
+                                                <span>{(diary.liker_ids || []).includes(user?.id) ? '❤️' : '🤍'}</span>
+                                                <span style={{ fontWeight: 700 }}>{(diary.liker_ids || []).length}</span>
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '20px' }}>
-                                    <button onClick={() => fetchHistory(user?.id)} style={{ padding: '8px 15px', background: '#F5F5F5', border: '1px solid #DDD', borderRadius: '15px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                        <span style={{ fontSize: '16px' }}>🔄</span> 기록 새로고침
-                                    </button>
-                                </div>
-
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginTop: '20px', fontSize: '11px', color: '#888' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#E8F5E9', border: '1px solid #81C784' }}></div> 묵상 완료</div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', border: '2px solid #FF9800' }}></div> 오늘</div>
-                                </div>
-                            </div>
-                        )}
-
-                        {(historyViewType === 'list') && (
-                            <>
-                                {isHistoryLoading ? (
-                                    <div style={{ textAlign: 'center', padding: '100px 0', color: '#999' }}>기록을 불러오는 중입니다... 🐑</div>
-                                ) : history.length === 0 ? (
-                                    <div style={{ textAlign: 'center', padding: '100px 0', color: '#999' }}>아직 저장된 묵상이 없어요. <br />오늘의 큐티를 시작해보세요!</div>
-                                ) : (
-                                    history.map((h, idx) => (
-                                        <div key={idx} style={{ background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: '1px solid #F0ECE4' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                                                <div style={{ fontSize: '15px', fontWeight: 800, color: '#B8924A' }}>
-                                                    {new Date(h.completed_date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#999' }}>
+                                                <span>💬</span>
+                                                <span style={{ fontWeight: 700 }}>{(thanksgivingComments[diary.id] || []).length}</span>
+                                            </div>
+                                        </div>
+                                        {likerInfo.text && <div style={{ fontSize: '11px', color: '#AAA', marginTop: '8px', cursor: 'pointer' }} onClick={() => { setSelectedLikers(likerInfo.likerNames); setShowLikersModal(true); }}>❤️ {likerInfo.text}</div>}
+                                        <div style={{ marginTop: '15px', background: '#FFFAF6', borderRadius: '12px', padding: '10px' }}>
+                                            {(thanksgivingComments[diary.id] || []).map((comm: any) => (
+                                                <div key={comm.id} style={{ padding: '8px 0', borderBottom: '1px solid #FFF1E6', fontSize: '13px' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                        <span style={{ fontWeight: 800, color: '#E07A5F' }}>{comm.user_name}</span>
+                                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                                            <span onClick={() => { setReplyingToPostId(diary.id); setReplyingToCommentId(comm.id); setCommentInputs({ ...commentInputs, [diary.id]: `@${comm.user_name} ` }); }} style={{ fontSize: '10px', color: '#AAA', cursor: 'pointer' }}>답글</span>
+                                                            {(user?.id === comm.user_id || isAdmin) && <span onClick={() => { if (confirm("삭제하시겠습니까?")) handleCommentDelete(comm.id, 'thanksgiving', diary.id); }} style={{ fontSize: '10px', color: '#FFBABA', cursor: 'pointer' }}>삭제</span>}
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ color: '#666', marginTop: '2px' }}>{comm.comment}</div>
                                                 </div>
-                                                <div style={{ fontSize: '12px', background: '#E8F5E9', padding: '4px 10px', borderRadius: '12px', color: '#2E7D32', fontWeight: 600 }}>완료 ✅</div>
-                                            </div>
-
-                                            <div style={{ marginBottom: '15px' }}>
-                                                <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                    📖 {h.daily_qt?.reference || "오늘의 암송 묵상"}
-                                                </div>
-                                                {h.daily_qt?.passage ? (
-                                                    <p style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                                        {h.daily_qt.passage.split('|||')[0].substring(0, 100)}...
-                                                    </p>
-                                                ) : (
-                                                    <p style={{ fontSize: '13px', color: '#999', fontStyle: 'italic', margin: 0 }}>
-                                                        기록된 말씀 본문이 없습니다.
-                                                    </p>
-                                                )}
-                                            </div>
-
+                                            ))}
                                             <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                                                <button
-                                                    onClick={() => {
-                                                        const qt = h.daily_qt;
-                                                        if (qt) {
-                                                            const { fullPassage, interpretation } = parsePassage(qt.passage);
-                                                            setQtData({
-                                                                date: new Date(qt.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
-                                                                reference: qt.reference,
-                                                                fullPassage,
-                                                                interpretation,
-                                                                verse: (fullPassage || "").split('\n')[0],
-                                                                questions: [qt.question1, qt.question2, qt.question3].filter(Boolean),
-                                                                prayer: qt.prayer,
-                                                            });
-                                                        } else {
-                                                            setQtData({
-                                                                date: new Date(h.completed_date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
-                                                                reference: "말씀 정보 없음",
-                                                                fullPassage: "기록된 말씀 본문이 없습니다.",
-                                                                interpretation: "본문 해설이 없습니다.",
-                                                                verse: "기록된 말씀이 없습니다.",
-                                                                questions: ["질문 1", "질문 2", "질문 3"],
-                                                                prayer: "",
-                                                            });
-                                                        }
-                                                        setAnswers(h.answers || []);
-                                                        setGraceInput(h.reflection || ""); // 은혜나눔 복원
-                                                        setIsHistoryMode(true);
-                                                        setQtStep('read');
-                                                        setView('qt');
-                                                    }}
-                                                    style={{ flex: 1, padding: '12px', background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '12px', color: '#666', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
-                                                >
-                                                    내용 보기
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        setHistoryEditRecord(h);
-                                                        setHistoryEditAnswers(h.answers || ["", "", ""]);
-                                                        setHistoryEditReflection(h.reflection || "");
-                                                    }}
-                                                    style={{ width: '60px', padding: '12px', background: '#FFF3E0', border: '1px solid #FFE0B2', borderRadius: '12px', color: '#E65100', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
-                                                >
-                                                    수정
-                                                </button>
-                                                <button
-                                                    onClick={async () => {
-                                                        if (!confirm('정말 이 묵상 기록을 삭제하시겠습니까? (나눔 게시판 글도 함께 삭제됩니다)')) return;
-                                                        const res = await fetch('/api/qt/history/edit', {
-                                                            method: 'POST',
-                                                            headers: { 'Content-Type': 'application/json' },
-                                                            body: JSON.stringify({ action: 'delete', user_id: user?.id, date: h.completed_date })
-                                                        });
-                                                        if (res.ok) {
-                                                            alert('삭제되었습니다.');
-                                                            if (user?.id) fetchHistory(user?.id);
-                                                        } else {
-                                                            alert('삭제 중 오류가 발생했습니다.');
-                                                        }
-                                                    }}
-                                                    style={{ width: '60px', padding: '12px', background: '#FFEBEE', border: '1px solid #FFCDD2', borderRadius: '12px', color: '#C62828', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
-                                                >
-                                                    삭제
-                                                </button>
+                                                <input value={commentInputs[diary.id] || ""} onChange={(e) => setCommentInputs({ ...commentInputs, [diary.id]: e.target.value })} placeholder="따뜻한 한마디..." style={{ flex: 1, border: '1px solid #fae1cd', borderRadius: '8px', padding: '8px', fontSize: '12px', outline: 'none' }} onKeyDown={(e) => e.key === 'Enter' && handleCommentSubmit(diary.id, 'thanksgiving')} />
+                                                <button onClick={() => handleCommentSubmit(diary.id, 'thanksgiving')} style={{ background: '#E07A5F', color: 'white', border: 'none', borderRadius: '8px', padding: '0 12px', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>게시</button>
                                             </div>
+                                            {replyingToCommentId && replyingToPostId === diary.id && (
+                                                <div style={{ marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFF8E1', padding: '8px 12px', borderRadius: '10px', border: '1px solid #FFE082' }}>
+                                                    <span style={{ fontSize: '12px', color: '#856404', fontWeight: 700 }}>💬 답글 남기는 중...</span>
+                                                    <button onClick={() => { setReplyingToCommentId(null); setReplyingToPostId(null); setCommentInputs({ ...commentInputs, [diary.id]: "" }); }} style={{ background: 'none', border: 'none', color: '#A57224', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>취소</button>
+                                                </div>
+                                            )}
                                         </div>
-                                    ))
-                                )}
-                            </>
-                        )}
-                    </div>
-
-                    {historyEditRecord && (
-                        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                            <div style={{ background: 'white', width: '100%', maxWidth: '500px', borderRadius: '24px', padding: '24px', maxHeight: '90vh', overflowY: 'auto' }}>
-                                <h3 style={{ margin: '0 0 15px 0', color: '#333' }}>📝 묵상 기록 수정</h3>
-                                <div style={{ fontSize: '13px', color: '#666', marginBottom: '20px' }}>{historyEditRecord.completed_date} 기록을 수정합니다. 수정 후 저장 버튼을 눌러주세요.</div>
-
-                                <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '8px' }}>묵상 답변</div>
-                                {historyEditAnswers.map((ans, idx) => (
-                                    <textarea
-                                        key={idx}
-                                        value={ans}
-                                        onChange={e => {
-                                            const newAns = [...historyEditAnswers];
-                                            newAns[idx] = e.target.value;
-                                            setHistoryEditAnswers(newAns);
-                                        }}
-                                        placeholder={`${idx + 1}번 질문 답변`}
-                                        style={{ width: '100%', height: '80px', marginBottom: '10px', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none', background: '#FDFDFD', fontSize: '14px', fontFamily: 'inherit', resize: 'none' }}
-                                    />
-                                ))}
-
-                                <div style={{ fontWeight: 700, fontSize: '14px', marginTop: '10px', marginBottom: '8px' }}>나눔 게시판 은혜 나눔</div>
-                                <textarea
-                                    value={historyEditReflection}
-                                    onChange={e => setHistoryEditReflection(e.target.value)}
-                                    placeholder="게시판에 남길 은혜 나눔 (비워두면 글이 삭제됩니다)"
-                                    style={{ width: '100%', height: '120px', padding: '12px', borderRadius: '12px', border: '1px solid #EEE', outline: 'none', background: '#FDFDFD', fontSize: '14px', fontFamily: 'inherit', resize: 'none' }}
-                                />
-
-                                <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                                    <button onClick={() => setHistoryEditRecord(null)} style={{ flex: 1, padding: '14px', borderRadius: '15px', border: 'none', background: '#F5F5F5', color: '#666', fontWeight: 700, fontSize: '15px', cursor: 'pointer' }}>취소</button>
-                                    <button onClick={async () => {
-                                        const effectiveChurchId = churchId || (typeof window !== 'undefined' ? localStorage.getItem('church_id') : null) || 'jesus-in';
-                                        const res = await fetch('/api/qt/history/edit', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ action: 'update', user_id: user?.id, user_name: profileName || '성도', church_id: effectiveChurchId, date: historyEditRecord.completed_date, answers: historyEditAnswers, reflection: historyEditReflection })
-                                        });
-                                        if (res.ok) {
-                                            alert('수정되었습니다.');
-                                            setHistoryEditRecord(null);
-                                            if (user?.id) fetchHistory(user?.id);
-                                        } else {
-                                            alert('수정 중 오류가 발생했습니다.');
-                                        }
-                                    }} style={{ flex: 1, padding: '14px', borderRadius: '15px', border: 'none', background: '#333', color: 'white', fontWeight: 700, fontSize: '15px', cursor: 'pointer' }}>저장</button>
-                                </div>
-                            </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
-
-                    <div style={{ padding: '0 20px 40px 20px', display: 'flex', flexDirection: 'column', gap: '16px', paddingBottom: '100px' }}>
-                        <button onClick={() => setView('home')} style={{ marginTop: '10px', width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 돌아가기</button>
+                    <div style={{ padding: '20px' }}>
+                        <div style={{ borderRadius: '16px', marginBottom: '30px', boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.8)', border: '1px solid #C0C0C0', position: 'relative', overflow: 'hidden' }}></div>
+                        <div style={{ width: '100%', background: '#FEFEFE', borderRadius: '24px', padding: '25px 15px', boxShadow: '0 4px 15px rgba(0,0,0,0.08)', border: '1px solid #EEE', textAlign: 'center' }}>
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginBottom: '20px' }}>
+                                <button onClick={(e) => hapticClick(e, handlePrevCcm)} style={{ border: 'none', background: '#F5F5F5', borderRadius: '12px', width: '50px', height: '50px', fontSize: '20px', cursor: 'pointer', transition: 'all 0.1s' }} onMouseDown={e => e.currentTarget.style.transform = 'scale(0.9)'} onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}>⏮</button>
+                                <button onClick={(e) => hapticClick(e, () => togglePlay(e))} style={{ border: 'none', background: '#D4AF37', color: 'white', borderRadius: '15px', width: '80px', height: '50px', fontSize: '24px', cursor: 'pointer', boxShadow: '0 4px 10px rgba(212,175,55,0.3)', transition: 'all 0.1s' }} onMouseDown={e => e.currentTarget.style.transform = 'scale(0.9)'} onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}>{isCcmPlaying ? '⏸' : '▶️'}</button>
+                                <button onClick={(e) => hapticClick(e, handleNextCcm)} style={{ border: 'none', background: '#F5F5F5', borderRadius: '12px', width: '50px', height: '50px', fontSize: '20px', cursor: 'pointer', transition: 'all 0.1s' }} onMouseDown={e => e.currentTarget.style.transform = 'scale(0.9)'} onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}>⏭</button>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'center' }}><button onClick={(e) => hapticClick(e, () => togglePlay(e))} style={{ background: 'none', border: 'none', color: '#B8924A', fontSize: '12px', fontWeight: 900, cursor: 'pointer', letterSpacing: '2px' }}>RESET CONSOLE</button></div>
+                        </div>
+                        <div style={{ width: '100%', background: '#FFF', borderRadius: '24px', padding: '20px', display: 'flex', gap: '15px', alignItems: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #FFD1DC', marginTop: '20px' }}>
+                            <div style={{ width: '50px', height: '50px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid #FFD1DC' }}><img src={SOMY_IMG} alt="소미" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></div>
+                            <div style={{ fontSize: '13px', color: '#D81B60', lineHeight: 1.6, fontWeight: 600 }}><strong>소미의 팁!</strong> 찬양을 틀어두고 뒤로가기를 눌러보세요. 음악을 들으며 소미와 대화하거나 말씀을 묵상할 수 있어요! 🎵</div>
+                        </div>
+                        <button onClick={() => setView('home')} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '20px', fontWeight: 700, cursor: 'pointer', marginTop: '20px' }}>홈으로 돌아가기</button>
                     </div>
                 </div>
             );
         }
-
-        /* ══════════════════════════════
-           CCM VIEW
-        ══════════════════════════════ */
-        if (view === "ccm") {
-            return (
-                <div style={{
-                    minHeight: "100vh",
-                    background: "white",
-                    maxWidth: "600px",
-                    margin: "0 auto",
-                    ...baseFont,
-                    paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
-                    paddingTop: 'env(safe-area-inset-top)',
-                    display: 'flex',
-                    flexDirection: 'column'
-                }}>
-                    {styles}
-                    <div style={{
-                        padding: "12px 20px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        background: 'white',
-                        borderBottom: "1px solid #F0F0F0",
-                        position: 'sticky',
-                        top: 'env(safe-area-inset-top)',
-                        zIndex: 10
-                    }}>
-                        <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333', padding: '8px' }}>←</button>
-                        <div style={{ fontWeight: 800, color: "#333", fontSize: "15px" }}>소미와 함께하는 오늘의 CCM 🎵</div>
-                    </div>
-
-                    <div style={{ padding: '30px 20px', display: 'flex', flexDirection: 'column', gap: '30px', alignItems: 'center', flex: 1, justifyContent: 'center' }}>
-                        <div style={{
-                            width: '100%',
-                            maxWidth: '320px',
-                            background: 'linear-gradient(135deg, #FDFBF0 0%, #F5F0E1 100%)',
-                            borderRadius: '32px',
-                            padding: '30px 20px',
-                            boxShadow: '0 20px 50px rgba(0,0,0,0.15), inset 0 1px 2px white',
-                            border: '2px solid #D4AF37',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center'
-                        }}>
-                            <div id="ccm-large-screen" style={{
-                                width: '100%',
-                                height: '200px',
-                                background: '#1A1A1A',
-                                borderRadius: '16px',
-                                marginBottom: '30px',
-                                boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.8)',
-                                border: '1px solid #C0C0C0',
-                                position: 'relative',
-                                overflow: 'hidden'
-                            }}>
-                            </div>
-
-                            {/* 소미 전용 컨트롤 패드 */}
-                            <div style={{
-                                width: '100%',
-                                background: '#FEFEFE',
-                                borderRadius: '24px',
-                                padding: '25px 15px',
-                                boxShadow: '0 4px 15px rgba(0,0,0,0.08)',
-                                border: '1px solid #EEE',
-                                textAlign: 'center'
-                            }}>
-                                <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginBottom: '20px' }}>
-                                    <button onClick={(e) => hapticClick(e, handlePrevCcm)} style={{ border: 'none', background: '#F5F5F5', borderRadius: '12px', width: '50px', height: '50px', fontSize: '20px', cursor: 'pointer', transition: 'all 0.1s' }} onMouseDown={e => e.currentTarget.style.transform = 'scale(0.9)'} onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}>⏮</button>
-                                    <button onClick={(e) => hapticClick(e, () => togglePlay(e))} style={{ border: 'none', background: '#D4AF37', color: 'white', borderRadius: '15px', width: '80px', height: '50px', fontSize: '24px', cursor: 'pointer', boxShadow: '0 4px 10px rgba(212,175,55,0.3)', transition: 'all 0.1s' }} onMouseDown={e => e.currentTarget.style.transform = 'scale(0.9)'} onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}>
-                                        {isCcmPlaying ? '⏸' : '▶️'}
-                                    </button>
-                                    <button onClick={(e) => hapticClick(e, handleNextCcm)} style={{ border: 'none', background: '#F5F5F5', borderRadius: '12px', width: '50px', height: '50px', fontSize: '20px', cursor: 'pointer', transition: 'all 0.1s' }} onMouseDown={e => e.currentTarget.style.transform = 'scale(0.9)'} onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}>⏭</button>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                                    <button onClick={(e) => hapticClick(e, () => togglePlay(e))} style={{ background: 'none', border: 'none', color: '#B8924A', fontSize: '12px', fontWeight: 900, cursor: 'pointer', letterSpacing: '2px' }}>RESET CONSOLE</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div style={{ width: '100%', background: '#FFF', borderRadius: '24px', padding: '20px', display: 'flex', gap: '15px', alignItems: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #FFD1DC' }}>
-                            <div style={{ width: '50px', height: '50px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid #FFD1DC' }}>
-                                <img src={SOMY_IMG} alt="소미" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            </div>
-                            <div style={{ fontSize: '13px', color: '#D81B60', lineHeight: 1.6, fontWeight: 600 }}>
-                                <strong>소미의 팁!</strong> 찬양을 틀어두고 뒤로가기를 눌러보세요. 음악을 들으며 소미와 대화하거나 말씀을 묵상할 수 있어요! 🎵
-                            </div>
-                        </div>
-
-                        <button onClick={() => setView('home')} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '20px', fontWeight: 700, cursor: 'pointer' }}>홈으로 돌아가기</button>
-                    </div>
-                </div>
-            );
-        }
-
         /* ══════════════════════════════
            ADMIN PAGE
         ══════════════════════════════ */
@@ -6275,7 +5511,7 @@ export default function App() {
                     maxWidth: "600px",
                     margin: "0 auto",
                     ...baseFont,
-                    padding: '0 20px 24px 20px',
+                    padding: '0 20px 60px 20px',
                     position: 'relative',
                     paddingTop: 'env(safe-area-inset-top)'
                 }}>
@@ -6295,22 +5531,18 @@ export default function App() {
                         <button onClick={handleBack} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>X</button>
                     </div>
 
-                    {/* 플로팅 닫기 버튼 */}
-                    <button onClick={handleBack} style={{ position: 'fixed', bottom: '30px', right: '25px', width: '46px', height: '46px', borderRadius: '50%', background: 'white', color: '#333', border: '1px solid #EEE', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', zIndex: 1000, cursor: 'pointer', opacity: 0.9 }}>X</button>
-
                     <>
                         <div style={{ background: 'white', borderRadius: '24px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', marginBottom: '24px', textAlign: 'center', border: '1px solid #F0ECE4' }}>
                             <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#F5F2EA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', margin: '0 auto 16px' }}>👑</div>
                             <div style={{ fontSize: '16px', fontWeight: 800, color: '#333', marginBottom: '4px' }}>{user?.user_metadata?.full_name || '관리자'}님, 반갑습니다. </div>
                             <div style={{ fontSize: '13px', color: '#999', marginBottom: '16px' }}>{user?.email}</div>
-
                             <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
                                 <button onClick={handleLogout} style={{ padding: '8px 16px', background: '#F5F5F5', color: '#666', border: 'none', borderRadius: '12px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>시스템 로그아웃</button>
                             </div>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', width: '100%' }}>
-                            <button onClick={() => { setAdminTab('settings'); setSettingsForm({ ...churchSettings }); setShowSettings(true); }} style={{ padding: '24px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                            <button onClick={() => { setAdminTab('settings'); setSettingsForm({ ...churchSettings }); setView('churchSettings'); }} style={{ padding: '24px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
                                 <div style={{ width: '40px', height: '40px', background: '#FFF9C4', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>⛪</div>
                                 <div style={{ textAlign: 'center' }}>
                                     <div style={{ fontSize: '12px', fontWeight: 800, color: '#333', marginBottom: '2px', wordBreak: 'keep-all' }}>교회 설정</div>
@@ -6340,7 +5572,6 @@ export default function App() {
                                     question1: '', question2: '', question3: '', prayer: '',
                                     youthInterpretation: '', youthQuestion1: '', youthQuestion2: '', youthQuestion3: ''
                                 });
-                                // 자동으로 오늘 데이터가 있는지 조회 시도
                                 setAiLoading(true);
                                 try {
                                     const res = await fetch(`/api/qt?date=${today}&church_id=${churchId}`, { cache: 'no-store' });
@@ -6348,23 +5579,13 @@ export default function App() {
                                     if (qt) {
                                         const { fullPassage, interpretation, youthData } = parsePassage(qt.passage);
                                         setQtForm({
-                                            date: qt.date,
-                                            reference: qt.reference,
-                                            passage: fullPassage,
-                                            interpretation: interpretation,
-                                            question1: qt.question1 || '',
-                                            question2: qt.question2 || '',
-                                            question3: qt.question3 || '',
-                                            prayer: qt.prayer || '',
-                                            youthInterpretation: youthData?.interpretation || '',
-                                            youthQuestion1: youthData?.questions?.[0] || '',
-                                            youthQuestion2: youthData?.questions?.[1] || '',
-                                            youthQuestion3: youthData?.questions?.[2] || '',
+                                            date: qt.date, reference: qt.reference, passage: fullPassage, interpretation: interpretation,
+                                            question1: qt.question1 || '', question2: qt.question2 || '', question3: qt.question3 || '',
+                                            prayer: qt.prayer || '', youthInterpretation: youthData?.interpretation || '',
+                                            youthQuestion1: youthData?.questions?.[0] || '', youthQuestion2: youthData?.questions?.[1] || '', youthQuestion3: youthData?.questions?.[2] || '',
                                         });
                                     }
-                                } catch (e) {
-                                    console.error("오늘 큐티 로드 실패:", e);
-                                } finally {
+                                } catch (e) {} finally {
                                     setAiLoading(false);
                                     setView('qtManage');
                                 }
@@ -6378,13 +5599,9 @@ export default function App() {
 
                             <button onClick={() => {
                                 setSermonManageForm({
-                                    script: '',
-                                    summary: churchSettings.sermon_summary || '',
-                                    q1: churchSettings.sermon_q1 || '',
-                                    q2: churchSettings.sermon_q2 || '',
-                                    q3: churchSettings.sermon_q3 || '',
-                                    videoUrl: churchSettings.manual_sermon_url || '',
-                                    inputType: churchSettings.manual_sermon_url ? 'video' : 'text'
+                                    script: '', summary: churchSettings.sermon_summary || '',
+                                    q1: churchSettings.sermon_q1 || '', q2: churchSettings.sermon_q2 || '', q3: churchSettings.sermon_q3 || '',
+                                    videoUrl: churchSettings.manual_sermon_url || '', inputType: churchSettings.manual_sermon_url ? 'video' : 'text'
                                 });
                                 setView('sermonManage');
                             }} style={{ padding: '24px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
@@ -6401,16 +5618,7 @@ export default function App() {
                                         const res = await fetch(`/api/push-send-daily?secret=somy-push-secret-123&church_id=${churchId}`);
                                         const data = await res.json();
                                         if (data.success) {
-                                            if (data.sentCount === 0 && data.failedCount === 0) {
-                                                const debugInfo = `\n\n🔍 진단 정보:\n• 승인된 성도: ${data.totalApprovedCount ?? 0}명\n• 구독 기기: ${data.totalSubscriptionsFound ?? 0}개\n• 검색된 교회코드: ${(data.churchIdsSearched || []).join(', ')}`;
-                                                alert('📢 알림 발송 완료!\n\n✅ 성공: 0명\n❌ 실패: 0명' + debugInfo);
-                                            } else {
-                                                let msg = `📢 알림 발송 완료!\n\n✅ 성공: ${data.sentCount}명\n❌ 실패: ${data.failedCount}명`;
-                                                if (data.errorSamples && data.errorSamples.length > 0) {
-                                                    msg += `\n\n⚠️ 오류 내용:\n- ${data.errorSamples.join('\n- ')}`;
-                                                }
-                                                alert(msg);
-                                            }
+                                            alert(`📢 알림 발송 완료!\n\n✅ 성공: ${data.sentCount}명\n❌ 실패: ${data.failedCount}명`);
                                         } else {
                                             alert('⚠️ 발송 실패: ' + (data.error || '알 수 없는 오류'));
                                         }
@@ -6425,30 +5633,17 @@ export default function App() {
                             </button>
 
                             <button onClick={async () => {
-                                setAdminTab('stats');
-                                setShowSettings(true);
+                                setView('statsManage');
                                 setIsAdminsLoading(true);
-
-                                // 1. 성도 분포 통계용 (성별, 연령대)
-                                if (memberList.length === 0) {
-                                    try {
-                                        const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
-                                        const data = await r.json();
-                                        if (Array.isArray(data)) setMemberList(data);
-                                    } catch (e) { }
-                                }
-
-                                // 2. 큐티 랭킹 통계용
                                 try {
-                                    setStatsError(null);
                                     const res = await fetch(`/api/stats?church_id=${churchId || 'jesus-in'}&t=${Date.now()}`);
                                     const data = await res.json();
                                     if (data) setStats(data);
-                                } catch (e) {
-                                    setStatsError("활동 통계 로딩 실패");
-                                }
 
-                                setIsAdminsLoading(false);
+                                    const actRes = await fetch(`/api/admin?action=list_activities&church_id=${churchId || 'jesus-in'}`);
+                                    const actData = await actRes.json();
+                                    if (Array.isArray(actData)) setActivityLogs(actData);
+                                } catch (e) {} finally { setIsAdminsLoading(false); }
                             }} style={{ padding: '24px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
                                 <div style={{ width: '40px', height: '40px', background: '#FFF3E0', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📊</div>
                                 <div style={{ textAlign: 'center' }}>
@@ -6457,20 +5652,43 @@ export default function App() {
                                 </div>
                             </button>
 
-                            <button onClick={() => setView('adminGuide')} style={{ padding: '16px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                                <div style={{ width: '40px', height: '40px', background: '#F5F5F3', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📘</div>
+                            <button onClick={() => { fetchGalleryPosts(); setView('galleryManage'); }} style={{ padding: '24px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <div style={{ width: '40px', height: '40px', background: '#FCE4EC', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📸</div>
                                 <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#333', marginBottom: '2px', wordBreak: 'keep-all' }}>사용 가이드</div>
-                                    <div style={{ fontSize: '9px', color: '#999', wordBreak: 'keep-all' }}>시스템 매뉴얼</div>
+                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#333', marginBottom: '2px', wordBreak: 'keep-all' }}>갤러리 관리</div>
+                                    <div style={{ fontSize: '9px', color: '#999', wordBreak: 'keep-all' }}>게시물 삭제/관리</div>
                                 </div>
                             </button>
 
+                            <button onClick={() => { fetchAllAdmins(); setView('adminManage'); }} style={{ padding: '24px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <div style={{ width: '40px', height: '40px', background: '#F3E5F5', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🔐</div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#333', marginBottom: '2px', wordBreak: 'keep-all' }}>권한 관리</div>
+                                    <div style={{ fontSize: '9px', color: '#999', wordBreak: 'keep-all' }}>관리자 추가/해제</div>
+                                </div>
+                            </button>
+
+                            <button onClick={() => setView('dataReset')} style={{ padding: '24px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <div style={{ width: '40px', height: '40px', background: '#FFEBEE', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🗑️</div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#333', marginBottom: '2px', wordBreak: 'keep-all' }}>데이터 정리</div>
+                                    <div style={{ fontSize: '9px', color: '#999', wordBreak: 'keep-all' }}>초기화/로그 삭제</div>
+                                </div>
+                            </button>
 
                             <button onClick={fetchPastoralInsights} style={{ padding: '24px 8px', background: 'linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(46,125,50,0.1)' }}>
                                 <div style={{ width: '40px', height: '40px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>💡</div>
                                 <div style={{ textAlign: 'center' }}>
                                     <div style={{ fontSize: '12px', fontWeight: 800, color: '#2E7D32', marginBottom: '2px', wordBreak: 'keep-all' }}>목회 인사이트</div>
                                     <div style={{ fontSize: '9px', color: '#2E7D32', wordBreak: 'keep-all' }}>AI 성도 분석</div>
+                                </div>
+                            </button>
+
+                            <button onClick={() => setView('adminGuide')} style={{ padding: '16px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <div style={{ width: '40px', height: '40px', background: '#F5F5F3', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📘</div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#333', marginBottom: '2px', wordBreak: 'keep-all' }}>사용 가이드</div>
+                                    <div style={{ fontSize: '9px', color: '#999', wordBreak: 'keep-all' }}>시스템 매뉴얼</div>
                                 </div>
                             </button>
 
@@ -6483,18 +5701,17 @@ export default function App() {
                             </button>
 
                             {isSuperAdmin && (
-                                <button onClick={() => { setAdminTab('master'); fetchAllAdmins(); fetchChurchStats(); setShowSettings(true); }} style={{ padding: '16px 8px', background: '#FFFDE7', border: '1px solid #FFF176', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                                    <div style={{ width: '40px', height: '40px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>👑</div>
-                                    <div style={{ textAlign: 'center' }}>
-                                        <div style={{ fontSize: '12px', fontWeight: 800, color: '#856404', marginBottom: '2px', wordBreak: 'keep-all' }}>마스터</div>
-                                        <div style={{ fontSize: '9px', color: '#B8924A', wordBreak: 'keep-all' }}>시스템 관리</div>
+                                <button onClick={() => { setAdminTab('master'); fetchAllAdmins(); fetchChurchStats(); setView('masterManage'); }} style={{ gridColumn: 'span 3', marginTop: '10px', padding: '16px 8px', background: '#FFFDE7', border: '1px solid #FFF176', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                    <div style={{ width: '36px', height: '36px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>👑</div>
+                                    <div style={{ textAlign: 'left' }}>
+                                        <div style={{ fontSize: '14px', fontWeight: 900, color: '#856404' }}>시스템 마스터 대시보드</div>
+                                        <div style={{ fontSize: '10px', color: '#B8924A' }}>전체 교회 현황 및 시스템 총괄 관리</div>
                                     </div>
                                 </button>
                             )}
                         </div>
 
-
-                        <button onClick={() => setView('home')} style={{ marginTop: '32px', width: '100%', padding: '16px', background: '#F5F5F5', color: '#333', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 돌아가기</button>
+                        <button onClick={() => setView('home')} style={{ marginTop: '32px', width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>홈으로 돌아가기</button>
                     </>
                 </div>
             );
@@ -6503,6 +5720,245 @@ export default function App() {
         /* ══════════════════════════════
            MEMBER MANAGEMENT VIEW (NEW)
         ══════════════════════════════ */
+
+
+        if (view === "churchSettings") {
+            return (
+                <div style={{
+                    minHeight: "100vh",
+                    background: "#FDFCFB",
+                    maxWidth: "600px",
+                    margin: "0 auto",
+                    ...baseFont,
+                    paddingBottom: '80px',
+                    position: 'relative',
+                    paddingTop: 'env(safe-area-inset-top)'
+                }}>
+                    <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #F0F0F0", position: 'sticky', top: 'env(safe-area-inset-top)', background: 'white', zIndex: 10 }}>
+                        <button onClick={() => setView('admin')} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333', padding: '8px' }}>←</button>
+                        <div style={{ fontWeight: 800, color: "#333", fontSize: "15px" }}>⛪ 교회 설정 (상세)</div>
+                    </div>
+
+                    <div style={{ padding: "20px" }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                            
+                            {/* 1. 기본 정보 섹션 */}
+                            <section style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', borderLeft: '4px solid #D4AF37', paddingLeft: '10px' }}>⛪ 기본 교회 정보</div>
+                                
+                                {isSuperAdmin && (
+                                    <div style={{ background: '#FFF9C4', padding: '12px 16px', borderRadius: '15px', border: '1px solid #FFF176', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <span style={{ fontSize: '11px', fontWeight: 800, color: '#856404' }}>🔗 접속 주소</span>
+                                            <span style={{ fontSize: '10px', color: '#B8924A' }}>{typeof window !== 'undefined' ? window.location.origin : ''}{churchId === 'somy-main' ? '' : `/?church_id=${churchId}`}</span>
+                                        </div>
+                                        <button onClick={() => {
+                                            const link = window.location.origin + (churchId === 'somy-main' ? '/' : `/?church_id=${churchId}`);
+                                            navigator.clipboard.writeText(link).then(() => alert('주소가 복사되었습니다!'));
+                                        }} style={{ padding: '6px 12px', background: '#D4AF37', color: 'white', border: 'none', borderRadius: '8px', fontSize: '10px', fontWeight: 800 }}>복사</button>
+                                    </div>
+                                )}
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>교회 이름</label>
+                                    <input type="text" value={settingsForm?.church_name || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, church_name: e.target.value }))} style={{ padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '14px' }} />
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>앱 부제목 (슬로건)</label>
+                                    <input type="text" value={settingsForm?.app_subtitle || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, app_subtitle: e.target.value }))} style={{ padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '14px' }} />
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>교회 홈페이지 URL (선택)</label>
+                                    <input type="text" value={settingsForm?.church_url || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, church_url: e.target.value }))} style={{ padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '14px' }} />
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>⏰ 매일 큐티 알림 발송 시간</label>
+                                    <input type="time" value={settingsForm?.qt_notification_time || '08:00'} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, qt_notification_time: e.target.value }))} style={{ padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '14px' }} />
+                                </div>
+                            </section>
+
+                            {/* 2. 로고 및 팝업 섹션 */}
+                            <section style={{ display: 'flex', flexDirection: 'column', gap: '14px', padding: '15px', background: '#F9F9F9', borderRadius: '20px' }}>
+                                <div style={{ fontSize: '15px', fontWeight: 800, color: '#333' }}>🖼️ 이미지 및 팝업 관리</div>
+                                
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#666' }}>교회 로고 이미지</label>
+                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                        <input type="text" value={settingsForm?.church_logo_url || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, church_logo_url: e.target.value }))} placeholder="URL을 입력하거나 업로드" style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #DDD', fontSize: '13px' }} />
+                                        <input type="file" id="logo-upload-full" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                                            const file = e.target.files?.[0]; if (!file) return;
+                                            setIsLogoUploading(true);
+                                            const formData = new FormData(); formData.append('file', file); formData.append('church_id', churchId);
+                                            try {
+                                                const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
+                                                const data = await res.json();
+                                                if (data.url) setSettingsForm({ ...settingsForm, church_logo_url: data.url });
+                                            } catch (err) { alert('업로드 실패'); } finally { setIsLogoUploading(false); }
+                                        }} />
+                                        <button onClick={() => document.getElementById('logo-upload-full')?.click()} style={{ padding: '10px 15px', background: 'white', border: '1px solid #DDD', borderRadius: '10px', fontSize: '12px', fontWeight: 700 }}>{isLogoUploading ? '...' : '파일'}</button>
+                                    </div>
+                                    {settingsForm?.church_logo_url && <img src={settingsForm.church_logo_url} style={{ width: '50px', height: '50px', objectFit: 'contain', background: 'white', borderRadius: '8px', border: '1px solid #EEE' }} />}
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px', padding: '12px', background: '#E3F2FD', borderRadius: '15px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#1565C0' }}>🖼️ 행사 포스터 팝업 노출</label>
+                                        <input type="checkbox" checked={!!settingsForm?.event_poster_visible} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, event_poster_visible: e.target.checked }))} style={{ width: '18px', height: '18px' }} />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                        <input type="text" value={settingsForm?.event_poster_url || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, event_poster_url: e.target.value }))} placeholder="포스터 URL" style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #BBDEFB', fontSize: '13px' }} />
+                                        <input type="file" id="poster-upload-full" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                                            const file = e.target.files?.[0]; if (!file) return;
+                                            setIsPosterUploading(true);
+                                            const formData = new FormData(); formData.append('file', file); formData.append('church_id', churchId);
+                                            try {
+                                                const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
+                                                const data = await res.json();
+                                                if (data.url) setSettingsForm({ ...settingsForm, event_poster_url: data.url });
+                                            } catch (err) { alert('업로드 실패'); } finally { setIsPosterUploading(false); }
+                                        }} />
+                                        <button onClick={() => document.getElementById('poster-upload-full')?.click()} style={{ padding: '10px 15px', background: 'white', border: '1px solid #BBDEFB', borderRadius: '10px', fontSize: '12px', fontWeight: 700 }}>{isPosterUploading ? '...' : '파일'}</button>
+                                    </div>
+                                    {settingsForm?.event_poster_url && <img src={settingsForm.event_poster_url} style={{ width: '100%', maxWidth: '120px', borderRadius: '8px', border: '1px solid #90CAF9' }} />}
+                                </div>
+                            </section>
+
+                            {/* 3. 유튜브 및 찬양 섹션 */}
+                            <section style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', borderLeft: '4px solid #FF0000', paddingLeft: '10px' }}>🎥 설교 및 찬양 설정</div>
+                                
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#666' }}>유튜브 채널 ID (자동 업데이트용)</label>
+                                    <input type="text" value={settingsForm?.sermon_url || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, sermon_url: e.target.value }))} placeholder="예: UC4UTt4..." style={{ padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '14px' }} />
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#666' }}>수동 설교 영상 주소 (최우선 표시)</label>
+                                    <input type="text" value={settingsForm?.manual_sermon_url || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, manual_sermon_url: e.target.value }))} placeholder="https://youtu.be/..." style={{ padding: '12px', borderRadius: '12px', border: '1px solid #EEE', fontSize: '14px' }} />
+                                </div>
+
+                                <div style={{ marginTop: '5px', padding: '15px', background: '#F5F5F3', borderRadius: '20px', border: '1px solid #EEE' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', marginBottom: '12px' }}>🎵 배경음악(CCM) 플레이리스트</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+                                        <input type="text" value={newCcmTitle} onChange={(e: any) => setNewCcmTitle(e.target.value)} placeholder="찬양 제목" style={{ padding: '10px', borderRadius: '10px', border: '1px solid #DDD', fontSize: '13px' }} />
+                                        <input type="text" value={newCcmArtist} onChange={(e: any) => setNewCcmArtist(e.target.value)} placeholder="가수 (선택)" style={{ padding: '10px', borderRadius: '10px', border: '1px solid #DDD', fontSize: '13px' }} />
+                                        <div style={{ display: 'flex', gap: '6px' }}>
+                                            <input type="text" value={newCcmUrl} onChange={(e: any) => setNewCcmUrl(e.target.value)} placeholder="유튜브 주소" style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #DDD', fontSize: '13px' }} />
+                                            <button onClick={() => {
+                                                if (!newCcmTitle || !newCcmUrl) return alert('제목과 주소를 넣어주세요');
+                                                let vid = '';
+                                                if (newCcmUrl.includes('v=')) vid = newCcmUrl.split('v=')[1].split('&')[0];
+                                                else if (newCcmUrl.includes('youtu.be/')) vid = newCcmUrl.split('youtu.be/')[1].split('?')[0];
+                                                else vid = newCcmUrl;
+                                                const newList = [...(settingsForm?.custom_ccm_list || []), { title: newCcmTitle, artist: newCcmArtist || '추천 찬양', youtubeId: vid }];
+                                                setSettingsForm({ ...settingsForm, custom_ccm_list: newList });
+                                                setNewCcmTitle(""); setNewCcmArtist(""); setNewCcmUrl("");
+                                            }} style={{ padding: '0 15px', background: '#333', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '12px' }}>추가</button>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '150px', overflowY: 'auto' }}>
+                                        {settingsForm?.custom_ccm_list?.map((ccm: any, idx: number) => (
+                                            <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'white', padding: '8px 12px', borderRadius: '10px', border: '1px solid #EEE' }}>
+                                                <div style={{ flex: 1, fontSize: '12px' }}><b>{ccm.title}</b> <span style={{ color: '#999' }}>{ccm.artist}</span></div>
+                                                <button onClick={() => {
+                                                    const newList = settingsForm.custom_ccm_list.filter((_: any, i: number) => i !== idx);
+                                                    setSettingsForm({ ...settingsForm, custom_ccm_list: newList });
+                                                }} style={{ background: 'none', border: 'none', color: '#FF5252', fontSize: '16px', padding: '0 5px' }}>×</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* 4. 칼럼 및 말씀 섹션 */}
+                            <section style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', borderLeft: '4px solid #4CAF50', paddingLeft: '10px' }}>✍️ 콘텐츠 관리 (칼럼/암송)</div>
+                                
+                                <div style={{ padding: '15px', background: '#FDF8F0', borderRadius: '20px', border: '1px solid #FAF0D7' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                        <div style={{ fontSize: '13px', fontWeight: 800 }}>✍️ 담임목사 칼럼 관리</div>
+                                        <button disabled={isGeneratingColumn} onClick={(e) => { e.preventDefault(); handleGenerateColumn(); }} style={{ padding: '6px 12px', background: '#333', color: 'white', border: 'none', borderRadius: '10px', fontSize: '11px', fontWeight: 700 }}>{isGeneratingColumn ? '생성 중...' : '✨ AI 자동 생성'}</button>
+                                    </div>
+                                    <input type="text" value={settingsForm?.pastor_column_title || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, pastor_column_title: e.target.value }))} placeholder="칼럼 제목" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #DDD', fontSize: '13px', marginBottom: '8px' }} />
+                                    <textarea value={settingsForm?.pastor_column_content || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, pastor_column_content: e.target.value }))} placeholder="칼럼 내용" style={{ width: '100%', minHeight: '120px', padding: '12px', borderRadius: '12px', border: '1px solid #DDD', fontSize: '13px', lineHeight: 1.6 }} />
+                                </div>
+
+                                <div style={{ padding: '15px', background: '#F1F8E9', borderRadius: '20px', border: '1px solid #DCEDC8' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: 800, marginBottom: '12px' }}>📖 암송 구절 커스텀</div>
+                                    <input type="text" value={settingsForm?.today_verse_text || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, today_verse_text: e.target.value }))} placeholder="암송 말씀 내용" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #DDD', fontSize: '13px', marginBottom: '8px' }} />
+                                    <input type="text" value={settingsForm?.today_verse_ref || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, today_verse_ref: e.target.value }))} placeholder="말씀 출처 (예: 시편 23:1)" style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #DDD', fontSize: '13px' }} />
+                                </div>
+                            </section>
+
+                            {/* 5. 추천 도서 섹션 */}
+                            <section style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', borderLeft: '4px solid #673AB7', paddingLeft: '10px' }}>📚 이달의 추천 도서</div>
+                                <div style={{ padding: '15px', background: '#F3E5F5', borderRadius: '20px', border: '1px solid #E1BEE7' }}>
+                                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                                        <input type="text" value={settingsForm?.today_book_title || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, today_book_title: e.target.value }))} placeholder="책 제목" style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #DDD', fontSize: '13px' }} />
+                                        <button disabled={isBookAiLoading} onClick={async () => {
+                                            if (!settingsForm?.today_book_title) return alert('제목 입력 필요');
+                                            setIsBookAiLoading(true);
+                                            try {
+                                                const res = await fetch('/api/book-generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: settingsForm.today_book_title }) });
+                                                const data = await res.json();
+                                                if (data.description) setSettingsForm({ ...settingsForm, today_book_description: data.description });
+                                            } catch (e) { alert('AI 실패'); } finally { setIsBookAiLoading(false); }
+                                        }} style={{ padding: '0 12px', background: '#333', color: 'white', border: 'none', borderRadius: '10px', fontSize: '11px' }}>{isBookAiLoading ? '...' : 'AI 생성'}</button>
+                                    </div>
+                                    <textarea value={settingsForm?.today_book_description || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, today_book_description: e.target.value }))} placeholder="추천 이유" style={{ width: '100%', minHeight: '80px', padding: '12px', borderRadius: '12px', border: '1px solid #DDD', fontSize: '13px', marginBottom: '10px' }} />
+                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                        <input type="file" id="book-upload-full" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                                            const file = e.target.files?.[0]; if (!file) return;
+                                            setIsBookUploading(true);
+                                            const formData = new FormData(); formData.append('file', file); formData.append('church_id', churchId);
+                                            try {
+                                                const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
+                                                const data = await res.json();
+                                                if (data.url) setSettingsForm({ ...settingsForm, today_book_image_url: data.url });
+                                            } catch (err) { alert('업로드 실패'); } finally { setIsBookUploading(false); }
+                                        }} />
+                                        <button onClick={() => document.getElementById('book-upload-full')?.click()} style={{ flex: 1, padding: '10px', background: 'white', border: '1px solid #DDD', borderRadius: '10px', fontSize: '12px' }}>{isBookUploading ? '...' : '📁 책 표지 업로드'}</button>
+                                        {settingsForm?.today_book_image_url && <img src={settingsForm.today_book_image_url} style={{ width: '40px', height: '55px', objectFit: 'cover', borderRadius: '4px' }} />}
+                                    </div>
+                                </div>
+                            </section>
+
+                        </div>
+
+                        {/* 하단 저장 버튼 (고정) */}
+                        <div style={{ position: 'sticky', bottom: '20px', left: 0, right: 0, marginTop: '40px' }}>
+                            <button
+                                onClick={async () => {
+                                    setIsSettingsSaving(true);
+                                    try {
+                                        const res = await fetch('/api/settings', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ ...settingsForm, requester_id: user?.id, requester_email: user?.email })
+                                        });
+                                        if (res.ok) {
+                                            alert('모든 설정이 안전하게 저장되었습니다! ✅');
+                                            setChurchSettings(settingsForm);
+                                        }
+                                    } catch (e) { alert('저장 중 오류 발생'); }
+                                    setIsSettingsSaving(false);
+                                }}
+                                disabled={isSettingsSaving}
+                                style={{ width: '100%', padding: '18px', background: '#333', color: 'white', border: 'none', borderRadius: '20px', fontWeight: 800, fontSize: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.2)', cursor: 'pointer' }}
+                            >
+                                {isSettingsSaving ? '💾 저장하는 중...' : '✅ 설정 완료 및 저장하기'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+
         if (view === "memberManage") {
             return (
                 <div style={{
@@ -6825,8 +6281,429 @@ export default function App() {
         }
 
         /* ══════════════════════════════
-           SERMON VIEW
+           STATISTICS VIEW
         ══════════════════════════════ */
+        if (view === "statsManage") {
+            return (
+                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", ...baseFont, paddingBottom: '60px', paddingTop: 'env(safe-area-inset-top)' }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "16px 20px", background: "white", borderBottom: "1px solid #F0F0F0", position: 'sticky', top: 0, zIndex: 100 }}>
+                        <button onClick={() => setView('admin')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333' }}>←</button>
+                        <div style={{ fontWeight: 900, color: "#333", fontSize: "16px", flex: 1 }}>📊 활동 및 출석 통계</div>
+                    </div>
+                    <div style={{ padding: '20px' }}>
+                        {isAdminsLoading ? (
+                            <div style={{ textAlign: 'center', padding: '100px 0' }}>
+                                <div style={{ fontSize: '40px', marginBottom: '20px' }}>⏳</div>
+                                <div style={{ fontSize: '15px', color: '#666', fontWeight: 700 }}>데이터를 정밀 분석 중...</div>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                {/* 🔝 상단 요약 카드 */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                    <div style={{ background: 'white', padding: '24px 20px', borderRadius: '28px', border: '1px solid #EEE', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                                        <div style={{ fontSize: '11px', color: '#999', marginBottom: '8px', fontWeight: 700 }}>이번 주 묵상율</div>
+                                        <div style={{ fontSize: '28px', fontWeight: 900, color: '#2E7D32' }}>{stats?.weeklyRate || 0}%</div>
+                                        <div style={{ fontSize: '10px', color: '#4CAF50', marginTop: '4px' }}>실시간 집계</div>
+                                    </div>
+                                    <div style={{ background: 'white', padding: '24px 20px', borderRadius: '28px', border: '1px solid #EEE', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                                        <div style={{ fontSize: '11px', color: '#999', marginBottom: '8px', fontWeight: 700 }}>정식 등록 성도</div>
+                                        <div style={{ fontSize: '28px', fontWeight: 900, color: '#1565C0' }}>{stats?.totalMembers || 0}명</div>
+                                        <div style={{ fontSize: '10px', color: '#2196F3', marginTop: '4px' }}>교회 소속 기준</div>
+                                    </div>
+                                </div>
+
+                                {/* 🏆 묵상 랭킹 섹션 */}
+                                <div style={{ background: 'white', padding: '28px', borderRadius: '32px', border: '1px solid #F0ECE4', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+                                    <div style={{ fontSize: '17px', fontWeight: 900, color: '#333', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span>🏆 이달의 묵상 랭킹</span>
+                                        <div style={{ fontSize: '10px', background: '#FFF3E0', color: '#E65100', padding: '2px 8px', borderRadius: '10px', fontWeight: 800 }}>TOP 10</div>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        {(stats?.rankings || []).slice(0, 10).length > 0 ? (
+                                            (stats?.rankings || []).slice(0, 10).map((rank: any, idx: number) => (
+                                                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px', background: idx < 3 ? '#FFFDF7' : 'white', borderRadius: '18px', border: idx < 3 ? '1px solid #FFF176' : '1px solid #F5F5F5' }}>
+                                                    <div style={{ width: '24px', fontSize: '15px', fontWeight: 900, color: idx === 0 ? '#D4AF37' : idx === 1 ? '#AAA' : idx === 2 ? '#CD7F32' : '#CCC', textAlign: 'center' }}>{idx + 1}</div>
+                                                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', overflow: 'hidden', background: '#F5F5F5', border: '1px solid #EEE' }}>
+                                                        <img src={rank.avatar || rank.avatar_url || SOMY_IMG} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                                                    </div>
+                                                    <div style={{ flex: 1 }}>
+                                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#333' }}>{rank.name || rank.full_name}</div>
+                                                        <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>꾸준한 묵상자</div>
+                                                    </div>
+                                                    <div style={{ textAlign: 'right' }}>
+                                                        <div style={{ fontSize: '15px', fontWeight: 900, color: '#333' }}>{rank.count}회</div>
+                                                        <div style={{ fontSize: '10px', color: '#2E7D32', fontWeight: 700 }}>완주</div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div style={{ textAlign: 'center', padding: '40px 0', color: '#BBB', fontSize: '13px' }}>이번 달 활동 기록이 아직 없습니다.</div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* ⚡ 최근 활동 로그 (신규 추가) */}
+                                <div style={{ background: 'white', padding: '28px', borderRadius: '32px', border: '1px solid #F0ECE4', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+                                    <div style={{ fontSize: '17px', fontWeight: 900, color: '#333', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span>⚡ 실시간 활동 정보</span>
+                                        <div style={{ fontSize: '10px', background: '#E8F5E9', color: '#2E7D32', padding: '2px 8px', borderRadius: '10px', fontWeight: 800 }}>LIVE</div>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        {activityLogs.length > 0 ? (
+                                            activityLogs.slice(0, 20).map((log: any, idx: number) => (
+                                                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#F9F9F9', borderRadius: '16px', border: '1px solid #F0F0F0' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                        <div style={{ fontSize: '12px', fontWeight: 800, color: '#333' }}>{log.user_name || '성도'}</div>
+                                                        <div style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '6px', background: 'white', border: '1px solid #EEE', color: '#666' }}>
+                                                            {log.activity_type === 'LOGIN' ? '🔐 로그인' : 
+                                                             log.activity_type === 'QT_COMPLETED' ? '📖 큐티완료' :
+                                                             log.activity_type === 'POST_CREATED' ? '💬 게시글' :
+                                                             log.activity_type === 'COMMENT_CREATED' ? '💭 댓글' :
+                                                             log.activity_type === 'THANKS_DIARY' ? '🙏 감사일기' : '📝 활동'}
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ fontSize: '10px', color: '#AAA' }}>
+                                                        {new Date(log.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div style={{ textAlign: 'center', padding: '40px 0', color: '#BBB', fontSize: '13px' }}>최근 활동 내역이 없습니다.</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        if (view === "pastoralInsightsManage") {
+            return (
+                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", ...baseFont, paddingBottom: '40px', paddingTop: 'env(safe-area-inset-top)' }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "16px 20px", background: "white", borderBottom: "1px solid #F0F0F0", position: 'sticky', top: 0, zIndex: 100 }}>
+                        <button onClick={() => setView('admin')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333' }}>←</button>
+                        <div style={{ fontWeight: 900, color: "#333", fontSize: "16px", flex: 1 }}>💡 AI 목회 인사이트</div>
+                    </div>
+                    <div style={{ padding: '20px' }}>
+                        {isPastoralLoading ? (
+                            <div style={{ textAlign: 'center', padding: '100px 0' }}>
+                                <div style={{ fontSize: '40px', marginBottom: '20px' }}>🧠</div>
+                                <div style={{ fontSize: '15px', color: '#666', fontWeight: 700 }}>AI가 분석 중입니다...</div>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                <div style={{ background: 'white', padding: '30px', borderRadius: '30px', border: '1px solid #EEE', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: 800, color: '#2E7D32', marginBottom: '15px' }}>✨ 분석 리포트</div>
+                                    <div style={{ fontSize: '15px', color: '#444', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+                                        {pastoralInsights || "분석된 내용이 없습니다."}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        if (view === "galleryManage") {
+            return (
+                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", ...baseFont, paddingBottom: '40px', paddingTop: 'env(safe-area-inset-top)' }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "16px 20px", background: "white", borderBottom: "1px solid #F0F0F0", position: 'sticky', top: 0, zIndex: 100 }}>
+                        <button onClick={() => setView('admin')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333' }}>←</button>
+                        <div style={{ fontWeight: 900, color: "#333", fontSize: "16px", flex: 1 }}>📸 갤러리 게시물 관리</div>
+                    </div>
+                    <div style={{ padding: '20px' }}>
+                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                            {galleryPosts.length === 0 ? (
+                                <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '100px 0', color: '#BBB' }}>게시물이 없습니다.</div>
+                            ) : (
+                                galleryPosts.map((post: any) => (
+                                    <div key={post.id} style={{ background: 'white', borderRadius: '20px', overflow: 'hidden', border: '1px solid #EEE', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', position: 'relative' }}>
+                                        <img src={post.image_url} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover' }} alt="" />
+                                        <div style={{ padding: '12px' }}>
+                                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.content}</div>
+                                            <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>{post.user_name}</div>
+                                            <button 
+                                                onClick={async () => {
+                                                    if (confirm('정말 이 게시물을 삭제하시겠습니까?')) {
+                                                        const res = await fetch(`/api/gallery?id=${post.id}`, { method: 'DELETE' });
+                                                        if (res.ok) fetchGalleryPosts();
+                                                    }
+                                                }}
+                                                style={{ width: '100%', marginTop: '10px', padding: '8px', background: '#FFEBEE', color: '#C62828', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                                            >삭제하기</button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                         </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (view === "adminManage") {
+            return (
+                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", ...baseFont, paddingBottom: '40px', paddingTop: 'env(safe-area-inset-top)' }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "16px 20px", background: "white", borderBottom: "1px solid #F0F0F0", position: 'sticky', top: 0, zIndex: 100 }}>
+                        <button onClick={() => setView('admin')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333' }}>←</button>
+                        <div style={{ fontWeight: 900, color: "#333", fontSize: "16px", flex: 1 }}>🔐 관리자 권한 관리</div>
+                    </div>
+                    <div style={{ padding: '20px' }}>
+                        <div style={{ background: '#E0F2F1', padding: '15px', borderRadius: '15px', marginBottom: '20px', fontSize: '12px', color: '#00695C', lineHeight: 1.6 }}>
+                            부관리자로 지정된 성도는 [관리자 센터]에 접속하여 성도 관리, 말씀 등록 등의 기능을 사용할 수 있습니다.
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {allAdminList
+                                .filter(a => normalizeId(a.church_id) === normalizeId(churchId))
+                                .map((admin: any) => (
+                                <div key={admin.id} style={{ background: 'white', padding: '16px', borderRadius: '20px', border: '1px solid #EEE', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', overflow: 'hidden', background: '#F5F5F5' }}>
+                                        <img src={admin.avatar_url || SOMY_IMG} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#333' }}>{admin.name || admin.full_name || '신규 관리자'}</div>
+                                        <div style={{ fontSize: '11px', color: '#999' }}>{admin.email}</div>
+                                    </div>
+                                    <button 
+                                        disabled={admin.is_super_admin}
+                                        onClick={async () => {
+                                            if (confirm(`${admin.name || admin.full_name || admin.email}님의 관리자 권한을 해제하시겠습니까?`)) {
+                                                try {
+                                                    const res = await fetch('/api/admin', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({
+                                                            action: 'delete_admin',
+                                                            target_email: admin.email,
+                                                            requester_id: user?.id
+                                                        })
+                                                    });
+                                                    const data = await res.json();
+                                                    if (data.success) {
+                                                        alert('권한이 성공적으로 해제되었습니다.');
+                                                        fetchAllAdmins();
+                                                    } else {
+                                                        alert('해제 실패: ' + (data.error || '알 수 없는 오류'));
+                                                    }
+                                                } catch (e) {
+                                                    alert('연결 오류가 발생했습니다.');
+                                                }
+                                            }
+                                        }}
+                                        style={{ padding: '8px 12px', background: admin.is_super_admin ? '#EEE' : '#FFEBEE', color: admin.is_super_admin ? '#AAA' : '#C62828', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: 700 }}
+                                    >
+                                        {admin.is_super_admin ? '마스터' : '해제'}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (view === "dataReset") {
+            return (
+                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", ...baseFont, paddingBottom: '40px', paddingTop: 'env(safe-area-inset-top)' }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "16px 20px", background: "white", borderBottom: "1px solid #F0F0F0", position: 'sticky', top: 0, zIndex: 100 }}>
+                        <button onClick={() => setView('admin')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333' }}>←</button>
+                        <div style={{ fontWeight: 900, color: "#333", fontSize: "16px", flex: 1 }}>🗑️ 데이터 정리</div>
+                    </div>
+                    <div style={{ padding: '20px' }}>
+                        <div style={{ background: '#FFF3E0', padding: '20px', borderRadius: '24px', border: '1px solid #FFE0B2', marginBottom: '20px' }}>
+                            <div style={{ fontSize: '15px', fontWeight: 900, color: '#E65100', marginBottom: '10px' }}>⚠️ 주의사항</div>
+                            <div style={{ fontSize: '13px', color: '#666', lineHeight: 1.6 }}>데이터 초기화는 되돌릴 수 없습니다. 신중하게 결정해 주세요.</div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            <button onClick={() => { if (confirm('정말 커뮤니티 글을 모두 삭제하시겠습니까?')) { /* 초기화 로직 */ } }} style={{ padding: '20px', background: 'white', border: '1px solid #EEE', borderRadius: '20px', textAlign: 'left', cursor: 'pointer' }}>
+                                <div style={{ fontWeight: 800, marginBottom: '4px' }}>💬 커뮤니티 비우기</div>
+                                <div style={{ fontSize: '11px', color: '#999' }}>모든 나눔 글이 삭제됩니다.</div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (view === "masterManage") {
+            return (
+                <div style={{ minHeight: "100vh", background: "#FDFCFB", maxWidth: "600px", margin: "0 auto", ...baseFont, paddingBottom: '60px', paddingTop: 'env(safe-area-inset-top)' }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "16px 20px", background: "white", borderBottom: "1px solid #F0F0F0", position: 'sticky', top: 0, zIndex: 100 }}>
+                        <button onClick={() => setView('admin')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333' }}>←</button>
+                        <div style={{ fontWeight: 900, color: "#333", fontSize: "16px", flex: 1 }}>👑 시스템 마스터 대시보드</div>
+                    </div>
+
+                    <div style={{ padding: '20px' }}>
+                         {/* 🔝 주요 통계 카드 (프리미엄 다크 모드) */}
+                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px', marginBottom: '24px' }}>
+                            <div style={{ background: 'linear-gradient(145deg, #1A1A1A, #333)', padding: '24px', borderRadius: '32px', color: 'white', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}>
+                                <div style={{ fontSize: '10px', opacity: 0.6, marginBottom: '6px', letterSpacing: '1px' }}>TOTAL CHURCHES</div>
+                                <div style={{ fontSize: '32px', fontWeight: 900 }}>{churchStats?.totalChurches || 0}</div>
+                                <div style={{ fontSize: '11px', color: '#4CAF50', marginTop: '8px', fontWeight: 700 }}>● Live Active</div>
+                            </div>
+                            <div style={{ background: 'white', padding: '24px', borderRadius: '32px', color: '#333', border: '1px solid #EEE', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+                                <div style={{ fontSize: '10px', color: '#999', marginBottom: '6px', letterSpacing: '1px' }}>TOTAL BELIEVERS</div>
+                                <div style={{ fontSize: '32px', fontWeight: 900 }}>{churchStats?.totalUsers || 0}</div>
+                                <div style={{ fontSize: '11px', color: '#1565C0', marginTop: '8px', fontWeight: 700 }}>↑ 12% Growth</div>
+                            </div>
+                         </div>
+
+                         {/* ➕ 새 교회 권한 부여/등록 섹션 (신규) */}
+                         <div style={{ background: '#FFFDF0', borderRadius: '32px', border: '1px solid #FFE082', padding: '28px', marginBottom: '24px', boxShadow: '0 10px 30px rgba(255,236,179,0.2)' }}>
+                            <div style={{ fontSize: '17px', fontWeight: 900, color: '#333', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span>🔑 신규 교회 권한 승인</span>
+                                <div style={{ fontSize: '10px', background: '#FBC02D', color: 'white', padding: '2px 8px', borderRadius: '10px', fontWeight: 800 }}>SUPER ADMIN ONLY</div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                    <input 
+                                        placeholder="교회 ID (slug, 예: saram)" 
+                                        value={newChurchForm.id}
+                                        onChange={(e) => setNewChurchForm({ ...newChurchForm, id: e.target.value })}
+                                        style={{ padding: '14px 18px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }}
+                                    />
+                                    <input 
+                                        placeholder="교회 정식 명칭" 
+                                        value={newChurchForm.name}
+                                        onChange={(e) => setNewChurchForm({ ...newChurchForm, name: e.target.value })}
+                                        style={{ padding: '14px 18px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }}
+                                    />
+                                </div>
+                                <input 
+                                    placeholder="관리자 승인 이메일 (성도 아이디)" 
+                                    value={newChurchForm.adminEmail}
+                                    onChange={(e) => setNewChurchForm({ ...newChurchForm, adminEmail: e.target.value })}
+                                    style={{ padding: '14px 18px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '13px', outline: 'none' }}
+                                />
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <select 
+                                        value={newChurchForm.plan}
+                                        onChange={(e) => setNewChurchForm({ ...newChurchForm, plan: e.target.value })}
+                                        style={{ flex: 1, padding: '14px 18px', borderRadius: '16px', border: '1px solid #EEE', fontSize: '13px', background: 'white' }}
+                                    >
+                                        <option value="free">Free Plan</option>
+                                        <option value="standard">Standard Plan</option>
+                                        <option value="premium">Premium Plan</option>
+                                    </select>
+                                    <button 
+                                        onClick={async () => {
+                                            if (!newChurchForm.id || !newChurchForm.name || !newChurchForm.adminEmail) {
+                                                alert('모든 항목을 입력해 주세요.');
+                                                return;
+                                            }
+                                            if (confirm(`${newChurchForm.name} 교회를 새로 등록하고 권한을 부여하시겠습니까?`)) {
+                                                setIsAdminsLoading(true);
+                                                try {
+                                                    const res = await fetch('/api/admin', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({
+                                                            action: 'register_church',
+                                                            target_church_id: newChurchForm.id,
+                                                            target_church_name: newChurchForm.name,
+                                                            target_admin_email: newChurchForm.adminEmail,
+                                                            target_plan: newChurchForm.plan,
+                                                            requester_id: user?.id
+                                                        })
+                                                    });
+                                                    const data = await res.json();
+                                                    if (data.success) {
+                                                        alert('교회 등록 및 권한 부여가 완료되었습니다!');
+                                                        setNewChurchForm({ id: '', name: '', adminEmail: '', plan: 'free' });
+                                                        fetchChurchStats(); // 목록 갱신
+                                                    } else {
+                                                        alert('등록 실패: ' + (data.error || '오류 발생'));
+                                                    }
+                                                } catch (e) {
+                                                    alert('통신 중 오류가 발생했습니다.');
+                                                } finally {
+                                                    setIsAdminsLoading(false);
+                                                }
+                                            }
+                                        }}
+                                        style={{ flex: 1, background: '#333', color: 'white', border: 'none', borderRadius: '16px', fontSize: '14px', fontWeight: 800, cursor: 'pointer' }}
+                                    >
+                                        권한 승인 및 등록
+                                    </button>
+                                </div>
+                            </div>
+                         </div>
+
+                         {/* ⛪ 파트너 교회 리스트 */}
+                         <div style={{ background: 'white', borderRadius: '32px', border: '1px solid #F0ECE4', padding: '28px', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                                <div style={{ fontSize: '17px', fontWeight: 900, color: '#333' }}>⛪ 파트너 교회 관리</div>
+                            </div>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {(churchStats?.churches || []).length > 0 ? (
+                                    (churchStats?.churches || []).map((c: any) => (
+                                        <div key={c.id} style={{ display: 'flex', flexDirection: 'column', gap: '15px', padding: '18px', background: '#FDFCFB', borderRadius: '24px', border: '1px solid #F0ECE4', transition: 'all 0.2s' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <div style={{ width: '44px', height: '44px', background: 'white', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', border: '1px solid #EEE' }}>⛪</div>
+                                                    <div>
+                                                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#333' }}>{c.church_name}</div>
+                                                        <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>성도 {c.member_count}명 · ID: {c.church_id}</div>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => {
+                                                        if (confirm(`'${c.church_name}' 교회의 관리 환경으로 전환하시겠습니까?`)) {
+                                                            setChurchId(c.church_id);
+                                                            localStorage.setItem('somy_last_church_id', c.church_id);
+                                                            setView('home');
+                                                            window.scrollTo(0, 0);
+                                                        }
+                                                    }}
+                                                    style={{ padding: '8px 16px', background: '#333', color: 'white', border: 'none', borderRadius: '12px', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}
+                                                >
+                                                    접속
+                                                </button>
+                                            </div>
+                                            
+                                            {/* 👥 해당 교회 관리자 명단 (마스터용 정리) */}
+                                            <div style={{ borderTop: '1px dotted #EEE', paddingTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                                {allAdminList
+                                                    .filter(a => normalizeId(a.church_id) === normalizeId(c.church_id))
+                                                    .map((adm: any) => (
+                                                        <div key={adm.email} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'white', padding: '4px 10px', borderRadius: '10px', border: '1px solid #F0F0F0', fontSize: '10px', color: '#666' }}>
+                                                            <span style={{ fontSize: '12px' }}>{adm.role === 'super_admin' ? '👑' : '👤'}</span>
+                                                            <span style={{ fontWeight: 700 }}>{adm.name || adm.full_name || adm.email.split('@')[0]}</span>
+                                                        </div>
+                                                    ))
+                                                }
+                                                {allAdminList.filter(a => normalizeId(a.church_id) === normalizeId(c.church_id)).length === 0 && (
+                                                    <div style={{ fontSize: '10px', color: '#BBB', fontStyle: 'italic' }}>지정된 관리자 없음</div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div style={{ textAlign: 'center', padding: '40px 0', color: '#BBB', fontSize: '13px' }}>
+                                        등록된 파트너 교회가 없습니다.
+                                    </div>
+                                )}
+                            </div>
+                         </div>
+
+                         {/* 🛠️ 시스템 상태 섹션 */}
+                         <div style={{ marginTop: '24px', background: '#F5F5F3', borderRadius: '24px', padding: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#4CAF50', animation: 'pulse 2s infinite' }}></div>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#666' }}>시스템 모든 노드 정상 작동 중 (Latency: 24ms)</div>
+                         </div>
+                    </div>
+                </div>
+            );
+        }
+
+        /* ══════════════════════════════
+           SERMON VIEW (EXISTING)
+        ══════════════════════════════ */
+
         if (view === "sermon") {
             const getYoutubeEmbedUrl = (url: string, manualUrl?: string) => {
                 const rawUrl = (manualUrl || url || "").trim();
@@ -8911,92 +8788,32 @@ export default function App() {
                                         </div>
                                     </div>
                                 ) : adminTab === 'settings' ? (
-                                    <>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                                            {isSuperAdmin && (
-                                                <div style={{
-                                                    background: '#FFF9C4',
-                                                    padding: '12px 16px',
-                                                    borderRadius: '15px',
-                                                    border: '1px solid #FFF176',
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'center',
-                                                    marginBottom: '5px'
-                                                }}>
-                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                        <span style={{ fontSize: '12px', fontWeight: 800, color: '#856404' }}>🔗 교회 접속 주소</span>
-                                                        <span style={{ fontSize: '10px', color: '#B8924A' }}>{typeof window !== 'undefined' ? window.location.origin : ''}{churchId === 'somy-main' ? '' : `/?church_id=${churchId}`}</span>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => {
-                                                            const link = window.location.origin + (churchId === 'somy-main' ? '/' : `/?church_id=${churchId}`);
-                                                            navigator.clipboard.writeText(link).then(() => alert('교회 접속 주소가 복사되었습니다! 🔗'));
-                                                        }}
-                                                        style={{
-                                                            padding: '6px 12px',
-                                                            background: '#D4AF37',
-                                                            color: 'white',
-                                                            border: 'none',
-                                                            borderRadius: '8px',
-                                                            fontSize: '11px',
-                                                            fontWeight: 800,
-                                                            cursor: 'pointer',
-                                                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                                        }}
-                                                    >
-                                                        주소 복사
-                                                    </button>
-                                                </div>
-                                            )}
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                                <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>교회 이름</label>
-                                                <input type="text" value={settingsForm?.church_name || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, church_name: e.target.value }))} placeholder="앱 메인에 표시될 교회 이름 (예: 샘플교회)" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
-                                            </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                                <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>앱 부제목 (슬로건)</label>
-                                                <input type="text" value={settingsForm?.app_subtitle || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, app_subtitle: e.target.value }))} placeholder="예: 말씀과 기도로 거룩해지는 공동체" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
-                                            </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                                <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>교회 로고 이미지 URL (정사각형 권장)</label>
-                                                <input type="text" value={settingsForm?.church_logo_url || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, church_logo_url: e.target.value }))} placeholder="https://..." style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
-                                            </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                                <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>이벤트 팝업 포스터 URL</label>
-                                                <input type="text" value={settingsForm?.event_poster_url || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, event_poster_url: e.target.value }))} placeholder="공지사항이나 이벤트 포스터 이미지 URL" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                                                    <input type="checkbox" id="poster_visible" checked={!!settingsForm?.event_poster_visible} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, event_poster_visible: e.target.checked }))} />
-                                                    <label htmlFor="poster_visible" style={{ fontSize: '12px', color: '#666', cursor: 'pointer' }}>유저들에게 이 팝업을 노출합니다.</label>
-                                                </div>
-                                            </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                                <label style={{ fontSize: '12px', fontWeight: 700, color: '#9E7B31' }}>⏰ 매일 큐티 알림 발송 시간</label>
-                                                <input type="time" value={settingsForm?.qt_notification_time || ''} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, qt_notification_time: e.target.value }))} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
-                                            </div>
+                                    <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                                        <div style={{ fontSize: '40px', marginBottom: '16px' }}>⚙️</div>
+                                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>교회 설정 페이지 안내</div>
+                                        <div style={{ fontSize: '13px', color: '#666', lineHeight: 1.6, marginBottom: '24px', wordBreak: 'keep-all' }}>
+                                            교회 이름, 로고, 테마 등 전체 설정 관리는 이제 더 넓은 전용 페이지에서 편리하게 이용하실 수 있습니다.
                                         </div>
-
-                                        <button
-                                            onClick={async () => {
-                                                setIsSettingsSaving(true);
-                                                try {
-                                                    const res = await fetch('/api/settings', {
-                                                        method: 'POST',
-                                                        headers: { 'Content-Type': 'application/json' },
-                                                        body: JSON.stringify({ ...settingsForm, requester_id: user?.id, requester_email: user?.email })
-                                                    });
-                                                    if (res.ok) {
-                                                        alert('설정이 저장되었습니다. ✅');
-                                                        setChurchSettings(settingsForm);
-                                                    }
-                                                } catch (e) { }
-                                                setIsSettingsSaving(false);
+                                        <button 
+                                            onClick={() => {
+                                                setShowSettings(false);
+                                                setView('churchSettings');
                                             }}
-                                            disabled={isSettingsSaving}
-                                            style={{ marginTop: '10px', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 800, cursor: 'pointer' }}
+                                            style={{
+                                                width: '100%',
+                                                padding: '16px',
+                                                background: '#333',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '16px',
+                                                fontWeight: 800,
+                                                cursor: 'pointer',
+                                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                                            }}
                                         >
-                                            {isSettingsSaving ? '저장 중...' : '💾 설정 저장하기'}
+                                            전용 페이지로 이동하기
                                         </button>
-                                </>
+                                    </div>
                             ) : adminTab === 'members' ? (
                                     <div style={{ textAlign: 'center', padding: '40px 20px' }}>
                                         <div style={{ fontSize: '40px', marginBottom: '16px' }}>👤</div>

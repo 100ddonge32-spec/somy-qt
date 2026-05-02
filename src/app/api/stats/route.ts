@@ -78,13 +78,18 @@ export async function GET(req: NextRequest) {
         const currentDate = now.getDate();
         const currentHour = now.getHours();
 
-        // 랭킹 초기화 및 집계 시작일 설정
-        // MARCH_BASE가 3월의 최종 합산본이므로, DB에서는 4월 1일 이후의 기록만 가져와 합산하여 중복을 방지합니다.
-        let firstOfMonth = `2026-04-01`;
+        // 현재 달 1일
+        const firstOfMonth = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
         
+        // 이전 달 1일
+        const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const prevYear = prevMonthDate.getFullYear();
+        const prevMonth = prevMonthDate.getMonth() + 1;
+        const firstOfPrevMonth = `${prevYear}-${String(prevMonth).padStart(2, '0')}-01`;
+
         const isFirstDay = currentDate === 1;
 
-        console.log(`[Stats API] CIDs: ${cids}, Month Start: ${firstOfMonth}, isFirstDay: ${isFirstDay}, Hour: ${currentHour}`);
+        console.log(`[Stats API] CIDs: ${cids}, Curr: ${firstOfMonth}, Prev: ${firstOfPrevMonth}, Hour: ${currentHour}`);
 
         // 1. 해당 교회의 사용자 ID 목록 먼저 가져오기 (매우 안전한 방식)
         const { data: churchProfiles } = await supabaseAdmin
@@ -93,6 +98,7 @@ export async function GET(req: NextRequest) {
             .in('church_id', cids);
         
         const churchUserIds = (churchProfiles || []).map(p => p.id);
+        const totalMembers = churchUserIds.length; // ✅ 교회 전체 성도 수
         const nameMap: Record<string, string> = {};
         const avatarMap: Record<string, string | null> = {};
         (churchProfiles || []).forEach(p => {
@@ -101,7 +107,7 @@ export async function GET(req: NextRequest) {
         });
 
         // 큐티 완료 기록 가져오기 (데모는 user_name 기반으로 격리, 일반은 user_id 필터링)
-        let completionsQuery = supabaseAdmin.from('qt_completions').select('*').gte('completed_date', firstOfMonth);
+        let completionsQuery = supabaseAdmin.from('qt_completions').select('*').gte('completed_date', firstOfPrevMonth);
         if (rawChurchId === 'demo') {
             // 데모: user_name에 '[데모]' 접두사가 붙은 기록만 필터링
             completionsQuery = completionsQuery.like('user_name', '[데모]%');
@@ -120,7 +126,7 @@ export async function GET(req: NextRequest) {
             .from('community_posts')
             .select('user_name, avatar_url, created_at, is_qt')
             .in('church_id', cids)
-            .gte('created_at', firstOfMonth);
+            .gte('created_at', firstOfPrevMonth);
 
         if (postError) console.error("[Stats API] Posts fetch error:", postError);
 
@@ -153,6 +159,7 @@ export async function GET(req: NextRequest) {
         // 3. 가공 로직 (성함 기반 통합)
         const todayMembers: any[] = [];
         const userStats: Record<string, { name: string; avatar: string | null; dates: Set<string>; baseCount: number }> = {};
+        const prevUserStats: Record<string, { name: string; avatar: string | null; dates: Set<string> }> = {};
 
         // (1) 큐티 완료 기록 합산
         allCompletions.forEach(comp => {
@@ -160,19 +167,19 @@ export async function GET(req: NextRequest) {
             const nameKey = (comp.user_name || nameMap[uid] || '익명성도').trim();
             if (nameKey === '익명성도' || EXCLUDED_NAMES.includes(nameKey)) return;
             
-            if (!userStats[nameKey]) {
-                userStats[nameKey] = { 
-                    name: nameKey, 
-                    avatar: comp.avatar_url, 
-                    dates: new Set<string>(), 
-                    baseCount: MARCH_BASE[nameKey] || 0 
-                };
-            }
-            userStats[nameKey].dates.add(comp.completed_date);
-            if (comp.avatar_url) userStats[nameKey].avatar = comp.avatar_url;
+            const dateStr = comp.completed_date;
+            const isPrevMonth = dateStr >= firstOfPrevMonth && dateStr < firstOfMonth;
 
-            if (comp.completed_date === today) {
-                if (!todayMembers.find(m => m.user_name === nameKey)) {
+            if (isPrevMonth) {
+                if (!prevUserStats[nameKey]) prevUserStats[nameKey] = { name: nameKey, avatar: comp.avatar_url, dates: new Set() };
+                prevUserStats[nameKey].dates.add(dateStr);
+                if (comp.avatar_url) prevUserStats[nameKey].avatar = comp.avatar_url;
+            } else if (dateStr >= firstOfMonth) {
+                if (!userStats[nameKey]) userStats[nameKey] = { name: nameKey, avatar: comp.avatar_url, dates: new Set(), baseCount: 0 };
+                userStats[nameKey].dates.add(dateStr);
+                if (comp.avatar_url) userStats[nameKey].avatar = comp.avatar_url;
+
+                if (dateStr === today && !todayMembers.find(m => m.user_name === nameKey)) {
                     todayMembers.push({ user_name: nameKey, avatar_url: comp.avatar_url });
                 }
             }
@@ -183,34 +190,37 @@ export async function GET(req: NextRequest) {
             const nameKey = (post.user_name || '익명성도').trim();
             if (nameKey === '익명성도' || EXCLUDED_NAMES.includes(nameKey)) return;
             
-            // ✅ UTC 시간을 한국 시간(KST)으로 변환 후 날짜 추출 (오전 작성 건 처리)
             const kstDate = new Date(new Date(post.created_at).getTime() + 9 * 60 * 60 * 1000);
             const dateStr = kstDate.toISOString().split('T')[0];
+            const isPrevMonth = dateStr >= firstOfPrevMonth && dateStr < firstOfMonth;
 
-            if (!userStats[nameKey]) {
-                userStats[nameKey] = { 
-                    name: nameKey, 
-                    avatar: post.avatar_url, 
-                    dates: new Set<string>(), 
-                    baseCount: MARCH_BASE[nameKey] || 0 
-                };
-            }
-            userStats[nameKey].dates.add(dateStr);
-            if (post.avatar_url) userStats[nameKey].avatar = post.avatar_url;
+            if (isPrevMonth) {
+                if (!prevUserStats[nameKey]) prevUserStats[nameKey] = { name: nameKey, avatar: post.avatar_url, dates: new Set() };
+                prevUserStats[nameKey].dates.add(dateStr);
+                if (post.avatar_url) prevUserStats[nameKey].avatar = post.avatar_url;
+            } else if (dateStr >= firstOfMonth) {
+                if (!userStats[nameKey]) userStats[nameKey] = { name: nameKey, avatar: post.avatar_url, dates: new Set(), baseCount: 0 };
+                userStats[nameKey].dates.add(dateStr);
+                if (post.avatar_url) userStats[nameKey].avatar = post.avatar_url;
 
-            if (dateStr === today) {
-                if (!todayMembers.find(m => m.user_name === nameKey)) {
+                if (dateStr === today && !todayMembers.find(m => m.user_name === nameKey)) {
                     todayMembers.push({ user_name: nameKey, avatar_url: post.avatar_url });
                 }
             }
         });
 
-        // MARCH_BASE에만 있고 DB에 없는 성도 추가
-        Object.entries(MARCH_BASE).forEach(([name, count]) => {
-            if (!userStats[name]) {
-                userStats[name] = { name, avatar: null, dates: new Set<string>(), baseCount: count };
-            }
-        });
+        // 3월 데이터 병합 (만약 이전 달이나 이번 달이 3월인 경우 수동 데이터 반영)
+        if (prevMonth === 3 && prevYear === 2026) {
+            Object.entries(MARCH_BASE).forEach(([name, count]) => {
+                if (!prevUserStats[name]) prevUserStats[name] = { name, avatar: null, dates: new Set() };
+            });
+        }
+        if (currentMonth === 3 && currentYear === 2026) {
+            Object.entries(MARCH_BASE).forEach(([name, count]) => {
+                if (!userStats[name]) userStats[name] = { name, avatar: null, dates: new Set(), baseCount: count };
+                else userStats[name].baseCount = count;
+            });
+        }
 
         // 4. 로그인 및 주요 활동 통계 추가
         const ACTIVITY_TYPES = ['LOGIN', 'POST_CREATED', 'COMMENT_CREATED', 'QT_COMPLETED', 'THANKS_DIARY', 'MEMBER_APPROVED', 'ADMIN_MODIFIED'];
@@ -219,7 +229,7 @@ export async function GET(req: NextRequest) {
             .from('activity_logs')
             .select('user_id, user_name, created_at, activity_type')
             .in('activity_type', ACTIVITY_TYPES)
-            .gte('created_at', firstOfMonth)
+            .gte('created_at', firstOfPrevMonth)
             .order('created_at', { ascending: true });
             
         // 슈퍼 관리자(somy-main)가 아니면 해당 교회 활동만 필터링
@@ -296,7 +306,7 @@ export async function GET(req: NextRequest) {
             .map(u => ({
                 name: u.name,
                 avatar: u.avatar,
-                count: Array.from(u.dates).length // 4월부터의 순수 실적 (MARCH_BASE 제외)
+                count: Array.from(u.dates).length + u.baseCount
             }))
             .sort((a, b) => {
                 if (b.count !== a.count) return b.count - a.count;
@@ -304,11 +314,38 @@ export async function GET(req: NextRequest) {
             })
             .slice(0, 100);
 
-        // 7. [추가] 4월 초순(7일까지)에는 3월의 영광을 상단에 '시상' 형식으로 노출
+        // 7. 4월 초순(7일까지)에는 3월의 영광을 상단에 '시상' 형식으로 노출
         let previousMonthRanking = null;
         if (currentDate <= 7) {
-            previousMonthRanking = FINAL_MARCH_DATA;
+            if (prevMonth === 3 && prevYear === 2026) {
+                previousMonthRanking = FINAL_MARCH_DATA;
+            } else {
+                previousMonthRanking = Object.values(prevUserStats)
+                    .map(u => ({
+                        name: u.name,
+                        avatar: u.avatar,
+                        count: Array.from(u.dates).length // 이전 달의 순수 실적
+                    }))
+                    .sort((a, b) => {
+                        if (b.count !== a.count) return b.count - a.count;
+                        return a.name.localeCompare(b.name);
+                    })
+                    .slice(0, 15);
+            }
         }
+
+        // 8. 주간 묵상율 계산 (최근 7일간 1회 이상 참여한 성도 비율)
+        const last7DaysDate = new Date(Date.now() + 9 * 60 * 60 * 1000);
+        last7DaysDate.setDate(last7DaysDate.getDate() - 7);
+        const last7DaysStr = last7DaysDate.toISOString().split('T')[0];
+        
+        const weeklyUniqueUsers = new Set(
+            allCompletions
+                .filter(c => c.completed_date >= last7DaysStr)
+                .map(c => c.user_name || c.user_id)
+        ).size;
+        
+        const weeklyRate = totalMembers > 0 ? Math.round((weeklyUniqueUsers / totalMembers) * 100) : 0;
 
         const result = {
             today: {
@@ -316,7 +353,11 @@ export async function GET(req: NextRequest) {
                 members: todayMembers,
             },
             ranking,
+            rankings: ranking, 
+            totalMembers,
+            weeklyRate,        // ✅ 주간 묵상율 추가
             previousMonthRanking,
+            previousMonth: prevMonth,
             isFirstDay,
             currentHour,
             totalCompletions: ranking.reduce((acc: number, cur: any) => acc + cur.count, 0),
