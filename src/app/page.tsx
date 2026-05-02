@@ -8957,9 +8957,47 @@ export default function App() {
                                                 <input type="text" value={settingsForm.app_subtitle} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, app_subtitle: e.target.value }))} placeholder="예: 말씀과 기도로 거룩해지는 공동체" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>교회 로고 이미지 URL (정사각형 권장)</label>
+                                                <input type="text" value={settingsForm.church_logo_url} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, church_logo_url: e.target.value }))} placeholder="https://..." style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A' }}>이벤트 팝업 포스터 URL</label>
+                                                <input type="text" value={settingsForm.event_poster_url} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, event_poster_url: e.target.value }))} placeholder="공지사항이나 이벤트 포스터 이미지 URL" style={{ padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                                                    <input type="checkbox" id="poster_visible" checked={settingsForm.event_poster_visible} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, event_poster_visible: e.target.checked }))} />
+                                                    <label htmlFor="poster_visible" style={{ fontSize: '12px', color: '#666', cursor: 'pointer' }}>유저들에게 이 팝업을 노출합니다.</label>
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                 <label style={{ fontSize: '12px', fontWeight: 700, color: '#9E7B31' }}>⏰ 매일 큐티 알림 발송 시간</label>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        ) : adminTab === 'members' ? (
+                                                <input type="time" value={settingsForm.qt_notification_time} onChange={(e: any) => setSettingsForm((prev: any) => ({ ...prev, qt_notification_time: e.target.value }))} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={async () => {
+                                                setIsSaving(true);
+                                                try {
+                                                    const res = await fetch('/api/settings', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ ...settingsForm, requester_id: user?.id, requester_email: user?.email })
+                                                    });
+                                                    if (res.ok) {
+                                                        alert('설정이 저장되었습니다. ✅');
+                                                        setChurchSettings(settingsForm);
+                                                    }
+                                                } catch (e) { }
+                                                setIsSaving(false);
+                                            }}
+                                            disabled={isSaving}
+                                            style={{ marginTop: '10px', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 800, cursor: 'pointer' }}
+                                        >
+                                            {isSaving ? '저장 중...' : '💾 설정 저장하기'}
+                                        </button>
+                                    </div>
+                                </>
+                            ) : adminTab === 'members' ? (
                                     <div style={{ textAlign: 'center', padding: '40px 20px' }}>
                                         <div style={{ fontSize: '40px', marginBottom: '16px' }}>👤</div>
                                         <div style={{ fontSize: '15px', fontWeight: 800, color: '#333', marginBottom: '8px' }}>성도 관리 페이지 안내</div>
