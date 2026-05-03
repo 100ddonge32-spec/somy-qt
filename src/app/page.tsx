@@ -3292,11 +3292,13 @@ export default function App() {
                                         boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
                                         display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                                        justifyContent: 'flex-start'
+                                        justifyContent: 'flex-start',
+                                        position: 'relative',
+                                        overflow: 'visible'
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                         <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>💌</div>
                                         <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>은혜나눔</span>
-                                        {hasNewCommunity && <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px', zIndex: 1 }}>N</div>}
+                                        {hasNewCommunity && <div style={{ position: 'absolute', top: '2px', right: '2px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', zIndex: 1 }}>N</div>}
                                     </button>
 
                                     <button onClick={async () => {
@@ -3312,11 +3314,13 @@ export default function App() {
                                         boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
                                         display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                                        justifyContent: 'flex-start'
+                                        justifyContent: 'flex-start',
+                                        position: 'relative',
+                                        overflow: 'visible'
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                         <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🌻</div>
                                         <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>감사일기</span>
-                                        {hasNewThanksgiving && <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px' }}>N</div>}
+                                        {hasNewThanksgiving && <div style={{ position: 'absolute', top: '2px', right: '2px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white' }}>N</div>}
                                     </button>
 
                                     {/* 담임목사 설교 */}
@@ -3337,13 +3341,15 @@ export default function App() {
                                         boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
                                         display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                                        justifyContent: 'flex-start'
+                                        justifyContent: 'flex-start',
+                                        position: 'relative',
+                                        overflow: 'visible'
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                         <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="#FF0000"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" /></svg>
                                         </div>
                                         <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>주일/수요일 설교</span>
-                                        {hasNewSermon && <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px' }}>N</div>}
+                                        {hasNewSermon && <div style={{ position: 'absolute', top: '2px', right: '2px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white' }}>N</div>}
                                     </button>
 
                                     {/* 상담/기도 요청 */}
@@ -3375,7 +3381,9 @@ export default function App() {
                                         boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
                                         display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                                        justifyContent: 'flex-start'
+                                        justifyContent: 'flex-start',
+                                        position: 'relative',
+                                        overflow: 'visible'
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                         <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🙏</div>
                                         <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>상담/기도 요청</span>
@@ -3383,7 +3391,7 @@ export default function App() {
                                             isMainAdmin ? (n.type === 'counseling_req' || n.type === 'counseling_user_reply')
                                                 : (n.type === 'counseling_reply')
                                         )) && (
-                                                <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px' }}>N</div>
+                                                <div style={{ position: 'absolute', top: '2px', right: '2px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white' }}>N</div>
                                             )}
                                     </button>
 
@@ -3401,11 +3409,13 @@ export default function App() {
                                         boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
                                         display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                                        justifyContent: 'flex-start'
+                                        justifyContent: 'flex-start',
+                                        position: 'relative',
+                                        overflow: 'visible'
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                         <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>📸</div>
                                         <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>추억나눔(갤러리)</span>
-                                        {hasNewGallery && <div style={{ background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white', marginLeft: '-2px' }}>N</div>}
+                                        {hasNewGallery && <div style={{ position: 'absolute', top: '2px', right: '2px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white' }}>N</div>}
                                     </button>
 
                                     {/* 성도 주소록 */}
@@ -5410,7 +5420,7 @@ export default function App() {
                 if (!thanksgivingInput.trim() || !user) return;
                 setIsSubmittingThanksgiving(true);
                 try {
-                    const res = await fetch('/api/thanksgiving/posts', {
+                    const res = await fetch('/api/thanksgiving', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -5423,7 +5433,7 @@ export default function App() {
                     });
                     if (res.ok) {
                         setThanksgivingInput("");
-                        const response = await fetch(`/api/thanksgiving/posts?church_id=${normalizeId(churchId)}`);
+                        const response = await fetch(`/api/thanksgiving?church_id=${normalizeId(churchId)}`);
                         if (response.ok) setThanksgivingDiaries(await response.json());
                         alert("감사가 성공적으로 등록되었습니다! ✨");
                     } else {
