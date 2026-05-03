@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getDailyPsalm } from '@/lib/psalm-verses';
 
 // [중요: 캐시 비활성화] 배포 시 정적 렌더링(Static Generation)으로 인해 이전 데이터가 캐싱되어
 // 예수인교회 정보가 체험판으로 덮어씌워지는 버그(Vercel Build Cache) 원천 차단
@@ -64,6 +65,7 @@ export async function GET(req: NextRequest) {
 
     // [신규] 'demo' 교회 요청 시: DB에 데이터가 없으면 하드코딩된 기본 체험판 설정 반환
     if (!data && targetChurchId === 'demo') {
+        const dailyPsalm = getDailyPsalm();
         const demoData = {
             church_id: 'demo',
             church_name: '소미 체험 교회',
@@ -75,8 +77,8 @@ export async function GET(req: NextRequest) {
             sermon_summary: '이곳은 소미 앱 데모 체험 공간입니다.\n\n로그인 없이도 닉네임만 입력하면 은혜나눔·감사일기·큐티 등 모든 기능을 자유롭게 사용해볼 수 있습니다.\n\n실제 교회 데이터와는 완전히 분리된 안전한 체험 공간입니다. 😊',
             pastor_column_title: '🌱 소미 체험판에 오신 것을 환영합니다',
             pastor_column_content: '안녕하세요! 소미 앱 체험판에 오셨군요.\n\n이 공간은 소미의 모든 기능을 자유롭게 경험해볼 수 있는 데모 공간입니다. 회원가입이나 복잡한 인증 없이, 원하시는 닉네임만 입력하면 바로 시작할 수 있습니다.\n\n큐티 묵상, 은혜나눔 게시판, 감사일기, 찬양 플레이어 등 실제 교회에서 사용하는 모든 기능을 경험해보세요. 데모 교회의 다른 방문자들과 자유롭게 소통할 수도 있습니다.\n\n마음에 드셨다면, 소속 교회에 소미 앱 도입을 제안해보세요! 😊',
-            today_verse_text: '여호와는 나의 목자시니 내게 부족함이 없으리로다',
-            today_verse_ref: '시편 23:1',
+            today_verse_text: dailyPsalm.verse,
+            today_verse_ref: dailyPsalm.reference,
             event_poster_url: '',
             event_poster_visible: false,
         };

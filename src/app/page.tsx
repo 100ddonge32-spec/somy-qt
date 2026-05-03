@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { getGraceVerse } from '@/lib/navigator-verses';
 import { getTodayCcm, CcmVideo, CCM_LIST } from "@/lib/ccm";
+import { getDailyPsalm, getRandomPsalm } from '@/lib/psalm-verses';
 import * as XLSX from 'xlsx';
 
 type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "adminGuide" | "brandGuide" | "profile" | "memberSearch" | "book" | "pastorColumn" | "gallery";
@@ -16,22 +17,17 @@ const APP_SUBTITLE = process.env.NEXT_PUBLIC_APP_SUBTITLE || "말씀과 기도�
 const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
 
 
+// [개선] 하드코딩된 시편 23편 대신, 라이브러리에서 매일 다른 시편 말씀을 기본값으로 가져옵니다.
+const DEFAULT_PSALM = getDailyPsalm();
+
 const QT_DATA = {
-    date: "", // 하이드레이션 오류 방지를 위해 초기값 비움
-    verse: "여호와는 나의 목자시니 내게 부족함이 없으리로다",
-    reference: "시편 23:1",
-    fullPassage: `여호와는 나의 목자시니 내게 부족함이 없으리로다
-그가 나를 푸른 풀밭에 누이시며
-쉴 만한 물 가으로 인도하시는도다
-내 영혼을 소생시키시고
-자기 이름을 위하여 의의 길로 인도하시는도다`,
-    interpretation: `하나님은 우리 삶의 선한 목자가 되셔서, 가장 필요한 것을 푸른 풀밭과 쉴 만한 물가처럼 넉넉히 공급해 주십니다. 때로는 우리가 걷는 길이 험난해 보일지라도, 목자 되신 주님께서 앞서 걸으시며 우리의 영혼을 회복시키시고 가장 올바른 의의 길로 인도하고 계심을 확신할 수 있습니다.`,
-    questions: [
-        "오늘 하나님께서 나의 어떤 필요를 채워주셨나요?",
-        "내 삶에서 '부족함이 없다'고 느껴지는 영역은 어디인가요?",
-        "하나님이 나를 인도하시는 길에서 내가 저항하는 부분은 없나요?",
-    ],
-    prayer: "선하신 목자 되신 주님, 오늘도 저를 인도해 주심에 감사드립니다. 제 삶의 모든 필요를 아시는 주님께 온전히 의지하게 하소서. 아멘.",
+    date: "", 
+    verse: DEFAULT_PSALM.verse,
+    reference: DEFAULT_PSALM.reference,
+    fullPassage: DEFAULT_PSALM.fullPassage,
+    interpretation: DEFAULT_PSALM.interpretation,
+    questions: DEFAULT_PSALM.questions,
+    prayer: DEFAULT_PSALM.prayer,
 };
 
 const getLunarTodayMMDD = () => {
@@ -1913,16 +1909,18 @@ export default function App() {
                 setQtData(initialQt);
                 setAnswers(new Array(initialQt.questions.length).fill(''));
             } else {
+                // [개선] 말씀이 등록되지 않았을 때, 매번 다른 랜덤 시편 말씀을 보여줍니다.
+                const randomPsalm = getRandomPsalm();
                 setQtData({
                     date: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
-                    reference: QT_DATA.reference,
-                    fullPassage: QT_DATA.fullPassage,
-                    interpretation: QT_DATA.interpretation,
-                    verse: QT_DATA.verse,
-                    questions: QT_DATA.questions,
-                    prayer: QT_DATA.prayer,
+                    reference: randomPsalm.reference,
+                    fullPassage: randomPsalm.fullPassage,
+                    interpretation: randomPsalm.interpretation,
+                    verse: randomPsalm.verse,
+                    questions: randomPsalm.questions,
+                    prayer: randomPsalm.prayer,
                 });
-                setAnswers(new Array(QT_DATA.questions.length).fill(''));
+                setAnswers(new Array(randomPsalm.questions.length).fill(''));
             }
         } catch (e) {
             console.error("큐티 로딩 실패:", e);
