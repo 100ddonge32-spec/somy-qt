@@ -5497,8 +5497,54 @@ export default function App() {
                 }
             };
 
+            const handlePostDelete = async (postId: string) => {
+                if (!confirm("이 감사일기를 정말 삭제하시겠습니까?")) return;
+                try {
+                    const res = await fetch('/api/thanksgiving', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: postId })
+                    });
+                    if (res.ok) {
+                        setThanksgivingDiaries(prev => prev.filter(p => p.id !== postId));
+                        alert("삭제되었습니다.");
+                    } else {
+                        const err = await res.json();
+                        alert("삭제 실패: " + (err.error || "알 수 없는 오류"));
+                    }
+                } catch (e) {
+                    console.error("Post delete error:", e);
+                    alert("삭제 중 오류가 발생했습니다.");
+                }
+            };
+
+            const handleThanksgivingUpdate = async () => {
+                if (!editingPostId || !editContent.trim()) return;
+                try {
+                    const res = await fetch('/api/thanksgiving', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: editingPostId, content: editContent, is_private: isEditPrivate })
+                    });
+                    if (res.ok) {
+                        const updatedPost = await res.json();
+                        setThanksgivingDiaries(prev => prev.map(post => 
+                            post.id === editingPostId ? { ...post, content: updatedPost.content, is_private: updatedPost.is_private } : post
+                        ));
+                        setEditingPostId(null);
+                        setEditContent("");
+                    } else {
+                        const err = await res.json();
+                        alert("수정 실패: " + (err.error || "알 수 없는 오류"));
+                    }
+                } catch (e) {
+                    console.error("Update error:", e);
+                    alert("수정 중 오류가 발생했습니다.");
+                }
+            };
+
             return (
-                <div style={{ minHeight: "100vh", background: "#FFFBF5", maxWidth: "600px", margin: "0 auto", ...baseFont, paddingTop: 'env(safe-area-inset-top)' }}>
+                <div style={{ minHeight: "100vh", background: "#FFFBF5", maxWidth: "600px", margin: "0 auto", ...baseFont, paddingTop: 'env(safe-area-inset-top)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
                     {styles}
                     <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #FDF0E3", position: 'sticky', top: 'env(safe-area-inset-top)', background: 'white', zIndex: 10 }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333', padding: '8px' }}>←</button>
@@ -5550,12 +5596,46 @@ export default function App() {
                                     <div key={diary.id} style={{ background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', animation: 'fade-in 0.5s', border: '1px solid #FFF1E6' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
                                             <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#FDF0E3', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>{diary.avatar_url ? <img src={diary.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🌻'}</div>
-                                            <div>
-                                                <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', display: 'flex', alignItems: 'center', gap: '6px' }}>{diary.user_name} {isAdmin && <span style={{ fontSize: '10px', background: '#EEE', padding: '2px 6px', borderRadius: '4px', color: '#888' }}>ADMIN</span>}</div>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ fontSize: '14px', fontWeight: 700, color: '#333', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        {diary.user_name} 
+                                                        {isAdmin && <span style={{ fontSize: '10px', background: '#EEE', padding: '2px 6px', borderRadius: '4px', color: '#888' }}>ADMIN</span>}
+                                                    </div>
+                                                    {(user?.id === diary.user_id || isAdmin) && (
+                                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                                            <button onClick={() => {
+                                                                setEditingPostId(diary.id);
+                                                                setEditContent(diary.content);
+                                                                setIsEditPrivate(diary.is_private);
+                                                            }} style={{ background: 'none', border: 'none', color: '#AAA', fontSize: '12px', cursor: 'pointer', padding: '4px' }}>수정</button>
+                                                            <button onClick={() => handlePostDelete(diary.id)} style={{ background: 'none', border: 'none', color: '#FFBABA', fontSize: '14px', cursor: 'pointer', padding: '4px' }}>🗑️</button>
+                                                        </div>
+                                                    )}
+                                                </div>
                                                 <div style={{ fontSize: '11px', color: '#999' }}>{new Date(diary.created_at).toLocaleString()}</div>
                                             </div>
                                         </div>
-                                        <div style={{ fontSize: '15px', color: '#444', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: '15px' }}>{diary.content}</div>
+                                        {editingPostId === diary.id ? (
+                                            <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                <textarea 
+                                                    value={editContent} 
+                                                    onChange={(e) => setEditContent(e.target.value)} 
+                                                    style={{ width: '100%', minHeight: '100px', padding: '12px', borderRadius: '12px', border: '1px solid #E07A5F', outline: 'none', fontSize: '14px', background: '#FFFDFB', resize: 'none' }} 
+                                                />
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <div onClick={() => setIsEditPrivate(!isEditPrivate)} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: isEditPrivate ? '#E07A5F' : '#666' }}>
+                                                        <span>{isEditPrivate ? '🔒 나만 보기' : '🌐 함께 나누기'}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                                        <button onClick={() => setEditingPostId(null)} style={{ padding: '6px 12px', background: '#F5F5F5', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>취소</button>
+                                                        <button onClick={handleThanksgivingUpdate} style={{ padding: '6px 12px', background: '#E07A5F', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}>저장</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div style={{ fontSize: '15px', color: '#444', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: '15px' }}>{diary.content}</div>
+                                        )}
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', borderTop: '1px solid #FFF1E6', paddingTop: '12px' }}>
                                             <div onClick={() => handleReaction(diary.id, 'thanksgiving', (diary.liker_ids || []).includes(user?.id) ? 'unliked' : 'liked')} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '13px', color: (diary.liker_ids || []).includes(user?.id) ? '#E07A5F' : '#999' }}>
                                                 <span>{(diary.liker_ids || []).includes(user?.id) ? '❤️' : '🤍'}</span>
@@ -5594,6 +5674,17 @@ export default function App() {
                                     </div>
                                 );
                             })}
+
+                            {hasMoreThanksgiving && (
+                                <button 
+                                    onClick={() => handleLoadThanksgiving(false)} 
+                                    disabled={isThanksgivingLoading}
+                                    style={{ width: '100%', padding: '15px', background: 'white', border: '1px solid #fae1cd', borderRadius: '15px', color: '#E07A5F', fontWeight: 800, fontSize: '14px', cursor: 'pointer', marginTop: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}
+                                >
+                                    {isThanksgivingLoading ? '불러오는 중...' : '⬇️ 이전 감사 더 보기'}
+                                </button>
+                            )}
+                            <div style={{ height: '80px' }} />
                         </div>
                     )}
                 </div>
