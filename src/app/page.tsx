@@ -3239,7 +3239,7 @@ export default function App() {
 
                                 <div style={{
                                     display: 'grid',
-                                    gridTemplateColumns: fontScale > 1.2 ? '1fr' : 'repeat(2, 1fr)',
+                                    gridTemplateColumns: fontScale > 1.2 ? '1fr' : 'repeat(2, minmax(0, 1fr))',
                                     gap: '12px',
                                     width: '100%'
                                 }}>
@@ -3430,7 +3430,7 @@ export default function App() {
                                 {/* 책 추천 & 담임목사 칼럼 (2열 레이아웃) */}
                                 <div style={{
                                     display: 'grid',
-                                    gridTemplateColumns: '1fr 1fr',
+                                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
                                     gap: '12px',
                                     width: '100%',
                                     marginTop: '8px',
