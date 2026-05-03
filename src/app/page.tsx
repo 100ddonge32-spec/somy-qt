@@ -5426,6 +5426,7 @@ export default function App() {
                         body: JSON.stringify({
                             user_id: user.id,
                             user_name: profileName || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || "익명 성도",
+                            avatar_url: profileAvatar || user.user_metadata?.avatar_url || null,
                             content: thanksgivingInput,
                             is_private: isPrivateThanksgiving,
                             church_id: normalizeId(churchId)

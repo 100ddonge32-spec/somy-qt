@@ -31,10 +31,12 @@ export async function GET(req: NextRequest) {
         const limit = parseInt(searchParams.get('limit') || '5');
         const offset = (page - 1) * limit;
 
+        // profiles 테이블과 조인하여 최신 프로필 정보를 가져옴
         const { data: posts, error: postsError } = await supabaseAdmin
             .from('thanksgiving_diaries')
             .select(`
                 *,
+                profiles(full_name, avatar_url),
                 comments:thanksgiving_comments(*)
             `)
             .eq('church_id', churchId)
@@ -42,7 +44,18 @@ export async function GET(req: NextRequest) {
             .range(offset, offset + limit - 1);
 
         if (postsError) throw postsError;
-        return NextResponse.json(posts);
+
+        // 프론트엔드 호환성을 위해 profiles 정보를 최상위 객체로 병합 (백필 효과)
+        const mergedPosts = (posts || []).map(post => {
+            const profile = (post as any).profiles;
+            return {
+                ...post,
+                user_name: profile?.full_name || post.user_name,
+                avatar_url: profile?.avatar_url || post.avatar_url
+            };
+        });
+
+        return NextResponse.json(mergedPosts);
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
