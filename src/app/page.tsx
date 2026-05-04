@@ -6358,12 +6358,13 @@ export default function App() {
                                         <input type="file" id="logo-upload-full" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
                                             const file = e.target.files?.[0]; if (!file) return;
                                             setIsLogoUploading(true);
-                                            const formData = new FormData(); formData.append('file', file); formData.append('church_id', churchId);
+                                            const formData = new FormData(); formData.append('file', file); formData.append('church_id', churchId); formData.append('type', 'logo');
                                             try {
                                                 const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
                                                 const data = await res.json();
-                                                if (data.url) setSettingsForm({ ...settingsForm, church_logo_url: data.url });
-                                            } catch (err) { alert('업로드 실패'); } finally { setIsLogoUploading(false); }
+                                                if (res.ok && data.url) setSettingsForm((prev: any) => ({ ...prev, church_logo_url: data.url }));
+                                                else if (data.error) alert('업로드 실패: ' + data.error);
+                                            } catch (err) { alert('네트워크 오류로 업로드에 실패했습니다.'); } finally { setIsLogoUploading(false); }
                                         }} />
                                         <button onClick={() => document.getElementById('logo-upload-full')?.click()} style={{ padding: '10px 15px', background: 'white', border: '1px solid #DDD', borderRadius: '10px', fontSize: '12px', fontWeight: 700 }}>{isLogoUploading ? '...' : '파일'}</button>
                                     </div>
@@ -6380,12 +6381,13 @@ export default function App() {
                                         <input type="file" id="poster-upload-full" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
                                             const file = e.target.files?.[0]; if (!file) return;
                                             setIsPosterUploading(true);
-                                            const formData = new FormData(); formData.append('file', file); formData.append('church_id', churchId);
+                                            const formData = new FormData(); formData.append('file', file); formData.append('church_id', churchId); formData.append('type', 'poster');
                                             try {
                                                 const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
                                                 const data = await res.json();
-                                                if (data.url) setSettingsForm({ ...settingsForm, event_poster_url: data.url });
-                                            } catch (err) { alert('업로드 실패'); } finally { setIsPosterUploading(false); }
+                                                if (res.ok && data.url) setSettingsForm((prev: any) => ({ ...prev, event_poster_url: data.url }));
+                                                else if (data.error) alert('업로드 실패: ' + data.error);
+                                            } catch (err) { alert('네트워크 오류로 업로드에 실패했습니다.'); } finally { setIsPosterUploading(false); }
                                         }} />
                                         <button onClick={() => document.getElementById('poster-upload-full')?.click()} style={{ padding: '10px 15px', background: 'white', border: '1px solid #BBDEFB', borderRadius: '10px', fontSize: '12px', fontWeight: 700 }}>{isPosterUploading ? '...' : '파일'}</button>
                                     </div>
@@ -6481,12 +6483,13 @@ export default function App() {
                                         <input type="file" id="book-upload-full" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
                                             const file = e.target.files?.[0]; if (!file) return;
                                             setIsBookUploading(true);
-                                            const formData = new FormData(); formData.append('file', file); formData.append('church_id', churchId);
+                                            const formData = new FormData(); formData.append('file', file); formData.append('church_id', churchId); formData.append('type', 'book');
                                             try {
                                                 const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
                                                 const data = await res.json();
-                                                if (data.url) setSettingsForm({ ...settingsForm, today_book_image_url: data.url });
-                                            } catch (err) { alert('업로드 실패'); } finally { setIsBookUploading(false); }
+                                                if (res.ok && data.url) setSettingsForm((prev: any) => ({ ...prev, today_book_image_url: data.url }));
+                                                else if (data.error) alert('업로드 실패: ' + data.error);
+                                            } catch (err) { alert('네트워크 오류로 업로드에 실패했습니다.'); } finally { setIsBookUploading(false); }
                                         }} />
                                         <button onClick={() => document.getElementById('book-upload-full')?.click()} style={{ flex: 1, padding: '10px', background: 'white', border: '1px solid #DDD', borderRadius: '10px', fontSize: '12px' }}>{isBookUploading ? '...' : '📁 책 표지 업로드'}</button>
                                         {settingsForm?.today_book_image_url && <img src={settingsForm.today_book_image_url} style={{ width: '40px', height: '55px', objectFit: 'cover', borderRadius: '4px' }} />}

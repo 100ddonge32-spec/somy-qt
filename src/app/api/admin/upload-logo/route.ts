@@ -14,18 +14,26 @@ export async function POST(req: NextRequest) {
         const formData = await req.formData();
         const file = formData.get('file') as File;
         const churchId = formData.get('church_id') as string;
+        const type = (formData.get('type') as string) || 'asset'; // 'logo' | 'poster' | 'book' | 'asset'
 
         if (!file || !churchId) {
             return NextResponse.json({ error: 'Missing file or church_id' }, { status: 400 });
         }
 
-        const fileExt = file.name.split('.').pop();
+        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'png';
         // 한글이나 특수문자가 섞인 churchId를 안전한 파일명으로 변환
         const safeId = churchId.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        const fileName = `${safeId}-book-${Date.now()}.${fileExt}`;
-        const filePath = `books/${fileName}`; // 책 이미지는 books 폴더에 관리
+        
+        // 타입에 따른 경로 및 파일명 결정
+        let folder = 'assets';
+        if (type === 'logo') folder = 'logos';
+        else if (type === 'poster') folder = 'posters';
+        else if (type === 'book') folder = 'books';
 
-        console.log(`[Upload API] Attempting upload: bucket=church-assets, path=${filePath}`);
+        const fileName = `${safeId}-${type}-${Date.now()}.${fileExt}`;
+        const filePath = `${folder}/${fileName}`;
+
+        console.log(`[Upload API] Attempting upload: bucket=church-assets, path=${filePath}, type=${type}`);
 
         // 버킷이 없으면 생성 시도
         await supabaseAdmin.storage.createBucket('church-assets', { public: true }).catch(() => { });
@@ -52,7 +60,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ url: publicUrl });
     } catch (err: any) {
-        console.error('Logo upload error:', err);
+        console.error('Upload error:', err);
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
