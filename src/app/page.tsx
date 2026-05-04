@@ -6358,22 +6358,46 @@ export default function App() {
                                         <input type="file" id="logo-upload-full" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
                                             const file = e.target.files?.[0]; if (!file) return;
                                             setIsLogoUploading(true);
-                                            const formData = new FormData(); formData.append('file', file); formData.append('church_id', churchId); formData.append('type', 'logo');
-                                            console.log(`[Admin] Uploading logo for church: ${churchId}, file size: ${file.size} bytes`);
-                                            try {
-                                                const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
-                                                const data = await res.json();
-                                                if (res.ok && data.url) {
-                                                    console.log('[Admin] Logo upload success:', data.url);
-                                                    setSettingsForm((prev: any) => ({ ...prev, church_logo_url: data.url }));
-                                                } else {
-                                                    console.error('[Admin] Logo upload failed:', data.error);
-                                                    alert('업로드 실패: ' + (data.error || '알 수 없는 오류'));
-                                                }
-                                            } catch (err) { 
-                                                console.error('[Admin] Logo upload network error:', err);
-                                                alert('네트워크 오류로 업로드에 실패했습니다.'); 
-                                            } finally { setIsLogoUploading(false); }
+                                            console.log(`[Admin] Original file size: ${file.size} bytes`);
+                                            
+                                            // [신규] 이미지 압축 로직 추가 (11MB 등 대용량 대응)
+                                            const reader = new FileReader();
+                                            reader.onload = (event: any) => {
+                                                const img = new Image();
+                                                img.onload = async () => {
+                                                    const canvas = document.createElement('canvas');
+                                                    let width = img.width;
+                                                    let height = img.height;
+                                                    const MAX_DIM = 1200; // 로고는 더 작아도 됨
+                                                    if (width > height) { if (width > MAX_DIM) { height *= MAX_DIM / width; width = MAX_DIM; } }
+                                                    else { if (height > MAX_DIM) { width *= MAX_DIM / height; height = MAX_DIM; } }
+                                                    canvas.width = width; canvas.height = height;
+                                                    const ctx = canvas.getContext('2d');
+                                                    ctx?.drawImage(img, 0, 0, width, height);
+                                                    
+                                                    canvas.toBlob(async (blob) => {
+                                                        if (!blob) { alert('이미지 압축 실패'); setIsLogoUploading(false); return; }
+                                                        console.log(`[Admin] Compressed file size: ${blob.size} bytes`);
+                                                        const formData = new FormData(); 
+                                                        formData.append('file', blob, 'logo.jpg'); 
+                                                        formData.append('church_id', churchId); 
+                                                        formData.append('type', 'logo');
+                                                        
+                                                        try {
+                                                            const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
+                                                            const data = await res.json();
+                                                            if (res.ok && data.url) {
+                                                                setSettingsForm((prev: any) => ({ ...prev, church_logo_url: data.url }));
+                                                            } else {
+                                                                alert('업로드 실패: ' + (data.error || '알 수 없는 오류'));
+                                                            }
+                                                        } catch (err) { alert('네트워크 오류로 업로드에 실패했습니다.'); } 
+                                                        finally { setIsLogoUploading(false); }
+                                                    }, 'image/jpeg', 0.85);
+                                                };
+                                                img.src = event.target.result;
+                                            };
+                                            reader.readAsDataURL(file);
                                         }} />
                                         <button onClick={() => document.getElementById('logo-upload-full')?.click()} style={{ padding: '10px 15px', background: 'white', border: '1px solid #DDD', borderRadius: '10px', fontSize: '12px', fontWeight: 700 }}>{isLogoUploading ? '...' : '파일'}</button>
                                     </div>
@@ -6390,22 +6414,46 @@ export default function App() {
                                         <input type="file" id="poster-upload-full" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
                                             const file = e.target.files?.[0]; if (!file) return;
                                             setIsPosterUploading(true);
-                                            const formData = new FormData(); formData.append('file', file); formData.append('church_id', churchId); formData.append('type', 'poster');
-                                            console.log(`[Admin] Uploading poster for church: ${churchId}, file size: ${file.size} bytes`);
-                                            try {
-                                                const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
-                                                const data = await res.json();
-                                                if (res.ok && data.url) {
-                                                    console.log('[Admin] Poster upload success:', data.url);
-                                                    setSettingsForm((prev: any) => ({ ...prev, event_poster_url: data.url }));
-                                                } else {
-                                                    console.error('[Admin] Poster upload failed:', data.error);
-                                                    alert('업로드 실패: ' + (data.error || '알 수 없는 오류'));
-                                                }
-                                            } catch (err) { 
-                                                console.error('[Admin] Poster upload network error:', err);
-                                                alert('네트워크 오류로 업로드에 실패했습니다.'); 
-                                            } finally { setIsPosterUploading(false); }
+                                            console.log(`[Admin] Original poster size: ${file.size} bytes`);
+
+                                            // [신규] 이미지 압축 로직 추가 (11MB 등 대용량 대응)
+                                            const reader = new FileReader();
+                                            reader.onload = (event: any) => {
+                                                const img = new Image();
+                                                img.onload = async () => {
+                                                    const canvas = document.createElement('canvas');
+                                                    let width = img.width;
+                                                    let height = img.height;
+                                                    const MAX_DIM = 1600; // 포스터는 화질을 위해 조금 더 크게
+                                                    if (width > height) { if (width > MAX_DIM) { height *= MAX_DIM / width; width = MAX_DIM; } }
+                                                    else { if (height > MAX_DIM) { width *= MAX_DIM / height; height = MAX_DIM; } }
+                                                    canvas.width = width; canvas.height = height;
+                                                    const ctx = canvas.getContext('2d');
+                                                    ctx?.drawImage(img, 0, 0, width, height);
+                                                    
+                                                    canvas.toBlob(async (blob) => {
+                                                        if (!blob) { alert('이미지 압축 실패'); setIsPosterUploading(false); return; }
+                                                        console.log(`[Admin] Compressed poster size: ${blob.size} bytes`);
+                                                        const formData = new FormData(); 
+                                                        formData.append('file', blob, 'poster.jpg'); 
+                                                        formData.append('church_id', churchId); 
+                                                        formData.append('type', 'poster');
+                                                        
+                                                        try {
+                                                            const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
+                                                            const data = await res.json();
+                                                            if (res.ok && data.url) {
+                                                                setSettingsForm((prev: any) => ({ ...prev, event_poster_url: data.url }));
+                                                            } else {
+                                                                alert('업로드 실패: ' + (data.error || '알 수 없는 오류'));
+                                                            }
+                                                        } catch (err) { alert('네트워크 오류로 업로드에 실패했습니다.'); } 
+                                                        finally { setIsPosterUploading(false); }
+                                                    }, 'image/jpeg', 0.8);
+                                                };
+                                                img.src = event.target.result;
+                                            };
+                                            reader.readAsDataURL(file);
                                         }} />
                                         <button onClick={() => document.getElementById('poster-upload-full')?.click()} style={{ padding: '10px 15px', background: 'white', border: '1px solid #BBDEFB', borderRadius: '10px', fontSize: '12px', fontWeight: 700 }}>{isPosterUploading ? '...' : '파일'}</button>
                                     </div>
@@ -6501,22 +6549,46 @@ export default function App() {
                                         <input type="file" id="book-upload-full" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
                                             const file = e.target.files?.[0]; if (!file) return;
                                             setIsBookUploading(true);
-                                            const formData = new FormData(); formData.append('file', file); formData.append('church_id', churchId); formData.append('type', 'book');
-                                            console.log(`[Admin] Uploading book cover for church: ${churchId}, file size: ${file.size} bytes`);
-                                            try {
-                                                const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
-                                                const data = await res.json();
-                                                if (res.ok && data.url) {
-                                                    console.log('[Admin] Book upload success:', data.url);
-                                                    setSettingsForm((prev: any) => ({ ...prev, today_book_image_url: data.url }));
-                                                } else {
-                                                    console.error('[Admin] Book upload failed:', data.error);
-                                                    alert('업로드 실패: ' + (data.error || '알 수 없는 오류'));
-                                                }
-                                            } catch (err) { 
-                                                console.error('[Admin] Book upload network error:', err);
-                                                alert('네트워크 오류로 업로드에 실패했습니다.'); 
-                                            } finally { setIsBookUploading(false); }
+                                            console.log(`[Admin] Original book cover size: ${file.size} bytes`);
+
+                                            // [신규] 이미지 압축 로직 추가
+                                            const reader = new FileReader();
+                                            reader.onload = (event: any) => {
+                                                const img = new Image();
+                                                img.onload = async () => {
+                                                    const canvas = document.createElement('canvas');
+                                                    let width = img.width;
+                                                    let height = img.height;
+                                                    const MAX_DIM = 800; // 책 표지는 작아도 됨
+                                                    if (width > height) { if (width > MAX_DIM) { height *= MAX_DIM / width; width = MAX_DIM; } }
+                                                    else { if (height > MAX_DIM) { width *= MAX_DIM / height; height = MAX_DIM; } }
+                                                    canvas.width = width; canvas.height = height;
+                                                    const ctx = canvas.getContext('2d');
+                                                    ctx?.drawImage(img, 0, 0, width, height);
+                                                    
+                                                    canvas.toBlob(async (blob) => {
+                                                        if (!blob) { alert('이미지 압축 실패'); setIsBookUploading(false); return; }
+                                                        console.log(`[Admin] Compressed book cover size: ${blob.size} bytes`);
+                                                        const formData = new FormData(); 
+                                                        formData.append('file', blob, 'book.jpg'); 
+                                                        formData.append('church_id', churchId); 
+                                                        formData.append('type', 'book');
+                                                        
+                                                        try {
+                                                            const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
+                                                            const data = await res.json();
+                                                            if (res.ok && data.url) {
+                                                                setSettingsForm((prev: any) => ({ ...prev, today_book_image_url: data.url }));
+                                                            } else {
+                                                                alert('업로드 실패: ' + (data.error || '알 수 없는 오류'));
+                                                            }
+                                                        } catch (err) { alert('네트워크 오류로 업로드에 실패했습니다.'); } 
+                                                        finally { setIsBookUploading(false); }
+                                                    }, 'image/jpeg', 0.85);
+                                                };
+                                                img.src = event.target.result;
+                                            };
+                                            reader.readAsDataURL(file);
                                         }} />
                                         <button onClick={() => document.getElementById('book-upload-full')?.click()} style={{ flex: 1, padding: '10px', background: 'white', border: '1px solid #DDD', borderRadius: '10px', fontSize: '12px' }}>{isBookUploading ? '...' : '📁 책 표지 업로드'}</button>
                                         {settingsForm?.today_book_image_url && <img src={settingsForm.today_book_image_url} style={{ width: '40px', height: '55px', objectFit: 'cover', borderRadius: '4px' }} />}
