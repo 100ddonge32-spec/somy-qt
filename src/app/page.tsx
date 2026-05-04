@@ -6359,12 +6359,21 @@ export default function App() {
                                             const file = e.target.files?.[0]; if (!file) return;
                                             setIsLogoUploading(true);
                                             const formData = new FormData(); formData.append('file', file); formData.append('church_id', churchId); formData.append('type', 'logo');
+                                            console.log(`[Admin] Uploading logo for church: ${churchId}, file size: ${file.size} bytes`);
                                             try {
                                                 const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
                                                 const data = await res.json();
-                                                if (res.ok && data.url) setSettingsForm((prev: any) => ({ ...prev, church_logo_url: data.url }));
-                                                else if (data.error) alert('업로드 실패: ' + data.error);
-                                            } catch (err) { alert('네트워크 오류로 업로드에 실패했습니다.'); } finally { setIsLogoUploading(false); }
+                                                if (res.ok && data.url) {
+                                                    console.log('[Admin] Logo upload success:', data.url);
+                                                    setSettingsForm((prev: any) => ({ ...prev, church_logo_url: data.url }));
+                                                } else {
+                                                    console.error('[Admin] Logo upload failed:', data.error);
+                                                    alert('업로드 실패: ' + (data.error || '알 수 없는 오류'));
+                                                }
+                                            } catch (err) { 
+                                                console.error('[Admin] Logo upload network error:', err);
+                                                alert('네트워크 오류로 업로드에 실패했습니다.'); 
+                                            } finally { setIsLogoUploading(false); }
                                         }} />
                                         <button onClick={() => document.getElementById('logo-upload-full')?.click()} style={{ padding: '10px 15px', background: 'white', border: '1px solid #DDD', borderRadius: '10px', fontSize: '12px', fontWeight: 700 }}>{isLogoUploading ? '...' : '파일'}</button>
                                     </div>
@@ -6382,12 +6391,21 @@ export default function App() {
                                             const file = e.target.files?.[0]; if (!file) return;
                                             setIsPosterUploading(true);
                                             const formData = new FormData(); formData.append('file', file); formData.append('church_id', churchId); formData.append('type', 'poster');
+                                            console.log(`[Admin] Uploading poster for church: ${churchId}, file size: ${file.size} bytes`);
                                             try {
                                                 const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
                                                 const data = await res.json();
-                                                if (res.ok && data.url) setSettingsForm((prev: any) => ({ ...prev, event_poster_url: data.url }));
-                                                else if (data.error) alert('업로드 실패: ' + data.error);
-                                            } catch (err) { alert('네트워크 오류로 업로드에 실패했습니다.'); } finally { setIsPosterUploading(false); }
+                                                if (res.ok && data.url) {
+                                                    console.log('[Admin] Poster upload success:', data.url);
+                                                    setSettingsForm((prev: any) => ({ ...prev, event_poster_url: data.url }));
+                                                } else {
+                                                    console.error('[Admin] Poster upload failed:', data.error);
+                                                    alert('업로드 실패: ' + (data.error || '알 수 없는 오류'));
+                                                }
+                                            } catch (err) { 
+                                                console.error('[Admin] Poster upload network error:', err);
+                                                alert('네트워크 오류로 업로드에 실패했습니다.'); 
+                                            } finally { setIsPosterUploading(false); }
                                         }} />
                                         <button onClick={() => document.getElementById('poster-upload-full')?.click()} style={{ padding: '10px 15px', background: 'white', border: '1px solid #BBDEFB', borderRadius: '10px', fontSize: '12px', fontWeight: 700 }}>{isPosterUploading ? '...' : '파일'}</button>
                                     </div>
@@ -6484,12 +6502,21 @@ export default function App() {
                                             const file = e.target.files?.[0]; if (!file) return;
                                             setIsBookUploading(true);
                                             const formData = new FormData(); formData.append('file', file); formData.append('church_id', churchId); formData.append('type', 'book');
+                                            console.log(`[Admin] Uploading book cover for church: ${churchId}, file size: ${file.size} bytes`);
                                             try {
                                                 const res = await fetch('/api/admin/upload-logo', { method: 'POST', body: formData });
                                                 const data = await res.json();
-                                                if (res.ok && data.url) setSettingsForm((prev: any) => ({ ...prev, today_book_image_url: data.url }));
-                                                else if (data.error) alert('업로드 실패: ' + data.error);
-                                            } catch (err) { alert('네트워크 오류로 업로드에 실패했습니다.'); } finally { setIsBookUploading(false); }
+                                                if (res.ok && data.url) {
+                                                    console.log('[Admin] Book upload success:', data.url);
+                                                    setSettingsForm((prev: any) => ({ ...prev, today_book_image_url: data.url }));
+                                                } else {
+                                                    console.error('[Admin] Book upload failed:', data.error);
+                                                    alert('업로드 실패: ' + (data.error || '알 수 없는 오류'));
+                                                }
+                                            } catch (err) { 
+                                                console.error('[Admin] Book upload network error:', err);
+                                                alert('네트워크 오류로 업로드에 실패했습니다.'); 
+                                            } finally { setIsBookUploading(false); }
                                         }} />
                                         <button onClick={() => document.getElementById('book-upload-full')?.click()} style={{ flex: 1, padding: '10px', background: 'white', border: '1px solid #DDD', borderRadius: '10px', fontSize: '12px' }}>{isBookUploading ? '...' : '📁 책 표지 업로드'}</button>
                                         {settingsForm?.today_book_image_url && <img src={settingsForm.today_book_image_url} style={{ width: '40px', height: '55px', objectFit: 'cover', borderRadius: '4px' }} />}
