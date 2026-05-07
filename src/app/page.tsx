@@ -343,7 +343,7 @@ const StatsView = ({ memberList }: { memberList: any[] }) => {
 const normalizeId = (id: string | null) => {
     if (!id) return 'jesus-in';
     const s = id.toLowerCase().trim();
-    if (s === '예수인교회' || s === 'jesus-in' || s === '예수인' || s === 'jesus' || s === 'default' || s === 'somy-main' || s === '') {
+    if (s === '예수인교회' || s === 'jesus-in' || s === '예수인' || s === 'jesus' || s === 'default' || s === '') {
         return 'jesus-in';
     }
     return s;
