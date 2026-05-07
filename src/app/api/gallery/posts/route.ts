@@ -14,7 +14,11 @@ const supabaseAdmin = createClient(
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
-        const churchId = searchParams.get('church_id') || 'jesus-in';
+        const churchIdParam = searchParams.get('church_id');
+        if (!churchIdParam || churchIdParam === 'somy-main') {
+            return NextResponse.json([]); // somy-main에서는 갤러리 노출 안함
+        }
+        const churchId = churchIdParam;
         const limit = parseInt(searchParams.get('limit') || '50');
 
         const { data, error } = await supabaseAdmin

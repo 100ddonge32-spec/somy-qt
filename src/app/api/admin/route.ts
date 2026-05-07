@@ -16,7 +16,7 @@ const supabaseAdmin = createClient(
 const normalizeId = (id: string | null) => {
     if (!id) return 'jesus-in'; // 빈 값은 기본적으로 메인(예수인교회) 소속으로 간주
     const s = id.toLowerCase().trim();
-    if (s === '예수인교회' || s === 'jesus-in' || s === '예수인' || s === 'jesus' || s === 'default' || s === 'somy-main' || s === '') {
+    if (s === '예수인교회' || s === 'jesus-in' || s === '예수인' || s === 'jesus' || s === 'default' || s === '') {
         return 'jesus-in';
     }
     return s;

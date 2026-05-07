@@ -17,7 +17,11 @@ const supabaseAdmin = createClient(
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
-        const churchId = searchParams.get('church_id') || 'jesus-in';
+        const churchIdParam = searchParams.get('church_id');
+        if (!churchIdParam || churchIdParam === 'somy-main') {
+            return NextResponse.json([]); // somy-main에서는 커뮤니티 노출 안함
+        }
+        const churchId = churchIdParam;
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '5');
         const offset = (page - 1) * limit;
