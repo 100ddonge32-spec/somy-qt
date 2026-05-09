@@ -9120,12 +9120,17 @@ export default function App() {
 
 
     const handleExcelExport = () => {
-        if (!memberList || memberList.length === 0) {
+        // [수정] 선택된 성도가 있으면 선택된 성도만, 없으면 전체 성도 대상으로 엑셀을 생성합니다.
+        const listToExport = selectedMemberIds.length > 0 
+            ? memberList.filter(m => selectedMemberIds.includes(m.id))
+            : memberList;
+
+        if (!listToExport || listToExport.length === 0) {
             alert('다운로드할 성도 데이터가 없습니다.');
             return;
         }
 
-        const dataToExport = memberList.map(m => ({
+        const dataToExport = listToExport.map(m => ({
             '교인사진': m.avatar_url || '',
             '성명': m.full_name || '',
             '생년월일': m.birthdate || '',
@@ -9142,8 +9147,9 @@ export default function App() {
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "성도명단");
 
-        // 날짜 포함 파일명 생성
-        const fileName = `${CHURCH_NAME}_성도명단_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        // 날짜 포함 파일명 생성 (선택된 경우 명시)
+        const countStr = selectedMemberIds.length > 0 ? `_선택${selectedMemberIds.length}명` : '';
+        const fileName = `${CHURCH_NAME}_성도명단${countStr}_${new Date().toISOString().slice(0, 10)}.xlsx`;
         XLSX.writeFile(workbook, fileName);
     };
 
