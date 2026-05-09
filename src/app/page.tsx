@@ -1758,7 +1758,7 @@ export default function App() {
     const [mergeTarget, setMergeTarget] = useState<any>(null); // 통합될 데이터 (관리자 등록본)
     const [mergeDestinationId, setMergeDestinationId] = useState<string>(''); // 통합할 대상 (카카오 가입 유저 ID)
     const [mergeSearchKeyword, setMergeSearchKeyword] = useState('');
-    const [memberSortBy, setMemberSortBy] = useState<'name' | 'email' | 'rank'>('name');
+    const [memberSortBy, setMemberSortBy] = useState<'name' | 'email' | 'rank' | 'age'>('name');
     const [adminMemberSearchTerm, setAdminMemberSearchTerm] = useState('');
     const [showOnlyDuplicates, setShowOnlyDuplicates] = useState(false); // ✅ 중복 성도만 보기 필터
 
@@ -6823,9 +6823,9 @@ export default function App() {
 
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div style={{ display: 'flex', gap: '6px' }}>
-                                            {['name', 'rank', 'email'].map(opt => (
+                                            {['name', 'age', 'rank', 'email'].map(opt => (
                                                 <button key={opt} onClick={() => setMemberSortBy(opt as any)} style={{ padding: '6px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 700, background: memberSortBy === opt ? '#333' : '#F5F5F5', color: memberSortBy === opt ? 'white' : '#666', border: 'none' }}>
-                                                    {opt === 'name' ? '성명순' : opt === 'rank' ? '직분순' : '이메일순'}
+                                                    {opt === 'name' ? '성명순' : opt === 'age' ? '나이순' : opt === 'rank' ? '직분순' : '이메일순'}
                                                 </button>
                                             ))}
                                         </div>
@@ -6914,6 +6914,11 @@ export default function App() {
                                             if (memberSortBy === 'name') return (a.full_name || '').localeCompare(b.full_name || '');
                                             if (memberSortBy === 'email') return (a.email || '').localeCompare(b.email || '');
                                             if (memberSortBy === 'rank') return (a.church_rank || '').localeCompare(b.church_rank || '');
+                                            if (memberSortBy === 'age') {
+                                                const dateA = a.birthdate ? new Date(a.birthdate).getTime() : 9999999999999;
+                                                const dateB = b.birthdate ? new Date(b.birthdate).getTime() : 9999999999999;
+                                                return dateA - dateB;
+                                            }
                                             return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
                                         })
                                         .map(member => (
@@ -9137,18 +9142,25 @@ export default function App() {
                 return;
             }
 
-            const dataToExport = listToExport.map(m => ({
-                '교인사진': m.avatar_url || '',
-                '성명': m.full_name || '',
-                '생년월일': m.birthdate || '',
-                '성별': m.gender || '',
-                '직분': m.church_rank || '',
-                '휴대폰': m.phone || '',
-                '주소': m.address || '',
-                '이메일': m.email || '',
-                '등록일': m.created_at ? new Date(m.created_at).toISOString().split('T')[0] : '',
-                '승인상태': m.is_approved ? '승인됨' : '미승인'
-            }));
+            const dataToExport = listToExport.map(m => {
+                const truncate = (val: any) => {
+                    if (typeof val !== 'string') return val;
+                    // 엑셀 단일 셀 글자수 제한(32,767자)을 준수하기 위해 32,700자로 제한
+                    return val.length > 32700 ? val.substring(0, 32700) : val;
+                };
+                return {
+                    '교인사진': truncate(m.avatar_url || ''),
+                    '성명': truncate(m.full_name || ''),
+                    '생년월일': truncate(m.birthdate || ''),
+                    '성별': truncate(m.gender || ''),
+                    '직분': truncate(m.church_rank || ''),
+                    '휴대폰': truncate(m.phone || ''),
+                    '주소': truncate(m.address || ''),
+                    '이메일': truncate(m.email || ''),
+                    '등록일': m.created_at ? new Date(m.created_at).toISOString().split('T')[0] : '',
+                    '승인상태': m.is_approved ? '승인됨' : '미승인'
+                };
+            });
 
             const worksheet = XLSX.utils.json_to_sheet(dataToExport);
             const workbook = XLSX.utils.book_new();
