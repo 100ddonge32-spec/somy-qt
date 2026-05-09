@@ -9120,37 +9120,60 @@ export default function App() {
 
 
     const handleExcelExport = () => {
-        // [수정] 선택된 성도가 있으면 선택된 성도만, 없으면 전체 성도 대상으로 엑셀을 생성합니다.
-        const listToExport = selectedMemberIds.length > 0 
-            ? memberList.filter(m => selectedMemberIds.includes(m.id))
-            : memberList;
+        try {
+            // [수정] 엑셀 라이브러리 가용성 체크 및 안전한 다운로드 로직 적용
+            if (!XLSX || !XLSX.utils) {
+                alert('엑셀 다운로드 라이브러리를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+                return;
+            }
 
-        if (!listToExport || listToExport.length === 0) {
-            alert('다운로드할 성도 데이터가 없습니다.');
-            return;
+            // 선택된 성도가 있으면 선택된 것만, 없으면 전체 대상으로 필터링 (ID 타입 불일치 방지 포함)
+            const listToExport = selectedMemberIds.length > 0 
+                ? memberList.filter(m => selectedMemberIds.some(id => String(id) === String(m.id)))
+                : memberList;
+
+            if (!listToExport || listToExport.length === 0) {
+                alert('다운로드할 성도 데이터가 없습니다.');
+                return;
+            }
+
+            const dataToExport = listToExport.map(m => ({
+                '교인사진': m.avatar_url || '',
+                '성명': m.full_name || '',
+                '생년월일': m.birthdate || '',
+                '성별': m.gender || '',
+                '직분': m.church_rank || '',
+                '휴대폰': m.phone || '',
+                '주소': m.address || '',
+                '이메일': m.email || '',
+                '등록일': m.created_at ? new Date(m.created_at).toISOString().split('T')[0] : '',
+                '승인상태': m.is_approved ? '승인됨' : '미승인'
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "성도명단");
+
+            const countStr = selectedMemberIds.length > 0 ? `_선택${selectedMemberIds.length}명` : '';
+            const fileName = `${CHURCH_NAME}_성도명단${countStr}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+            // 브라우저 호환성을 위한 Blob 방식 다운로드
+            const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+            const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+            
+            const url = window.URL.createObjectURL(data);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+        } catch (error: any) {
+            console.error('Excel export error:', error);
+            alert('엑셀 파일 생성 중 오류가 발생했습니다: ' + (error.message || '알 수 없는 오류'));
         }
-
-        const dataToExport = listToExport.map(m => ({
-            '교인사진': m.avatar_url || '',
-            '성명': m.full_name || '',
-            '생년월일': m.birthdate || '',
-            '성별': m.gender || '',
-            '직분': m.church_rank || '',
-            '휴대폰': m.phone || '',
-            '주소': m.address || '',
-            '이메일': m.email || '',
-            '등록일': m.created_at ? new Date(m.created_at).toISOString().split('T')[0] : '',
-            '승인상태': m.is_approved ? '승인됨' : '미승인'
-        }));
-
-        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "성도명단");
-
-        // 날짜 포함 파일명 생성 (선택된 경우 명시)
-        const countStr = selectedMemberIds.length > 0 ? `_선택${selectedMemberIds.length}명` : '';
-        const fileName = `${CHURCH_NAME}_성도명단${countStr}_${new Date().toISOString().slice(0, 10)}.xlsx`;
-        XLSX.writeFile(workbook, fileName);
     };
 
 
