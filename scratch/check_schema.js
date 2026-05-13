@@ -1,24 +1,24 @@
-const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
+const { createClient } = require('@supabase/supabase-js');
 
 const envFile = fs.readFileSync('.env.local', 'utf8');
-const envVars = {};
+const env = {};
 envFile.split('\n').forEach(line => {
-    const match = line.match(/^([^=]+)=(.*)$/);
-    if (match) {
-        envVars[match[1].trim()] = match[2].trim().replace(/^['"]|['"]$/g, '');
+    const parts = line.split('=');
+    if (parts.length >= 2) {
+        env[parts[0].trim()] = parts.slice(1).join('=').trim();
     }
 });
 
-const supabase = createClient(envVars.NEXT_PUBLIC_SUPABASE_URL, envVars.SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.SUPABASE_SERVICE_ROLE_KEY
+);
 
-async function checkSchema() {
-    const { data, error } = await supabase.from('gallery_posts').select('*').limit(1);
-    if (data && data.length > 0) {
-        console.log('Columns:', Object.keys(data[0]));
-    } else {
-        console.log('No data or table exists.');
-    }
+async function check() {
+    const { data, error } = await supabase.from('profiles').select('*').limit(1);
+    if (error) console.error(error);
+    else if (data.length > 0) console.log('Columns:', Object.keys(data[0]));
+    else console.log('No profiles found');
 }
-
-checkSchema();
+check();

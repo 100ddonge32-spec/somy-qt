@@ -385,6 +385,10 @@ export default function App() {
     const [isAnnouncementsExpanded, setIsAnnouncementsExpanded] = useState(false);
     const [newAnnouncementTitle, setNewAnnouncementTitle] = useState("");
     const [newAnnouncementContent, setNewAnnouncementContent] = useState("");
+    
+    // 오늘의 할일 (개인 메모) 상태
+    const [todoMemo, setTodoMemo] = useState("");
+    const [isTodoExpanded, setIsTodoExpanded] = useState(false);
 
     const [lastToggleTime, setLastToggleTime] = useState(0); // 이중 트리거 방지용
     const [commentInputs, setCommentInputs] = useState<{ [key: string]: string }>({});
@@ -396,6 +400,21 @@ export default function App() {
         const saved = localStorage.getItem('somyFontScale');
         if (saved) setFontScale(Number(saved));
     }, []);
+
+    // 오늘의 할일 (개인 메모) 로드
+    useEffect(() => {
+        if (user) {
+            const savedTodo = localStorage.getItem(`somy_todo_${user.id}`);
+            if (savedTodo) setTodoMemo(savedTodo);
+        }
+    }, [user]);
+
+    const handleTodoChange = (val: string) => {
+        setTodoMemo(val);
+        if (user) {
+            localStorage.setItem(`somy_todo_${user.id}`, val);
+        }
+    };
 
     // [시스템] 브라우저 뒤로가기 & 안드로이드 하드웨어 뒤로가기 연동 제어
     const isPopStateRef = useRef(false);
@@ -3233,6 +3252,34 @@ export default function App() {
                                                     </div>
                                                 ))
                                             )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* 오늘의 할일 (개인 메모) 영역 */}
+                                <div style={{ width: '100%', marginBottom: '20px' }}>
+                                    <div
+                                        onClick={() => setIsTodoExpanded(!isTodoExpanded)}
+                                        style={{ background: 'linear-gradient(135deg, #F1C40F 0%, #F39C12 100%)', padding: '16px 20px', borderRadius: isTodoExpanded ? '20px 20px 0 0' : '20px', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', boxShadow: '0 8px 15px rgba(243, 156, 18, 0.2)', transition: 'all 0.3s ease' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <span style={{ fontSize: '20px' }}>📝</span>
+                                            <span style={{ fontWeight: 800, fontSize: '15px', letterSpacing: '0.5px' }}>오늘의 할일</span>
+                                            <span style={{ fontSize: '11px', opacity: 0.8, fontWeight: 600 }}>(나만 보기)</span>
+                                        </div>
+                                        <span style={{ fontSize: '18px', transform: isTodoExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s' }}>▼</span>
+                                    </div>
+
+                                    {isTodoExpanded && (
+                                        <div style={{ background: 'white', padding: '20px', borderRadius: '0 0 20px 20px', border: '1px solid #EEE', borderTop: 'none', boxShadow: '0 10px 20px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                            <textarea 
+                                                value={todoMemo} 
+                                                onChange={(e: any) => handleTodoChange(e.target.value)}
+                                                placeholder="오늘의 할일이나 기도 제목을 적어보세요.&#10;이 메모는 본인만 볼 수 있습니다." 
+                                                style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '1px solid #DDD', minHeight: '120px', fontSize: '14px', outline: 'none', resize: 'none', lineHeight: '1.6', background: '#FFFEF9', color: '#333' }} 
+                                            />
+                                            <div style={{ fontSize: '11px', color: '#999', textAlign: 'right' }}>
+                                                ※ 기기에 자동으로 안전하게 저장됩니다.
+                                            </div>
                                         </div>
                                     )}
                                 </div>
