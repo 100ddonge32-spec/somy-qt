@@ -385,10 +385,6 @@ export default function App() {
     const [isAnnouncementsExpanded, setIsAnnouncementsExpanded] = useState(false);
     const [newAnnouncementTitle, setNewAnnouncementTitle] = useState("");
     const [newAnnouncementContent, setNewAnnouncementContent] = useState("");
-    
-    // 오늘의 할일 (개인 메모) 상태
-    const [todoMemo, setTodoMemo] = useState("");
-    const [isTodoExpanded, setIsTodoExpanded] = useState(false);
 
     const [lastToggleTime, setLastToggleTime] = useState(0); // 이중 트리거 방지용
     const [commentInputs, setCommentInputs] = useState<{ [key: string]: string }>({});
@@ -400,21 +396,7 @@ export default function App() {
         const saved = localStorage.getItem('somyFontScale');
         if (saved) setFontScale(Number(saved));
     }, []);
-
-    // 오늘의 할일 (개인 메모) 로드
-    useEffect(() => {
-        if (user) {
-            const savedTodo = localStorage.getItem(`somy_todo_${user.id}`);
-            if (savedTodo) setTodoMemo(savedTodo);
-        }
-    }, [user]);
-
-    const handleTodoChange = (val: string) => {
-        setTodoMemo(val);
-        if (user) {
-            localStorage.setItem(`somy_todo_${user.id}`, val);
-        }
-    };
+    
 
     // [시스템] 브라우저 뒤로가기 & 안드로이드 하드웨어 뒤로가기 연동 제어
     const isPopStateRef = useRef(false);
@@ -524,6 +506,25 @@ export default function App() {
     const [replyingToCommentId, setReplyingToCommentId] = useState<any>(null);
     const [replyingToPostId, setReplyingToPostId] = useState<any>(null);
     const [notifications, setNotifications] = useState<SomyNotification[]>([]);
+
+    // 오늘의 할일 (개인 메모) 상태
+    const [todoMemo, setTodoMemo] = useState("");
+    const [isTodoExpanded, setIsTodoExpanded] = useState(false);
+
+    // 오늘의 할일 (개인 메모) 로드
+    useEffect(() => {
+        if (user) {
+            const savedTodo = localStorage.getItem(`somy_todo_${user.id}`);
+            if (savedTodo) setTodoMemo(savedTodo);
+        }
+    }, [user]);
+
+    const handleTodoChange = (val: string) => {
+        setTodoMemo(val);
+        if (user) {
+            localStorage.setItem(`somy_todo_${user.id}`, val);
+        }
+    };
 
     const [communityPosts, setCommunityPosts] = useState<Post[]>([]);
     const [communityPage, setCommunityPage] = useState(1); // ✅ 게시판 페이지 번호
