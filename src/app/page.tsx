@@ -6926,20 +6926,20 @@ export default function App() {
                                         <button onClick={async () => {
                                             const pendingIds = memberList.filter(m => selectedMemberIds.includes(m.id) && !m.is_approved).map(m => m.id);
                                             if (pendingIds.length > 0 && window.confirm('선택한 성도를 일괄 승인하시겠습니까?')) {
-                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_approve_users', ids: pendingIds, approve: true, church_id: churchId }) });
+                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_approve_users', ids: pendingIds, approve: true, church_id: churchId, requester_id: user?.id, requester_email: user?.email }) });
                                                 if (res.ok) { setSelectedMemberIds([]); const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`); if (r.ok) setMemberList(await r.json()); }
                                             }
                                         }} style={{ height: '40px', background: '#E8F5E9', color: '#2E7D32', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: 800 }}>✅ 승인</button>
                                         <button onClick={async () => {
                                             const approvedIds = memberList.filter(m => selectedMemberIds.includes(m.id) && m.is_approved).map(m => m.id);
                                             if (approvedIds.length > 0 && window.confirm('승인을 취소하시겠습니까?')) {
-                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_approve_users', ids: approvedIds, approve: false, church_id: churchId }) });
+                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_approve_users', ids: approvedIds, approve: false, church_id: churchId, requester_id: user?.id, requester_email: user?.email }) });
                                                 if (res.ok) { setSelectedMemberIds([]); const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`); if (r.ok) setMemberList(await r.json()); }
                                             }
                                         }} style={{ height: '40px', background: '#FFF3E0', color: '#E65100', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: 800 }}>🔓 해제</button>
                                         <button onClick={async () => {
                                             if (window.confirm('선택한 성도를 삭제하시겠습니까?')) {
-                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_delete_members', ids: selectedMemberIds, church_id: churchId }) });
+                                                const res = await fetch('/api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'bulk_delete_members', ids: selectedMemberIds, church_id: churchId, requester_id: user?.id, requester_email: user?.email }) });
                                                 if (res.ok) { setSelectedMemberIds([]); const r = await fetch(`/api/admin?action=list_members&church_id=${churchId}`); if (r.ok) setMemberList(await r.json()); }
                                             }
                                         }} style={{ height: '40px', background: '#FFEBEE', color: '#C62828', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: 800 }}>🗑️ 삭제</button>
@@ -6969,31 +6969,44 @@ export default function App() {
                                             }
                                             return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
                                         })
-                                        .map(member => (
-                                            <div key={member.id} style={{ background: 'white', padding: '16px', borderRadius: '20px', border: selectedMemberIds.includes(member.id) ? '2px solid #D4AF37' : '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                    <div onClick={() => setSelectedMemberIds(prev => prev.includes(member.id) ? prev.filter(id => id !== member.id) : [...prev, member.id])} style={{ width: '22px', height: '22px', borderRadius: '6px', border: '2px solid #D4AF37', background: selectedMemberIds.includes(member.id) ? '#D4AF37' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                        {selectedMemberIds.includes(member.id) && <span style={{ color: 'white', fontSize: '12px' }}>✓</span>}
-                                                    </div>
-                                                    <div style={{ width: 44, height: 44, borderRadius: '14px', overflow: 'hidden', background: '#F8F9FA' }}>
-                                                        <img alt="" src={member.avatar_url || 'https://via.placeholder.com/44'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                    </div>
-                                                    <div style={{ flex: 1 }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                            <span style={{ fontWeight: 800, color: '#333' }}>{member.full_name}</span>
-                                                            {member.church_rank && <span style={{ fontSize: '10px', background: '#FFF9E6', color: '#B08C3E', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>{member.church_rank}</span>}
+                                        .map(member => {
+                                            const n = (member.full_name || '').trim().replace(/\s/g, '').toLowerCase();
+                                            const p = (member.phone || '').replace(/[^0-9]/g, '');
+                                            const isDuplicate = memberList.some(other => other.id !== member.id && ((n.length >= 2 && n === (other.full_name || '').trim().replace(/\s/g, '').toLowerCase()) || (p.length >= 8 && p === (other.phone || '').replace(/[^0-9]/g, ''))));
+
+                                            return (
+                                                <div key={member.id} style={{ background: 'white', padding: '16px', borderRadius: '20px', border: selectedMemberIds.includes(member.id) ? '2px solid #D4AF37' : '1px solid #F0F0F0', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                        <div onClick={() => setSelectedMemberIds(prev => prev.includes(member.id) ? prev.filter(id => id !== member.id) : [...prev, member.id])} style={{ width: '22px', height: '22px', borderRadius: '6px', border: '2px solid #D4AF37', background: selectedMemberIds.includes(member.id) ? '#D4AF37' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                            {selectedMemberIds.includes(member.id) && <span style={{ color: 'white', fontSize: '12px' }}>✓</span>}
                                                         </div>
-                                                        <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{formatPhone(member.phone) || '연락처 없음'}</div>
+                                                        <div style={{ width: 44, height: 44, borderRadius: '14px', overflow: 'hidden', background: '#F8F9FA' }}>
+                                                            <img alt="" src={member.avatar_url || 'https://via.placeholder.com/44'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                        </div>
+                                                        <div style={{ flex: 1 }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                <span style={{ fontWeight: 800, color: '#333' }}>{member.full_name}</span>
+                                                                {member.church_rank && <span style={{ fontSize: '10px', background: '#FFF9E6', color: '#B08C3E', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>{member.church_rank}</span>}
+                                                            </div>
+                                                            <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{formatPhone(member.phone) || '연락처 없음'}</div>
+                                                        </div>
+                                                        {isDuplicate && (
+                                                            <button onClick={() => {
+                                                                setMergeTarget(member);
+                                                                setMergeSearchKeyword(member.full_name || '');
+                                                                setShowMergeModal(true);
+                                                            }} style={{ padding: '6px 12px', background: '#FFF9E6', border: '1.5px solid #D4AF37', borderRadius: '8px', fontSize: '11px', fontWeight: 800, color: '#B08C3E', cursor: 'pointer' }}>통합</button>
+                                                        )}
+                                                        <button onClick={() => {
+                                                            setSelectedMemberForEdit(member);
+                                                            const form = { full_name: member.full_name || '', church_rank: member.church_rank || '', phone: member.phone || '', birthdate: member.birthdate || '', gender: member.gender || '', member_no: member.member_no || '', address: member.address || '', is_phone_public: member.is_phone_public || false, is_birthdate_public: member.is_birthdate_public || false, is_birthdate_lunar: member.is_birthdate_lunar || false, is_address_public: member.is_address_public || false, created_at: member.created_at || '' };
+                                                            setMemberEditForm(form);
+                                                            setInitialMemberEditForm(form);
+                                                        }} style={{ padding: '6px 12px', background: '#F5F5F5', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 700, color: '#666' }}>상세</button>
                                                     </div>
-                                                    <button onClick={() => {
-                                                        setSelectedMemberForEdit(member);
-                                                        const form = { full_name: member.full_name || '', church_rank: member.church_rank || '', phone: member.phone || '', birthdate: member.birthdate || '', gender: member.gender || '', member_no: member.member_no || '', address: member.address || '', is_phone_public: member.is_phone_public || false, is_birthdate_public: member.is_birthdate_public || false, is_birthdate_lunar: member.is_birthdate_lunar || false, is_address_public: member.is_address_public || false, created_at: member.created_at || '' };
-                                                        setMemberEditForm(form);
-                                                        setInitialMemberEditForm(form);
-                                                    }} style={{ padding: '6px 12px', background: '#F5F5F5', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 700, color: '#666' }}>상세</button>
                                                 </div>
-                                            </div>
-                                        ))
+                                            );
+                                        })
                                 }
                             </div>
                         </div>
