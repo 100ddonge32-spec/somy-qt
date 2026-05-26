@@ -122,10 +122,100 @@ export async function POST(req: NextRequest) {
 
         if (backwardError) throw backwardError;
 
+        // ✅ [자동화] 부모-자녀 등록 시, 배우자가 존재하면 배우자에게도 자동으로 자녀로 등록해 줍니다.
+        if (relationship_type === 'father' || relationship_type === 'mother' || relationship_type === 'child') {
+            await syncSpouseChildRelationships(church_id, member_id, relative_id, relationship_type);
+        }
+
         return NextResponse.json({ success: true });
     } catch (err: any) {
         console.error('Error creating relationship:', err);
         return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}
+
+// 👨‍👩‍👧‍👦 [자동화 헬퍼] 부모-자녀 관계 등록 시 배우자 자녀 자동 매핑 연쇄 처리
+async function syncSpouseChildRelationships(
+    churchId: string, 
+    memberId: string, 
+    relativeId: string, 
+    relationshipType: string
+) {
+    try {
+        let parentId = '';
+        let childId = '';
+
+        if (relationshipType === 'father' || relationshipType === 'mother') {
+            parentId = memberId;
+            childId = relativeId;
+        } else if (relationshipType === 'child') {
+            childId = memberId;
+            parentId = relativeId;
+        } else {
+            return;
+        }
+
+        // 1. 해당 부모(parentId)의 배우자(spouse)를 찾음
+        const { data: spouseRel } = await supabaseAdmin
+            .from('member_relationships')
+            .select('relative_id')
+            .eq('church_id', churchId)
+            .eq('member_id', parentId)
+            .eq('relationship_type', 'spouse')
+            .maybeSingle();
+
+        const spouseId = spouseRel?.relative_id;
+        if (!spouseId) return;
+
+        // 2. 배우자(spouseId)와 자녀(childId) 간의 기존 관계가 있는지 확인
+        const { data: existing } = await supabaseAdmin
+            .from('member_relationships')
+            .select('id')
+            .eq('church_id', churchId)
+            .eq('member_id', spouseId)
+            .eq('relative_id', childId)
+            .maybeSingle();
+
+        if (existing) return; // 이미 관계가 존재하면 연쇄 등록 스킵 (무한 루프 방지)
+
+        // 3. 배우자의 성별 조회
+        const { data: spouseProfile } = await supabaseAdmin
+            .from('profiles')
+            .select('gender')
+            .eq('id', spouseId)
+            .single();
+
+        const spouseGender = spouseProfile?.gender;
+        const spouseRelationType = spouseGender === '여' ? 'mother' : 'father';
+
+        // 4. 배우자 <-> 자녀 양방향 등록
+        // 1) 배우자 -> 자녀 (아버지/어머니)
+        await supabaseAdmin
+            .from('member_relationships')
+            .upsert({
+                church_id: churchId,
+                member_id: spouseId,
+                relative_id: childId,
+                relationship_type: spouseRelationType
+            }, {
+                onConflict: 'member_id,relative_id'
+            });
+
+        // 2) 자녀 -> 배우자 (자녀)
+        await supabaseAdmin
+            .from('member_relationships')
+            .upsert({
+                church_id: churchId,
+                member_id: childId,
+                relative_id: spouseId,
+                relationship_type: 'child'
+            }, {
+                onConflict: 'member_id,relative_id'
+            });
+
+        console.log(`[Auto-Sync] Connected Spouse ${spouseId} with Child ${childId} as ${spouseRelationType}`);
+    } catch (err) {
+        console.error('Error in spouse-child auto sync:', err);
     }
 }
 

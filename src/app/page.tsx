@@ -6,6 +6,7 @@ import { getGraceVerse } from '@/lib/navigator-verses';
 import { getTodayCcm, CcmVideo, CCM_LIST } from "@/lib/ccm";
 import { getDailyPsalm, getRandomPsalm } from '@/lib/psalm-verses';
 import * as XLSX from 'xlsx';
+import FamilyTree from "@/components/FamilyTree";
 
 type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "adminGuide" | "brandGuide" | "profile" | "memberSearch" | "book" | "pastorColumn" | "gallery";
 
@@ -724,6 +725,7 @@ export default function App() {
     const [familySearchQuery, setFamilySearchQuery] = useState(""); // ✅ 가족 추가 시 성도 검색어
     const [familySearchResults, setFamilySearchResults] = useState<any[]>([]); // ✅ 가족 추가 시 성도 검색 결과
     const [relationshipTypeInput, setRelationshipTypeInput] = useState("spouse"); // ✅ 관계 유형 선택
+    const [showFamilyTreeOverlay, setShowFamilyTreeOverlay] = useState(false); // ✅ 가계도 모달 표시 여부
     const [showWelcome, setShowWelcome] = useState(false); // 소미 소개 카드 표시 여부 (기본 닫힘)
     const [newCcmTitle, setNewCcmTitle] = useState(""); // ✅ 새로운 찬양 제목
     const [newCcmArtist, setNewCcmArtist] = useState(""); // ✅ 새로운 찬양 가수
@@ -8898,7 +8900,30 @@ export default function App() {
                         
                         {/* 👨‍👩‍👧‍👦 가족 관계 관리 및 한눈에 보기 */}
                         <div style={{ borderTop: '1px solid #F0F0F0', marginTop: '20px', paddingTop: '20px' }}>
-                            <label style={{ fontSize: '13px', fontWeight: 800, color: '#333', display: 'block', marginBottom: '10px' }}>👨‍👩‍👧‍👦 가족 관계 ({familyRelationships.length}명)</label>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <label style={{ fontSize: '13px', fontWeight: 800, color: '#333', margin: 0 }}>👨‍👩‍👧‍👦 가족 관계 ({familyRelationships.length}명)</label>
+                                <button
+                                    onClick={() => setShowFamilyTreeOverlay(true)}
+                                    style={{
+                                        padding: '4px 10px',
+                                        background: '#FFF9E6',
+                                        color: '#B08C3E',
+                                        border: '1px solid #D4AF37',
+                                        borderRadius: '8px',
+                                        fontSize: '11px',
+                                        fontWeight: 800,
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                >
+                                    📊 가계도 보기
+                                </button>
+                            </div>
                             
                             {/* 가족 목록 카드 */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
@@ -10537,6 +10562,43 @@ export default function App() {
                 )
             }
 
+            {showFamilyTreeOverlay && selectedMemberForEdit && (
+                <FamilyTree
+                    member={selectedMemberForEdit}
+                    memberList={memberList}
+                    churchId={churchId}
+                    onClose={() => setShowFamilyTreeOverlay(false)}
+                    onSelectMember={(relative) => {
+                        // 가계도 안에서 다른 성도를 클릭하여 이동할 때
+                        setSelectedMemberForEdit(relative);
+                        const form = {
+                            full_name: relative.full_name || '',
+                            church_rank: relative.church_rank || '',
+                            phone: relative.phone || '',
+                            birthdate: relative.birthdate || '',
+                            gender: relative.gender || '',
+                            member_no: relative.member_no || '',
+                            address: relative.address || '',
+                            is_phone_public: relative.is_phone_public || false,
+                            is_birthdate_public: relative.is_birthdate_public || false,
+                            is_birthdate_lunar: relative.is_birthdate_lunar || false,
+                            is_address_public: relative.is_address_public || false,
+                            created_at: relative.created_at || ''
+                        };
+                        setMemberEditForm(form);
+                        setInitialMemberEditForm(form);
+                    }}
+                    onRefreshList={async () => {
+                        // 가계도 내에서 변경/삭제 후, 메인 성도 리스트 및 상세 정보 새로고침
+                        try {
+                            const res = await fetch(`/api/members/relationships?member_id=${selectedMemberForEdit.id}&church_id=${churchId}`);
+                            if (res.ok) {
+                                setFamilyRelationships(await res.json());
+                            }
+                        } catch (err) { console.error(err); }
+                    }}
+                />
+            )}
             {renderMemberEditModal()}
             {renderAddMemberModal()}
             {renderMergeModal()}
