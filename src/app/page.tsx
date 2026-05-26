@@ -8913,9 +8913,13 @@ export default function App() {
                                         
                                         const relationLabels: Record<string, string> = {
                                             spouse: '배우자 💍',
-                                            parent: '부모 👨‍👩‍👦',
+                                            father: '아버지 👨',
+                                            mother: '어머니 👩',
                                             child: '자녀 👶',
-                                            sibling: '형제자매 🤝'
+                                            sibling: '형제자매 🤝',
+                                            grandfather: '할아버지 👴',
+                                            grandmother: '할머니 👵',
+                                            grandchild: '손주 🧒'
                                         };
                                         const label = relationLabels[rel.relationship_type] || rel.relationship_type;
 
@@ -9012,9 +9016,13 @@ export default function App() {
                                         style={{ padding: '8px 10px', borderRadius: '10px', border: '1px solid #DDD', fontSize: '12px', background: 'white', outline: 'none', fontWeight: 700 }}
                                     >
                                         <option value="spouse">배우자</option>
-                                        <option value="parent">부모</option>
+                                        <option value="father">아버지</option>
+                                        <option value="mother">어머니</option>
                                         <option value="child">자녀</option>
                                         <option value="sibling">형제자매</option>
+                                        <option value="grandfather">할아버지</option>
+                                        <option value="grandmother">할머니</option>
+                                        <option value="grandchild">손주</option>
                                     </select>
                                     <div style={{ flex: 1, position: 'relative' }}>
                                         <input

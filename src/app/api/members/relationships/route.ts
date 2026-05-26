@@ -9,13 +9,6 @@ const supabaseAdmin = createClient(
     { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
-const INVERSE_RELATIONS: Record<string, string> = {
-    spouse: 'spouse',
-    sibling: 'sibling',
-    parent: 'child',
-    child: 'parent'
-};
-
 // 1. 특정 성도의 가족 관계 조회
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
@@ -68,9 +61,35 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Cannot relate member to themselves' }, { status: 400 });
         }
 
-        // 역관계 타입 결정
-        const inverseType = INVERSE_RELATIONS[relationship_type];
-        if (!inverseType) {
+        // 역관계 타입 결정 (성별에 의존하는 관계 대응)
+        let inverseType = '';
+        if (relationship_type === 'spouse') {
+            inverseType = 'spouse';
+        } else if (relationship_type === 'sibling') {
+            inverseType = 'sibling';
+        } else if (relationship_type === 'father' || relationship_type === 'mother') {
+            inverseType = 'child';
+        } else if (relationship_type === 'grandfather' || relationship_type === 'grandmother') {
+            inverseType = 'grandchild';
+        } else if (relationship_type === 'child') {
+            // 기준 성도(member_id)의 성별을 조회하여 아버지/어머니로 역매핑
+            const { data: memberProfile } = await supabaseAdmin
+                .from('profiles')
+                .select('gender')
+                .eq('id', member_id)
+                .single();
+            const gender = memberProfile?.gender;
+            inverseType = gender === '여' ? 'mother' : 'father';
+        } else if (relationship_type === 'grandchild') {
+            // 기준 성도(member_id)의 성별을 조회하여 할아버지/할머니로 역매핑
+            const { data: memberProfile } = await supabaseAdmin
+                .from('profiles')
+                .select('gender')
+                .eq('id', member_id)
+                .single();
+            const gender = memberProfile?.gender;
+            inverseType = gender === '여' ? 'grandmother' : 'grandfather';
+        } else {
             return NextResponse.json({ error: 'Invalid relationship type' }, { status: 400 });
         }
 
