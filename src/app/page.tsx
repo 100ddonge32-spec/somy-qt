@@ -720,6 +720,10 @@ export default function App() {
     const [selectedMemberForEdit, setSelectedMemberForEdit] = useState<any>(null); // ✅ 성도 정보 수정을 위한 선택된 멤버
     const [memberEditForm, setMemberEditForm] = useState<any>(null);
     const [initialMemberEditForm, setInitialMemberEditForm] = useState<any>(null);
+    const [familyRelationships, setFamilyRelationships] = useState<any[]>([]); // ✅ 가족관계 목록
+    const [familySearchQuery, setFamilySearchQuery] = useState(""); // ✅ 가족 추가 시 성도 검색어
+    const [familySearchResults, setFamilySearchResults] = useState<any[]>([]); // ✅ 가족 추가 시 성도 검색 결과
+    const [relationshipTypeInput, setRelationshipTypeInput] = useState("spouse"); // ✅ 관계 유형 선택
     const [showWelcome, setShowWelcome] = useState(false); // 소미 소개 카드 표시 여부 (기본 닫힘)
     const [newCcmTitle, setNewCcmTitle] = useState(""); // ✅ 새로운 찬양 제목
     const [newCcmArtist, setNewCcmArtist] = useState(""); // ✅ 새로운 찬양 가수
@@ -752,6 +756,28 @@ export default function App() {
             loadInitMembers();
         }
     }, [isApproved, churchId]);
+
+    // ✅ 선택된 성도의 가족 관계 로드
+    useEffect(() => {
+        if (selectedMemberForEdit?.id && churchId) {
+            const loadRelationships = async () => {
+                try {
+                    const res = await fetch(`/api/members/relationships?member_id=${selectedMemberForEdit.id}&church_id=${churchId}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        setFamilyRelationships(data || []);
+                    }
+                } catch (err) {
+                    console.error("가족 관계 조회 실패:", err);
+                }
+            };
+            loadRelationships();
+        } else {
+            setFamilyRelationships([]);
+        }
+        setFamilySearchQuery("");
+        setFamilySearchResults([]);
+    }, [selectedMemberForEdit?.id, churchId]);
 
     const [isAdminsLoading, setIsAdminsLoading] = useState(false); // ✅ 관리자 목록 로딩 상태
     const [showVerification, setShowVerification] = useState(false); // ✅ 실명 인증 폼 노출 여부
@@ -8868,6 +8894,219 @@ export default function App() {
                         <div>
                             <label style={{ fontSize: '11px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '4px' }}>교회 등록일</label>
                             <input type="date" value={memberEditForm.created_at ? new Date(memberEditForm.created_at).toISOString().split('T')[0] : ''} onChange={e => setMemberEditForm({ ...memberEditForm, created_at: e.target.value })} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '14px', outline: 'none' }} />
+                        </div>
+                        
+                        {/* 👨‍👩‍👧‍👦 가족 관계 관리 및 한눈에 보기 */}
+                        <div style={{ borderTop: '1px solid #F0F0F0', marginTop: '20px', paddingTop: '20px' }}>
+                            <label style={{ fontSize: '13px', fontWeight: 800, color: '#333', display: 'block', marginBottom: '10px' }}>👨‍👩‍👧‍👦 가족 관계 ({familyRelationships.length}명)</label>
+                            
+                            {/* 가족 목록 카드 */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
+                                {familyRelationships.length === 0 ? (
+                                    <div style={{ fontSize: '12px', color: '#999', padding: '12px', textAlign: 'center', background: '#FAFAFA', borderRadius: '12px', border: '1px dashed #DDD' }}>
+                                        등록된 가족이 없습니다. 아래에서 추가해 보세요.
+                                    </div>
+                                ) : (
+                                    familyRelationships.map((rel: any) => {
+                                        const relProfile = rel.relative;
+                                        if (!relProfile) return null;
+                                        
+                                        const relationLabels: Record<string, string> = {
+                                            spouse: '배우자 💍',
+                                            parent: '부모 👨‍👩‍👦',
+                                            child: '자녀 👶',
+                                            sibling: '형제자매 🤝'
+                                        };
+                                        const label = relationLabels[rel.relationship_type] || rel.relationship_type;
+
+                                        return (
+                                            <div 
+                                                key={rel.id} 
+                                                style={{ 
+                                                    display: 'flex', 
+                                                    alignItems: 'center', 
+                                                    gap: '10px', 
+                                                    background: 'rgba(212, 175, 55, 0.04)', 
+                                                    border: '1px solid rgba(212, 175, 55, 0.15)', 
+                                                    borderRadius: '14px', 
+                                                    padding: '10px 14px',
+                                                    transition: 'all 0.2s ease'
+                                                }}
+                                            >
+                                                <div 
+                                                    onClick={() => {
+                                                        // 가족의 상세 정보 모달로 부드럽게 이동
+                                                        setSelectedMemberForEdit(relProfile);
+                                                        const form = { 
+                                                            full_name: relProfile.full_name || '', 
+                                                            church_rank: relProfile.church_rank || '', 
+                                                            phone: relProfile.phone || '', 
+                                                            birthdate: relProfile.birthdate || '', 
+                                                            gender: relProfile.gender || '', 
+                                                            member_no: relProfile.member_no || '', 
+                                                            address: relProfile.address || '', 
+                                                            is_phone_public: relProfile.is_phone_public || false, 
+                                                            is_birthdate_public: relProfile.is_birthdate_public || false, 
+                                                            is_birthdate_lunar: relProfile.is_birthdate_lunar || false, 
+                                                            is_address_public: relProfile.is_address_public || false, 
+                                                            created_at: relProfile.created_at || '' 
+                                                        };
+                                                        setMemberEditForm(form);
+                                                        setInitialMemberEditForm(form);
+                                                    }}
+                                                    style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, cursor: 'pointer', minWidth: 0 }}
+                                                >
+                                                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '1px solid #EAEAEA' }}>
+                                                        <img alt="" src={relProfile.avatar_url || 'https://via.placeholder.com/36'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    </div>
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#333', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                            <span>{relProfile.full_name}</span>
+                                                            <span style={{ fontSize: '9px', background: '#FDF3D0', color: '#B58B12', padding: '1px 5px', borderRadius: '4px', fontWeight: 800 }}>{label}</span>
+                                                        </div>
+                                                        <div style={{ fontSize: '11px', color: '#777', marginTop: '1px' }}>
+                                                            {relProfile.church_rank || '성도'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        if (!confirm(`${relProfile.full_name}님과의 가족 관계를 해제하시겠습니까?`)) return;
+                                                        try {
+                                                            const res = await fetch(`/api/members/relationships?member_id=${m.id}&relative_id=${relProfile.id}&church_id=${churchId}`, {
+                                                                method: 'DELETE'
+                                                            });
+                                                            if (res.ok) {
+                                                                setFamilyRelationships(prev => prev.filter(item => item.id !== rel.id));
+                                                                alert('가족 관계가 해제되었습니다. ✨');
+                                                            } else {
+                                                                alert('가족 관계 삭제에 실패했습니다.');
+                                                            }
+                                                        } catch (err) {
+                                                            console.error(err);
+                                                            alert('가족 관계 삭제 중 오류가 발생했습니다.');
+                                                        }
+                                                    }}
+                                                    style={{ background: 'none', border: 'none', color: '#C62828', fontSize: '15px', cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px' }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FFEBEE'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+
+                            {/* 가족 추가 폼 */}
+                            <div style={{ background: '#FBFBFB', padding: '12px', borderRadius: '16px', border: '1px solid #EAEAEA' }}>
+                                <div style={{ fontSize: '11px', fontWeight: 800, color: '#B8924A', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span>➕ 신규 가족 관계 연결</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '6px', position: 'relative' }}>
+                                    <select
+                                        value={relationshipTypeInput}
+                                        onChange={(e) => setRelationshipTypeInput(e.target.value)}
+                                        style={{ padding: '8px 10px', borderRadius: '10px', border: '1px solid #DDD', fontSize: '12px', background: 'white', outline: 'none', fontWeight: 700 }}
+                                    >
+                                        <option value="spouse">배우자</option>
+                                        <option value="parent">부모</option>
+                                        <option value="child">자녀</option>
+                                        <option value="sibling">형제자매</option>
+                                    </select>
+                                    <div style={{ flex: 1, position: 'relative' }}>
+                                        <input
+                                            type="text"
+                                            placeholder="성도 이름 검색..."
+                                            value={familySearchQuery}
+                                            onChange={(e) => {
+                                                const query = e.target.value;
+                                                setFamilySearchQuery(query);
+                                                if (query.trim().length >= 1) {
+                                                    // 로컬 memberList에서 검색 (본인 제외)
+                                                    const results = memberList.filter(item => 
+                                                        item.id !== m.id && 
+                                                        item.full_name?.toLowerCase().includes(query.toLowerCase())
+                                                    );
+                                                    setFamilySearchResults(results.slice(0, 5));
+                                                } else {
+                                                    setFamilySearchResults([]);
+                                                }
+                                            }}
+                                            style={{ width: '100%', padding: '8px 12px', borderRadius: '10px', border: '1px solid #DDD', fontSize: '12px', outline: 'none' }}
+                                        />
+                                        
+                                        {/* 실시간 성도 검색 드롭다운 */}
+                                        {familySearchResults.length > 0 && (
+                                            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', border: '1px solid #E0E0E0', borderRadius: '12px', marginTop: '6px', zIndex: 50, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', maxHeight: '160px', overflowY: 'auto' }}>
+                                                {familySearchResults.map(item => (
+                                                    <div
+                                                        key={item.id}
+                                                        onClick={async () => {
+                                                            const exists = familyRelationships.some(rel => rel.relative?.id === item.id);
+                                                            if (exists) {
+                                                                alert('이미 등록된 가족입니다.');
+                                                                return;
+                                                            }
+
+                                                            try {
+                                                                const res = await fetch('/api/members/relationships', {
+                                                                    method: 'POST',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({
+                                                                        church_id: churchId,
+                                                                        member_id: m.id,
+                                                                        relative_id: item.id,
+                                                                        relationship_type: relationshipTypeInput
+                                                                    })
+                                                                });
+
+                                                                if (res.ok) {
+                                                                    const newRel = {
+                                                                        id: `${m.id}-${item.id}`,
+                                                                        relationship_type: relationshipTypeInput,
+                                                                        relative: {
+                                                                            id: item.id,
+                                                                            full_name: item.full_name,
+                                                                            avatar_url: item.avatar_url,
+                                                                            church_rank: item.church_rank,
+                                                                            gender: item.gender,
+                                                                            phone: item.phone,
+                                                                            birthdate: item.birthdate
+                                                                        }
+                                                                    };
+                                                                    setFamilyRelationships(prev => [...prev, newRel]);
+                                                                    setFamilySearchQuery('');
+                                                                    setFamilySearchResults([]);
+                                                                    alert(`${item.full_name}님이 가족으로 연결되었습니다! ✨`);
+                                                                } else {
+                                                                    alert('가족 등록에 실패했습니다.');
+                                                                }
+                                                            } catch (err) {
+                                                                console.error(err);
+                                                                alert('가족 등록 중 오류가 발생했습니다.');
+                                                            }
+                                                        }}
+                                                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #F5F5F5' }}
+                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F5F5F5'}
+                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                                                    >
+                                                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
+                                                            <img alt="" src={item.avatar_url || 'https://via.placeholder.com/28'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                        </div>
+                                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                            <span style={{ fontSize: '12px', fontWeight: 800, color: '#333' }}>{item.full_name}</span>
+                                                            <span style={{ fontSize: '10px', color: '#888' }}>{item.church_rank || '성도'}</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: '10px', marginTop: '25px' }}>
