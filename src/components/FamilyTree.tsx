@@ -35,6 +35,7 @@ export default function FamilyTree({
 }: FamilyTreeProps) {
     const [relationships, setRelationships] = useState<Relationship[]>([]);
     const [spouseRelationships, setSpouseRelationships] = useState<Relationship[]>([]); // ✅ 배우자의 가족 관계 로드
+    const [childrenSpouses, setChildrenSpouses] = useState<Record<string, any>>({}); // ✅ 자녀들의 배우자 정보 (사위/며느리 자동 매핑용)
     const [isLoading, setIsLoading] = useState(false);
     
     // 추가/수정용 상태
@@ -60,11 +61,45 @@ export default function FamilyTree({
                     if (spouseRes.ok) {
                         const spouseData = await spouseRes.json();
                         setSpouseRelationships(spouseData || []);
-                        return;
                     }
+                } else {
+                    setSpouseRelationships([]);
                 }
+
+                // 3) 자녀 존재 시, 각 자녀의 배우자 정보(사위/며느리) 병렬 추가 조회
+                const childrenList = (data || []).filter((r: any) => r.relationship_type === 'child');
+                const tempSpouses: Record<string, any> = {};
+                
+                if (childrenList.length > 0) {
+                    await Promise.all(childrenList.map(async (c: any) => {
+                        try {
+                            const cRes = await fetch(`/api/members/relationships?member_id=${c.relative.id}&church_id=${churchId}`);
+                            if (cRes.ok) {
+                                const cData = await cRes.json();
+                                const spouseRel = (cData || []).find((r: any) => r.relationship_type === 'spouse');
+                                if (spouseRel?.relative) {
+                                    const sp = spouseRel.relative;
+                                    // 성별에 따른 사위/며느리 호칭 판별
+                                    const label = sp.gender === '남' ? '사위 🤵' : '며느리 👰';
+                                    tempSpouses[c.relative.id] = {
+                                        id: sp.id,
+                                        full_name: sp.full_name,
+                                        avatar_url: sp.avatar_url,
+                                        church_rank: sp.church_rank,
+                                        gender: sp.gender,
+                                        relationship_type: 'spouse',
+                                        computedLabel: label,
+                                        raw: sp
+                                    };
+                                }
+                            }
+                        } catch (err) {
+                            console.error('Error fetching child spouse relationships:', err);
+                        }
+                    }));
+                }
+                setChildrenSpouses(tempSpouses);
             }
-            setSpouseRelationships([]);
         } catch (err) {
             console.error('Error fetching relationships in FamilyTree:', err);
         } finally {
@@ -280,7 +315,7 @@ export default function FamilyTree({
                     {isSelf ? '본인 ⭐' : displayLabel}
                 </div>
 
-                {/* 관리 액션 버튼 (본인 및 인척-시댁/처가가 아닐 때만 노출) */}
+                {/* 관리 액션 버튼 (본인 및 인척-시댁/처가/사위/며느리가 아닐 때만 노출) */}
                 {!isSelf && !isSpouseParentsSide && (
                     <div 
                         style={{ position: 'absolute', top: '4px', right: '4px', display: 'flex', gap: '2px' }}
@@ -360,7 +395,7 @@ export default function FamilyTree({
                             <span>📊</span> {member.full_name} 성도의 가족 가계도
                         </h3>
                         <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#888' }}>
-                            인척(시댁/처가) 관계는 배우자의 직계 분석을 통해 마법처럼 **자동으로 표기**됩니다.
+                            인척(시댁/처가/사위/며느리) 관계는 배우자의 직계 분석을 통해 마법처럼 **자동으로 표기**됩니다.
                         </p>
                     </div>
                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -481,11 +516,11 @@ export default function FamilyTree({
                                 </div>
                             </div>
 
-                            {/* Level 4: 자녀 */}
+                            {/* Level 4: 자녀 & 사위/며느리 (커플 노드 병렬 렌더링) */}
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
                                 <div style={{ width: '2px', height: '16px', background: '#B8924A', opacity: 0.5 }} />
-                                <div style={{ fontSize: '10px', color: '#AAA', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', marginTop: '2px' }}>CHILDREN</div>
-                                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                <div style={{ fontSize: '10px', color: '#AAA', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', marginTop: '2px' }}>CHILDREN & SPOUSES</div>
+                                <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
                                     {children.length === 0 ? (
                                         <div 
                                             onClick={() => {
@@ -497,7 +532,34 @@ export default function FamilyTree({
                                             👶 자녀 연결
                                         </div>
                                     ) : (
-                                        children.map(c => renderNodeCard(c))
+                                        children.map(c => {
+                                            const childSpouse = childrenSpouses[c.id];
+                                            return (
+                                                <div 
+                                                    key={c.id} 
+                                                    style={{ 
+                                                        display: 'flex', 
+                                                        alignItems: 'center', 
+                                                        gap: '8px', 
+                                                        background: childSpouse ? 'rgba(212,175,55,0.02)' : 'transparent', 
+                                                        padding: childSpouse ? '10px' : '0', 
+                                                        borderRadius: childSpouse ? '24px' : '0', 
+                                                        border: childSpouse ? '1px dotted rgba(212,175,55,0.2)' : 'none' 
+                                                    }}
+                                                >
+                                                    {/* 자녀 카드 */}
+                                                    {renderNodeCard(c)}
+                                                    
+                                                    {/* 사위 / 며느리 자동 완성 카드 */}
+                                                    {childSpouse && (
+                                                        <>
+                                                            <div style={{ width: '14px', height: '2px', background: '#D4AF37', opacity: 0.6 }} />
+                                                            {renderNodeCard(childSpouse, false, childSpouse.computedLabel, true)}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            );
+                                        })
                                     )}
                                 </div>
                             </div>
