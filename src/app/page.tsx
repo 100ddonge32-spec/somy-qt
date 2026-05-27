@@ -38,6 +38,58 @@ const getLunarTodayMMDD = () => {
     } catch (e) { }
     return null;
 };
+
+// 🖼️ [트래픽 절감 핵심] 클라이언트 측 이미지 압축 유틸리티 함수
+const compressImage = (file: File, maxWidth = 1024, quality = 0.75): Promise<File> => {
+    return new Promise((resolve) => {
+        if (!file.type.startsWith('image/') || file.type.includes('svg')) {
+            resolve(file); // 이미지가 아니거나 SVG면 압축 건너뛰고 원본 반환
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event: any) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                // 최대 가로폭 기준 축소
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            const compressedFile = new File([blob], file.name, {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            });
+                            console.log(`[Image Compress] Original: ${file.size} bytes, Compressed: ${compressedFile.size} bytes`);
+                            resolve(compressedFile);
+                        } else {
+                            resolve(file);
+                        }
+                    }, 'image/jpeg', quality);
+                } else {
+                    resolve(file);
+                }
+            };
+            img.onerror = () => resolve(file);
+        };
+        reader.onerror = () => resolve(file);
+    });
+};
 interface Comment {
     id: any;
     user_id: string;
@@ -8818,10 +8870,12 @@ export default function App() {
                                     accept="image/*"
                                     style={{ display: 'none' }}
                                     onChange={async (e) => {
-                                        const file = e.target.files?.[0];
-                                        if (!file) return;
+                                        const rawFile = e.target.files?.[0];
+                                        if (!rawFile) return;
+                                        // 아바타 전용 해상도 압축 적용 (최대 400px, 80% 화질)
+                                        const file = await compressImage(rawFile, 400, 0.8);
                                         const formData = new FormData();
-                                        formData.append('file', file);
+                                        formData.append('file', file, 'avatar.jpg');
                                         formData.append('user_id', m.id);
                                         try {
                                             const res = await fetch('/api/admin/upload-avatar', { method: 'POST', body: formData });
@@ -10903,16 +10957,19 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
             const uploadedUrls: string[] = [];
 
             for (let i = 0; i < selectedFiles.length; i++) {
-                const file = selectedFiles[i];
-                const fileExt = file.name.split('.').pop();
+                const rawFile = selectedFiles[i];
+                // 클라이언트 이미지 최적화 압축 실행 (최대 1024px, 75% 화질)
+                const file = await compressImage(rawFile, 1024, 0.75);
+                const fileExt = 'jpg'; // 압축을 통해 jpeg 데이터로 강제 변환되므로 확장자 일원화
                 const fileName = `${user?.id || 'anon'}_${Date.now()}_${i}.${fileExt}`;
                 const filePath = `gallery/${normalizeId(churchId)}/${fileName}`;
 
-                // 1. 스토리지 업로드
+                // 1. 스토리지 업로드 (캐시 만료 기간을 1년으로 대폭 확대하여 Egress 중복 다운로드 차단)
                 const { error: uploadError } = await supabase.storage
                     .from('church-assets')
                     .upload(filePath, file, {
-                        cacheControl: '3600',
+                        cacheControl: '31536000', // 1년 캐싱 기한 지정
+                        contentType: 'image/jpeg',
                         upsert: false
                     });
 
