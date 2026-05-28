@@ -48,57 +48,63 @@ export default function FamilyTree({
     const loadRelationships = async () => {
         setIsLoading(true);
         try {
-            // 1) 기준 성도의 가족 관계 로드
+            // 1) 기준 성도의 가족 관계 로드 (1차 호출)
             const res = await fetch(`/api/members/relationships?member_id=${member.id}&church_id=${churchId}`);
             if (res.ok) {
                 const data = await res.json();
                 setRelationships(data || []);
                 
-                // 2) 배우자 존재 시, 배우자의 직계 가족 관계도 추가 조회
+                // 2) 배우자 존재 여부 및 자녀 목록 추출
                 const spouseRel = (data || []).find((r: any) => r.relationship_type === 'spouse');
-                if (spouseRel?.relative?.id) {
-                    const spouseRes = await fetch(`/api/members/relationships?member_id=${spouseRel.relative.id}&church_id=${churchId}`);
-                    if (spouseRes.ok) {
-                        const spouseData = await spouseRes.json();
-                        setSpouseRelationships(spouseData || []);
+                const spouseId = spouseRel?.relative?.id;
+                
+                const childrenList = (data || []).filter((r: any) => r.relationship_type === 'child');
+                const childrenIds = childrenList.map((c: any) => c.relative?.id).filter(Boolean);
+
+                // 2차 Batch 호출 대상 ID 배열 구성
+                const targetIds = [spouseId, ...childrenIds].filter(Boolean);
+
+                if (targetIds.length > 0) {
+                    // 배우자와 자녀들의 전체 관계 정보를 단 1회의 Batch API로 일괄 조회 (2차 호출)
+                    const batchRes = await fetch(`/api/members/relationships?member_ids=${targetIds.join(',')}&church_id=${churchId}`);
+                    if (batchRes.ok) {
+                        const batchData: any[] = await batchRes.json();
+                        
+                        // 배우자의 관계 정보 필터링
+                        if (spouseId) {
+                            const spouseData = batchData.filter((r: any) => r.member_id === spouseId);
+                            setSpouseRelationships(spouseData);
+                        } else {
+                            setSpouseRelationships([]);
+                        }
+
+                        // 자녀들의 배우자 정보(사위/며느리) 일괄 매핑 및 세팅
+                        const tempSpouses: Record<string, any> = {};
+                        childrenList.forEach((c: any) => {
+                            const childId = c.relative.id;
+                            // 해당 자녀의 관계 목록 중 배우자(spouse) 관계 찾기
+                            const childSpouseRel = batchData.find((r: any) => r.member_id === childId && r.relationship_type === 'spouse');
+                            if (childSpouseRel?.relative) {
+                                const sp = childSpouseRel.relative;
+                                const label = sp.gender === '남' ? '사위 🤵' : '며느리 👰';
+                                tempSpouses[childId] = {
+                                    id: sp.id,
+                                    full_name: sp.full_name,
+                                    avatar_url: sp.avatar_url,
+                                    church_rank: sp.church_rank,
+                                    gender: sp.gender,
+                                    relationship_type: 'spouse',
+                                    computedLabel: label,
+                                    raw: sp
+                                };
+                            }
+                        });
+                        setChildrenSpouses(tempSpouses);
                     }
                 } else {
                     setSpouseRelationships([]);
+                    setChildrenSpouses({});
                 }
-
-                // 3) 자녀 존재 시, 각 자녀의 배우자 정보(사위/며느리) 병렬 추가 조회
-                const childrenList = (data || []).filter((r: any) => r.relationship_type === 'child');
-                const tempSpouses: Record<string, any> = {};
-                
-                if (childrenList.length > 0) {
-                    await Promise.all(childrenList.map(async (c: any) => {
-                        try {
-                            const cRes = await fetch(`/api/members/relationships?member_id=${c.relative.id}&church_id=${churchId}`);
-                            if (cRes.ok) {
-                                const cData = await cRes.json();
-                                const spouseRel = (cData || []).find((r: any) => r.relationship_type === 'spouse');
-                                if (spouseRel?.relative) {
-                                    const sp = spouseRel.relative;
-                                    // 성별에 따른 사위/며느리 호칭 판별
-                                    const label = sp.gender === '남' ? '사위 🤵' : '며느리 👰';
-                                    tempSpouses[c.relative.id] = {
-                                        id: sp.id,
-                                        full_name: sp.full_name,
-                                        avatar_url: sp.avatar_url,
-                                        church_rank: sp.church_rank,
-                                        gender: sp.gender,
-                                        relationship_type: 'spouse',
-                                        computedLabel: label,
-                                        raw: sp
-                                    };
-                                }
-                            }
-                        } catch (err) {
-                            console.error('Error fetching child spouse relationships:', err);
-                        }
-                    }));
-                }
-                setChildrenSpouses(tempSpouses);
             }
         } catch (err) {
             console.error('Error fetching relationships in FamilyTree:', err);

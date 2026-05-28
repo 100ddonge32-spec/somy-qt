@@ -9,21 +9,27 @@ const supabaseAdmin = createClient(
     { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
-// 1. 특정 성도의 가족 관계 조회
+// 1. 특정 성도(들)의 가족 관계 조회 (단일 member_id 및 쉼표 구분된 member_ids 모두 지원)
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const memberId = searchParams.get('member_id');
+    const memberIdsStr = searchParams.get('member_ids');
     const churchId = searchParams.get('church_id');
 
-    if (!memberId || !churchId) {
-        return NextResponse.json({ error: 'member_id and church_id are required' }, { status: 400 });
+    if (!churchId) {
+        return NextResponse.json({ error: 'church_id is required' }, { status: 400 });
+    }
+
+    if (!memberId && !memberIdsStr) {
+        return NextResponse.json({ error: 'member_id or member_ids is required' }, { status: 400 });
     }
 
     try {
-        const { data, error } = await supabaseAdmin
+        let query = supabaseAdmin
             .from('member_relationships')
             .select(`
                 id,
+                member_id,
                 relationship_type,
                 relative:profiles!member_relationships_relative_id_fkey (
                     id,
@@ -35,8 +41,16 @@ export async function GET(req: NextRequest) {
                     birthdate
                 )
             `)
-            .eq('church_id', churchId)
-            .eq('member_id', memberId);
+            .eq('church_id', churchId);
+
+        if (memberIdsStr) {
+            const memberIds = memberIdsStr.split(',').map(id => id.trim()).filter(Boolean);
+            query = query.in('member_id', memberIds);
+        } else if (memberId) {
+            query = query.eq('member_id', memberId);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
