@@ -3517,7 +3517,7 @@ export default function App() {
                                         overflow: 'visible'
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                         <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🙏</div>
-                                        <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>상담/기도 요청</span>
+                                        <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>나의 기도제목</span>
                                         {notifications.some(n => !n.is_read && (
                                             isMainAdmin ? (n.type === 'counseling_req' || n.type === 'counseling_user_reply')
                                                 : (n.type === 'counseling_reply')
@@ -8549,9 +8549,9 @@ export default function App() {
                                             {n.type === 'birthday' && <>🎂 오늘은 <strong>{n.resolved_name}</strong> 성도님의 생일입니다! 🎉</>}
                                             {n.type === 'comment' && <><strong>{n.resolved_name}</strong>님이 은혜나눔에 댓글을 남기셨습니다.</>}
                                             {n.type === 'community_post' && <>✨ <strong>{n.resolved_name}</strong>님이 새로운 은혜를 나누셨습니다.</>}
-                                            {n.type === 'counseling_req' && <>🙏 새로운 <strong>상담 및 기도 요청</strong>이 도착했습니다.</>}
-                                            {n.type === 'counseling_user_reply' && <>💬 <strong>{n.resolved_name}</strong> 성도님이 상담에 추가 답글을 남기셨습니다.</>}
-                                            {n.type === 'counseling_reply' && <>🙏 <strong>목사님</strong>의 상담 답변이 도착했습니다. 확인해 보세요.</>}
+                                            {n.type === 'counseling_req' && <>🙏 새로운 <strong>비밀 기도제목</strong>이 도착했습니다.</>}
+                                            {n.type === 'counseling_user_reply' && <>💬 <strong>{n.resolved_name}</strong> 성도님이 기도글에 추가 답글을 남기셨습니다.</>}
+                                            {n.type === 'counseling_reply' && <>🙏 <strong>목사님</strong>의 기도 답변이 도착했습니다. 확인해 보세요.</>}
                                             {(!['birthday', 'comment', 'community_post', 'counseling_req', 'counseling_user_reply', 'counseling_reply'].includes(n.type)) && <><strong>{n.resolved_name}</strong>님이 새로운 소식을 보내셨습니다.</>}
                                         </div>
                                     </div>
