@@ -72,39 +72,150 @@ export async function GET(req: NextRequest) {
         // 감사일기
         const { data: thanks } = await supabaseAdmin
             .from('thanksgiving_diaries')
-            .select('content, user_name')
+            .select('content, user_name, user_id, created_at')
             .eq('church_id', churchId)
             .gt('created_at', fourteenDaysAgo)
-            .limit(50);
+            .limit(100);
 
         // 묵상나눔 (community_posts where is_qt=true)
         const { data: reflections } = await supabaseAdmin
             .from('community_posts')
-            .select('content, user_name')
+            .select('content, user_name, user_id, created_at')
             .eq('church_id', churchId)
             .eq('is_qt', true)
             .gt('created_at', fourteenDaysAgo)
-            .limit(50);
+            .limit(100);
 
         // QT 답변 (qt_completions)
         const { data: completions } = await supabaseAdmin
             .from('qt_completions')
-            .select('answers, user_id')
+            .select('answers, user_id, created_at')
             .gt('created_at', fourteenDaysAgo)
-            .limit(50);
-        
-        // 유저 정보 매칭용 (completions 에는 이름이 없음)
-        const userIds = Array.from(new Set(completions?.map(c => c.user_id) || []));
-        const { data: profiles } = await supabaseAdmin.from('profiles').select('id, full_name').in('id', userIds);
-        const nameMap = new Map(profiles?.map(p => [p.id, p.full_name]));
+            .limit(100);
 
-        const combinedData = [
-            ...(thanks?.map(t => `[감사] ${t.user_name}: ${t.content}`) || []),
-            ...(reflections?.map(r => `[묵상] ${r.user_name}: ${r.content}`) || []),
-            ...(completions?.map(c => `[QT답변] ${nameMap.get(c.user_id) || '성도'}: ${JSON.stringify(c.answers)}`) || [])
-        ].join('\n\n');
+        // 활동 로그 (activity_logs)
+        let activityLogs: any[] = [];
+        try {
+            const { data: logs } = await supabaseAdmin
+                .from('activity_logs')
+                .select('activity_type, user_name, user_id, created_at, details')
+                .eq('church_id', churchId)
+                .gt('created_at', fourteenDaysAgo)
+                .limit(200);
+            if (logs) activityLogs = logs;
+        } catch (logErr) {
+            console.error('Failed to fetch activity logs, continuing:', logErr);
+        }
 
-        if (!combinedData) {
+        // 모든 고유 유저 ID 추출
+        const allUserIds = new Set<string>();
+        thanks?.forEach(t => t.user_id && allUserIds.add(t.user_id));
+        reflections?.forEach(r => r.user_id && allUserIds.add(r.user_id));
+        completions?.forEach(c => c.user_id && allUserIds.add(c.user_id));
+        activityLogs?.forEach(l => l.user_id && allUserIds.add(l.user_id));
+
+        const userIdsArray = Array.from(allUserIds);
+        const nameMap = new Map<string, string>();
+        if (userIdsArray.length > 0) {
+            const { data: profiles } = await supabaseAdmin
+                .from('profiles')
+                .select('id, full_name')
+                .in('id', userIdsArray);
+            profiles?.forEach(p => {
+                if (p.full_name) nameMap.set(p.id, p.full_name);
+            });
+        }
+
+        // 유저별 데이터 구조화
+        const userMap = new Map<string, {
+            name: string;
+            thanks: Array<{content: string, date: string}>;
+            reflections: Array<{content: string, date: string}>;
+            completions: Array<{answers: any, date: string}>;
+            logs: Array<{type: string, date: string, details?: string}>;
+        }>();
+
+        const getOrCreateUser = (userId: string, defaultName: string) => {
+            const name = nameMap.get(userId) || defaultName || '알 수 없는 성도';
+            if (!userMap.has(userId)) {
+                userMap.set(userId, {
+                    name,
+                    thanks: [],
+                    reflections: [],
+                    completions: [],
+                    logs: []
+                });
+            }
+            return userMap.get(userId)!;
+        };
+
+        thanks?.forEach(t => {
+            if (t.user_id) {
+                const u = getOrCreateUser(t.user_id, t.user_name);
+                u.thanks.push({ content: t.content, date: t.created_at });
+            }
+        });
+
+        reflections?.forEach(r => {
+            if (r.user_id) {
+                const u = getOrCreateUser(r.user_id, r.user_name);
+                u.reflections.push({ content: r.content, date: r.created_at });
+            }
+        });
+
+        completions?.forEach(c => {
+            if (c.user_id) {
+                const u = getOrCreateUser(c.user_id, '성도');
+                u.completions.push({ answers: c.answers, date: c.created_at });
+            }
+        });
+
+        activityLogs?.forEach(l => {
+            if (l.user_id) {
+                const u = getOrCreateUser(l.user_id, l.user_name);
+                u.logs.push({ type: l.activity_type, date: l.created_at, details: l.details });
+            }
+        });
+
+        // AI에게 전달할 종합 데이터 가공
+        const formattedUsersData = Array.from(userMap.entries()).map(([userId, data]) => {
+            const activityTimes = [
+                ...data.thanks.map(t => new Date(t.date)),
+                ...data.reflections.map(r => new Date(r.date)),
+                ...data.completions.map(c => new Date(c.date)),
+                ...data.logs.map(l => new Date(l.date))
+            ].sort((a, b) => b.getTime() - a.getTime());
+
+            const mostRecentActivity = activityTimes[0] ? activityTimes[0].toISOString() : '없음';
+
+            // KST 기준 시간대 분석
+            const hourDistribution = { dawn: 0, morning: 0, afternoon: 0, evening: 0 };
+            activityTimes.forEach(t => {
+                const hour = (t.getUTCHours() + 9) % 24; // KST 9시간 가산
+                if (hour >= 0 && hour < 6) hourDistribution.dawn++;
+                else if (hour >= 6 && hour < 12) hourDistribution.morning++;
+                else if (hour >= 12 && hour < 18) hourDistribution.afternoon++;
+                else hourDistribution.evening++;
+            });
+
+            const thanksText = data.thanks.map(t => `- [${t.date.split('T')[0]}] ${t.content}`).join('\n');
+            const reflectionsText = data.reflections.map(r => `- [${r.date.split('T')[0]}] ${r.content}`).join('\n');
+            const completionsText = data.completions.map(c => `- [${c.date.split('T')[0]}] ${JSON.stringify(c.answers)}`).join('\n');
+
+            return `### 성도명: ${data.name} (ID: ${userId})
+* 최근 활동성: 감사일기 ${data.thanks.length}회, 묵상글 ${data.reflections.length}회, QT답변 ${data.completions.length}회, 전체로그 ${data.logs.length}회
+* 가장 최근 활동 시각(KST): ${mostRecentActivity ? new Date(mostRecentActivity).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) : '없음'}
+* 활동 시간대 분포(KST 기준): 새벽(0-6시) ${hourDistribution.dawn}회, 아침/오전(6-12시) ${hourDistribution.morning}회, 오후(12-18시) ${hourDistribution.afternoon}회, 저녁/밤(18-24시) ${hourDistribution.evening}회
+* 작성한 감사일기:
+${thanksText || '작성 기록 없음'}
+* 작성한 큐티 묵상글:
+${reflectionsText || '작성 기록 없음'}
+* QT 질답 내용:
+${completionsText || '작성 기록 없음'}
+`;
+        }).join('\n\n====================\n\n');
+
+        if (!formattedUsersData) {
             return NextResponse.json({ insights: "최근 14일 동안 분석할 데이터가 부족합니다. 성도님들의 활동이 더 필요해요! 😊" });
         }
 
@@ -114,26 +225,40 @@ export async function GET(req: NextRequest) {
             messages: [
                 {
                     role: 'system',
-                    content: `당신은 교회의 담임목사님을 돕는 '신학적 영성 상담 AI 비서'입니다. 
-성도들이 작성한 큐티 묵상, 감사 일기, 질문 답변 내용을 바탕으로 목회적 제언을 작성해야 합니다.
+                    content: `당신은 교회의 담임목사님을 성심껏 돕는 최고의 'AI 에이전틱 목회 상담 비서'이자, 성도의 영적 및 정서적 위기를 24시간 세심히 살피는 '사랑의 레이더'입니다.
+제공되는 성도별 14일간의 감사일기, 묵상글, QT 답변, 접속 시간대 데이터를 바탕으로, 인간 목회자가 발견하기 어려운 사각지대를 찾아내어 '긴급 심방 보고서'를 아주 정밀하게 작성해 주세요.
 
-작성 가이드:
-1. 성도들의 전체적인 영적 상태와 주요 관심 키워드를 파악하세요.
-2. 성도들이 공통적으로 느끼는 은혜나 어려움이 있다면 언급해 주세요.
-3. 목회자가 주일 설교나 심방 시 참고할 만한 '목회적 포인트'를 3~4가지 제시하세요.
-4. 따뜻하고 격려하는 어조를 사용하되, 목회자에게 드리는 보고서 형식을 갖춰주세요.
-5. 특정 성도의 이름을 언급하기보다는 전체적인 영적 분위기를 분석해 주세요. (필요한 경우에만 조심스럽게 언급)
+분석 보고서에 반드시 포함되어야 할 가이드라인:
 
-반드시 아래 JSON 형식으로만 답하세요:
-{"insights": "분석 내용 (마크다운 형식 가능)"}`
+1. **🚨 사랑의 레이더 - 긴급 심방 보고서 (골든타임 대상자)**
+   - 성도들의 미묘한 변화를 날카롭게 진단하여, 즉각적이고 적극적인 목회적 케어가 필요한 성도를 **이름(실명)과 함께 최우선으로 제시**해 주세요.
+   - **주요 감지 패턴**:
+     * **'생활 패턴의 급격한 균열'**: 평소 새벽이나 이른 아침에 큐티 앱을 이용하던 성도가 최근 저녁/밤 늦은 시간으로 밀려났다면, 과도한 업무 스트레스나 불안감으로 인한 수면 장애 가능성을 입체적으로 짚어내야 합니다.
+     * **'만남의 신호가 끊김'**: 최근 며칠간 갑자기 접속 및 QT 완주가 멈춘 성도.
+     * **'정서적 하락 및 슬픔의 단어들'**: 묵상글이나 감사일기에 우울, 번아웃, 피로, 외로움, 관계 갈등, 좌절 등의 키워드가 두드러진 성도.
+   - 각 대상자별로 감지된 변화의 객관적인 데이터 근거와 구체적인 영성/심리 상태 분석을 상세하게 제시해 주세요.
+
+2. **💡 개별 맞춤형 선제적 제안 (사랑의 선제공격)**
+   - 위 긴급 심방 대상 성도들이 스스로 구조 요청을 보내기 전에, 목자가 먼저 다가가 따뜻한 물 한 잔과 같은 기도의 동아줄을 건넬 수 있도록 **실제 사용할 수 있는 맞춤형 첫마디 가이드 (카카오톡/문자 메시지)**를 성도별로 작성해 주세요.
+   - 감시받는 듯한 불편함을 전혀 주지 않으면서 자연스럽고 감동을 주는 따뜻한 어조여야 합니다. (예: "요즘 무리하고 계신 건 아닌가요? 문득 기도가 나오네요.")
+
+3. **🙏 공동체 영적 기류 & 목회적 조언**
+   - 교회 전체 성도들의 공통적인 관심사, 은혜의 양상 혹은 삶의 무거운 짐들을 전반적으로 진단해 주세요.
+   - 다가오는 주일 설교나 주중 예배에서 목회자가 터치해주면 좋을 '목회적 포인트'를 2-3가지 단호하고 통찰력 있게 제시해 주세요.
+
+작성 및 포맷팅 지침:
+- 담임목사님께 격식 있게 보고드리는 정중하고 따뜻하며 사랑과 깊이가 느껴지는 문체로 작성해 주세요.
+- 마크다운 문법(대제목, 소제목, 굵게, 구분선, 이모지 등)을 적극적으로 사용하여 가독성을 극대화해 주세요.
+- 반드시 아래 JSON 형식으로만 응답해 주세요:
+{"insights": "마크다운 형식으로 수려하게 포맷팅된 심방 보고서 내용"}`
                 },
                 {
                     role: 'user',
-                    content: `최근 14일간의 성도 활동 데이터:\n${combinedData}`
+                    content: `최근 14일간의 성도별 활동 및 정서 데이터:\n${formattedUsersData}`
                 }
             ],
             temperature: 0.7,
-            max_tokens: 2000,
+            max_tokens: 3000,
         });
 
         const content = response.choices[0]?.message?.content || '';

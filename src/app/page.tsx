@@ -9785,7 +9785,7 @@ export default function App() {
                             {/* 고정되는 헤더 영역 */}
                             <div style={{ padding: '28px 28px 15px 28px', flexShrink: 0, borderBottom: '1px solid #F0F0F0', zIndex: 10 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>⚙️ {adminTab === 'settings' ? '교회 설정' : adminTab === 'members' ? '성도 관리' : adminTab === 'community' ? '은혜나눔 관리' : adminTab === 'thanksgiving' ? '감사일기 관리' : adminTab === 'stats' ? '활동 통계' : adminTab === 'pastoralInsights' ? '목회 영성 인사이트' : adminTab === 'admins' ? '권한 관리' : adminTab === 'activities' ? '활동 내역' : adminTab === 'reset' ? '데이터 초기화' : '슈퍼 관리'}</h2>
+                                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>⚙️ {adminTab === 'settings' ? '교회 설정' : adminTab === 'members' ? '성도 관리' : adminTab === 'community' ? '은혜나눔 관리' : adminTab === 'thanksgiving' ? '감사일기 관리' : adminTab === 'stats' ? '활동 통계' : adminTab === 'pastoralInsights' ? '목회 레이더 (긴급 심방)' : adminTab === 'admins' ? '권한 관리' : adminTab === 'activities' ? '활동 내역' : adminTab === 'reset' ? '데이터 초기화' : '슈퍼 관리'}</h2>
                                     <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#999' }}>X</button>
                                 </div>
 
@@ -9811,7 +9811,7 @@ export default function App() {
                                         } catch (e) { }
                                         setIsAdminsLoading(false);
                                     }} style={{ flex: '0 0 auto', padding: '8px 12px', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 600, background: adminTab === 'stats' ? 'white' : 'transparent', boxShadow: adminTab === 'stats' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'stats' ? '#333' : '#777', whiteSpace: 'nowrap' }}>📊 통계</button>
-                                    <button onClick={fetchPastoralInsights} style={{ flex: '0 0 auto', padding: '8px 12px', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 600, background: adminTab === 'pastoralInsights' ? 'white' : 'transparent', boxShadow: adminTab === 'pastoralInsights' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'pastoralInsights' ? '#333' : '#777', whiteSpace: 'nowrap' }}>💡 인사이트</button>
+                                    <button onClick={fetchPastoralInsights} style={{ flex: '0 0 auto', padding: '8px 12px', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 600, background: adminTab === 'pastoralInsights' ? 'white' : 'transparent', boxShadow: adminTab === 'pastoralInsights' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', cursor: 'pointer', color: adminTab === 'pastoralInsights' ? '#333' : '#777', whiteSpace: 'nowrap' }}>📡 목회 레이더</button>
                                     <button onClick={async () => {
                                         setAdminTab('gallery');
                                         fetchGalleryPosts();
@@ -9848,40 +9848,57 @@ export default function App() {
 
                                 {adminTab === 'pastoralInsights' ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', animation: 'fade-in 0.4s ease-out' }}>
-                                        <div style={{ background: 'linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)', padding: '20px', borderRadius: '20px', textAlign: 'center', border: '1px solid #C8E6C9' }}>
-                                            <div style={{ fontSize: '24px', marginBottom: '8px' }}>💡</div>
-                                            <div style={{ fontSize: '15px', fontWeight: 800, color: '#2E7D32', marginBottom: '4px' }}>AI 목회 인사이트 리포트</div>
-                                            <div style={{ fontSize: '11px', color: '#666' }}>성도들의 최근 14일 활동 데이터를 분석합니다.</div>
+                                        <div style={{ background: 'linear-gradient(135deg, #1B5E20 0%, #4CAF50 100%)', padding: '24px 20px', borderRadius: '24px', textAlign: 'center', boxShadow: '0 10px 25px rgba(46,125,50,0.15)', border: 'none', position: 'relative', overflow: 'hidden' }}>
+                                            <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%' }}></div>
+                                            <div style={{ fontSize: '28px', marginBottom: '8px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }}>📡</div>
+                                            <div style={{ fontSize: '17px', fontWeight: 900, color: '#FFFFFF', marginBottom: '6px', letterSpacing: '-0.3px', textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}>AI 에이전틱 목회 레이더</div>
+                                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.85)', wordBreak: 'keep-all', lineHeight: 1.4, maxWidth: '280px', margin: '0 auto' }}>성도들의 묵상, 감사, 활동 패턴의 변화를 24시간 실시간 감지하여 사랑의 레이더를 비춥니다.</div>
                                         </div>
 
                                         {isPastoralLoading ? (
-                                            <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-                                                <div style={{ width: '40px', height: '40px', border: '4px solid #F3F3F3', borderTop: '4px solid #2E7D32', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }}></div>
-                                                <div style={{ fontSize: '14px', color: '#666', fontWeight: 600 }}>성도들의 마음을 읽는 중입니다...</div>
-                                                <div style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>잠시만 기다려주세요. 약 10~20초 정도 소요될 수 있습니다.</div>
+                                            <div style={{ padding: '50px 20px', textAlign: 'center', background: '#F9FAF9', borderRadius: '24px', border: '1px dashed #C8E6C9' }}>
+                                                <div style={{ width: '44px', height: '44px', border: '4px solid rgba(76, 175, 80, 0.1)', borderTop: '4px solid #2E7D32', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 20px' }}></div>
+                                                <div style={{ fontSize: '15px', color: '#2E7D32', fontWeight: 800 }}>지치지 않는 사랑의 레이더로 마음을 읽는 중...</div>
+                                                <div style={{ fontSize: '11px', color: '#777', marginTop: '8px', lineHeight: 1.5, wordBreak: 'keep-all', padding: '0 15px' }}>
+                                                    접속 패턴의 균열, 우울한 묵상의 키워드, 사라지는 만남의 신호들을 입체적으로 분석하고 있습니다.
+                                                </div>
                                             </div>
                                         ) : (
-                                            <div style={{ background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
+                                            <div style={{ background: '#FFFFFF', border: '1px solid #ECEFF1', borderRadius: '24px', padding: '24px', boxShadow: '0 8px 30px rgba(0,0,0,0.03)' }}>
                                                 <div style={{
-                                                    fontSize: '14px',
-                                                    color: '#333',
-                                                    lineHeight: 1.7,
+                                                    fontSize: '13.5px',
+                                                    color: '#37474F',
+                                                    lineHeight: 1.8,
                                                     whiteSpace: 'pre-wrap',
-                                                    wordBreak: 'keep-all'
+                                                    wordBreak: 'keep-all',
+                                                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
                                                 }}>
                                                     {pastoralInsights || "분석된 내용이 없습니다."}
                                                 </div>
                                                 <button
                                                     onClick={fetchPastoralInsights}
-                                                    style={{ marginTop: '20px', width: '100%', padding: '12px', background: 'white', border: '1px solid #EEE', borderRadius: '12px', fontSize: '13px', fontWeight: 700, color: '#666', cursor: 'pointer' }}
+                                                    style={{ 
+                                                        marginTop: '24px', 
+                                                        width: '100%', 
+                                                        padding: '14px', 
+                                                        background: 'linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%)', 
+                                                        border: 'none', 
+                                                        borderRadius: '16px', 
+                                                        fontSize: '13px', 
+                                                        fontWeight: 800, 
+                                                        color: 'white', 
+                                                        cursor: 'pointer',
+                                                        boxShadow: '0 4px 12px rgba(46,125,50,0.2)',
+                                                        transition: 'all 0.2s'
+                                                    }}
                                                 >
-                                                    새로 분석하기
+                                                    레이더 가동 및 새로 분석
                                                 </button>
                                             </div>
                                         )}
 
-                                        <div style={{ fontSize: '11px', color: '#999', padding: '15px', background: '#F5F5F5', borderRadius: '12px', lineHeight: 1.5 }}>
-                                            ⚠️ 본 분석은 성도들의 익명성을 보장하며, 전체적인 영적 분위기와 주요 키워드를 파악하는 용도로 사용해 주세요. AI의 제언은 목회적 판단의 참고 자료입니다.
+                                        <div style={{ fontSize: '11px', color: '#555', padding: '16px', background: '#F5F7F6', borderRadius: '16px', borderLeft: '4px solid #4CAF50', lineHeight: 1.6, wordBreak: 'keep-all' }}>
+                                            ⚠️ 본 분석 보고서는 성도들의 세밀한 영적/생활 패턴 변화를 포착하여 선제적 돌봄 사역을 돕는 <b>사랑의 레이더</b>입니다. 감지된 제언을 바탕으로 따뜻한 위로와 기도의 동아줄을 건네주세요.
                                         </div>
                                     </div>
                                 ) : adminTab === 'settings' ? (
