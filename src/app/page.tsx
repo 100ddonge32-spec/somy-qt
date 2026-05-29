@@ -670,6 +670,9 @@ export default function App() {
     const [editingCounselingId, setEditingCounselingId] = useState<any>(null);
     const [editingCounselingField, setEditingCounselingField] = useState<string | null>(null);
     const [editCounselingContent, setEditCounselingContent] = useState("");
+    const [isPublicPrayer, setIsPublicPrayer] = useState(false); // ✅ 기도글 공개 범위 (기본: 목회자공개)
+    const [openPrayerComments, setOpenPrayerComments] = useState<{ [id: string]: boolean }>({}); // ✅ 기도글 댓글창 아코디언 상태
+    const [prayerCommentInput, setPrayerCommentInput] = useState<{ [id: string]: string }>({}); // ✅ 기도글 댓글 입력
 
     // 갤러리 상태
     const [galleryPosts, setGalleryPosts] = useState<any[]>([]);
@@ -7882,7 +7885,7 @@ export default function App() {
                 <div style={{ display: "flex", flexDirection: "column", height: "100vh", maxWidth: "600px", margin: "0 auto", background: "#fdfdfd", position: "relative" }}>
                     <div style={{ padding: "20px", display: "flex", alignItems: "center", borderBottom: '1px solid #EEE' }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "24px", color: "#333", cursor: "pointer" }}>←</button>
-                        <h2 style={{ flex: 1, textAlign: "center", fontSize: "18px", margin: 0, color: "#333", fontWeight: 800 }}>🙏 상담 및 기도 요청</h2>
+                        <h2 style={{ flex: 1, textAlign: "center", fontSize: "18px", margin: 0, color: "#333", fontWeight: 800 }}>🙏 나의 기도제목</h2>
                         <div style={{ width: "24px" }} />
                     </div>
 
@@ -7890,8 +7893,57 @@ export default function App() {
                         {/* 작성 폼 (메인 관리자 아닐 때만 - 부관리자 포함) */}
                         {!isMainAdmin && (
                             <div style={{ marginBottom: '30px', background: 'white', padding: '20px', borderRadius: '15px', border: '1px solid #EEE', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-                                <h3 style={{ fontSize: '15px', marginTop: 0, color: '#333' }}>새 요청 작성하기 <span style={{ fontSize: '12px', color: '#999', fontWeight: 400 }}>(목사님만 볼 수 있습니다)</span></h3>
-                                <textarea value={counselingInput} onChange={(e: any) => setCounselingInput(e.target.value)} placeholder="담임목사님께 나누고 싶은 고민이나 기도 제목을 적어주세요. 목사님께서 확인 후 직접 답변해주시며 실시간 알림이 발송됩니다." style={{ width: '100%', padding: '15px', borderRadius: '10px', border: '1px solid #DDD', minHeight: '120px', resize: 'vertical', fontSize: '14px', marginBottom: '10px', outline: 'none' }} />
+                                <h3 style={{ fontSize: '14.5px', marginTop: 0, color: '#333', fontWeight: 800, marginBottom: '12px' }}>새 기도제목 작성하기</h3>
+                                
+                                {/* 공개 범위 선택 */}
+                                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                                    <button 
+                                        onClick={() => setIsPublicPrayer(false)} 
+                                        style={{ 
+                                            flex: 1, 
+                                            padding: '10px', 
+                                            borderRadius: '10px', 
+                                            border: '1.5px solid', 
+                                            borderColor: !isPublicPrayer ? '#2E7D32' : '#EEE', 
+                                            background: !isPublicPrayer ? '#E8F5E9' : 'white', 
+                                            color: !isPublicPrayer ? '#2E7D32' : '#666', 
+                                            fontSize: '11.5px', 
+                                            fontWeight: 800, 
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        🔒 목회자공개
+                                    </button>
+                                    <button 
+                                        onClick={() => setIsPublicPrayer(true)} 
+                                        style={{ 
+                                            flex: 1, 
+                                            padding: '10px', 
+                                            borderRadius: '10px', 
+                                            border: '1.5px solid', 
+                                            borderColor: isPublicPrayer ? '#2E7D32' : '#EEE', 
+                                            background: isPublicPrayer ? '#E8F5E9' : 'white', 
+                                            color: isPublicPrayer ? '#2E7D32' : '#666', 
+                                            fontSize: '11.5px', 
+                                            fontWeight: 800, 
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        👥 전체공개
+                                    </button>
+                                </div>
+
+                                <textarea 
+                                    value={counselingInput} 
+                                    onChange={(e: any) => setCounselingInput(e.target.value)} 
+                                    placeholder={isPublicPrayer 
+                                        ? "성도들과 함께 나누고 싶은 기도제목을 적어주세요. 좋아요와 격려 댓글로 함께 소통할 수 있습니다. ✨" 
+                                        : "담임목사님께만 나누고 싶은 고민이나 비밀 기도제목을 적어주세요. 목사님과 성도님만 1:1로 은밀하게 기도를 나눕니다."} 
+                                    style={{ width: '100%', padding: '15px', borderRadius: '10px', border: '1px solid #DDD', minHeight: '120px', resize: 'vertical', fontSize: '14px', marginBottom: '12px', outline: 'none', lineHeight: 1.5 }} 
+                                />
+
                                 <button
                                     disabled={isSubmittingCounseling}
                                     onClick={async () => {
@@ -7899,266 +7951,422 @@ export default function App() {
                                         setIsSubmittingCounseling(true);
                                         try {
                                             const finalName = profileName || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "익명의 성도";
-                                            const r = await fetch('/api/counseling', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: user?.id, user_name: finalName, church_id: churchId, content: counselingInput }) });
+                                            const r = await fetch('/api/counseling', { 
+                                                method: 'POST', 
+                                                headers: { 'Content-Type': 'application/json' }, 
+                                                body: JSON.stringify({ 
+                                                    user_id: user?.id, 
+                                                    user_name: finalName, 
+                                                    church_id: churchId, 
+                                                    content: counselingInput,
+                                                    is_public: isPublicPrayer
+                                                }) 
+                                            });
                                             if (r.ok) {
                                                 const newReq = await r.json();
                                                 setCounselingRequests([newReq, ...counselingRequests]);
                                                 setCounselingInput('');
-                                                alert("요청이 담임목사님께 성공적으로 전송되었습니다.");
+                                                alert(isPublicPrayer 
+                                                    ? "기도제목이 전체공개로 성공적으로 게시되었습니다. 🙏" 
+                                                    : "기도제목이 목사님께 비밀 기도로 안전하게 전달되었습니다. 🔒");
                                             }
                                         } catch (e) {
                                         } finally {
                                             setIsSubmittingCounseling(false);
                                         }
                                     }}
-                                    style={{ width: '100%', padding: '14px', background: isSubmittingCounseling ? '#999' : '#333', color: 'white', borderRadius: '10px', border: 'none', fontWeight: 700, cursor: isSubmittingCounseling ? 'default' : 'pointer' }}
+                                    style={{ width: '100%', padding: '14px', background: isSubmittingCounseling ? '#999' : '#2E7D32', color: 'white', borderRadius: '10px', border: 'none', fontWeight: 700, cursor: isSubmittingCounseling ? 'default' : 'pointer', boxShadow: '0 4px 10px rgba(46,125,50,0.15)' }}
                                 >
-                                    {isSubmittingCounseling ? '전송 중...' : '요청 보내기 🚀'}
+                                    {isSubmittingCounseling ? '전송 중...' : isPublicPrayer ? '기도제목 나누기 👥' : '비밀기도 요청하기 🔒'}
                                 </button>
                             </div>
                         )}
 
                         {/* 요청 목록 */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                            {counselingRequests.map(req => (
-                                <div key={req.id} style={{ background: 'white', padding: '15px', borderRadius: '15px', border: '1px solid #EEE', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px', color: '#666' }}>
-                                        <strong>{req.user_name} 성도</strong>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <span>{new Date(req.created_at).toLocaleDateString()}</span>
-                                            {(isMainAdmin || user?.id === req.user_id) && (
-                                                <div style={{ display: 'flex', gap: '10px' }}>
-                                                    {!isMainAdmin && user?.id === req.user_id && (
-                                                        <button onClick={() => {
-                                                            setEditingCounselingId(req.id);
-                                                            setEditingCounselingField('content');
-                                                            setEditCounselingContent(req.content);
-                                                        }} style={{ background: 'none', border: 'none', color: '#B8924A', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}>수정</button>
-                                                    )}
-                                                    <button onClick={async () => {
-                                                        if (confirm('이 요청을 삭제하시겠습니까?')) {
-                                                            try {
-                                                                const r = await fetch('/api/counseling', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: req.id }) });
-                                                                if (r.ok) setCounselingRequests(counselingRequests.filter(c => c.id !== req.id));
-                                                            } catch (e) { }
-                                                        }
-                                                    }} style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer', padding: 0, fontSize: '12px', fontWeight: 700 }}>삭제</button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
+                            {counselingRequests.map(req => {
+                                const hasLiked = req.liker_ids?.includes(user?.id);
+                                const isPostOwner = user?.id === req.user_id;
 
-                                    {editingCounselingId === req.id && editingCounselingField === 'content' ? (
-                                        <div style={{ marginBottom: '15px' }}>
-                                            <textarea
-                                                value={editCounselingContent}
-                                                onChange={(e: any) => setEditCounselingContent(e.target.value)}
-                                                style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '2px solid #B8924A', fontSize: '14px', minHeight: '100px', marginBottom: '8px', outline: 'none' }}
-                                            />
-                                            <div style={{ display: 'flex', gap: '8px' }}>
-                                                <button onClick={async () => {
-                                                    if (!editCounselingContent.trim()) return;
-                                                    try {
-                                                        const r = await fetch('/api/counseling', {
-                                                            method: 'PATCH',
-                                                            headers: { 'Content-Type': 'application/json' },
-                                                            body: JSON.stringify({ id: req.id, content: editCounselingContent, overwrite: true })
-                                                        });
-                                                        if (r.ok) {
-                                                            const updated = await r.json();
-                                                            setCounselingRequests(counselingRequests.map(c => c.id === req.id ? updated : c));
-                                                            setEditingCounselingId(null);
-                                                            setEditingCounselingField(null);
-                                                        }
-                                                    } catch (e) { }
-                                                }} style={{ flex: 1, padding: '8px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>저장</button>
-                                                <button onClick={() => { setEditingCounselingId(null); setEditingCounselingField(null); }} style={{ flex: 1, padding: '8px', background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>취소</button>
+                                return (
+                                    <div key={req.id} style={{ background: 'white', padding: '18px', borderRadius: '20px', border: '1px solid #EEE', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <strong style={{ fontSize: '14px', color: '#333' }}>{req.user_name} 성도</strong>
+                                                {/* 공개 여부 뱃지 */}
+                                                <span style={{ 
+                                                    fontSize: '9.5px', 
+                                                    fontWeight: 800, 
+                                                    padding: '3px 6px', 
+                                                    borderRadius: '6px', 
+                                                    background: req.is_public ? '#E8F5E9' : '#ECEFF1', 
+                                                    color: req.is_public ? '#2E7D32' : '#546E7A' 
+                                                }}>
+                                                    {req.is_public ? '👥 전체공개' : '🔒 목회자공개'}
+                                                </span>
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <div style={{ fontSize: '15px', color: '#333', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: '15px' }}>
-                                            {req.content}
-                                        </div>
-                                    )}
-
-                                    {/* 답변 영역 */}
-                                    {req.reply ? (
-                                        <div style={{ background: '#F5F5F5', padding: '15px', borderRadius: '10px', marginTop: '10px' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                                                <div style={{ fontWeight: 800, fontSize: '13px', color: '#1A5D55' }}>↳ 담임목사님 답변</div>
-                                                {isMainAdmin && (
-                                                    <button onClick={() => {
-                                                        setEditingCounselingId(req.id);
-                                                        setEditingCounselingField('reply');
-                                                        setEditCounselingContent(req.reply);
-                                                    }} style={{ background: 'none', border: 'none', color: '#1A5D55', cursor: 'pointer', fontSize: '11px', fontWeight: 700 }}>수정</button>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11.5px', color: '#999' }}>
+                                                <span>{new Date(req.created_at).toLocaleDateString()}</span>
+                                                {(isMainAdmin || isPostOwner) && (
+                                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                                        {!isMainAdmin && isPostOwner && (
+                                                            <button onClick={() => {
+                                                                setEditingCounselingId(req.id);
+                                                                setEditingCounselingField('content');
+                                                                setEditCounselingContent(req.content);
+                                                            }} style={{ background: 'none', border: 'none', color: '#B8924A', cursor: 'pointer', fontSize: '11px', fontWeight: 700 }}>수정</button>
+                                                        )}
+                                                        <button onClick={async () => {
+                                                            if (confirm('이 기도글을 삭제하시겠습니까?')) {
+                                                                try {
+                                                                    const r = await fetch('/api/counseling', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: req.id }) });
+                                                                    if (r.ok) setCounselingRequests(counselingRequests.filter(c => c.id !== req.id));
+                                                                } catch (e) { }
+                                                            }
+                                                        }} style={{ background: 'none', border: 'none', color: '#E53935', cursor: 'pointer', padding: 0, fontSize: '11px', fontWeight: 700 }}>삭제</button>
+                                                    </div>
                                                 )}
                                             </div>
-                                            {editingCounselingId === req.id && editingCounselingField === 'reply' ? (
-                                                <div>
-                                                    <textarea
-                                                        value={editCounselingContent}
-                                                        onChange={(e: any) => setEditCounselingContent(e.target.value)}
-                                                        style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '2px solid #1A5D55', fontSize: '13px', minHeight: '80px', marginBottom: '5px', outline: 'none' }}
-                                                    />
-                                                    <div style={{ display: 'flex', gap: '5px', marginBottom: '10px' }}>
-                                                        <button onClick={async () => {
+                                        </div>
+
+                                        {editingCounselingId === req.id && editingCounselingField === 'content' ? (
+                                            <div style={{ marginBottom: '15px' }}>
+                                                <textarea
+                                                    value={editCounselingContent}
+                                                    onChange={(e: any) => setEditCounselingContent(e.target.value)}
+                                                    style={{ width: '100%', padding: '10px', borderRadius: '10px', border: '2px solid #2E7D32', fontSize: '14px', minHeight: '100px', marginBottom: '8px', outline: 'none' }}
+                                                />
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <button onClick={async () => {
+                                                        if (!editCounselingContent.trim()) return;
+                                                        try {
+                                                            const r = await fetch('/api/counseling', {
+                                                                method: 'PATCH',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ id: req.id, content: editCounselingContent, overwrite: true })
+                                                            });
+                                                            if (r.ok) {
+                                                                const updated = await r.json();
+                                                                setCounselingRequests(counselingRequests.map(c => c.id === req.id ? updated : c));
+                                                                setEditingCounselingId(null);
+                                                                setEditingCounselingField(null);
+                                                            }
+                                                        } catch (e) { }
+                                                    }} style={{ flex: 1, padding: '8px', background: '#333', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>저장</button>
+                                                    <button onClick={() => { setEditingCounselingId(null); setEditingCounselingField(null); }} style={{ flex: 1, padding: '8px', background: '#EEE', color: '#666', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>취소</button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div style={{ fontSize: '14.5px', color: '#263238', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: '15px' }}>
+                                                {req.content}
+                                            </div>
+                                        )}
+
+                                        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                                            공개글 반응 영역 (하트/댓글 피드)
+                                            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+                                        {req.is_public ? (
+                                            <div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', borderTop: '1px solid #F5F5F5', paddingTop: '10px', marginTop: '10px' }}>
+                                                    {/* 좋아요 토글 */}
+                                                    <button 
+                                                        onClick={async () => {
+                                                            if (!user) return;
                                                             try {
                                                                 const r = await fetch('/api/counseling', {
                                                                     method: 'PATCH',
                                                                     headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({ id: req.id, reply: editCounselingContent, overwrite: true })
+                                                                    body: JSON.stringify({ id: req.id, action: 'like', liker_id: user.id })
                                                                 });
                                                                 if (r.ok) {
                                                                     const updated = await r.json();
                                                                     setCounselingRequests(counselingRequests.map(c => c.id === req.id ? updated : c));
-                                                                    setEditingCounselingId(null);
-                                                                    setEditingCounselingField(null);
                                                                 }
-                                                            } catch (e) { }
-                                                        }} style={{ flex: 1, padding: '5px', background: '#1A5D55', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}>저장</button>
-                                                        <button onClick={() => { setEditingCounselingId(null); setEditingCounselingField(null); }} style={{ flex: 1, padding: '5px', background: '#EEE', color: '#666', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}>취소</button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div style={{ fontSize: '14px', color: '#444', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{req.reply}</div>
-                                            )}
+                                                            } catch (e) {}
+                                                        }}
+                                                        style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '13px', color: hasLiked ? '#E53935' : '#777', padding: '4px 8px', borderRadius: '8px', transition: 'all 0.2s' }}
+                                                    >
+                                                        <span style={{ fontSize: '16px' }}>{hasLiked ? '❤️' : '♡'}</span>
+                                                        <span style={{ fontWeight: 700 }}>기도 {req.liker_ids?.length || 0}</span>
+                                                    </button>
 
-                                            {/* 성도 추가 답글 표시 */}
-                                            {req.user_reply && (
-                                                <div style={{ background: 'white', padding: '12px', borderRadius: '8px', marginTop: '10px', border: '1px solid #EEE' }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                                        <div style={{ fontWeight: 800, fontSize: '12px', color: '#333' }}>💬 성도님 추가 답글</div>
-                                                        {!isMainAdmin && user?.id === req.user_id && (
-                                                            <button onClick={() => {
-                                                                setEditingCounselingId(req.id);
-                                                                setEditingCounselingField('user_reply');
-                                                                setEditCounselingContent(req.user_reply);
-                                                            }} style={{ background: 'none', border: 'none', color: '#B8924A', cursor: 'pointer', fontSize: '11px', fontWeight: 700 }}>수정</button>
-                                                        )}
-                                                    </div>
-                                                    {editingCounselingId === req.id && editingCounselingField === 'user_reply' ? (
-                                                        <div>
-                                                            <textarea
-                                                                value={editCounselingContent}
-                                                                onChange={(e: any) => setEditCounselingContent(e.target.value)}
-                                                                style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '2px solid #B8924A', fontSize: '13px', minHeight: '80px', marginBottom: '5px', outline: 'none' }}
+                                                    {/* 댓글 아코디언 열기 */}
+                                                    <button
+                                                        onClick={() => setOpenPrayerComments(prev => ({ ...prev, [req.id]: !prev[req.id] }))}
+                                                        style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '13px', color: '#555', padding: '4px 8px', borderRadius: '8px' }}
+                                                    >
+                                                        <span style={{ fontSize: '15px' }}>💬</span>
+                                                        <span style={{ fontWeight: 700 }}>격려 댓글 {req.comments?.length || 0}</span>
+                                                    </button>
+                                                </div>
+
+                                                {/* 댓글 열림 창 */}
+                                                {openPrayerComments[req.id] && (
+                                                    <div style={{ background: '#F8F9FA', borderRadius: '12px', padding: '12px', marginTop: '10px', animation: 'fade-in 0.2s ease-out' }}>
+                                                        {/* 댓글 리스트 */}
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '10px' }}>
+                                                            {req.comments && req.comments.length > 0 ? (
+                                                                req.comments.map((c: any) => (
+                                                                    <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: 'white', padding: '10px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                                                                        <div style={{ flex: 1, marginRight: '10px' }}>
+                                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                                                                                <span style={{ fontSize: '11px', fontWeight: 800, color: '#333' }}>{c.user_name}</span>
+                                                                                <span style={{ fontSize: '9px', color: '#BBB' }}>{new Date(c.created_at).toLocaleDateString()}</span>
+                                                                            </div>
+                                                                            <div style={{ fontSize: '12.5px', color: '#444', lineHeight: 1.4 }}>{c.content}</div>
+                                                                        </div>
+                                                                        {user?.id === c.user_id && (
+                                                                            <button 
+                                                                                onClick={async () => {
+                                                                                    if (!confirm('이 댓글을 삭제하시겠습니까?')) return;
+                                                                                    try {
+                                                                                        const r = await fetch('/api/counseling', {
+                                                                                            method: 'PATCH',
+                                                                                            headers: { 'Content-Type': 'application/json' },
+                                                                                            body: JSON.stringify({ id: req.id, action: 'delete_comment', comment_id: c.id })
+                                                                                        });
+                                                                                        if (r.ok) {
+                                                                                            const updated = await r.json();
+                                                                                            setCounselingRequests(counselingRequests.map(c => c.id === req.id ? updated : c));
+                                                                                        }
+                                                                                    } catch (e) {}
+                                                                                }}
+                                                                                style={{ background: 'none', border: 'none', color: '#BBB', fontSize: '10px', cursor: 'pointer' }}
+                                                                            >지우기</button>
+                                                                        )}
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                <div style={{ fontSize: '11px', color: '#AAA', textAlign: 'center', padding: '10px 0' }}>성도님의 첫 번째 기도 격려 댓글을 달아주세요! ❤️</div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* 댓글 작성창 */}
+                                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                                            <input 
+                                                                type="text" 
+                                                                value={prayerCommentInput[req.id] || ''}
+                                                                onChange={(e) => setPrayerCommentInput(prev => ({ ...prev, [req.id]: e.target.value }))}
+                                                                placeholder="기도와 사랑이 가득한 격려를 적어주세요..." 
+                                                                style={{ flex: 1, padding: '10px 12px', borderRadius: '8px', border: '1px solid #E0E0E0', fontSize: '12px', outline: 'none' }}
                                                             />
-                                                            <div style={{ display: 'flex', gap: '5px' }}>
-                                                                <button onClick={async () => {
+                                                            <button 
+                                                                onClick={async () => {
+                                                                    const text = prayerCommentInput[req.id];
+                                                                    if (!text?.trim()) return;
                                                                     try {
+                                                                        const finalName = profileName || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "성도";
+                                                                        const commentObj = {
+                                                                            id: Date.now().toString(),
+                                                                            user_id: user?.id,
+                                                                            user_name: finalName,
+                                                                            content: text,
+                                                                            created_at: new Date().toISOString()
+                                                                        };
                                                                         const r = await fetch('/api/counseling', {
                                                                             method: 'PATCH',
                                                                             headers: { 'Content-Type': 'application/json' },
-                                                                            body: JSON.stringify({ id: req.id, user_reply: editCounselingContent, overwrite: true })
+                                                                            body: JSON.stringify({ id: req.id, action: 'comment', comment: commentObj })
                                                                         });
                                                                         if (r.ok) {
                                                                             const updated = await r.json();
                                                                             setCounselingRequests(counselingRequests.map(c => c.id === req.id ? updated : c));
-                                                                            setEditingCounselingId(null);
-                                                                            setEditingCounselingField(null);
+                                                                            setPrayerCommentInput(prev => ({ ...prev, [req.id]: '' }));
                                                                         }
-                                                                    } catch (e) { }
-                                                                }} style={{ flex: 1, padding: '5px', background: '#333', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}>저장</button>
-                                                                <button onClick={() => { setEditingCounselingId(null); setEditingCounselingField(null); }} style={{ flex: 1, padding: '5px', background: '#EEE', color: '#666', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}>취소</button>
-                                                            </div>
+                                                                    } catch (e) {}
+                                                                }}
+                                                                style={{ padding: '8px 12px', background: '#2E7D32', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}
+                                                            >
+                                                                등록
+                                                            </button>
                                                         </div>
-                                                    ) : (
-                                                        <div style={{ fontSize: '13px', color: '#555', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{req.user_reply}</div>
-                                                    )}
-                                                </div>
-                                            )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                                                비공개글 1:1 목양 소통 영역 (기존)
+                                                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+                                            <div>
+                                                {req.reply ? (
+                                                    <div style={{ background: '#F5F5F5', padding: '15px', borderRadius: '10px', marginTop: '10px' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                                                            <div style={{ fontWeight: 800, fontSize: '13px', color: '#1A5D55' }}>↳ 담임목사님 비밀답변</div>
+                                                            {isMainAdmin && (
+                                                                <button onClick={() => {
+                                                                    setEditingCounselingId(req.id);
+                                                                    setEditingCounselingField('reply');
+                                                                    setEditCounselingContent(req.reply);
+                                                                }} style={{ background: 'none', border: 'none', color: '#1A5D55', cursor: 'pointer', fontSize: '11px', fontWeight: 700 }}>수정</button>
+                                                            )}
+                                                        </div>
+                                                        {editingCounselingId === req.id && editingCounselingField === 'reply' ? (
+                                                            <div>
+                                                                <textarea
+                                                                    value={editCounselingContent}
+                                                                    onChange={(e: any) => setEditCounselingContent(e.target.value)}
+                                                                    style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '2px solid #1A5D55', fontSize: '13px', minHeight: '80px', marginBottom: '5px', outline: 'none' }}
+                                                                />
+                                                                <div style={{ display: 'flex', gap: '5px', marginBottom: '10px' }}>
+                                                                    <button onClick={async () => {
+                                                                        try {
+                                                                            const r = await fetch('/api/counseling', {
+                                                                                method: 'PATCH',
+                                                                                headers: { 'Content-Type': 'application/json' },
+                                                                                body: JSON.stringify({ id: req.id, reply: editCounselingContent, overwrite: true })
+                                                                            });
+                                                                            if (r.ok) {
+                                                                                const updated = await r.json();
+                                                                                setCounselingRequests(counselingRequests.map(c => c.id === req.id ? updated : c));
+                                                                                setEditingCounselingId(null);
+                                                                                setEditingCounselingField(null);
+                                                                            }
+                                                                        } catch (e) { }
+                                                                    }} style={{ flex: 1, padding: '5px', background: '#1A5D55', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}>저장</button>
+                                                                    <button onClick={() => { setEditingCounselingId(null); setEditingCounselingField(null); }} style={{ flex: 1, padding: '5px', background: '#EEE', color: '#666', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}>취소</button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div style={{ fontSize: '14px', color: '#444', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{req.reply}</div>
+                                                        )}
 
-                                            {/* 성도 추가 답글 입력창 (목사님 답변은 있는데 성도가 추가로 할 말이 있을 때) */}
-                                            {!isMainAdmin && user?.id === req.user_id && (
-                                                <div style={{ marginTop: '10px' }}>
-                                                    <textarea
-                                                        value={userCounselingReplyInput[req.id] || ''}
-                                                        onChange={(e: any) => setUserCounselingReplyInput((prev: any) => ({ ...prev, [req.id]: e.target.value }))}
-                                                        placeholder="목사님 답변에 대한 답글을 남겨주세요."
-                                                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', minHeight: '60px', fontSize: '13px', marginBottom: '5px', outline: 'none' }}
-                                                    />
-                                                    <button
-                                                        disabled={submittingUserReplyId === req.id}
-                                                        onClick={async () => {
-                                                            const content = userCounselingReplyInput[req.id];
-                                                            if (!content?.trim() || submittingUserReplyId === req.id) return;
-                                                            setSubmittingUserReplyId(req.id);
-                                                            try {
-                                                                const r = await fetch('/api/counseling', {
-                                                                    method: 'PATCH',
-                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({
-                                                                        id: req.id,
-                                                                        user_reply: content,
-                                                                        user_name: profileName || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '익명의 성도'
-                                                                    })
-                                                                });
-                                                                if (r.ok) {
-                                                                    const updated = await r.json();
-                                                                    setCounselingRequests(counselingRequests.map(c => c.id === req.id ? updated : c));
-                                                                    setUserCounselingReplyInput({ ...userCounselingReplyInput, [req.id]: '' });
-                                                                    alert("답글이 목사님께 전달되었습니다.");
+                                                        {/* 성도 추가 답글 표시 */}
+                                                        {req.user_reply && (
+                                                            <div style={{ background: 'white', padding: '12px', borderRadius: '8px', marginTop: '10px', border: '1px solid #EEE' }}>
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                                                    <div style={{ fontWeight: 800, fontSize: '12px', color: '#333' }}>💬 성도님 추가 답글</div>
+                                                                    {!isMainAdmin && isPostOwner && (
+                                                                        <button onClick={() => {
+                                                                            setEditingCounselingId(req.id);
+                                                                            setEditingCounselingField('user_reply');
+                                                                            setEditCounselingContent(req.user_reply);
+                                                                        }} style={{ background: 'none', border: 'none', color: '#B8924A', cursor: 'pointer', fontSize: '11px', fontWeight: 700 }}>수정</button>
+                                                                    )}
+                                                                </div>
+                                                                {editingCounselingId === req.id && editingCounselingField === 'user_reply' ? (
+                                                                    <div>
+                                                                        <textarea
+                                                                            value={editCounselingContent}
+                                                                            onChange={(e: any) => setEditCounselingContent(e.target.value)}
+                                                                            style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '2px solid #B8924A', fontSize: '13px', minHeight: '80px', marginBottom: '5px', outline: 'none' }}
+                                                                        />
+                                                                        <div style={{ display: 'flex', gap: '5px' }}>
+                                                                            <button onClick={async () => {
+                                                                                try {
+                                                                                    const r = await fetch('/api/counseling', {
+                                                                                        method: 'PATCH',
+                                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                                        body: JSON.stringify({ id: req.id, user_reply: editCounselingContent, overwrite: true })
+                                                                                    });
+                                                                                    if (r.ok) {
+                                                                                        const updated = await r.json();
+                                                                                        setCounselingRequests(counselingRequests.map(c => c.id === req.id ? updated : c));
+                                                                                        setEditingCounselingId(null);
+                                                                                        setEditingCounselingField(null);
+                                                                                    }
+                                                                                } catch (e) { }
+                                                                            }} style={{ flex: 1, padding: '5px', background: '#333', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}>저장</button>
+                                                                            <button onClick={() => { setEditingCounselingId(null); setEditingCounselingField(null); }} style={{ flex: 1, padding: '5px', background: '#EEE', color: '#666', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '11px', cursor: 'pointer' }}>취소</button>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div style={{ fontSize: '13px', color: '#555', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{req.user_reply}</div>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {/* 성도 추가 답글 입력창 (목사님 답변은 있는데 성도가 추가로 할 말이 있을 때) */}
+                                                        {!isMainAdmin && isPostOwner && (
+                                                            <div style={{ marginTop: '10px' }}>
+                                                                <textarea
+                                                                    value={userCounselingReplyInput[req.id] || ''}
+                                                                    onChange={(e: any) => setUserCounselingReplyInput((prev: any) => ({ ...prev, [req.id]: e.target.value }))}
+                                                                    placeholder="목사님 답변에 대한 답글을 남겨주세요."
+                                                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', minHeight: '60px', fontSize: '13px', marginBottom: '5px', outline: 'none' }}
+                                                                />
+                                                                <button
+                                                                    disabled={submittingUserReplyId === req.id}
+                                                                    onClick={async () => {
+                                                                        const content = userCounselingReplyInput[req.id];
+                                                                        if (!content?.trim() || submittingUserReplyId === req.id) return;
+                                                                        setSubmittingUserReplyId(req.id);
+                                                                        try {
+                                                                            const r = await fetch('/api/counseling', {
+                                                                                method: 'PATCH',
+                                                                                headers: { 'Content-Type': 'application/json' },
+                                                                                body: JSON.stringify({
+                                                                                    id: req.id,
+                                                                                    user_reply: content,
+                                                                                    user_name: profileName || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '익명의 성도'
+                                                                                })
+                                                                            });
+                                                                            if (r.ok) {
+                                                                                const updated = await r.json();
+                                                                                setCounselingRequests(counselingRequests.map(c => c.id === req.id ? updated : c));
+                                                                                setUserCounselingReplyInput({ ...userCounselingReplyInput, [req.id]: '' });
+                                                                                alert("답글이 목사님께 전달되었습니다.");
+                                                                            }
+                                                                        } catch (e) {
+                                                                        } finally {
+                                                                            setSubmittingUserReplyId(null);
+                                                                        }
+                                                                    }}
+                                                                    style={{ width: '100%', padding: '8px', background: submittingUserReplyId === req.id ? '#999' : '#333', color: 'white', borderRadius: '8px', border: 'none', fontWeight: 700, fontSize: '12px', cursor: submittingUserReplyId === req.id ? 'default' : 'pointer' }}
+                                                                >
+                                                                    {submittingUserReplyId === req.id ? '전송 중...' : '목사님께 답글 보내기'}
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : isMainAdmin ? (
+                                                    <div style={{ marginTop: '10px', background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '10px', padding: '10px' }}>
+                                                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#999', marginBottom: '8px' }}>답변을 등록하면 성도에게 푸시 알림이 즉시 전송됩니다.</div>
+                                                        <textarea value={counselingReplyInput[req.id] || ''} onChange={(e: any) => setCounselingReplyInput((prev: any) => ({ ...prev, [req.id]: e.target.value }))} placeholder="답변을 작성해주세요." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', minHeight: '80px', fontSize: '13px', marginBottom: '8px', outline: 'none' }} />
+                                                        <button
+                                                            disabled={submittingReplyId === req.id}
+                                                            onClick={async () => {
+                                                                const replyContent = counselingReplyInput[req.id];
+                                                                if (!replyContent?.trim() || submittingReplyId === req.id) return;
+                                                                setSubmittingReplyId(req.id);
+                                                                try {
+                                                                    const r = await fetch('/api/counseling', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: req.id, reply: replyContent, admin_name: adminInfo?.name }) });
+                                                                    if (r.ok) {
+                                                                        const updated = await r.json();
+                                                                        setCounselingRequests(counselingRequests.map(c => c.id === req.id ? updated : c));
+                                                                        setCounselingReplyInput(prev => ({ ...prev, [req.id]: '' }));
+                                                                        alert("답변이 전송되었습니다.");
+                                                                    } else {
+                                                                        const errorData = await r.json().catch(() => ({}));
+                                                                        alert(`답변 전송에 실패했습니다: ${errorData.error || '알 수 없는 오류'}`);
+                                                                    }
+                                                                } catch (e) {
+                                                                } finally {
+                                                                    setSubmittingReplyId(null);
                                                                 }
-                                                            } catch (e) {
-                                                            } finally {
-                                                                setSubmittingUserReplyId(null);
-                                                            }
-                                                        }}
-                                                        style={{ width: '100%', padding: '8px', background: submittingUserReplyId === req.id ? '#999' : '#333', color: 'white', borderRadius: '8px', border: 'none', fontWeight: 700, fontSize: '12px', cursor: submittingUserReplyId === req.id ? 'default' : 'pointer' }}
-                                                    >
-                                                        {submittingUserReplyId === req.id ? '전송 중...' : '목사님께 답글 보내기'}
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ) : isMainAdmin ? (
-                                        <div style={{ marginTop: '10px', background: '#FDFCFB', border: '1px solid #EEE', borderRadius: '10px', padding: '10px' }}>
-                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#999', marginBottom: '8px' }}>답변을 등록하면 성도에게 푸시 알림이 즉시 전송됩니다.</div>
-                                            <textarea value={counselingReplyInput[req.id] || ''} onChange={(e: any) => setCounselingReplyInput((prev: any) => ({ ...prev, [req.id]: e.target.value }))} placeholder="답변을 작성해주세요." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #DDD', minHeight: '80px', fontSize: '13px', marginBottom: '8px', outline: 'none' }} />
-                                            <button
-                                                disabled={submittingReplyId === req.id}
-                                                onClick={async () => {
-                                                    const replyContent = counselingReplyInput[req.id];
-                                                    if (!replyContent?.trim() || submittingReplyId === req.id) return;
-                                                    setSubmittingReplyId(req.id);
-                                                    try {
-                                                        const r = await fetch('/api/counseling', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: req.id, reply: replyContent, admin_name: adminInfo?.name }) });
-                                                        if (r.ok) {
-                                                            const updated = await r.json();
-                                                            setCounselingRequests(counselingRequests.map(c => c.id === req.id ? updated : c));
-                                                            // ✅ 입력창 초기화
-                                                            setCounselingReplyInput(prev => ({ ...prev, [req.id]: '' }));
-                                                            alert("답변이 전송되었습니다.");
-                                                        } else {
-                                                            const errorData = await r.json().catch(() => ({}));
-                                                            alert(`답변 전송에 실패했습니다: ${errorData.error || '알 수 없는 오류'}`);
-                                                        }
-                                                    } catch (e) {
-                                                    } finally {
-                                                        setSubmittingReplyId(null);
-                                                    }
-                                                }}
-                                                style={{ width: '100%', padding: '10px', background: submittingReplyId === req.id ? '#999' : '#1A5D55', color: 'white', borderRadius: '8px', border: 'none', fontWeight: 700, fontSize: '13px', cursor: submittingReplyId === req.id ? 'default' : 'pointer' }}
-                                            >
-                                                {submittingReplyId === req.id ? '답변 전송 중...' : '답변 등록 완료 작성하기 (성도에게 알림 전송)'}
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div style={{ fontSize: '13px', color: '#999', marginTop: '10px', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <span>⏳</span> 목사님께서 확인 후 답변을 주실 예정입니다...
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                                                            }}
+                                                            style={{ width: '100%', padding: '10px', background: submittingReplyId === req.id ? '#999' : '#1A5D55', color: 'white', borderRadius: '8px', border: 'none', fontWeight: 700, fontSize: '13px', cursor: submittingReplyId === req.id ? 'default' : 'pointer' }}
+                                                        >
+                                                            {submittingReplyId === req.id ? '답변 전송 중...' : '답변 등록 완료 작성하기 (성도에게 알림 전송)'}
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div style={{ fontSize: '13px', color: '#999', marginTop: '10px', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        <span>⏳</span> 목사님께서 확인 후 답변을 주실 예정입니다...
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                             {counselingRequests.length === 0 && (
                                 <div style={{ textAlign: 'center', color: '#999', padding: '30px 0', fontSize: '14px' }}>
-                                    아직 접수된 요청이 없습니다.
+                                    아직 접수된 기도제목이 없습니다.
                                 </div>
                             )}
                         </div>
                     </div>
-                </div >
+                </div>
             );
         }
 
