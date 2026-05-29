@@ -7890,97 +7890,95 @@ export default function App() {
                     </div>
 
                     <div style={{ padding: '20px', flex: 1, overflowY: 'auto' }}>
-                        {/* 작성 폼 (메인 관리자 아닐 때만 - 부관리자 포함) */}
-                        {!isMainAdmin && (
-                            <div style={{ marginBottom: '30px', background: 'white', padding: '20px', borderRadius: '15px', border: '1px solid #EEE', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-                                <h3 style={{ fontSize: '14.5px', marginTop: 0, color: '#333', fontWeight: 800, marginBottom: '12px' }}>새 기도제목 작성하기</h3>
-                                
-                                {/* 공개 범위 선택 */}
-                                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                                    <button 
-                                        onClick={() => setIsPublicPrayer(false)} 
-                                        style={{ 
-                                            flex: 1, 
-                                            padding: '10px', 
-                                            borderRadius: '10px', 
-                                            border: '1.5px solid', 
-                                            borderColor: !isPublicPrayer ? '#2E7D32' : '#EEE', 
-                                            background: !isPublicPrayer ? '#E8F5E9' : 'white', 
-                                            color: !isPublicPrayer ? '#2E7D32' : '#666', 
-                                            fontSize: '11.5px', 
-                                            fontWeight: 800, 
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s'
-                                        }}
-                                    >
-                                        🔒 목회자공개
-                                    </button>
-                                    <button 
-                                        onClick={() => setIsPublicPrayer(true)} 
-                                        style={{ 
-                                            flex: 1, 
-                                            padding: '10px', 
-                                            borderRadius: '10px', 
-                                            border: '1.5px solid', 
-                                            borderColor: isPublicPrayer ? '#2E7D32' : '#EEE', 
-                                            background: isPublicPrayer ? '#E8F5E9' : 'white', 
-                                            color: isPublicPrayer ? '#2E7D32' : '#666', 
-                                            fontSize: '11.5px', 
-                                            fontWeight: 800, 
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s'
-                                        }}
-                                    >
-                                        👥 전체공개
-                                    </button>
-                                </div>
-
-                                <textarea 
-                                    value={counselingInput} 
-                                    onChange={(e: any) => setCounselingInput(e.target.value)} 
-                                    placeholder={isPublicPrayer 
-                                        ? "성도들과 함께 나누고 싶은 기도제목을 적어주세요. 좋아요와 격려 댓글로 함께 소통할 수 있습니다. ✨" 
-                                        : "담임목사님께만 나누고 싶은 고민이나 비밀 기도제목을 적어주세요. 목사님과 성도님만 1:1로 은밀하게 기도를 나눕니다."} 
-                                    style={{ width: '100%', padding: '15px', borderRadius: '10px', border: '1px solid #DDD', minHeight: '120px', resize: 'vertical', fontSize: '14px', marginBottom: '12px', outline: 'none', lineHeight: 1.5 }} 
-                                />
-
-                                <button
-                                    disabled={isSubmittingCounseling}
-                                    onClick={async () => {
-                                        if (!counselingInput.trim() || isSubmittingCounseling) return;
-                                        setIsSubmittingCounseling(true);
-                                        try {
-                                            const finalName = profileName || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "익명의 성도";
-                                            const r = await fetch('/api/counseling', { 
-                                                method: 'POST', 
-                                                headers: { 'Content-Type': 'application/json' }, 
-                                                body: JSON.stringify({ 
-                                                    user_id: user?.id, 
-                                                    user_name: finalName, 
-                                                    church_id: churchId, 
-                                                    content: counselingInput,
-                                                    is_public: isPublicPrayer
-                                                }) 
-                                            });
-                                            if (r.ok) {
-                                                const newReq = await r.json();
-                                                setCounselingRequests([newReq, ...counselingRequests]);
-                                                setCounselingInput('');
-                                                alert(isPublicPrayer 
-                                                    ? "기도제목이 전체공개로 성공적으로 게시되었습니다. 🙏" 
-                                                    : "기도제목이 목사님께 비밀 기도로 안전하게 전달되었습니다. 🔒");
-                                            }
-                                        } catch (e) {
-                                        } finally {
-                                            setIsSubmittingCounseling(false);
-                                        }
+                        {/* 작성 폼 (모든 성도 및 목회자 가능) */}
+                        <div style={{ marginBottom: '30px', background: 'white', padding: '20px', borderRadius: '15px', border: '1px solid #EEE', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                            <h3 style={{ fontSize: '14.5px', marginTop: 0, color: '#333', fontWeight: 800, marginBottom: '12px' }}>새 기도제목 작성하기</h3>
+                            
+                            {/* 공개 범위 선택 */}
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                                <button 
+                                    onClick={() => setIsPublicPrayer(false)} 
+                                    style={{ 
+                                        flex: 1, 
+                                        padding: '10px', 
+                                        borderRadius: '10px', 
+                                        border: '1.5px solid', 
+                                        borderColor: !isPublicPrayer ? '#2E7D32' : '#EEE', 
+                                        background: !isPublicPrayer ? '#E8F5E9' : 'white', 
+                                        color: !isPublicPrayer ? '#2E7D32' : '#666', 
+                                        fontSize: '11.5px', 
+                                        fontWeight: 800, 
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
                                     }}
-                                    style={{ width: '100%', padding: '14px', background: isSubmittingCounseling ? '#999' : '#2E7D32', color: 'white', borderRadius: '10px', border: 'none', fontWeight: 700, cursor: isSubmittingCounseling ? 'default' : 'pointer', boxShadow: '0 4px 10px rgba(46,125,50,0.15)' }}
                                 >
-                                    {isSubmittingCounseling ? '전송 중...' : isPublicPrayer ? '기도제목 나누기 👥' : '비밀기도 요청하기 🔒'}
+                                    🔒 목회자공개
+                                </button>
+                                <button 
+                                    onClick={() => setIsPublicPrayer(true)} 
+                                    style={{ 
+                                        flex: 1, 
+                                        padding: '10px', 
+                                        borderRadius: '10px', 
+                                        border: '1.5px solid', 
+                                        borderColor: isPublicPrayer ? '#2E7D32' : '#EEE', 
+                                        background: isPublicPrayer ? '#E8F5E9' : 'white', 
+                                        color: isPublicPrayer ? '#2E7D32' : '#666', 
+                                        fontSize: '11.5px', 
+                                        fontWeight: 800, 
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    👥 전체공개
                                 </button>
                             </div>
-                        )}
+
+                            <textarea 
+                                value={counselingInput} 
+                                onChange={(e: any) => setCounselingInput(e.target.value)} 
+                                placeholder={isPublicPrayer 
+                                    ? "성도들과 함께 나누고 싶은 기도제목을 적어주세요. 좋아요와 격려 댓글로 함께 소통할 수 있습니다. ✨" 
+                                    : "나누고 싶은 고민이나 비밀 기도제목을 적어주세요. 목사님과 성도님만 1:1로 은밀하게 기도를 나눕니다."} 
+                                style={{ width: '100%', padding: '15px', borderRadius: '10px', border: '1px solid #DDD', minHeight: '120px', resize: 'vertical', fontSize: '14px', marginBottom: '12px', outline: 'none', lineHeight: 1.5 }} 
+                            />
+
+                            <button
+                                disabled={isSubmittingCounseling}
+                                onClick={async () => {
+                                    if (!counselingInput.trim() || isSubmittingCounseling) return;
+                                    setIsSubmittingCounseling(true);
+                                    try {
+                                        const finalName = profileName || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "익명의 성도";
+                                        const r = await fetch('/api/counseling', { 
+                                            method: 'POST', 
+                                            headers: { 'Content-Type': 'application/json' }, 
+                                            body: JSON.stringify({ 
+                                                user_id: user?.id, 
+                                                user_name: finalName, 
+                                                church_id: churchId, 
+                                                content: counselingInput,
+                                                is_public: isPublicPrayer
+                                            }) 
+                                        });
+                                        if (r.ok) {
+                                            const newReq = await r.json();
+                                            setCounselingRequests([newReq, ...counselingRequests]);
+                                            setCounselingInput('');
+                                            alert(isPublicPrayer 
+                                                ? "기도제목이 전체공개로 성공적으로 게시되었습니다. 🙏" 
+                                                : "기도제목이 비밀 기도로 안전하게 전달되었습니다. 🔒");
+                                        }
+                                    } catch (e) {
+                                    } finally {
+                                        setIsSubmittingCounseling(false);
+                                    }
+                                }}
+                                style={{ width: '100%', padding: '14px', background: isSubmittingCounseling ? '#999' : '#2E7D32', color: 'white', borderRadius: '10px', border: 'none', fontWeight: 700, cursor: isSubmittingCounseling ? 'default' : 'pointer', boxShadow: '0 4px 10px rgba(46,125,50,0.15)' }}
+                            >
+                                {isSubmittingCounseling ? '전송 중...' : isPublicPrayer ? '기도제목 나누기 👥' : '비밀기도 요청하기 🔒'}
+                            </button>
+                        </div>
 
                         {/* 요청 목록 */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -7992,7 +7990,7 @@ export default function App() {
                                     <div key={req.id} style={{ background: 'white', padding: '18px', borderRadius: '20px', border: '1px solid #EEE', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <strong style={{ fontSize: '14px', color: '#333' }}>{req.user_name} 성도</strong>
+                                                <strong style={{ fontSize: '14px', color: '#333' }}>{req.user_name}</strong>
                                                 {/* 공개 여부 뱃지 */}
                                                 <span style={{ 
                                                     fontSize: '9.5px', 
