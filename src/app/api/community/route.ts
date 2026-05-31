@@ -50,6 +50,24 @@ export async function POST(req: NextRequest) {
         const { user_id, user_name, avatar_url, content, church_id, is_private, is_qt } = body;
         const cid = church_id || 'jesus-in';
 
+        // 🚨 [중복 등록 방지] 동일 사용자, 동일 내용이 30초 이내에 이미 작성되었는지 검사 (Idempotency)
+        if (user_id && content) {
+            const thirtySecondsAgo = new Date(Date.now() - 30 * 1000).toISOString();
+            const { data: existingPost, error: checkError } = await supabaseAdmin
+                .from('community_posts')
+                .select('*')
+                .eq('user_id', user_id)
+                .eq('content', content)
+                .gt('created_at', thirtySecondsAgo)
+                .limit(1)
+                .maybeSingle();
+
+            if (!checkError && existingPost) {
+                console.log(`[POST] 중복 등록 요청 차단. 기존 글 반환: id=${existingPost.id}`);
+                return NextResponse.json(existingPost);
+            }
+        }
+
         const { data, error } = await supabaseAdmin
             .from('community_posts')
             .insert([{
@@ -101,7 +119,8 @@ export async function POST(req: NextRequest) {
                         });
                         return webpush.sendNotification(sub.subscription, payload).catch(e => { });
                     });
-                    await Promise.allSettled(pushPromises);
+                    // 푸시 발송은 await를 제거하여 백그라운드 비동기로 즉시 실행되게 함 (사용자 대기시간 단축 및 중복 등록 유발 방지)
+                    Promise.allSettled(pushPromises);
                 }
 
                 // DB 알림
