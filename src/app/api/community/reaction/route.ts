@@ -67,16 +67,27 @@ export async function POST(req: NextRequest) {
         // 3. 좋아요 추가 시 작성자에게 알림 발송 (취소가 아닐 때만)
         if (finalIsLiked && !isCurrentlyLiked && user_id !== updated.user_id) {
             try {
+                // 실명 조회
+                let actorName = '성도';
+                const { data: profile } = await supabaseAdmin
+                    .from('profiles')
+                    .select('full_name')
+                    .eq('id', user_id)
+                    .single();
+                if (profile?.full_name) {
+                    actorName = profile.full_name;
+                }
+
                 const title = type === 'community' ? '❤️ 새로운 좋아요' : '❤️ 감사일기 응원';
                 const body = type === 'community'
-                    ? `${user_id.slice(0, 5)}...님이 회원님의 글을 좋아합니다.`
-                    : `${user_id.slice(0, 5)}...님이 회원님의 감사일기에 공감했습니다.`;
+                    ? `${actorName}님이 회원님의 글을 좋아합니다.`
+                    : `${actorName}님이 회원님의 감사일기에 공감했습니다.`;
 
                 // DB 알림 추가
                 await supabaseAdmin.from('notifications').insert({
                     user_id: updated.user_id,
                     type: type === 'community' ? 'community_like' : 'thanksgiving_like',
-                    actor_name: '누군가', // 실명을 가져오려면 profiles 조인이 필요하지만 여기서는 간단히
+                    actor_name: actorName,
                     post_id: post_id,
                     is_read: false
                 });
