@@ -3960,16 +3960,17 @@ export default function App() {
             };
 
             return (
-                <div style={{
-                    minHeight: "100vh",
-                    background: "white",
-                    maxWidth: "600px",
-                    margin: "0 auto",
-                    ...baseFont,
-                    position: 'relative',
-                    paddingTop: 'env(safe-area-inset-top)'
-                }}>
-                    {styles}
+                <>
+                    <div style={{
+                        minHeight: "100vh",
+                        background: "white",
+                        maxWidth: "600px",
+                        margin: "0 auto",
+                        ...baseFont,
+                        position: 'relative',
+                        paddingTop: 'env(safe-area-inset-top)'
+                    }}>
+                        {styles}
                     {/* Header */}
                     <div style={{
                         padding: "12px 20px",
@@ -4203,9 +4204,25 @@ export default function App() {
                             )}
                         </div>
                     </div>
+                </div>
 
-                    {/* Footer Fix Action Button */}
-                    <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '600px', padding: '15px 20px', background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', borderTop: '1px solid #EEE', boxSizing: 'border-box' }}>
+                {/* Footer Fix Action Button */}
+                <div style={{
+                    position: 'fixed',
+                    bottom: 0,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: '100%',
+                    maxWidth: '600px',
+                    padding: '15px 20px',
+                    background: 'rgba(255,255,255,0.9)',
+                    backdropFilter: 'blur(10px)',
+                    borderTop: '1px solid #EEE',
+                    boxSizing: 'border-box',
+                    zIndex: 90,
+                    zoom: fontScale,
+                    fontFamily: 'inherit'
+                }}>
                         {qtStep === 'read' && (
                             <button onClick={() => setQtStep('interpret')} style={{ width: '100%', padding: '16px', background: '#333', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 700, cursor: 'pointer' }}>말씀 해설 보기</button>
                         )}
@@ -4291,7 +4308,9 @@ export default function App() {
                         flexDirection: 'column',
                         gap: '12px',
                         zIndex: 100,
-                        animation: 'fade-in 0.5s ease'
+                        animation: 'fade-in 0.5s ease',
+                        zoom: fontScale,
+                        fontFamily: 'inherit'
                     }}>
                         <button
                             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -4324,7 +4343,7 @@ export default function App() {
                             ←
                         </button>
                     </div>
-                </div >
+                </>
 
             );
         }
