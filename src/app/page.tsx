@@ -8,7 +8,7 @@ import { getDailyPsalm, getRandomPsalm } from '@/lib/psalm-verses';
 import * as XLSX from 'xlsx';
 import FamilyTree from "@/components/FamilyTree";
 
-type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "adminGuide" | "brandGuide" | "profile" | "memberSearch" | "book" | "pastorColumn" | "gallery";
+type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "statsManage" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "adminGuide" | "brandGuide" | "profile" | "memberSearch" | "book" | "pastorColumn" | "gallery" | "churchSettings" | "memberManage" | "pastoralInsightsManage" | "galleryManage" | "adminManage" | "dataReset" | "masterManage";
 
 const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://lfjrfyylsxhvwosdpujv.supabase.co/storage/v1/object/public/church-assets/jesus-in-logo.png";
@@ -410,6 +410,8 @@ export default function App() {
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [view, setView] = useState<View>("home");
     const [memberList, setMemberList] = useState<any[]>([]); // ✅ 성도 목록
+    const [statsTab, setStatsTab] = useState<"activity" | "demographics">("activity"); // ✅ 관리자 통계 탭
+    const [showAllRankings, setShowAllRankings] = useState(false); // ✅ 출석/완주 랭킹 더보기 여부
 
     const [showBirthdayPopup, setShowBirthdayPopup] = useState(false); // ✅ 생일 팝업 노출 여부
     const [todayBirthdayMembers, setTodayBirthdayMembers] = useState<any[]>([]); // ✅ 오늘 생일인 성도 목록
@@ -6351,8 +6353,14 @@ export default function App() {
 
                             <button onClick={async () => {
                                 setView('statsManage');
+                                setStatsTab('activity');
+                                setShowAllRankings(false);
                                 setIsAdminsLoading(true);
                                 try {
+                                    const mRes = await fetch(`/api/admin?action=list_members&church_id=${churchId}`);
+                                    const mData = await mRes.json();
+                                    if (Array.isArray(mData)) setMemberList(mData);
+
                                     const res = await fetch(`/api/stats?church_id=${churchId || 'jesus-in'}&t=${Date.now()}`);
                                     const data = await res.json();
                                     if (data) setStats(data);
@@ -7127,37 +7135,107 @@ export default function App() {
                         <button onClick={() => setView('admin')} style={{ background: "white", border: "1px solid #EEE", borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: "16px", cursor: "pointer", color: '#333' }}>←</button>
                         <div style={{ fontWeight: 900, color: "#333", fontSize: "16px", flex: 1 }}>📊 활동 및 출석 통계</div>
                     </div>
-                    <div style={{ padding: '20px' }}>
+
+                    {/* 탭 네비게이션 */}
+                    <div style={{ display: 'flex', background: '#F5F5F5', padding: '4px', borderRadius: '12px', margin: '15px 20px 10px 20px' }}>
+                        <button 
+                            onClick={() => setStatsTab('activity')} 
+                            style={{ 
+                                flex: 1, padding: '10px', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, 
+                                background: statsTab === 'activity' ? 'white' : 'transparent', 
+                                boxShadow: statsTab === 'activity' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none', 
+                                cursor: 'pointer', color: statsTab === 'activity' ? '#333' : '#777', transition: 'all 0.2s' 
+                            }}
+                        >
+                            📊 활동/출석
+                        </button>
+                        <button 
+                            onClick={() => setStatsTab('demographics')} 
+                            style={{ 
+                                flex: 1, padding: '10px', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, 
+                                background: statsTab === 'demographics' ? 'white' : 'transparent', 
+                                boxShadow: statsTab === 'demographics' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none', 
+                                cursor: 'pointer', color: statsTab === 'demographics' ? '#333' : '#777', transition: 'all 0.2s' 
+                            }}
+                        >
+                            👥 성도 분포
+                        </button>
+                    </div>
+
+                    <div style={{ padding: '10px 20px' }}>
                         {isAdminsLoading ? (
                             <div style={{ textAlign: 'center', padding: '100px 0' }}>
                                 <div style={{ fontSize: '40px', marginBottom: '20px' }}>⏳</div>
                                 <div style={{ fontSize: '15px', color: '#666', fontWeight: 700 }}>데이터를 정밀 분석 중...</div>
                             </div>
-                        ) : (
+                        ) : statsTab === 'activity' ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                                {/* 🔝 상단 요약 카드 */}
+                                {/* 🔝 상단 요약 카드 (2x2 Grid) */}
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                                    <div style={{ background: 'white', padding: '24px 20px', borderRadius: '28px', border: '1px solid #EEE', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
-                                        <div style={{ fontSize: '11px', color: '#999', marginBottom: '8px', fontWeight: 700 }}>이번 주 묵상율</div>
-                                        <div style={{ fontSize: '28px', fontWeight: 900, color: '#2E7D32' }}>{stats?.weeklyRate || 0}%</div>
+                                    <div style={{ background: 'white', padding: '20px 16px', borderRadius: '24px', border: '1px solid #EEE', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                                        <div style={{ fontSize: '11px', color: '#999', marginBottom: '6px', fontWeight: 700 }}>이번 주 묵상율</div>
+                                        <div style={{ fontSize: '24px', fontWeight: 900, color: '#2E7D32' }}>{stats?.weeklyRate || 0}%</div>
                                         <div style={{ fontSize: '10px', color: '#4CAF50', marginTop: '4px' }}>실시간 집계</div>
                                     </div>
-                                    <div style={{ background: 'white', padding: '24px 20px', borderRadius: '28px', border: '1px solid #EEE', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
-                                        <div style={{ fontSize: '11px', color: '#999', marginBottom: '8px', fontWeight: 700 }}>정식 등록 성도</div>
-                                        <div style={{ fontSize: '28px', fontWeight: 900, color: '#1565C0' }}>{stats?.totalMembers || 0}명</div>
+                                    <div style={{ background: 'white', padding: '20px 16px', borderRadius: '24px', border: '1px solid #EEE', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                                        <div style={{ fontSize: '11px', color: '#999', marginBottom: '6px', fontWeight: 700 }}>정식 등록 성도</div>
+                                        <div style={{ fontSize: '24px', fontWeight: 900, color: '#1565C0' }}>{stats?.totalMembers || 0}명</div>
                                         <div style={{ fontSize: '10px', color: '#2196F3', marginTop: '4px' }}>교회 소속 기준</div>
+                                    </div>
+                                    <div style={{ background: 'white', padding: '20px 16px', borderRadius: '24px', border: '1px solid #EEE', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                                        <div style={{ fontSize: '11px', color: '#999', marginBottom: '6px', fontWeight: 700 }}>오늘 참여</div>
+                                        <div style={{ fontSize: '24px', fontWeight: 900, color: '#D4AF37' }}>{stats?.today?.count || 0}명</div>
+                                        <div style={{ fontSize: '10px', color: '#FBC02D', marginTop: '4px' }}>오늘 묵상 완료</div>
+                                    </div>
+                                    <div style={{ background: 'white', padding: '20px 16px', borderRadius: '24px', border: '1px solid #EEE', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                                        <div style={{ fontSize: '11px', color: '#999', marginBottom: '6px', fontWeight: 700 }}>누적 묵상합계</div>
+                                        <div style={{ fontSize: '24px', fontWeight: 900, color: '#333' }}>{stats?.totalCompletions || 0}회</div>
+                                        <div style={{ fontSize: '10px', color: '#777', marginTop: '4px' }}>전체 완료 수</div>
                                     </div>
                                 </div>
 
-                                {/* 🏆 묵상 랭킹 섹션 */}
+                                {/* ☀️ 오늘 묵상한 성도 */}
+                                <div style={{ background: 'white', padding: '28px', borderRadius: '32px', border: '1px solid #F0ECE4', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+                                    <h3 style={{ margin: '0 0 14px 0', fontSize: '15px', fontWeight: 900, color: '#333' }}>☀️ 오늘 묵상한 성도</h3>
+                                    {(stats?.today?.members?.length || 0) === 0 ? (
+                                        <div style={{ fontSize: '13px', color: '#999', textAlign: 'center', padding: '10px 0' }}>아직 오늘 묵상한 성도가 없습니다.</div>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                            {stats?.today?.members?.map((m: any, i: number) => (
+                                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#FAFAFA', padding: '6px 12px', borderRadius: '20px', border: '1px solid #EEE', fontSize: '12px', fontWeight: 600 }}>
+                                                    {m?.avatar_url ? <img src={m.avatar_url} alt="" style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover' }} /> : <span>🐑</span>}
+                                                    {m?.user_name || '성도'}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* 🏆 이달의 묵상 랭킹 */}
                                 <div style={{ background: 'white', padding: '28px', borderRadius: '32px', border: '1px solid #F0ECE4', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
                                     <div style={{ fontSize: '17px', fontWeight: 900, color: '#333', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <span>🏆 이달의 묵상 랭킹</span>
-                                        <div style={{ fontSize: '10px', background: '#FFF3E0', color: '#E65100', padding: '2px 8px', borderRadius: '10px', fontWeight: 800 }}>TOP 10</div>
+                                        <div style={{ fontSize: '10px', background: '#FFF3E0', color: '#E65100', padding: '2px 8px', borderRadius: '10px', fontWeight: 800 }}>
+                                            {showAllRankings ? `전체 (${stats?.rankings?.length || 0}명)` : 'TOP 10'}
+                                        </div>
                                     </div>
+                                    <div style={{ fontSize: '11px', color: '#999', marginBottom: '16px' }}>💡 랭킹은 매월 1일 오전 5시에 자동으로 초기화됩니다.</div>
+
+                                    {stats?.previousMonthRanking && (
+                                        <div style={{ background: '#FFFDF0', border: '1px solid #FFE082', borderRadius: '20px', padding: '16px', marginBottom: '20px' }}>
+                                            <div style={{ fontSize: '13px', fontWeight: 800, color: '#F57C00', marginBottom: '8px' }}>👑 지난달 최종 랭킹 결과</div>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                                {stats.previousMonthRanking.slice(0, 5).map((r: any, i: number) => (
+                                                    <span key={i} style={{ fontSize: '11px', background: 'white', padding: '4px 10px', borderRadius: '15px', border: '1px solid #EEE', fontWeight: 600 }}>{i + 1}위 {r.name} ({r.count}회)</span>
+                                                ))}
+                                                {stats.previousMonthRanking.length > 5 && <span style={{ fontSize: '11px', color: '#999', alignSelf: 'center' }}>...외 {stats.previousMonthRanking.length - 5}명</span>}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                        {(stats?.rankings || []).slice(0, 10).length > 0 ? (
-                                            (stats?.rankings || []).slice(0, 10).map((rank: any, idx: number) => (
+                                        {(stats?.rankings || []).length > 0 ? (
+                                            (showAllRankings ? (stats?.rankings || []) : (stats?.rankings || []).slice(0, 10)).map((rank: any, idx: number) => (
                                                 <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px', background: idx < 3 ? '#FFFDF7' : 'white', borderRadius: '18px', border: idx < 3 ? '1px solid #FFF176' : '1px solid #F5F5F5' }}>
                                                     <div style={{ width: '24px', fontSize: '15px', fontWeight: 900, color: idx === 0 ? '#D4AF37' : idx === 1 ? '#AAA' : idx === 2 ? '#CD7F32' : '#CCC', textAlign: 'center' }}>{idx + 1}</div>
                                                     <div style={{ width: '40px', height: '40px', borderRadius: '12px', overflow: 'hidden', background: '#F5F5F5', border: '1px solid #EEE' }}>
@@ -7177,9 +7255,71 @@ export default function App() {
                                             <div style={{ textAlign: 'center', padding: '40px 0', color: '#BBB', fontSize: '13px' }}>이번 달 활동 기록이 아직 없습니다.</div>
                                         )}
                                     </div>
+
+                                    {(stats?.rankings || []).length > 10 && (
+                                        <button 
+                                            onClick={() => setShowAllRankings(!showAllRankings)} 
+                                            style={{ 
+                                                marginTop: '16px', width: '100%', padding: '12px', background: '#F5F5F5', 
+                                                color: '#666', border: 'none', borderRadius: '16px', fontSize: '13px', 
+                                                fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' 
+                                            }}
+                                        >
+                                            {showAllRankings ? '접기 ▲' : `더보기 (${(stats?.rankings || []).length - 10}명) ▼`}
+                                        </button>
+                                    )}
                                 </div>
 
-                                {/* ⚡ 최근 활동 로그 (신규 추가) */}
+                                {/* 📈 최근 14일 전반적 활동 추이 */}
+                                <div style={{ background: 'white', padding: '28px', borderRadius: '32px', border: '1px solid #F0ECE4', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+                                    <div style={{ fontSize: '15px', fontWeight: 900, color: '#333', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span>📈</span> 최근 14일 전반적 활동 추이
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '100px', padding: '0 5px', marginBottom: '10px' }}>
+                                        {(stats?.loginStats?.trends || []).map((t: any, idx: number) => {
+                                            const trends = stats.loginStats?.trends || [];
+                                            const maxCount = Math.max(...trends.map((d: any) => d.count), 1);
+                                            const barHeight = (t.count / maxCount) * 80;
+                                            const isToday = t.date === new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+                                            return (
+                                                <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', height: '100%' }}>
+                                                    <div style={{ flex: 1, width: '100%', display: 'flex', alignItems: 'flex-end' }}>
+                                                        <div style={{ width: '100%', height: `${barHeight}%`, background: isToday ? 'linear-gradient(to top, #FFD700, #D4AF37)' : '#E0E0E0', borderRadius: '4px 4px 0 0', position: 'relative', transition: 'height 0.5s ease-out' }}>
+                                                            {t.count > 0 && <div style={{ position: 'absolute', top: '-15px', width: '100%', textAlign: 'center', fontSize: '9px', fontWeight: 800, color: isToday ? '#D4AF37' : '#666' }}>{t.count}</div>}
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ fontSize: '8px', color: isToday ? '#D4AF37' : '#AAA', whiteSpace: 'nowrap', transform: 'scale(0.8)', fontWeight: isToday ? 800 : 400 }}>
+                                                        {t.date.split('-')[2]}일
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* 🔥 이번 달 다수 활동 성도 (TOP 15) */}
+                                <div style={{ background: 'white', padding: '28px', borderRadius: '32px', border: '1px solid #F0ECE4', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+                                    <div style={{ fontSize: '15px', fontWeight: 900, color: '#333', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span>🔥</span> 이번 달 다수 활동 성도 (TOP 15)
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                                        {(stats?.loginStats?.topUsers || []).length > 0 ? (
+                                            (stats?.loginStats?.topUsers || []).map((u: any, i: number) => (
+                                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: i < 3 ? '#FFF9E6' : '#F8F9FA', borderRadius: '12px', border: i < 3 ? '1px solid #FFE082' : '1px solid #F0F0F0' }}>
+                                                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        <span style={{ color: i < 3 ? '#D4AF37' : '#999', marginRight: '4px' }}>{i + 1}</span>{u.name}
+                                                    </div>
+                                                    <div style={{ fontSize: '11px', fontWeight: 800, color: i < 3 ? '#D4AF37' : '#666' }}>{u.count}회</div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div style={{ gridColumn: 'span 2', fontSize: '12px', color: '#999', textAlign: 'center', padding: '10px' }}>활동 기록이 없습니다.</div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* ⚡ 실시간 활동 정보 */}
                                 <div style={{ background: 'white', padding: '28px', borderRadius: '32px', border: '1px solid #F0ECE4', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
                                     <div style={{ fontSize: '17px', fontWeight: 900, color: '#333', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <span>⚡ 실시간 활동 정보</span>
@@ -7208,6 +7348,16 @@ export default function App() {
                                             <div style={{ textAlign: 'center', padding: '40px 0', color: '#BBB', fontSize: '13px' }}>최근 활동 내역이 없습니다.</div>
                                         )}
                                     </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                {/* (1) 성도 분포 통계 - StatsView 컴포넌트 활용 */}
+                                <div style={{ background: 'white', padding: '24px', borderRadius: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #EEE' }}>
+                                    <div style={{ fontSize: '15px', fontWeight: 900, color: '#333', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ fontSize: '20px' }}>📊</span> 성도 구성 통계
+                                    </div>
+                                    <StatsView memberList={memberList} />
                                 </div>
                             </div>
                         )}
