@@ -552,7 +552,7 @@ export default function App() {
     // [전략] 마스터이거나, adminInfo에 권한이 있으면 관리자로 인정 (소속 불일치 시에도 버튼은 보여줌)
     const isAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && (adminInfo.role === 'super_admin' || ['church_admin', 'sub_admin', 'admin'].includes(adminInfo.role)));
     const isSuperAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && adminInfo.role === 'super_admin');
-    const isMainAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && (adminInfo.role === 'super_admin' || ((adminInfo.role === 'church_admin' || adminInfo.role === 'admin') && normalizeId(adminInfo.church_id) === normalizeId(churchId))));
+    const isMainAdmin = isHardcodedAdmin || isMasterName || (!!adminInfo && (adminInfo.role === 'super_admin' || ((adminInfo.role === 'church_admin' || adminInfo.role === 'admin' || adminInfo.role === 'sub_admin') && normalizeId(adminInfo.church_id) === normalizeId(churchId))));
     const [editingPostId, setEditingPostId] = useState<any>(null);
     const [editContent, setEditContent] = useState("");
     const [editingCommentId, setEditingCommentId] = useState<any>(null);
@@ -684,7 +684,7 @@ export default function App() {
     const [hasNewGallery, setHasNewGallery] = useState(false);
 
     // ✅ 상담 알림Derivation (실시간 알림 목록에서 계산)
-    const hasNewCounseling = notifications.some(n => !n.is_read && ['counseling_reply', 'counseling_req', 'counseling_user_reply'].includes(n.type));
+    const hasNewCounseling = notifications.some(n => !n.is_read && ['counseling_reply', 'counseling_req', 'counseling_user_reply', 'counseling_public_req'].includes(n.type));
 
     const [churchSettings, setChurchSettings] = useState<any>({
         church_name: CHURCH_NAME,
@@ -3489,8 +3489,10 @@ export default function App() {
                                     <button onClick={async () => {
                                         setView('counseling');
                                         const counselingNotis = notifications.filter(n => !n.is_read && (
-                                            isMainAdmin ? (n.type === 'counseling_req' || n.type === 'counseling_user_reply')
-                                                : (n.type === 'counseling_reply')
+                                            n.type === 'counseling_public_req' || (
+                                                isMainAdmin ? (n.type === 'counseling_req' || n.type === 'counseling_user_reply')
+                                                    : (n.type === 'counseling_reply')
+                                            )
                                         ));
                                         for (const n of counselingNotis) {
                                             fetch('/api/notifications', { method: 'PATCH', body: JSON.stringify({ id: n.id }) });
@@ -3521,8 +3523,10 @@ export default function App() {
                                         <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🙏</div>
                                         <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>나의 기도제목</span>
                                         {notifications.some(n => !n.is_read && (
-                                            isMainAdmin ? (n.type === 'counseling_req' || n.type === 'counseling_user_reply')
-                                                : (n.type === 'counseling_reply')
+                                            n.type === 'counseling_public_req' || (
+                                                isMainAdmin ? (n.type === 'counseling_req' || n.type === 'counseling_user_reply')
+                                                    : (n.type === 'counseling_reply')
+                                            )
                                         )) && (
                                                 <div style={{ position: 'absolute', top: '2px', right: '2px', background: '#FF3D00', color: 'white', fontSize: '10px', fontWeight: 900, padding: '1px 5px', borderRadius: '10px', border: '1px solid white' }}>N</div>
                                             )}
@@ -8719,7 +8723,8 @@ export default function App() {
                                             {n.type === 'counseling_req' && <>🙏 새로운 <strong>비밀 기도제목</strong>이 도착했습니다.</>}
                                             {n.type === 'counseling_user_reply' && <>💬 <strong>{n.resolved_name}</strong> 성도님이 기도글에 추가 답글을 남기셨습니다.</>}
                                             {n.type === 'counseling_reply' && <>🙏 <strong>목사님</strong>의 기도 답변이 도착했습니다. 확인해 보세요.</>}
-                                            {(!['birthday', 'comment', 'community_post', 'counseling_req', 'counseling_user_reply', 'counseling_reply'].includes(n.type)) && <><strong>{n.resolved_name}</strong>님이 새로운 소식을 보내셨습니다.</>}
+                                            {n.type === 'counseling_public_req' && <>🙏 <strong>{n.resolved_name}</strong>님이 새로운 기도제목을 나누셨습니다.</>}
+                                            {(!['birthday', 'comment', 'community_post', 'counseling_req', 'counseling_user_reply', 'counseling_reply', 'counseling_public_req'].includes(n.type)) && <><strong>{n.resolved_name}</strong>님이 새로운 소식을 보내셨습니다.</>}
                                         </div>
                                     </div>
                                 </div>

@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
         if (!(is_public ?? false)) {
             const { data: admins } = await supabaseAdmin.from('app_admins')
                 .select('email, role, church_id')
-                .in('role', ['church_admin', 'super_admin']);
+                .in('role', ['church_admin', 'super_admin', 'sub_admin']);
 
             const targetAdminsEmails = (admins || [])
                 .filter(a => a.role === 'super_admin' || a.church_id === (church_id || 'jesus-in'))
@@ -120,6 +120,46 @@ export async function POST(req: NextRequest) {
                         }
                     }
                 }
+            }
+        } else {
+            // 전체공개로 올렸을 때 알림 발송 (본인 제외)
+            const { data: usersToNotify } = await supabaseAdmin
+                .from('profiles')
+                .select('id')
+                .eq('church_id', church_id || 'jesus-in')
+                .neq('id', user_id);
+
+            if (usersToNotify && usersToNotify.length > 0) {
+                const userIds = usersToNotify.map(u => u.id);
+
+                // 푸시 알림 발송
+                const { data: subs } = await supabaseAdmin
+                    .from('push_subscriptions')
+                    .select('user_id, subscription')
+                    .in('user_id', userIds);
+
+                if (subs && subs.length > 0) {
+                    const pushPromises = subs.map(sub => {
+                        const payload = JSON.stringify({
+                            title: `🙏 새로운 기도제목`,
+                            body: `${finalUserName}님이 새로운 기도제목을 나누셨습니다.`,
+                            url: '/?view=counseling',
+                            userId: sub.user_id
+                        });
+                        return webpush.sendNotification(sub.subscription, payload).catch(e => { });
+                    });
+                    Promise.allSettled(pushPromises);
+                }
+
+                // DB 알림 저장
+                const notis = userIds.map(uid => ({
+                    user_id: uid,
+                    type: 'counseling_public_req',
+                    actor_name: finalUserName,
+                    post_id: data.id,
+                    is_read: false
+                }));
+                await supabaseAdmin.from('notifications').insert(notis);
             }
         }
 
