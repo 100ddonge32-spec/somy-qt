@@ -4,13 +4,17 @@ CREATE TABLE IF NOT EXISTS public.bible_readings (
     church_id text NOT NULL DEFAULT 'jesus-in',
     title text NOT NULL,
     audio_url text NOT NULL,
+    audio_url_2 text, -- 두 번째 선택 오디오 파일 주소
     image_url text, -- 성경통독 설명 참고용 본문 이미지 주소
     description text,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 만약 이미 bible_readings 테이블을 생성하셨다면 아래 주석을 해제하고 이 쿼리만 한 번 실행해 주시면 됩니다.
+-- 만약 이미 테이블을 생성하셨다면 아래 알터 쿼리들을 실행해 주시면 됩니다.
+-- ALTER TABLE public.bible_readings ADD COLUMN IF NOT EXISTS audio_url_2 text;
 -- ALTER TABLE public.bible_readings ADD COLUMN IF NOT EXISTS image_url text;
+-- ALTER TABLE public.bible_reading_progress ADD COLUMN IF NOT EXISTS is_completed_2 boolean NOT NULL DEFAULT false;
+-- ALTER TABLE public.bible_reading_progress ADD COLUMN IF NOT EXISTS last_position_2 integer NOT NULL DEFAULT 0;
 
 -- 2. 개인 통독 진행도 및 완료 상태 테이블
 CREATE TABLE IF NOT EXISTS public.bible_reading_progress (
@@ -18,8 +22,10 @@ CREATE TABLE IF NOT EXISTS public.bible_reading_progress (
     user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     reading_id bigint NOT NULL REFERENCES public.bible_readings(id) ON DELETE CASCADE,
     church_id text NOT NULL DEFAULT 'jesus-in',
-    is_completed boolean NOT NULL DEFAULT false,
-    last_position integer NOT NULL DEFAULT 0, -- 초 단위 재생 위치 (이어듣기 지원용)
+    is_completed boolean NOT NULL DEFAULT false, -- 파트 1 완료 여부 (또는 전체 완료 여부)
+    is_completed_2 boolean NOT NULL DEFAULT false, -- 파트 2 완료 여부
+    last_position integer NOT NULL DEFAULT 0, -- 파트 1 재생 위치
+    last_position_2 integer NOT NULL DEFAULT 0, -- 파트 2 재생 위치
     completed_at timestamp with time zone,
     updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
     CONSTRAINT unique_user_reading UNIQUE (user_id, reading_id)

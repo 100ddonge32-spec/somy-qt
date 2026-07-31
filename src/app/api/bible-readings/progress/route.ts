@@ -20,10 +20,10 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
         }
 
-        // 1. 해당 교회의 전체 성경통독 목록 가져오기
+        // 1. 해당 교회의 전체 성경통독 목록 가져오기 (audio_url_2 유무 체크)
         const { data: readings, error: readingsError } = await supabaseAdmin
             .from('bible_readings')
-            .select('id')
+            .select('id, audio_url_2')
             .eq('church_id', churchId);
 
         if (readingsError) throw readingsError;
@@ -38,7 +38,14 @@ export async function GET(req: NextRequest) {
         if (progressError) throw progressError;
 
         const totalCount = readings?.length || 0;
-        const completedCount = progressList?.filter(p => p.is_completed).length || 0;
+        const completedCount = progressList?.filter(p => {
+            const reading = readings?.find(r => r.id === p.reading_id);
+            const hasPart2 = !!reading?.audio_url_2;
+            if (hasPart2) {
+                return p.is_completed && p.is_completed_2;
+            }
+            return p.is_completed;
+        }).length || 0;
 
         return NextResponse.json({
             total: totalCount,
@@ -56,7 +63,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { user_id, reading_id, church_id, is_completed, last_position } = body;
+        const { user_id, reading_id, church_id, is_completed, last_position, is_completed_2, last_position_2 } = body;
         const cid = church_id || 'jesus-in';
 
         if (!user_id || !reading_id) {
@@ -67,16 +74,23 @@ export async function POST(req: NextRequest) {
             user_id,
             reading_id,
             church_id: cid,
-            last_position: last_position || 0,
             updated_at: new Date().toISOString()
         };
 
-        // 완료 상태에 따른 처리
+        if (last_position !== undefined) upsertData.last_position = last_position;
+        if (last_position_2 !== undefined) upsertData.last_position_2 = last_position_2;
+
+        // 파트 1 완료 상태 처리
         if (is_completed !== undefined) {
             upsertData.is_completed = is_completed;
             if (is_completed) {
                 upsertData.completed_at = new Date().toISOString();
             }
+        }
+
+        // 파트 2 완료 상태 처리
+        if (is_completed_2 !== undefined) {
+            upsertData.is_completed_2 = is_completed_2;
         }
 
         const { data, error } = await supabaseAdmin

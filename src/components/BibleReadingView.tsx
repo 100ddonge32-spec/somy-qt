@@ -27,6 +27,7 @@ export default function BibleReadingView({
     const [isCommentsLoading, setIsCommentsLoading] = useState(false);
     const [isSubmittingComment, setIsSubmittingComment] = useState(false);
     const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+    const [activePart, setActivePart] = useState<1 | 2>(1);
 
     useEffect(() => {
         loadData();
@@ -89,17 +90,26 @@ export default function BibleReadingView({
     // 4. 진행 현황 업데이트 (실시간 오디오 청취 위치 저장 및 완료 처리)
     const handleProgressUpdate = async (currentTime: number, isCompleted: boolean) => {
         if (!user?.id || !activeReading) return;
+        const isPart2 = activePart === 2;
+        const bodyPayload: any = {
+            user_id: user.id,
+            reading_id: activeReading.id,
+            church_id: churchId
+        };
+
+        if (isPart2) {
+            bodyPayload.last_position_2 = Math.floor(currentTime);
+            bodyPayload.is_completed_2 = isCompleted;
+        } else {
+            bodyPayload.last_position = Math.floor(currentTime);
+            bodyPayload.is_completed = isCompleted;
+        }
+
         try {
             const res = await fetch('/api/bible-readings/progress', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: user.id,
-                    reading_id: activeReading.id,
-                    church_id: churchId,
-                    last_position: Math.floor(currentTime),
-                    is_completed: isCompleted
-                })
+                body: JSON.stringify(bodyPayload)
             });
 
             if (res.ok) {
@@ -107,14 +117,21 @@ export default function BibleReadingView({
                 setProgress((prev: any) => {
                     const existingList = [...prev.progressList];
                     const idx = existingList.findIndex(p => p.reading_id === activeReading.id);
-                    const updateObj = {
+                    const updateObj: any = {
                         user_id: user.id,
                         reading_id: activeReading.id,
-                        church_id: churchId,
-                        last_position: Math.floor(currentTime),
-                        is_completed: isCompleted,
-                        completed_at: isCompleted ? new Date().toISOString() : null
+                        church_id: churchId
                     };
+                    if (isPart2) {
+                        updateObj.last_position_2 = Math.floor(currentTime);
+                        updateObj.is_completed_2 = isCompleted;
+                    } else {
+                        updateObj.last_position = Math.floor(currentTime);
+                        updateObj.is_completed = isCompleted;
+                        if (isCompleted) {
+                            updateObj.completed_at = new Date().toISOString();
+                        }
+                    }
 
                     if (idx > -1) {
                         existingList[idx] = { ...existingList[idx], ...updateObj };
@@ -122,7 +139,15 @@ export default function BibleReadingView({
                         existingList.push(updateObj);
                     }
 
-                    const completedCount = existingList.filter(p => p.is_completed).length;
+                    const completedCount = existingList.filter(p => {
+                        const reading = readings.find(r => r.id === p.reading_id);
+                        const hasPart2 = !!reading?.audio_url_2;
+                        if (hasPart2) {
+                            return p.is_completed && p.is_completed_2;
+                        }
+                        return p.is_completed;
+                    }).length;
+
                     return {
                         ...prev,
                         completed: completedCount,
@@ -139,8 +164,21 @@ export default function BibleReadingView({
     // 5. 오디오 완독 시 호출되는 콜백
     const handlePlaybackComplete = () => {
         handleProgressUpdate(0, true);
-        setIsCompletedChecked(true); // 오디오를 끝까지 들으면 댓글 작성창에 "통독 완료" 체크 자동 활성화
-        alert('🎉 이 회차의 성경통독을 완료하셨습니다! 완료 은혜나눔 글을 남겨주세요.');
+        
+        // 두 파트 모두 완료되었는지 확인
+        const hasPart2 = !!activeReading.audio_url_2;
+        const currentProgress = getReadingProgress(activeReading.id);
+        const isPart2 = activePart === 2;
+
+        const p1Done = isPart2 ? (currentProgress?.is_completed) : true;
+        const p2Done = isPart2 ? true : (hasPart2 ? (currentProgress?.is_completed_2) : true);
+
+        if (p1Done && p2Done) {
+            setIsCompletedChecked(true); // 전체 완독 시 댓글 작성창에 "통독 완료" 체크 자동 활성화
+            alert('🎉 이 회차의 성경통독을 완독하셨습니다! 완료 은혜나눔 글을 남겨주세요.');
+        } else {
+            alert(`🎉 파트 ${activePart} 재생을 완료하셨습니다. 남은 파트도 함께 읽어주세요!`);
+        }
     };
 
     // 6. 댓글 등록
@@ -198,6 +236,7 @@ export default function BibleReadingView({
     // 회차 선택 핸들러
     const selectReading = (reading: any) => {
         setActiveReading(reading);
+        setActivePart(1);
         setIsCompletedChecked(false);
         fetchComments(reading.id);
     };
@@ -291,10 +330,53 @@ export default function BibleReadingView({
                         </button>
                     </div>
 
+                    {/* 파트 선택 버튼 */}
+                    {activeReading.audio_url_2 && (
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', background: '#FDFBF7', padding: '6px', borderRadius: '12px', border: '1px solid #EBE5D8' }}>
+                            <button
+                                onClick={() => setActivePart(1)}
+                                style={{
+                                    flex: 1,
+                                    padding: '10px 14px',
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    background: activePart === 1 ? 'linear-gradient(135deg, #1A5D55 0%, #134B44 100%)' : 'transparent',
+                                    color: activePart === 1 ? 'white' : '#8E754C',
+                                    fontWeight: 800,
+                                    fontSize: '13px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    boxShadow: activePart === 1 ? '0 2px 6px rgba(26,93,85,0.2)' : 'none'
+                                }}
+                            >
+                                🎧 파트 1 {getReadingProgress(activeReading.id)?.is_completed ? '✅' : ''}
+                            </button>
+                            <button
+                                onClick={() => setActivePart(2)}
+                                style={{
+                                    flex: 1,
+                                    padding: '10px 14px',
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    background: activePart === 2 ? 'linear-gradient(135deg, #1A5D55 0%, #134B44 100%)' : 'transparent',
+                                    color: activePart === 2 ? 'white' : '#8E754C',
+                                    fontWeight: 800,
+                                    fontSize: '13px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    boxShadow: activePart === 2 ? '0 2px 6px rgba(26,93,85,0.2)' : 'none'
+                                }}
+                            >
+                                🎧 파트 2 {getReadingProgress(activeReading.id)?.is_completed_2 ? '✅' : ''}
+                            </button>
+                        </div>
+                    )}
+
                     <BibleReadingPlayer
-                        audioUrl={activeReading.audio_url}
-                        title={activeReading.title}
-                        initialPosition={getReadingProgress(activeReading.id)?.last_position || 0}
+                        key={`${activeReading.id}-part-${activePart}`}
+                        audioUrl={activePart === 2 ? activeReading.audio_url_2 : activeReading.audio_url}
+                        title={`${activeReading.title} (파트 ${activePart})`}
+                        initialPosition={activePart === 2 ? (getReadingProgress(activeReading.id)?.last_position_2 || 0) : (getReadingProgress(activeReading.id)?.last_position || 0)}
                         onProgressUpdate={handleProgressUpdate}
                         onPlaybackComplete={handlePlaybackComplete}
                     />
@@ -441,8 +523,10 @@ export default function BibleReadingView({
                     ) : (
                         readings.map((reading) => {
                             const prog = getReadingProgress(reading.id);
-                            const isCompleted = prog?.is_completed;
+                            const hasPart2 = !!reading.audio_url_2;
+                            const isCompleted = hasPart2 ? (prog?.is_completed && prog?.is_completed_2) : prog?.is_completed;
                             const currentPos = prog?.last_position || 0;
+                            const currentPos2 = prog?.last_position_2 || 0;
 
                             return (
                                 <div
@@ -472,9 +556,13 @@ export default function BibleReadingView({
                                             </div>
                                         )}
                                         {/* 이어듣기 안내 텍스트 */}
-                                        {currentPos > 0 && !isCompleted && (
+                                        {((currentPos > 0 && !prog?.is_completed) || (hasPart2 && currentPos2 > 0 && !prog?.is_completed_2)) && (
                                             <div style={{ fontSize: '11px', color: '#3498DB', fontWeight: 600 }}>
-                                                ⏱️ 이어듣기 가능 ({Math.floor(currentPos / 60)}분 {currentPos % 60}초 지점)
+                                                ⏱️ 이어듣기 가능 (
+                                                {currentPos > 0 && !prog?.is_completed && `파트1: ${Math.floor(currentPos / 60)}분 ${currentPos % 60}초`}
+                                                {currentPos > 0 && !prog?.is_completed && hasPart2 && currentPos2 > 0 && !prog?.is_completed_2 && ' / '}
+                                                {hasPart2 && currentPos2 > 0 && !prog?.is_completed_2 && `파트2: ${Math.floor(currentPos2 / 60)}분 ${currentPos2 % 60}초`}
+                                                )
                                             </div>
                                         )}
                                     </div>
@@ -503,7 +591,7 @@ export default function BibleReadingView({
                                                 fontSize: '11px',
                                                 fontWeight: 700
                                             }}>
-                                                {currentPos > 0 ? '진행중' : '시작하기'}
+                                                {(currentPos > 0 || (hasPart2 && currentPos2 > 0)) ? '진행중' : '시작하기'}
                                             </span>
                                         )}
                                     </div>

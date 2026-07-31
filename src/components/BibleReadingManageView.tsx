@@ -16,6 +16,7 @@ export default function BibleReadingManageView({
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [selectedFile2, setSelectedFile2] = useState<File | null>(null);
     const [selectedImage, setSelectedImage] = useState<File | null>(null);
     const [readings, setReadings] = useState<any[]>([]);
     
@@ -67,6 +68,19 @@ export default function BibleReadingManageView({
         }
     };
 
+    // 두 번째 파일 선택 핸들러
+    const handleFile2Change = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const file = e.target.files[0];
+            // 오디오 파일 형식 점검
+            if (!file.type.startsWith('audio/')) {
+                alert('MP3와 같은 오디오 파일 형식만 업로드 가능합니다.');
+                return;
+            }
+            setSelectedFile2(file);
+        }
+    };
+
     // 2. 등록 및 파일 업로드 전송
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -78,6 +92,9 @@ export default function BibleReadingManageView({
         setIsUploading(true);
         const formData = new FormData();
         formData.append('file', selectedFile);
+        if (selectedFile2) {
+            formData.append('file2', selectedFile2);
+        }
         if (selectedImage) {
             formData.append('image', selectedImage);
         }
@@ -98,10 +115,13 @@ export default function BibleReadingManageView({
                 setTitle('');
                 setDescription('');
                 setSelectedFile(null);
+                setSelectedFile2(null);
                 setSelectedImage(null);
                 // 파일 인풋 초기화
                 const fileInput = document.getElementById('audio-file-input') as HTMLInputElement;
                 if (fileInput) fileInput.value = '';
+                const fileInput2 = document.getElementById('audio-file-input-2') as HTMLInputElement;
+                if (fileInput2) fileInput2.value = '';
                 const imgInput = document.getElementById('image-file-input') as HTMLInputElement;
                 if (imgInput) imgInput.value = '';
                 
@@ -193,9 +213,9 @@ export default function BibleReadingManageView({
                         />
                     </div>
 
-                    {/* 파일 선택 */}
+                    {/* 파일 선택 1 */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#4A5568' }}>오디오 파일 업로드 (.mp3 권장) *</label>
+                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#4A5568' }}>첫 번째 오디오 파일 업로드 (.mp3) *</label>
                         <input
                             id="audio-file-input"
                             type="file"
@@ -207,6 +227,23 @@ export default function BibleReadingManageView({
                         {selectedFile && (
                             <div style={{ fontSize: '11px', color: '#718096', fontWeight: 600, marginTop: '2px' }}>
                                 선택된 파일 크기: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 파일 선택 2 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#4A5568' }}>두 번째 오디오 파일 업로드 (.mp3) (선택)</label>
+                        <input
+                            id="audio-file-input-2"
+                            type="file"
+                            accept="audio/*"
+                            onChange={handleFile2Change}
+                            style={{ fontSize: '12px', color: '#4A5568' }}
+                        />
+                        {selectedFile2 && (
+                            <div style={{ fontSize: '11px', color: '#718096', fontWeight: 600, marginTop: '2px' }}>
+                                선택된 파일 크기: {(selectedFile2.size / (1024 * 1024)).toFixed(2)} MB
                             </div>
                         )}
                     </div>

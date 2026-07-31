@@ -79,23 +79,30 @@ export async function POST(req: NextRequest) {
 
         // 사용자가 "통독 완료"로 남겼다면 progress 테이블에도 자동 반영 (Upsert)
         if (is_completed_comment) {
-            // 해당 통독의 church_id를 찾아서 매칭해줌
+            // 해당 통독의 church_id 및 audio_url_2 존재 여부 확인
             const { data: reading } = await supabaseAdmin
                 .from('bible_readings')
-                .select('church_id')
+                .select('church_id, audio_url_2')
                 .eq('id', reading_id)
                 .single();
 
             const churchId = reading?.church_id || 'jesus-in';
+            const hasPart2 = !!reading?.audio_url_2;
 
-            await supabaseAdmin.from('bible_reading_progress').upsert({
+            const upsertPayload: any = {
                 user_id,
                 reading_id,
                 church_id: churchId,
                 is_completed: true,
                 completed_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
-            }, { onConflict: 'user_id,reading_id' });
+            };
+
+            if (hasPart2) {
+                upsertPayload.is_completed_2 = true;
+            }
+
+            await supabaseAdmin.from('bible_reading_progress').upsert(upsertPayload, { onConflict: 'user_id,reading_id' });
         }
 
         return NextResponse.json(comment);
