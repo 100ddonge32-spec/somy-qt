@@ -25,6 +25,10 @@ export default function BibleReadingManageView({
     const [isLoadingList, setIsLoadingList] = useState(true);
     const [uploadStatus, setUploadStatus] = useState('');
 
+    const [editingReading, setEditingReading] = useState<any | null>(null);
+    const [clearAudio2, setClearAudio2] = useState(false);
+    const [clearImage, setClearImage] = useState(false);
+
     useEffect(() => {
         fetchReadings();
     }, [churchId]);
@@ -39,6 +43,48 @@ export default function BibleReadingManageView({
             }
             setSelectedImage(file);
         }
+    };
+
+    // 수정 시작 핸들러
+    const startEdit = (reading: any) => {
+        setEditingReading(reading);
+        setTitle(reading.title);
+        setDescription(reading.description || '');
+        setSelectedFile(null);
+        setSelectedFile2(null);
+        setSelectedImage(null);
+        setClearAudio2(false);
+        setClearImage(false);
+
+        // 파일 인풋들 비워주기
+        const fileInput = document.getElementById('audio-file-input') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
+        const fileInput2 = document.getElementById('audio-file-input-2') as HTMLInputElement;
+        if (fileInput2) fileInput2.value = '';
+        const imgInput = document.getElementById('image-file-input') as HTMLInputElement;
+        if (imgInput) imgInput.value = '';
+        
+        // 폼 영역으로 부드럽게 스크롤
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // 수정 취소 핸들러
+    const cancelEdit = () => {
+        setEditingReading(null);
+        setTitle('');
+        setDescription('');
+        setSelectedFile(null);
+        setSelectedFile2(null);
+        setSelectedImage(null);
+        setClearAudio2(false);
+        setClearImage(false);
+
+        const fileInput = document.getElementById('audio-file-input') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
+        const fileInput2 = document.getElementById('audio-file-input-2') as HTMLInputElement;
+        if (fileInput2) fileInput2.value = '';
+        const imgInput = document.getElementById('image-file-input') as HTMLInputElement;
+        if (imgInput) imgInput.value = '';
     };
 
     // 1. 회차 목록 로드
@@ -83,21 +129,27 @@ export default function BibleReadingManageView({
         }
     };
 
-    // 2. 등록 및 파일 업로드 전송
+    // 2. 등록 및 파일 업로드 전송 (수정 모드 포함)
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedFile || !title.trim() || !user?.id) {
-            alert('제목 입력과 오디오 파일 선택은 필수입니다.');
+        
+        if (!title.trim() || !user?.id) {
+            alert('회차 제목은 필수입니다.');
+            return;
+        }
+        if (!editingReading && !selectedFile) {
+            alert('신규 등록 시 첫 번째 오디오 파일 선택은 필수입니다.');
             return;
         }
 
         setIsUploading(true);
-        setUploadStatus('첫 번째 오디오 파일 업로드 준비 중...');
+        setUploadStatus('작업 준비 중...');
 
         let audioFilePath = null;
         let audioFilePath2 = null;
         let imageFilePath = null;
 
+        // 에러 시 이번 전송 중에 업로드된 스토리지 파일들만 롤백 처리
         const rollbackFiles = async () => {
             const deletePaths = [];
             if (audioFilePath) deletePaths.push(audioFilePath);
@@ -116,28 +168,32 @@ export default function BibleReadingManageView({
         try {
             const safeChurchId = churchId.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
-            // 1. 첫 번째 오디오 업로드
-            setUploadStatus('첫 번째 오디오 파일 업로드 중...');
-            const fileExt = selectedFile.name.split('.').pop()?.toLowerCase() || 'mp3';
-            const audioFileName = `${safeChurchId}-bible-${Date.now()}.${fileExt}`;
-            audioFilePath = `bible-readings/${audioFileName}`;
+            // --- 1. 첫 번째 오디오 파일 업로드 처리 ---
+            let audioPublicUrl = editingReading ? editingReading.audio_url : null;
+            if (selectedFile) {
+                setUploadStatus('첫 번째 오디오 파일 업로드 중...');
+                const fileExt = selectedFile.name.split('.').pop()?.toLowerCase() || 'mp3';
+                const audioFileName = `${safeChurchId}-bible-${Date.now()}.${fileExt}`;
+                audioFilePath = `bible-readings/${audioFileName}`;
 
-            const { error: uploadError } = await supabase.storage
-                .from('church-assets')
-                .upload(audioFilePath, selectedFile, {
-                    cacheControl: '31536000',
-                    contentType: 'audio/mpeg',
-                    upsert: false
-                });
+                const { error: uploadError } = await supabase.storage
+                    .from('church-assets')
+                    .upload(audioFilePath, selectedFile, {
+                        cacheControl: '31536000',
+                        contentType: 'audio/mpeg',
+                        upsert: false
+                    });
 
-            if (uploadError) throw new Error(`첫 번째 오디오 업로드 실패: ${uploadError.message}`);
+                if (uploadError) throw new Error(`첫 번째 오디오 업로드 실패: ${uploadError.message}`);
 
-            const { data: { publicUrl: audioPublicUrl } } = supabase.storage
-                .from('church-assets')
-                .getPublicUrl(audioFilePath);
+                const { data: { publicUrl } } = supabase.storage
+                    .from('church-assets')
+                    .getPublicUrl(audioFilePath);
+                audioPublicUrl = publicUrl;
+            }
 
-            // 2. 두 번째 오디오 업로드 (선택)
-            let audioPublicUrl2 = null;
+            // --- 2. 두 번째 오디오 파일 업로드 처리 ---
+            let audioPublicUrl2 = editingReading ? (clearAudio2 ? null : editingReading.audio_url_2) : null;
             if (selectedFile2) {
                 setUploadStatus('두 번째 오디오 파일 업로드 중...');
                 const fileExt2 = selectedFile2.name.split('.').pop()?.toLowerCase() || 'mp3';
@@ -160,8 +216,8 @@ export default function BibleReadingManageView({
                 audioPublicUrl2 = audioUrl2;
             }
 
-            // 3. 본문 이미지 업로드 (선택)
-            let imagePublicUrl = null;
+            // --- 3. 본문 이미지 파일 업로드 처리 ---
+            let imagePublicUrl = editingReading ? (clearImage ? null : editingReading.image_url) : null;
             if (selectedImage) {
                 setUploadStatus('본문 참고 이미지 업로드 중...');
                 const imgExt = selectedImage.name.split('.').pop()?.toLowerCase() || 'png';
@@ -184,33 +240,47 @@ export default function BibleReadingManageView({
                 imagePublicUrl = imgUrl;
             }
 
-            // 4. Next.js API 호출로 메타데이터 기록
-            setUploadStatus('서버 데이터베이스 기록 중...');
-            const res = await fetch('/api/admin/bible-readings', {
-                method: 'POST',
+            // --- 4. 백엔드 API 서버 전송 ---
+            setUploadStatus(editingReading ? '서버 데이터베이스 수정 중...' : '서버 데이터베이스 기록 중...');
+            const apiEndpoint = '/api/admin/bible-readings';
+            const apiMethod = editingReading ? 'PUT' : 'POST';
+            
+            const reqBody: any = {
+                title: title.trim(),
+                description: description.trim(),
+                audio_url: audioPublicUrl,
+                audio_url_2: audioPublicUrl2,
+                image_url: imagePublicUrl,
+                church_id: churchId,
+                user_id: user.id
+            };
+            if (editingReading) {
+                reqBody.id = editingReading.id;
+            }
+
+            const res = await fetch(apiEndpoint, {
+                method: apiMethod,
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    title: title.trim(),
-                    description: description.trim(),
-                    audio_url: audioPublicUrl,
-                    audio_url_2: audioPublicUrl2,
-                    image_url: imagePublicUrl,
-                    church_id: churchId,
-                    user_id: user.id
-                })
+                body: JSON.stringify(reqBody)
             });
 
             const data = await res.json();
             if (res.ok) {
-                alert('성경통독 음원이 성공적으로 등록되었습니다.');
+                alert(editingReading ? '성경통독 회차가 성공적으로 수정되었습니다.' : '성경통독 음원이 성공적으로 등록되었습니다.');
+                
+                // 완료 후 모든 상태 초기화
                 setTitle('');
                 setDescription('');
                 setSelectedFile(null);
                 setSelectedFile2(null);
                 setSelectedImage(null);
-                // 파일 인풋 초기화
+                setEditingReading(null);
+                setClearAudio2(false);
+                setClearImage(false);
+
+                // 파일 인풋들 초기화
                 const fileInput = document.getElementById('audio-file-input') as HTMLInputElement;
                 if (fileInput) fileInput.value = '';
                 const fileInput2 = document.getElementById('audio-file-input-2') as HTMLInputElement;
@@ -220,14 +290,13 @@ export default function BibleReadingManageView({
                 
                 await fetchReadings();
             } else {
-                // 실패 시 업로드된 파일들 삭제
                 await rollbackFiles();
-                alert(`등록 실패: ${data.error || '알 수 없는 오류'}`);
+                alert(`전송 실패: ${data.error || '알 수 없는 오류'}`);
             }
         } catch (err: any) {
-            console.error('Upload failed:', err);
+            console.error('Submit failed:', err);
             await rollbackFiles();
-            alert(`등록 중 오류가 발생했습니다: ${err.message || err}`);
+            alert(`등록/수정 중 오류가 발생했습니다: ${err.message || err}`);
         } finally {
             setIsUploading(false);
             setUploadStatus('');
@@ -278,10 +347,10 @@ export default function BibleReadingManageView({
                 <div style={{ width: '20px' }}></div>
             </div>
 
-            {/* 신규 통독 업로드 폼 */}
+            {/* 신규 통독 업로드 및 수정 폼 */}
             <div style={{ background: 'white', borderRadius: '20px', padding: '20px', border: '1px solid #E2E8F0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', marginBottom: '28px' }}>
                 <h2 style={{ fontSize: '15px', fontWeight: 800, color: '#2C3E50', marginTop: 0, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    ➕ 신규 통독 음원 업로드
+                    {editingReading ? '✏️ 성경통독 회차 수정' : '➕ 신규 통독 음원 업로드'}
                 </h2>
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -310,27 +379,43 @@ export default function BibleReadingManageView({
                         />
                     </div>
 
+                    {/* 수정 가이드 정보 안내 */}
+                    {editingReading && (
+                        <div style={{ padding: '10px 12px', background: '#FFF8F0', border: '1px solid #FEF0D8', borderRadius: '8px', fontSize: '11px', color: '#AA7C11', lineHeight: 1.4, fontWeight: 600 }}>
+                            💡 수정 모드에서는 변경하려는 파일만 새로 선택하시면 됩니다. 선택하지 않은 파일은 기존에 등록된 오디오 및 이미지 리소스가 그대로 유지됩니다.
+                        </div>
+                    )}
+
                     {/* 파일 선택 1 */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#4A5568' }}>첫 번째 오디오 파일 업로드 (.mp3) *</label>
+                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#4A5568' }}>
+                            {editingReading ? '첫 번째 오디오 파일 변경 (선택)' : '첫 번째 오디오 파일 업로드 (.mp3) *'}
+                        </label>
                         <input
                             id="audio-file-input"
                             type="file"
                             accept="audio/*"
                             onChange={handleFileChange}
                             style={{ fontSize: '12px', color: '#4A5568' }}
-                            required
+                            required={!editingReading}
                         />
                         {selectedFile && (
                             <div style={{ fontSize: '11px', color: '#718096', fontWeight: 600, marginTop: '2px' }}>
                                 선택된 파일 크기: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
                             </div>
                         )}
+                        {editingReading && !selectedFile && (
+                            <div style={{ fontSize: '11px', color: '#7F8C8D', fontWeight: 600 }}>
+                                📁 기존 오디오 파일 등록됨: <a href={editingReading.audio_url} target="_blank" rel="noreferrer" style={{ color: '#3498DB', textDecoration: 'underline' }}>링크 보기</a>
+                            </div>
+                        )}
                     </div>
 
                     {/* 파일 선택 2 */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#4A5568' }}>두 번째 오디오 파일 업로드 (.mp3) (선택)</label>
+                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#4A5568' }}>
+                            {editingReading ? '두 번째 오디오 파일 변경 (선택)' : '두 번째 오디오 파일 업로드 (.mp3) (선택)'}
+                        </label>
                         <input
                             id="audio-file-input-2"
                             type="file"
@@ -341,6 +426,21 @@ export default function BibleReadingManageView({
                         {selectedFile2 && (
                             <div style={{ fontSize: '11px', color: '#718096', fontWeight: 600, marginTop: '2px' }}>
                                 선택된 파일 크기: {(selectedFile2.size / (1024 * 1024)).toFixed(2)} MB
+                            </div>
+                        )}
+                        {editingReading && editingReading.audio_url_2 && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
+                                <div style={{ fontSize: '11px', color: '#7F8C8D', fontWeight: 600 }}>
+                                    📁 기존 파트 2 오디오 등록됨: <a href={editingReading.audio_url_2} target="_blank" rel="noreferrer" style={{ color: '#3498DB', textDecoration: 'underline' }}>링크 보기</a>
+                                </div>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#E11D48', cursor: 'pointer', fontWeight: 800 }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={clearAudio2}
+                                        onChange={(e) => setClearAudio2(e.target.checked)}
+                                    />
+                                    기존 등록된 파트 2 오디오 파일 완전히 제거하기
+                                </label>
                             </div>
                         )}
                     </div>
@@ -360,36 +460,73 @@ export default function BibleReadingManageView({
                                 선택된 이미지 크기: {(selectedImage.size / (1024 * 1024)).toFixed(2)} MB
                             </div>
                         )}
+                        {editingReading && editingReading.image_url && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
+                                <div style={{ fontSize: '11px', color: '#7F8C8D', fontWeight: 600 }}>
+                                    🖼️ 기존 본문 이미지 등록됨: <a href={editingReading.image_url} target="_blank" rel="noreferrer" style={{ color: '#3498DB', textDecoration: 'underline' }}>링크 보기</a>
+                                </div>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#E11D48', cursor: 'pointer', fontWeight: 800 }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={clearImage}
+                                        onChange={(e) => setClearImage(e.target.checked)}
+                                    />
+                                    기존 등록된 본문 참고 이미지 완전히 제거하기
+                                </label>
+                            </div>
+                        )}
                     </div>
 
-                    {/* 전송 버튼 */}
-                    <button
-                        type="submit"
-                        disabled={isUploading || !title.trim() || !selectedFile}
-                        style={{
-                            marginTop: '6px',
-                            padding: '14px',
-                            background: isUploading ? '#A0AEC0' : '#1A5D55',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '12px',
-                            fontSize: '14px',
-                            fontWeight: 800,
-                            cursor: (isUploading || !title.trim() || !selectedFile) ? 'default' : 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            boxShadow: '0 4px 10px rgba(26,93,85,0.15)'
-                        }}
-                    >
-                        {isUploading ? (
-                            <>
-                                <span style={{ animation: 'spin 1s infinite linear' }}>⏳</span>
-                                {uploadStatus || '대용량 파일 전송 및 업로드 중...'}
-                            </>
-                        ) : '등록하기'}
-                    </button>
+                    {/* 전송 버튼 구역 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+                        <button
+                            type="submit"
+                            disabled={isUploading || !title.trim() || (!editingReading && !selectedFile)}
+                            style={{
+                                padding: '14px',
+                                background: isUploading ? '#A0AEC0' : '#1A5D55',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '12px',
+                                fontSize: '14px',
+                                fontWeight: 800,
+                                cursor: (isUploading || !title.trim() || (!editingReading && !selectedFile)) ? 'default' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
+                                boxShadow: '0 4px 10px rgba(26,93,85,0.15)'
+                            }}
+                        >
+                            {isUploading ? (
+                                <>
+                                    <span style={{ animation: 'spin 1s infinite linear' }}>⏳</span>
+                                    {uploadStatus || '대용량 파일 전송 및 업로드 중...'}
+                                </>
+                            ) : (editingReading ? '회차 정보 수정 완료하기' : '등록하기')}
+                        </button>
+
+                        {editingReading && (
+                            <button
+                                type="button"
+                                onClick={cancelEdit}
+                                disabled={isUploading}
+                                style={{
+                                    padding: '12px',
+                                    background: '#F3F4F6',
+                                    color: '#4A5568',
+                                    border: '1px solid #D1D5DB',
+                                    borderRadius: '12px',
+                                    fontSize: '13px',
+                                    fontWeight: 800,
+                                    cursor: isUploading ? 'default' : 'pointer',
+                                    textAlign: 'center'
+                                }}
+                            >
+                                수정 취소
+                            </button>
+                        )}
+                    </div>
                 </form>
             </div>
 
@@ -417,31 +554,52 @@ export default function BibleReadingManageView({
                                     border: '1px solid #E2E8F0',
                                     display: 'flex',
                                     justifyContent: 'space-between',
-                                    alignItems: 'center'
+                                    alignItems: 'center',
+                                    boxShadow: editingReading?.id === reading.id ? '0 0 0 2px #1A5D55' : 'none'
                                 }}
                             >
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', overflow: 'hidden', paddingRight: '16px' }}>
-                                    <div style={{ fontWeight: 800, fontSize: '14px', color: '#2C3E50' }}>{reading.title}</div>
-                                    <div style={{ fontSize: '11px', color: '#A0AEC0', wordBreak: 'break-all', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden', maxWidth: '380px' }}>
-                                        {reading.audio_url}
+                                    <div style={{ fontWeight: 800, fontSize: '14px', color: '#2C3E50', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        {reading.title}
+                                        {reading.audio_url_2 && <span style={{ fontSize: '10px', background: '#E2F1E8', color: '#1A5D55', padding: '1px 6px', borderRadius: '4px', fontWeight: 800 }}>파트 2</span>}
+                                        {reading.image_url && <span style={{ fontSize: '10px', background: '#FFF3CD', color: '#856404', padding: '1px 6px', borderRadius: '4px', fontWeight: 800 }}>이미지</span>}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#A0AEC0', wordBreak: 'break-all', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden', maxWidth: '280px' }}>
+                                        {reading.description || '설명 없음'}
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => handleDelete(reading.id)}
-                                    style={{
-                                        padding: '6px 12px',
-                                        background: '#FFF1F2',
-                                        color: '#E11D48',
-                                        border: '1px solid #FDA4AF',
-                                        borderRadius: '8px',
-                                        fontSize: '12px',
-                                        fontWeight: 700,
-                                        cursor: 'pointer',
-                                        flexShrink: 0
-                                    }}
-                                >
-                                    삭제
-                                </button>
+                                <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                                    <button
+                                        onClick={() => startEdit(reading)}
+                                        style={{
+                                            padding: '6px 12px',
+                                            background: '#F0FDF4',
+                                            color: '#16A34A',
+                                            border: '1px solid #BBF7D0',
+                                            borderRadius: '8px',
+                                            fontSize: '12px',
+                                            fontWeight: 700,
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        수정
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(reading.id)}
+                                        style={{
+                                            padding: '6px 12px',
+                                            background: '#FFF1F2',
+                                            color: '#E11D48',
+                                            border: '1px solid #FDA4AF',
+                                            borderRadius: '8px',
+                                            fontSize: '12px',
+                                            fontWeight: 700,
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        삭제
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>

@@ -169,3 +169,75 @@ export async function DELETE(req: NextRequest) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
+
+// 3. 성경통독 회차 정보 수정 (가벼운 JSON 요청 수신 + 기존 리소스 변경 감지 시 클린 삭제)
+export async function PUT(req: NextRequest) {
+    try {
+        const body = await req.json();
+        const { id, title, description, audio_url, audio_url_2, image_url, church_id, user_id } = body;
+
+        if (!id) return NextResponse.json({ error: '회차 ID가 필요합니다.' }, { status: 400 });
+        if (!title) return NextResponse.json({ error: '제목을 입력해주세요.' }, { status: 400 });
+        if (!church_id || !user_id) return NextResponse.json({ error: '필수 매개변수(church_id, user_id)가 없습니다.' }, { status: 400 });
+
+        // 관리자 권한 체크
+        const isAdmin = await checkIsAdmin(user_id, church_id);
+        if (!isAdmin) {
+            return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
+        }
+
+        // 1. 기존 데이터 조회하여 파일 변경 여부 확인
+        const { data: oldReading, error: fetchError } = await supabaseAdmin
+            .from('bible_readings')
+            .select('audio_url, audio_url_2, image_url')
+            .eq('id', id)
+            .single();
+
+        if (fetchError) throw fetchError;
+        if (!oldReading) return NextResponse.json({ error: '수정하려는 데이터를 찾을 수 없습니다.' }, { status: 404 });
+
+        // helper: 스토리지에서 파일 제거
+        const deleteFileFromStorage = async (url: string) => {
+            if (url && url.includes('/storage/v1/object/public/church-assets/')) {
+                const pathParts = url.split('/storage/v1/object/public/church-assets/');
+                if (pathParts.length > 1) {
+                    const filePath = decodeURIComponent(pathParts[1]);
+                    await supabaseAdmin.storage.from('church-assets').remove([filePath]);
+                    console.log(`[Storage Cleanup due to Edit]: ${filePath}`);
+                }
+            }
+        };
+
+        // 2. 변경된 파일이 존재하거나 기존 파일이 제거되었을 시 스토리지 파일 삭제 처리
+        if (audio_url && oldReading.audio_url && audio_url !== oldReading.audio_url) {
+            await deleteFileFromStorage(oldReading.audio_url);
+        }
+        if (oldReading.audio_url_2 && audio_url_2 !== oldReading.audio_url_2) {
+            await deleteFileFromStorage(oldReading.audio_url_2);
+        }
+        if (oldReading.image_url && image_url !== oldReading.image_url) {
+            await deleteFileFromStorage(oldReading.image_url);
+        }
+
+        // 3. DB 업데이트 수행
+        const { data: reading, error: updateError } = await supabaseAdmin
+            .from('bible_readings')
+            .update({
+                title,
+                description: description || '',
+                audio_url: audio_url,
+                audio_url_2: audio_url_2, // null도 가능
+                image_url: image_url // null도 가능
+            })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (updateError) throw updateError;
+
+        return NextResponse.json(reading);
+    } catch (err: any) {
+        console.error('[Bible Readings Admin PUT Error]:', err);
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}
