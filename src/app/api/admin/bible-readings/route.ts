@@ -45,146 +45,37 @@ async function checkIsAdmin(userId: string, churchId: string): Promise<boolean> 
 }
 
 // 1. 신규 성경통독 회차 등록 (오디오 파일 최대 2개 업로드 + 이미지 업로드 + DB 기록)
+// 1. 신규 성경통독 회차 등록 (클라이언트에서 직접 업로드 완료된 URL들을 받아 DB에 메타데이터 저장)
 export async function POST(req: NextRequest) {
     try {
-        const formData = await req.formData();
-        const file = formData.get('file') as File;
-        const file2 = formData.get('file2') as File | null;
-        const imageFile = formData.get('image') as File | null;
-        const title = formData.get('title') as string;
-        const description = formData.get('description') as string;
-        const churchId = formData.get('church_id') as string;
-        const userId = formData.get('user_id') as string;
+        const body = await req.json();
+        const { title, description, audio_url, audio_url_2, image_url, church_id, user_id } = body;
 
-        if (!file) return NextResponse.json({ error: '오디오 파일이 없습니다.' }, { status: 400 });
+        if (!audio_url) return NextResponse.json({ error: '첫 번째 오디오 파일 URL이 없습니다.' }, { status: 400 });
         if (!title) return NextResponse.json({ error: '제목을 입력해주세요.' }, { status: 400 });
-        if (!churchId || !userId) return NextResponse.json({ error: '필수 매개변수(church_id, user_id)가 없습니다.' }, { status: 400 });
+        if (!church_id || !user_id) return NextResponse.json({ error: '필수 매개변수(church_id, user_id)가 없습니다.' }, { status: 400 });
 
         // 관리자 권한 체크
-        const isAdmin = await checkIsAdmin(userId, churchId);
+        const isAdmin = await checkIsAdmin(user_id, church_id);
         if (!isAdmin) {
             return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 });
         }
 
-        const safeChurchId = churchId.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        
-        // 버킷이 없을 경우 생성 시도
-        try {
-            await supabaseAdmin.storage.createBucket('church-assets', { public: true });
-        } catch (bucketErr) {
-            // 이미 존재할 시 통과
-        }
-
-        // 1. 첫 번째 오디오 파일 업로드
-        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'mp3';
-        const audioFileName = `${safeChurchId}-bible-${Date.now()}.${fileExt}`;
-        const audioFilePath = `bible-readings/${audioFileName}`;
-
-        const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-            .from('church-assets')
-            .upload(audioFilePath, file, {
-                contentType: 'audio/mpeg',
-                cacheControl: '31536000',
-                upsert: true
-            });
-
-        if (uploadError) {
-            console.error('[Storage Upload Error]:', uploadError);
-            return NextResponse.json({ error: `첫 번째 오디오 업로드 실패: ${uploadError.message}` }, { status: 500 });
-        }
-
-        // 오디오 파일의 Public URL 취득
-        const { data: { publicUrl: audioPublicUrl } } = supabaseAdmin.storage
-            .from('church-assets')
-            .getPublicUrl(audioFilePath);
-
-        // 2. 두 번째 오디오 파일 업로드 (선택 사항)
-        let audioPublicUrl2 = null;
-        let audioFilePath2 = null;
-        if (file2 && file2.size > 0) {
-            const fileExt2 = file2.name.split('.').pop()?.toLowerCase() || 'mp3';
-            const audioFileName2 = `${safeChurchId}-bible-part2-${Date.now()}.${fileExt2}`;
-            audioFilePath2 = `bible-readings/${audioFileName2}`;
-
-            const { data: uploadData2, error: uploadError2 } = await supabaseAdmin.storage
-                .from('church-assets')
-                .upload(audioFilePath2, file2, {
-                    contentType: 'audio/mpeg',
-                    cacheControl: '31536000',
-                    upsert: true
-                });
-
-            if (uploadError2) {
-                console.error('[Storage Upload 2 Error]:', uploadError2);
-                // 첫 번째 오디오 롤백
-                await supabaseAdmin.storage.from('church-assets').remove([audioFilePath]);
-                return NextResponse.json({ error: `두 번째 오디오 업로드 실패: ${uploadError2.message}` }, { status: 500 });
-            }
-
-            const { data: { publicUrl: audioUrl2 } } = supabaseAdmin.storage
-                .from('church-assets')
-                .getPublicUrl(audioFilePath2);
-            audioPublicUrl2 = audioUrl2;
-        }
-
-        // 3. 이미지 파일 업로드 (선택 사항)
-        let imagePublicUrl = null;
-        let imageFilePath = null;
-        if (imageFile && imageFile.size > 0) {
-            const imgExt = imageFile.name.split('.').pop()?.toLowerCase() || 'png';
-            const imgFileName = `${safeChurchId}-bible-img-${Date.now()}.${imgExt}`;
-            imageFilePath = `bible-readings/${imgFileName}`;
-
-            const { data: imgUploadData, error: imgUploadError } = await supabaseAdmin.storage
-                .from('church-assets')
-                .upload(imageFilePath, imageFile, {
-                    contentType: imageFile.type,
-                    cacheControl: '31536000',
-                    upsert: true
-                });
-
-            if (imgUploadError) {
-                console.error('[Storage Image Upload Error]:', imgUploadError);
-                // 오디오 파일들 전체 롤백
-                await supabaseAdmin.storage.from('church-assets').remove([audioFilePath]);
-                if (audioFilePath2) {
-                    await supabaseAdmin.storage.from('church-assets').remove([audioFilePath2]);
-                }
-                return NextResponse.json({ error: `이미지 업로드 실패: ${imgUploadError.message}` }, { status: 500 });
-            }
-
-            const { data: { publicUrl: imgUrl } } = supabaseAdmin.storage
-                .from('church-assets')
-                .getPublicUrl(imageFilePath);
-            
-            imagePublicUrl = imgUrl;
-        }
-
-        // 4. bible_readings 테이블에 메타데이터 저장
+        // bible_readings 테이블에 메타데이터 저장
         const { data: reading, error: insertError } = await supabaseAdmin
             .from('bible_readings')
             .insert([{
-                church_id: churchId,
+                church_id,
                 title,
-                audio_url: audioPublicUrl,
-                audio_url_2: audioPublicUrl2,
-                image_url: imagePublicUrl,
+                audio_url,
+                audio_url_2,
+                image_url,
                 description: description || ''
             }])
             .select()
             .single();
 
-        if (insertError) {
-            // 실패 시 업로드한 모든 파일 지우기
-            await supabaseAdmin.storage.from('church-assets').remove([audioFilePath]);
-            if (audioFilePath2) {
-                await supabaseAdmin.storage.from('church-assets').remove([audioFilePath2]);
-            }
-            if (imageFilePath) {
-                await supabaseAdmin.storage.from('church-assets').remove([imageFilePath]);
-            }
-            throw insertError;
-        }
+        if (insertError) throw insertError;
 
         return NextResponse.json(reading);
     } catch (err: any) {

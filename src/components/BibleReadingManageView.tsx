@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 interface BibleReadingManageViewProps {
     user: any;
@@ -22,6 +23,7 @@ export default function BibleReadingManageView({
     
     const [isUploading, setIsUploading] = useState(false);
     const [isLoadingList, setIsLoadingList] = useState(true);
+    const [uploadStatus, setUploadStatus] = useState('');
 
     useEffect(() => {
         fetchReadings();
@@ -90,23 +92,114 @@ export default function BibleReadingManageView({
         }
 
         setIsUploading(true);
-        const formData = new FormData();
-        formData.append('file', selectedFile);
-        if (selectedFile2) {
-            formData.append('file2', selectedFile2);
-        }
-        if (selectedImage) {
-            formData.append('image', selectedImage);
-        }
-        formData.append('title', title.trim());
-        formData.append('description', description.trim());
-        formData.append('church_id', churchId);
-        formData.append('user_id', user.id);
+        setUploadStatus('첫 번째 오디오 파일 업로드 준비 중...');
+
+        let audioFilePath = null;
+        let audioFilePath2 = null;
+        let imageFilePath = null;
+
+        const rollbackFiles = async () => {
+            const deletePaths = [];
+            if (audioFilePath) deletePaths.push(audioFilePath);
+            if (audioFilePath2) deletePaths.push(audioFilePath2);
+            if (imageFilePath) deletePaths.push(imageFilePath);
+            if (deletePaths.length > 0) {
+                try {
+                    await supabase.storage.from('church-assets').remove(deletePaths);
+                    console.log('[Rollback] Deleted:', deletePaths);
+                } catch (rollbackErr) {
+                    console.error('[Rollback Error]:', rollbackErr);
+                }
+            }
+        };
 
         try {
+            const safeChurchId = churchId.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+            // 1. 첫 번째 오디오 업로드
+            setUploadStatus('첫 번째 오디오 파일 업로드 중...');
+            const fileExt = selectedFile.name.split('.').pop()?.toLowerCase() || 'mp3';
+            const audioFileName = `${safeChurchId}-bible-${Date.now()}.${fileExt}`;
+            audioFilePath = `bible-readings/${audioFileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('church-assets')
+                .upload(audioFilePath, selectedFile, {
+                    cacheControl: '31536000',
+                    contentType: 'audio/mpeg',
+                    upsert: false
+                });
+
+            if (uploadError) throw new Error(`첫 번째 오디오 업로드 실패: ${uploadError.message}`);
+
+            const { data: { publicUrl: audioPublicUrl } } = supabase.storage
+                .from('church-assets')
+                .getPublicUrl(audioFilePath);
+
+            // 2. 두 번째 오디오 업로드 (선택)
+            let audioPublicUrl2 = null;
+            if (selectedFile2) {
+                setUploadStatus('두 번째 오디오 파일 업로드 중...');
+                const fileExt2 = selectedFile2.name.split('.').pop()?.toLowerCase() || 'mp3';
+                const audioFileName2 = `${safeChurchId}-bible-part2-${Date.now()}.${fileExt2}`;
+                audioFilePath2 = `bible-readings/${audioFileName2}`;
+
+                const { error: uploadError2 } = await supabase.storage
+                    .from('church-assets')
+                    .upload(audioFilePath2, selectedFile2, {
+                        cacheControl: '31536000',
+                        contentType: 'audio/mpeg',
+                        upsert: false
+                    });
+
+                if (uploadError2) throw new Error(`두 번째 오디오 업로드 실패: ${uploadError2.message}`);
+
+                const { data: { publicUrl: audioUrl2 } } = supabase.storage
+                    .from('church-assets')
+                    .getPublicUrl(audioFilePath2);
+                audioPublicUrl2 = audioUrl2;
+            }
+
+            // 3. 본문 이미지 업로드 (선택)
+            let imagePublicUrl = null;
+            if (selectedImage) {
+                setUploadStatus('본문 참고 이미지 업로드 중...');
+                const imgExt = selectedImage.name.split('.').pop()?.toLowerCase() || 'png';
+                const imgFileName = `${safeChurchId}-bible-img-${Date.now()}.${imgExt}`;
+                imageFilePath = `bible-readings/${imgFileName}`;
+
+                const { error: imgUploadError } = await supabase.storage
+                    .from('church-assets')
+                    .upload(imageFilePath, selectedImage, {
+                        cacheControl: '31536000',
+                        contentType: selectedImage.type || 'image/jpeg',
+                        upsert: false
+                    });
+
+                if (imgUploadError) throw new Error(`이미지 업로드 실패: ${imgUploadError.message}`);
+
+                const { data: { publicUrl: imgUrl } } = supabase.storage
+                    .from('church-assets')
+                    .getPublicUrl(imageFilePath);
+                imagePublicUrl = imgUrl;
+            }
+
+            // 4. Next.js API 호출로 메타데이터 기록
+            setUploadStatus('서버 데이터베이스 기록 중...');
             const res = await fetch('/api/admin/bible-readings', {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: title.trim(),
+                    description: description.trim(),
+                    audio_url: audioPublicUrl,
+                    audio_url_2: audioPublicUrl2,
+                    image_url: imagePublicUrl,
+                    church_id: churchId,
+                    user_id: user.id
+                })
             });
 
             const data = await res.json();
@@ -127,13 +220,17 @@ export default function BibleReadingManageView({
                 
                 await fetchReadings();
             } else {
+                // 실패 시 업로드된 파일들 삭제
+                await rollbackFiles();
                 alert(`등록 실패: ${data.error || '알 수 없는 오류'}`);
             }
-        } catch (err) {
-            console.error('Upload request failed:', err);
-            alert('서버 네트워크 오류가 발생했습니다.');
+        } catch (err: any) {
+            console.error('Upload failed:', err);
+            await rollbackFiles();
+            alert(`등록 중 오류가 발생했습니다: ${err.message || err}`);
         } finally {
             setIsUploading(false);
+            setUploadStatus('');
         }
     };
 
@@ -289,7 +386,7 @@ export default function BibleReadingManageView({
                         {isUploading ? (
                             <>
                                 <span style={{ animation: 'spin 1s infinite linear' }}>⏳</span>
-                                대용량 파일 전송 및 업로드 중 (최대 1~2분 소요)...
+                                {uploadStatus || '대용량 파일 전송 및 업로드 중...'}
                             </>
                         ) : '등록하기'}
                     </button>
