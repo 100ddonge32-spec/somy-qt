@@ -16,6 +16,7 @@ export default function BibleReadingManageView({
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [selectedImage, setSelectedImage] = useState<File | null>(null);
     const [readings, setReadings] = useState<any[]>([]);
     
     const [isUploading, setIsUploading] = useState(false);
@@ -24,6 +25,18 @@ export default function BibleReadingManageView({
     useEffect(() => {
         fetchReadings();
     }, [churchId]);
+
+    // 이미지 파일 선택 핸들러
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const file = e.target.files[0];
+            if (!file.type.startsWith('image/')) {
+                alert('이미지 파일 형식만 업로드 가능합니다.');
+                return;
+            }
+            setSelectedImage(file);
+        }
+    };
 
     // 1. 회차 목록 로드
     const fetchReadings = async () => {
@@ -65,6 +78,9 @@ export default function BibleReadingManageView({
         setIsUploading(true);
         const formData = new FormData();
         formData.append('file', selectedFile);
+        if (selectedImage) {
+            formData.append('image', selectedImage);
+        }
         formData.append('title', title.trim());
         formData.append('description', description.trim());
         formData.append('church_id', churchId);
@@ -82,9 +98,12 @@ export default function BibleReadingManageView({
                 setTitle('');
                 setDescription('');
                 setSelectedFile(null);
+                setSelectedImage(null);
                 // 파일 인풋 초기화
                 const fileInput = document.getElementById('audio-file-input') as HTMLInputElement;
                 if (fileInput) fileInput.value = '';
+                const imgInput = document.getElementById('image-file-input') as HTMLInputElement;
+                if (imgInput) imgInput.value = '';
                 
                 await fetchReadings();
             } else {
@@ -188,6 +207,23 @@ export default function BibleReadingManageView({
                         {selectedFile && (
                             <div style={{ fontSize: '11px', color: '#718096', fontWeight: 600, marginTop: '2px' }}>
                                 선택된 파일 크기: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 본문 이미지 선택 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#4A5568' }}>본문 이미지 파일 업로드 (선택)</label>
+                        <input
+                            id="image-file-input"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            style={{ fontSize: '12px', color: '#4A5568' }}
+                        />
+                        {selectedImage && (
+                            <div style={{ fontSize: '11px', color: '#718096', fontWeight: 600, marginTop: '2px' }}>
+                                선택된 이미지 크기: {(selectedImage.size / (1024 * 1024)).toFixed(2)} MB
                             </div>
                         )}
                     </div>

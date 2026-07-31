@@ -4,9 +4,13 @@ CREATE TABLE IF NOT EXISTS public.bible_readings (
     church_id text NOT NULL DEFAULT 'jesus-in',
     title text NOT NULL,
     audio_url text NOT NULL,
+    image_url text, -- 성경통독 설명 참고용 본문 이미지 주소
     description text,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- 만약 이미 bible_readings 테이블을 생성하셨다면 아래 주석을 해제하고 이 쿼리만 한 번 실행해 주시면 됩니다.
+-- ALTER TABLE public.bible_readings ADD COLUMN IF NOT EXISTS image_url text;
 
 -- 2. 개인 통독 진행도 및 완료 상태 테이블
 CREATE TABLE IF NOT EXISTS public.bible_reading_progress (

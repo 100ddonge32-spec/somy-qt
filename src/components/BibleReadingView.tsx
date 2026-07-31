@@ -26,6 +26,7 @@ export default function BibleReadingView({
     const [isLoading, setIsLoading] = useState(true);
     const [isCommentsLoading, setIsCommentsLoading] = useState(false);
     const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+    const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -298,6 +299,27 @@ export default function BibleReadingView({
                         onPlaybackComplete={handlePlaybackComplete}
                     />
 
+                    {/* 본문 이미지 참고 영역 */}
+                    {activeReading.image_url && (
+                        <div style={{ marginTop: '12px' }}>
+                            <div style={{ fontSize: '12px', fontWeight: 800, color: '#8E754C', marginBottom: '6px' }}>📖 본문 이미지 (클릭 시 크게 보기)</div>
+                            <img
+                                src={activeReading.image_url}
+                                alt="본문 참고 이미지"
+                                onClick={() => setIsImageModalOpen(true)}
+                                style={{
+                                    width: '100%',
+                                    borderRadius: '16px',
+                                    border: '1.5px solid #EBE5D8',
+                                    cursor: 'zoom-in',
+                                    boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
+                                    maxHeight: '220px',
+                                    objectFit: 'cover'
+                                }}
+                            />
+                        </div>
+                    )}
+
                     {/* 활성화된 통독 설명 */}
                     {activeReading.description && (
                         <div style={{ background: '#FFF', borderRadius: '20px', padding: '16px 20px', border: '1px solid #EEE', marginTop: '12px', fontSize: '14px', color: '#555', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
@@ -489,6 +511,40 @@ export default function BibleReadingView({
                             );
                         })
                     )}
+                </div>
+            )}
+
+            {/* 이미지 전체화면 모달 오버레이 */}
+            {isImageModalOpen && activeReading?.image_url && (
+                <div
+                    onClick={() => setIsImageModalOpen(false)}
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100vw',
+                        height: '100vh',
+                        background: 'rgba(0, 0, 0, 0.9)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 999999999,
+                        cursor: 'zoom-out',
+                        animation: 'fade-in 0.2s ease-out'
+                    }}
+                >
+                    <div style={{ position: 'absolute', top: '20px', right: '20px', color: 'white', fontSize: '24px', fontWeight: 'bold', cursor: 'pointer' }}>✕</div>
+                    <img
+                        src={activeReading.image_url}
+                        alt="본문 이미지 크게 보기"
+                        style={{
+                            maxWidth: '95%',
+                            maxHeight: '90%',
+                            objectFit: 'contain',
+                            borderRadius: '8px',
+                            boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
+                        }}
+                    />
                 </div>
             )}
         </div>
