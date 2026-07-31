@@ -7,8 +7,10 @@ import { getTodayCcm, CcmVideo, CCM_LIST } from "@/lib/ccm";
 import { getDailyPsalm, getRandomPsalm } from '@/lib/psalm-verses';
 import * as XLSX from 'xlsx';
 import FamilyTree from "@/components/FamilyTree";
+import BibleReadingView from "@/components/BibleReadingView";
+import BibleReadingManageView from "@/components/BibleReadingManageView";
 
-type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "statsManage" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "adminGuide" | "brandGuide" | "profile" | "memberSearch" | "book" | "pastorColumn" | "gallery" | "churchSettings" | "memberManage" | "pastoralInsightsManage" | "galleryManage" | "adminManage" | "dataReset" | "masterManage";
+type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "statsManage" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "adminGuide" | "brandGuide" | "profile" | "memberSearch" | "book" | "pastorColumn" | "gallery" | "churchSettings" | "memberManage" | "pastoralInsightsManage" | "galleryManage" | "adminManage" | "dataReset" | "masterManage" | "bibleReading" | "bibleReadingManage";
 
 const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://lfjrfyylsxhvwosdpujv.supabase.co/storage/v1/object/public/church-assets/jesus-in-logo.png";
@@ -2781,6 +2783,27 @@ export default function App() {
     }, [ccmVolume, initPlayer, lastToggleTime]);
 
     const renderContent = () => {
+        if (view === "bibleReading") {
+            return (
+                <BibleReadingView
+                    user={user}
+                    churchId={churchId}
+                    onBack={handleBack}
+                    baseFont={baseFont}
+                    isAdmin={isAdmin}
+                />
+            );
+        }
+        if (view === "bibleReadingManage") {
+            return (
+                <BibleReadingManageView
+                    user={user}
+                    churchId={churchId}
+                    onBack={handleBack}
+                    baseFont={baseFont}
+                />
+            );
+        }
         if (view === "book") {
             return <BookView book={churchSettings} onBack={handleBack} />;
         }
@@ -3569,6 +3592,22 @@ export default function App() {
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                         <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🔎</div>
                                         <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>성도 주소록</span>
+                                    </button>
+
+                                    {/* 성경통독 */}
+                                    <button onClick={() => setView('bibleReading')} className="main-action-button" style={{
+                                        width: '100%',
+                                        padding: "16px 12px",
+                                        background: "linear-gradient(145deg, #ffffff 0%, #fffbe6 100%)", color: "#AA7C11",
+                                        fontWeight: 800, fontSize: "15px", borderRadius: "18px",
+                                        border: "1px solid #f6e8c3", cursor: "pointer",
+                                        boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
+                                        display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
+                                        transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                                        justifyContent: 'flex-start'
+                                    }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                                        <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🎧</div>
+                                        <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>성경통독</span>
                                     </button>
 
                                 </div>
@@ -6426,6 +6465,14 @@ export default function App() {
                                 <div style={{ textAlign: 'center' }}>
                                     <div style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginBottom: '2px', wordBreak: 'keep-all' }}>브랜드 홍보</div>
                                     <div style={{ fontSize: '9px', color: '#B8924A', wordBreak: 'keep-all' }}>PDF 홍보 책자</div>
+                                </div>
+                            </button>
+
+                            <button onClick={() => setView('bibleReadingManage')} style={{ padding: '16px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                                <div style={{ width: '40px', height: '40px', background: '#FEF0D8', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🎧</div>
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#333', marginBottom: '2px', wordBreak: 'keep-all' }}>성경통독</div>
+                                    <div style={{ fontSize: '9px', color: '#999', wordBreak: 'keep-all' }}>음원 등록/삭제</div>
                                 </div>
                             </button>
 
