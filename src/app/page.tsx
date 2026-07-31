@@ -3604,7 +3604,8 @@ export default function App() {
                                         boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
                                         display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                                        justifyContent: 'flex-start'
+                                        justifyContent: 'flex-start',
+                                        gridColumn: fontScale > 1.2 ? 'auto' : 'span 2'
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
                                         <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🎧</div>
                                         <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>성경통독</span>
