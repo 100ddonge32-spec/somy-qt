@@ -228,7 +228,7 @@ export default function BibleReadingView({
                     user_id: user.id,
                     user_name: profileName || user?.user_metadata?.full_name || user?.user_metadata?.name || '성도',
                     content: newComment.trim(),
-                    is_completed_comment: isCompletedChecked
+                    is_completed_comment: isCompletedChecked || isReadingCompleted(activeReading.id)
                 })
             });
 
@@ -276,6 +276,18 @@ export default function BibleReadingView({
     // 특정 회차의 진행도 반환 헬퍼
     const getReadingProgress = (readingId: number) => {
         return progress.progressList.find((p: any) => p.reading_id === readingId);
+    };
+
+    // 특정 회차의 완독 완료 여부 반환 헬퍼
+    const isReadingCompleted = (readingId: number) => {
+        const p = getReadingProgress(readingId);
+        if (!p) return false;
+        const reading = readings.find(r => r.id === readingId);
+        const hasPart2 = !!reading?.audio_url_2;
+        if (hasPart2) {
+            return !!p.is_completed && !!p.is_completed_2;
+        }
+        return !!p.is_completed;
     };
 
     if (isLoading) {
@@ -499,11 +511,12 @@ export default function BibleReadingView({
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 800, color: '#AA7C11', cursor: 'pointer' }}>
                                     <input
                                         type="checkbox"
-                                        checked={isCompletedChecked}
+                                        checked={isCompletedChecked || isReadingCompleted(activeReading.id)}
                                         onChange={(e) => setIsCompletedChecked(e.target.checked)}
+                                        disabled={isReadingCompleted(activeReading.id)}
                                         style={{ width: '16px', height: '16px', accentColor: '#D4AF37' }}
                                     />
-                                    🔥 이번 통독 완료 인증하기
+                                    🔥 이번 통독 완료 인증하기 {isReadingCompleted(activeReading.id) && '(완료됨)'}
                                 </label>
                             </div>
                             <textarea
@@ -626,10 +639,10 @@ export default function BibleReadingView({
                                     onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                                     onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                                 >
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingRight: '12px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingRight: '12px', minWidth: 0, flex: 1 }}>
                                         <div style={{ fontWeight: 800, fontSize: '15px', color: '#333' }}>{reading.title}</div>
                                         {reading.description && (
-                                            <div style={{ fontSize: '12px', color: '#888', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '300px' }}>
+                                            <div style={{ fontSize: '12px', color: '#888', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
                                                 {reading.description}
                                             </div>
                                         )}
@@ -646,7 +659,7 @@ export default function BibleReadingView({
                                     </div>
 
                                     {/* 상태 뱃지 */}
-                                    <div>
+                                    <div style={{ flexShrink: 0, marginLeft: '4px' }}>
                                         {isCompleted ? (
                                             <span style={{
                                                 background: 'linear-gradient(135deg, #FFF8F0 0%, #FEF0D8 100%)',
@@ -656,7 +669,8 @@ export default function BibleReadingView({
                                                 borderRadius: '20px',
                                                 fontSize: '11px',
                                                 fontWeight: 900,
-                                                boxShadow: '0 2px 5px rgba(212,175,55,0.1)'
+                                                boxShadow: '0 2px 5px rgba(212,175,55,0.1)',
+                                                whiteSpace: 'nowrap'
                                             }}>
                                                 완료 👑
                                             </span>
@@ -667,7 +681,8 @@ export default function BibleReadingView({
                                                 padding: '5px 12px',
                                                 borderRadius: '20px',
                                                 fontSize: '11px',
-                                                fontWeight: 700
+                                                fontWeight: 700,
+                                                whiteSpace: 'nowrap'
                                             }}>
                                                 {(currentPos > 0 || (hasPart2 && currentPos2 > 0)) ? '진행중' : '시작하기'}
                                             </span>
