@@ -18,6 +18,7 @@ const parseImageUrls = (val: string | null | undefined): string[] => {
 
 interface BibleReadingViewProps {
     user: any;
+    profileName?: string | null;
     churchId: string;
     onBack: () => void;
     baseFont: any;
@@ -26,6 +27,7 @@ interface BibleReadingViewProps {
 
 export default function BibleReadingView({
     user,
+    profileName,
     churchId,
     onBack,
     baseFont,
@@ -224,7 +226,7 @@ export default function BibleReadingView({
                 body: JSON.stringify({
                     reading_id: activeReading.id,
                     user_id: user.id,
-                    user_name: user.full_name || user.name || '성도',
+                    user_name: profileName || user?.user_metadata?.full_name || user?.user_metadata?.name || '성도',
                     content: newComment.trim(),
                     is_completed_comment: isCompletedChecked
                 })
@@ -319,7 +321,7 @@ export default function BibleReadingView({
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
-                            <span style={{ fontSize: '13px', color: '#888', fontWeight: 600 }}>{user?.full_name || '성도'}님의 통독 현황</span>
+                            <span style={{ fontSize: '13px', color: '#888', fontWeight: 600 }}>{profileName || user?.user_metadata?.full_name || user?.user_metadata?.name || '성도'}님의 통독 현황</span>
                             <div style={{ fontSize: '22px', fontWeight: 900, color: '#2C3E50', marginTop: '2px' }}>
                                 총 {progress.total}회 중 <span style={{ color: '#AA7C11' }}>{progress.completed}회</span> 완료!
                             </div>
@@ -546,10 +548,10 @@ export default function BibleReadingView({
                                         {/* 프로필 이미지 */}
                                         <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#EEE', overflow: 'hidden', flexShrink: 0 }}>
                                             {comment.profiles?.avatar_url ? (
-                                                <img src={comment.profiles.avatar_url} alt={comment.user_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                <img src={comment.profiles.avatar_url} alt={comment.profiles?.full_name || comment.user_name || '성도'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                             ) : (
                                                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', background: '#E0E7FF', color: '#4F46E5', fontWeight: 800 }}>
-                                                    {comment.user_name.slice(0, 1)}
+                                                    {(comment.profiles?.full_name || comment.user_name || '성도').slice(0, 1)}
                                                 </div>
                                             )}
                                         </div>
@@ -557,7 +559,7 @@ export default function BibleReadingView({
                                         {/* 내용 그룹 */}
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                                <span style={{ fontWeight: 800, fontSize: '13px', color: '#333' }}>{comment.user_name}</span>
+                                                <span style={{ fontWeight: 800, fontSize: '13px', color: '#333' }}>{comment.profiles?.full_name || comment.user_name || '성도'}</span>
                                                 
                                                 {/* 통독 완료 뱃지 */}
                                                 {comment.is_completed_comment && (
@@ -727,23 +729,30 @@ export default function BibleReadingView({
                                 style={{
                                     position: 'absolute',
                                     left: '16px',
-                                    background: 'rgba(255, 255, 255, 0.1)',
-                                    border: 'none',
+                                    background: 'rgba(255, 255, 255, 0.35)',
+                                    border: '1px solid rgba(255, 255, 255, 0.4)',
                                     color: 'white',
-                                    fontSize: '24px',
+                                    fontSize: '32px',
                                     borderRadius: '50%',
-                                    width: '44px',
-                                    height: '44px',
+                                    width: '48px',
+                                    height: '48px',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     cursor: 'pointer',
                                     zIndex: 10,
                                     backdropFilter: 'blur(4px)',
-                                    transition: 'background 0.2s'
+                                    transition: 'all 0.2s',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
                                 }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.55)';
+                                    e.currentTarget.style.transform = 'scale(1.05)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.35)';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                }}
                             >
                                 ‹
                             </button>
@@ -778,23 +787,30 @@ export default function BibleReadingView({
                                 style={{
                                     position: 'absolute',
                                     right: '16px',
-                                    background: 'rgba(255, 255, 255, 0.1)',
-                                    border: 'none',
+                                    background: 'rgba(255, 255, 255, 0.35)',
+                                    border: '1px solid rgba(255, 255, 255, 0.4)',
                                     color: 'white',
-                                    fontSize: '24px',
+                                    fontSize: '32px',
                                     borderRadius: '50%',
-                                    width: '44px',
-                                    height: '44px',
+                                    width: '48px',
+                                    height: '48px',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     cursor: 'pointer',
                                     zIndex: 10,
                                     backdropFilter: 'blur(4px)',
-                                    transition: 'background 0.2s'
+                                    transition: 'all 0.2s',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
                                 }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.55)';
+                                    e.currentTarget.style.transform = 'scale(1.05)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.35)';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                }}
                             >
                                 ›
                             </button>

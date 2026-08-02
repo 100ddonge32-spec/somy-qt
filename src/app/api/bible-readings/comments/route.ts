@@ -24,7 +24,8 @@ export async function GET(req: NextRequest) {
             .select(`
                 *,
                 profiles:user_id (
-                    avatar_url
+                    avatar_url,
+                    full_name
                 )
             `)
             .eq('reading_id', readingId)
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
 
         // [이름 보정] user_name이 비었거나 형식 오류일 경우 profiles에서 복구
         let finalUserName = user_name;
-        if (!finalUserName || /^[0-9]+$/.test(String(finalUserName))) {
+        if (!finalUserName || finalUserName === '성도' || /^[0-9]+$/.test(String(finalUserName))) {
             const { data: profile } = await supabaseAdmin
                 .from('profiles')
                 .select('full_name')

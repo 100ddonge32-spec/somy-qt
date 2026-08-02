@@ -2787,6 +2787,7 @@ export default function App() {
             return (
                 <BibleReadingView
                     user={user}
+                    profileName={profileName}
                     churchId={churchId}
                     onBack={handleBack}
                     baseFont={baseFont}
