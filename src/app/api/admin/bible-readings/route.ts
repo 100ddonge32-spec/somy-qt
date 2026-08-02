@@ -84,6 +84,45 @@ export async function POST(req: NextRequest) {
     }
 }
 
+// 스토리지에서 파일 제거 헬퍼 함수 (단일 URL 및 JSON 형식의 이미지 리스트 모두 대응)
+async function deleteFileFromStorage(urlOrJson: string | null | undefined) {
+    if (!urlOrJson) return;
+    let urls: string[] = [];
+    if (urlOrJson.startsWith('[') && urlOrJson.endsWith(']')) {
+        try {
+            urls = JSON.parse(urlOrJson);
+        } catch (e) {
+            urls = [urlOrJson];
+        }
+    } else {
+        urls = [urlOrJson];
+    }
+
+    const filePathsToDelete: string[] = [];
+    for (const url of urls) {
+        if (url && url.includes('/storage/v1/object/public/church-assets/')) {
+            const pathParts = url.split('/storage/v1/object/public/church-assets/');
+            if (pathParts.length > 1) {
+                const filePath = decodeURIComponent(pathParts[1]);
+                filePathsToDelete.push(filePath);
+            }
+        }
+    }
+
+    if (filePathsToDelete.length > 0) {
+        try {
+            const { error } = await supabaseAdmin.storage.from('church-assets').remove(filePathsToDelete);
+            if (error) {
+                console.error('[Storage Delete Error]:', error);
+            } else {
+                console.log(`[Storage Deleted Files]:`, filePathsToDelete);
+            }
+        } catch (e) {
+            console.error('[Storage Delete Catch Error]:', e);
+        }
+    }
+}
+
 // 2. 성경통독 회차 삭제 (DB 및 스토리지 파일 전체 삭제)
 export async function DELETE(req: NextRequest) {
     try {
@@ -112,45 +151,21 @@ export async function DELETE(req: NextRequest) {
 
         // 2. Storage 오디오 파일 1 삭제
         try {
-            const audioUrl = reading.audio_url;
-            if (audioUrl && audioUrl.includes('/storage/v1/object/public/church-assets/')) {
-                const pathParts = audioUrl.split('/storage/v1/object/public/church-assets/');
-                if (pathParts.length > 1) {
-                    const filePath = decodeURIComponent(pathParts[1]);
-                    await supabaseAdmin.storage.from('church-assets').remove([filePath]);
-                    console.log(`[Storage Deleted Audio 1]: ${filePath}`);
-                }
-            }
+            await deleteFileFromStorage(reading.audio_url);
         } catch (storageDelErr) {
             console.error('[Storage Audio 1 Delete Warning]:', storageDelErr);
         }
 
         // 3. Storage 오디오 파일 2 삭제
         try {
-            const audioUrl2 = reading.audio_url_2;
-            if (audioUrl2 && audioUrl2.includes('/storage/v1/object/public/church-assets/')) {
-                const pathParts = audioUrl2.split('/storage/v1/object/public/church-assets/');
-                if (pathParts.length > 1) {
-                    const filePath = decodeURIComponent(pathParts[1]);
-                    await supabaseAdmin.storage.from('church-assets').remove([filePath]);
-                    console.log(`[Storage Deleted Audio 2]: ${filePath}`);
-                }
-            }
+            await deleteFileFromStorage(reading.audio_url_2);
         } catch (storageDelErr) {
             console.error('[Storage Audio 2 Delete Warning]:', storageDelErr);
         }
 
         // 4. Storage 이미지 파일 삭제 (존재하는 경우)
         try {
-            const imageUrl = reading.image_url;
-            if (imageUrl && imageUrl.includes('/storage/v1/object/public/church-assets/')) {
-                const pathParts = imageUrl.split('/storage/v1/object/public/church-assets/');
-                if (pathParts.length > 1) {
-                    const filePath = decodeURIComponent(pathParts[1]);
-                    await supabaseAdmin.storage.from('church-assets').remove([filePath]);
-                    console.log(`[Storage Deleted Image]: ${filePath}`);
-                }
-            }
+            await deleteFileFromStorage(reading.image_url);
         } catch (storageDelErr) {
             console.error('[Storage Image Delete Warning]:', storageDelErr);
         }
@@ -196,18 +211,6 @@ export async function PUT(req: NextRequest) {
         if (fetchError) throw fetchError;
         if (!oldReading) return NextResponse.json({ error: '수정하려는 데이터를 찾을 수 없습니다.' }, { status: 404 });
 
-        // helper: 스토리지에서 파일 제거
-        const deleteFileFromStorage = async (url: string) => {
-            if (url && url.includes('/storage/v1/object/public/church-assets/')) {
-                const pathParts = url.split('/storage/v1/object/public/church-assets/');
-                if (pathParts.length > 1) {
-                    const filePath = decodeURIComponent(pathParts[1]);
-                    await supabaseAdmin.storage.from('church-assets').remove([filePath]);
-                    console.log(`[Storage Cleanup due to Edit]: ${filePath}`);
-                }
-            }
-        };
-
         // 2. 변경된 파일이 존재하거나 기존 파일이 제거되었을 시 스토리지 파일 삭제 처리
         if (audio_url && oldReading.audio_url && audio_url !== oldReading.audio_url) {
             await deleteFileFromStorage(oldReading.audio_url);
@@ -215,8 +218,24 @@ export async function PUT(req: NextRequest) {
         if (oldReading.audio_url_2 && audio_url_2 !== oldReading.audio_url_2) {
             await deleteFileFromStorage(oldReading.audio_url_2);
         }
-        if (oldReading.image_url && image_url !== oldReading.image_url) {
-            await deleteFileFromStorage(oldReading.image_url);
+        
+        // 이미지 개별 제거 비교
+        if (oldReading.image_url) {
+            const parseUrls = (val: string | null | undefined) => {
+                if (!val) return [];
+                if (val.startsWith('[') && val.endsWith(']')) {
+                    try { return JSON.parse(val); } catch(e) {}
+                }
+                return [val];
+            };
+            const oldUrls: string[] = parseUrls(oldReading.image_url);
+            const newUrls: string[] = parseUrls(image_url);
+            
+            // oldUrls에는 존재하지만 newUrls에는 존재하지 않는 URL들만 삭제
+            const removedUrls = oldUrls.filter(url => !newUrls.includes(url));
+            for (const url of removedUrls) {
+                await deleteFileFromStorage(url);
+            }
         }
 
         // 3. DB 업데이트 수행
@@ -241,3 +260,4 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
+

@@ -1,6 +1,21 @@
 import { useState, useEffect } from 'react';
 import BibleReadingPlayer from './BibleReadingPlayer';
 
+const parseImageUrls = (val: string | null | undefined): string[] => {
+    if (!val) return [];
+    if (val.startsWith('[') && val.endsWith(']')) {
+        try {
+            return JSON.parse(val);
+        } catch (e) {
+            // fallback
+        }
+    }
+    if (val && val.includes(',')) {
+        return val.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    return val ? [val] : [];
+};
+
 interface BibleReadingViewProps {
     user: any;
     churchId: string;
@@ -26,12 +41,27 @@ export default function BibleReadingView({
     const [isLoading, setIsLoading] = useState(true);
     const [isCommentsLoading, setIsCommentsLoading] = useState(false);
     const [isSubmittingComment, setIsSubmittingComment] = useState(false);
-    const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+    const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
+    const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
     const [activePart, setActivePart] = useState<1 | 2>(1);
 
     useEffect(() => {
         loadData();
     }, [churchId, user?.id]);
+
+    useEffect(() => {
+        setCurrentCarouselIndex(0);
+        setActiveImageIndex(null);
+    }, [activeReading]);
+
+    const handleCarouselScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const container = e.currentTarget;
+        const width = container.offsetWidth;
+        if (width > 0) {
+            const index = Math.round(container.scrollLeft / width);
+            setCurrentCarouselIndex(index);
+        }
+    };
 
     const loadData = async () => {
         setIsLoading(true);
@@ -382,25 +412,71 @@ export default function BibleReadingView({
                     />
 
                     {/* 본문 이미지 참고 영역 */}
-                    {activeReading.image_url && (
-                        <div style={{ marginTop: '12px' }}>
-                            <div style={{ fontSize: '12px', fontWeight: 800, color: '#8E754C', marginBottom: '6px' }}>📖 본문 이미지 (클릭 시 크게 보기)</div>
-                            <img
-                                src={activeReading.image_url}
-                                alt="본문 참고 이미지"
-                                onClick={() => setIsImageModalOpen(true)}
-                                style={{
-                                    width: '100%',
-                                    borderRadius: '16px',
-                                    border: '1.5px solid #EBE5D8',
-                                    cursor: 'zoom-in',
-                                    boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
-                                    maxHeight: '220px',
-                                    objectFit: 'cover'
-                                }}
-                            />
-                        </div>
-                    )}
+                    {(() => {
+                        const images = parseImageUrls(activeReading.image_url);
+                        if (images.length === 0) return null;
+                        return (
+                            <div style={{ marginTop: '12px' }}>
+                                <style>{`
+                                    .no-scrollbar::-webkit-scrollbar {
+                                        display: none;
+                                    }
+                                `}</style>
+                                <div style={{ fontSize: '12px', fontWeight: 800, color: '#8E754C', marginBottom: '6px' }}>📖 본문 이미지 (클릭 시 크게 보기)</div>
+                                
+                                <div 
+                                    onScroll={handleCarouselScroll}
+                                    style={{
+                                        display: 'flex',
+                                        gap: '8px',
+                                        overflowX: 'auto',
+                                        scrollSnapType: 'x mandatory',
+                                        WebkitOverflowScrolling: 'touch',
+                                        borderRadius: '16px',
+                                        border: '1.5px solid #EBE5D8',
+                                        boxShadow: '0 4px 10px rgba(0,0,0,0.05)',
+                                        msOverflowStyle: 'none',
+                                        scrollbarWidth: 'none',
+                                    }}
+                                    className="no-scrollbar"
+                                >
+                                    {images.map((url, index) => (
+                                        <img
+                                            key={index}
+                                            src={url}
+                                            alt={`본문 참고 이미지 ${index + 1}`}
+                                            onClick={() => setActiveImageIndex(index)}
+                                            style={{
+                                                scrollSnapAlign: 'start',
+                                                flexShrink: 0,
+                                                width: '100%',
+                                                maxHeight: '220px',
+                                                objectFit: 'cover',
+                                                cursor: 'zoom-in',
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+
+                                {images.length > 1 && (
+                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '8px' }}>
+                                        {images.map((_, index) => (
+                                            <div
+                                                key={index}
+                                                style={{
+                                                    width: '6px',
+                                                    height: '6px',
+                                                    borderRadius: '50%',
+                                                    background: currentCarouselIndex === index ? '#1A5D55' : '#CBD5E1',
+                                                    transition: 'background-color 0.2s ease'
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
 
                     {/* 활성화된 통독 설명 */}
                     {activeReading.description && (
@@ -603,38 +679,129 @@ export default function BibleReadingView({
             )}
 
             {/* 이미지 전체화면 모달 오버레이 */}
-            {isImageModalOpen && activeReading?.image_url && (
-                <div
-                    onClick={() => setIsImageModalOpen(false)}
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        width: '100vw',
-                        height: '100vh',
-                        background: 'rgba(0, 0, 0, 0.9)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 999999999,
-                        cursor: 'zoom-out',
-                        animation: 'fade-in 0.2s ease-out'
-                    }}
-                >
-                    <div style={{ position: 'absolute', top: '20px', right: '20px', color: 'white', fontSize: '24px', fontWeight: 'bold', cursor: 'pointer' }}>✕</div>
-                    <img
-                        src={activeReading.image_url}
-                        alt="본문 이미지 크게 보기"
+            {(() => {
+                const images = parseImageUrls(activeReading?.image_url);
+                if (activeImageIndex === null || images.length === 0) return null;
+                const activeUrl = images[activeImageIndex];
+                
+                const handlePrev = (e: React.MouseEvent) => {
+                    e.stopPropagation();
+                    setActiveImageIndex(prev => (prev !== null && prev > 0) ? prev - 1 : images.length - 1);
+                };
+                
+                const handleNext = (e: React.MouseEvent) => {
+                    e.stopPropagation();
+                    setActiveImageIndex(prev => (prev !== null && prev < images.length - 1) ? prev + 1 : 0);
+                };
+
+                return (
+                    <div
+                        onClick={() => setActiveImageIndex(null)}
                         style={{
-                            maxWidth: '95%',
-                            maxHeight: '90%',
-                            objectFit: 'contain',
-                            borderRadius: '8px',
-                            boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            width: '100vw',
+                            height: '100vh',
+                            background: 'rgba(0, 0, 0, 0.95)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 999999999,
+                            cursor: 'zoom-out',
+                            animation: 'fade-in 0.2s ease-out'
                         }}
-                    />
-                </div>
-            )}
+                    >
+                        {/* 닫기 버튼 */}
+                        <div 
+                            onClick={() => setActiveImageIndex(null)}
+                            style={{ position: 'absolute', top: '20px', right: '20px', color: 'white', fontSize: '24px', fontWeight: 'bold', cursor: 'pointer', zIndex: 10 }}
+                        >
+                            ✕
+                        </div>
+
+                        {/* 왼쪽 이동 화살표 (이미지가 2개 이상일 때) */}
+                        {images.length > 1 && (
+                            <button
+                                onClick={handlePrev}
+                                style={{
+                                    position: 'absolute',
+                                    left: '16px',
+                                    background: 'rgba(255, 255, 255, 0.1)',
+                                    border: 'none',
+                                    color: 'white',
+                                    fontSize: '24px',
+                                    borderRadius: '50%',
+                                    width: '44px',
+                                    height: '44px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    zIndex: 10,
+                                    backdropFilter: 'blur(4px)',
+                                    transition: 'background 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                            >
+                                ‹
+                            </button>
+                        )}
+
+                        {/* 메인 이미지 */}
+                        <div style={{ position: 'relative', maxWidth: '90%', maxHeight: '85%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }} onClick={(e) => e.stopPropagation()}>
+                            <img
+                                src={activeUrl}
+                                alt="본문 이미지 크게 보기"
+                                style={{
+                                    maxWidth: '100%',
+                                    maxHeight: '80vh',
+                                    objectFit: 'contain',
+                                    borderRadius: '8px',
+                                    boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
+                                }}
+                            />
+                            
+                            {/* 페이지 정보 표시 */}
+                            {images.length > 1 && (
+                                <div style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '13px', fontWeight: 600, background: 'rgba(0,0,0,0.6)', padding: '4px 12px', borderRadius: '12px' }}>
+                                    {activeImageIndex + 1} / {images.length}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 오른쪽 이동 화살표 (이미지가 2개 이상일 때) */}
+                        {images.length > 1 && (
+                            <button
+                                onClick={handleNext}
+                                style={{
+                                    position: 'absolute',
+                                    right: '16px',
+                                    background: 'rgba(255, 255, 255, 0.1)',
+                                    border: 'none',
+                                    color: 'white',
+                                    fontSize: '24px',
+                                    borderRadius: '50%',
+                                    width: '44px',
+                                    height: '44px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    zIndex: 10,
+                                    backdropFilter: 'blur(4px)',
+                                    transition: 'background 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                            >
+                                ›
+                            </button>
+                        )}
+                    </div>
+                );
+            })()}
         </div>
     );
 }

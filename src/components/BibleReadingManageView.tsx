@@ -18,7 +18,8 @@ export default function BibleReadingManageView({
     const [description, setDescription] = useState('');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [selectedFile2, setSelectedFile2] = useState<File | null>(null);
-    const [selectedImage, setSelectedImage] = useState<File | null>(null);
+    const [selectedImages, setSelectedImages] = useState<File[]>([]);
+    const [existingImages, setExistingImages] = useState<string[]>([]);
     const [readings, setReadings] = useState<any[]>([]);
     
     const [isUploading, setIsUploading] = useState(false);
@@ -27,7 +28,6 @@ export default function BibleReadingManageView({
 
     const [editingReading, setEditingReading] = useState<any | null>(null);
     const [clearAudio2, setClearAudio2] = useState(false);
-    const [clearImage, setClearImage] = useState(false);
 
     useEffect(() => {
         fetchReadings();
@@ -36,13 +36,26 @@ export default function BibleReadingManageView({
     // 이미지 파일 선택 핸들러
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
-            const file = e.target.files[0];
-            if (!file.type.startsWith('image/')) {
+            const files = Array.from(e.target.files);
+            const invalidFile = files.find(file => !file.type.startsWith('image/'));
+            if (invalidFile) {
                 alert('이미지 파일 형식만 업로드 가능합니다.');
                 return;
             }
-            setSelectedImage(file);
+            setSelectedImages(files);
         }
+    };
+
+    // 새로 선택한 이미지 삭제 핸들러
+    const removeSelectedImage = (index: number) => {
+        setSelectedImages(prev => prev.filter((_, i) => i !== index));
+        const imgInput = document.getElementById('image-file-input') as HTMLInputElement;
+        if (imgInput) imgInput.value = '';
+    };
+
+    // 기존 등록된 이미지 삭제 핸들러
+    const removeExistingImage = (index: number) => {
+        setExistingImages(prev => prev.filter((_, i) => i !== index));
     };
 
     // 수정 시작 핸들러
@@ -52,9 +65,22 @@ export default function BibleReadingManageView({
         setDescription(reading.description || '');
         setSelectedFile(null);
         setSelectedFile2(null);
-        setSelectedImage(null);
+        setSelectedImages([]);
+        
+        // 기존 이미지 주소 파싱
+        const parseUrls = (val: string | null | undefined) => {
+            if (!val) return [];
+            if (val.startsWith('[') && val.endsWith(']')) {
+                try { return JSON.parse(val); } catch(e) {}
+            }
+            if (val && val.includes(',')) {
+                return val.split(',').map(s => s.trim()).filter(Boolean);
+            }
+            return val ? [val] : [];
+        };
+        setExistingImages(parseUrls(reading.image_url));
+        
         setClearAudio2(false);
-        setClearImage(false);
 
         // 파일 인풋들 비워주기
         const fileInput = document.getElementById('audio-file-input') as HTMLInputElement;
@@ -75,9 +101,9 @@ export default function BibleReadingManageView({
         setDescription('');
         setSelectedFile(null);
         setSelectedFile2(null);
-        setSelectedImage(null);
+        setSelectedImages([]);
+        setExistingImages([]);
         setClearAudio2(false);
-        setClearImage(false);
 
         const fileInput = document.getElementById('audio-file-input') as HTMLInputElement;
         if (fileInput) fileInput.value = '';
@@ -145,16 +171,16 @@ export default function BibleReadingManageView({
         setIsUploading(true);
         setUploadStatus('작업 준비 중...');
 
-        let audioFilePath = null;
-        let audioFilePath2 = null;
-        let imageFilePath = null;
+        let audioFilePath: string | null = null;
+        let audioFilePath2: string | null = null;
+        const uploadedImagePaths: string[] = [];
 
         // 에러 시 이번 전송 중에 업로드된 스토리지 파일들만 롤백 처리
         const rollbackFiles = async () => {
             const deletePaths = [];
             if (audioFilePath) deletePaths.push(audioFilePath);
             if (audioFilePath2) deletePaths.push(audioFilePath2);
-            if (imageFilePath) deletePaths.push(imageFilePath);
+            if (uploadedImagePaths.length > 0) deletePaths.push(...uploadedImagePaths);
             if (deletePaths.length > 0) {
                 try {
                     await supabase.storage.from('church-assets').remove(deletePaths);
@@ -216,29 +242,38 @@ export default function BibleReadingManageView({
                 audioPublicUrl2 = audioUrl2;
             }
 
-            // --- 3. 본문 이미지 파일 업로드 처리 ---
-            let imagePublicUrl = editingReading ? (clearImage ? null : editingReading.image_url) : null;
-            if (selectedImage) {
-                setUploadStatus('본문 참고 이미지 업로드 중...');
-                const imgExt = selectedImage.name.split('.').pop()?.toLowerCase() || 'png';
-                const imgFileName = `${safeChurchId}-bible-img-${Date.now()}.${imgExt}`;
-                imageFilePath = `bible-readings/${imgFileName}`;
+            // --- 3. 본문 이미지 파일들 업로드 처리 ---
+            const uploadedImageUrls: string[] = [];
+            if (selectedImages.length > 0) {
+                for (let i = 0; i < selectedImages.length; i++) {
+                    const img = selectedImages[i];
+                    setUploadStatus(`본문 참고 이미지 ${i + 1}/${selectedImages.length} 업로드 중...`);
+                    const imgExt = img.name.split('.').pop()?.toLowerCase() || 'png';
+                    const imgFileName = `${safeChurchId}-bible-img-${Date.now()}-${i}.${imgExt}`;
+                    const imgPath = `bible-readings/${imgFileName}`;
 
-                const { error: imgUploadError } = await supabase.storage
-                    .from('church-assets')
-                    .upload(imageFilePath, selectedImage, {
-                        cacheControl: '31536000',
-                        contentType: selectedImage.type || 'image/jpeg',
-                        upsert: false
-                    });
+                    const { error: imgUploadError } = await supabase.storage
+                        .from('church-assets')
+                        .upload(imgPath, img, {
+                            cacheControl: '31536000',
+                            contentType: img.type || 'image/jpeg',
+                            upsert: false
+                        });
 
-                if (imgUploadError) throw new Error(`이미지 업로드 실패: ${imgUploadError.message}`);
+                    if (imgUploadError) throw new Error(`이미지 ${i + 1} 업로드 실패: ${imgUploadError.message}`);
+                    uploadedImagePaths.push(imgPath);
 
-                const { data: { publicUrl: imgUrl } } = supabase.storage
-                    .from('church-assets')
-                    .getPublicUrl(imageFilePath);
-                imagePublicUrl = imgUrl;
+                    const { data: { publicUrl: imgUrl } } = supabase.storage
+                        .from('church-assets')
+                        .getPublicUrl(imgPath);
+                    uploadedImageUrls.push(imgUrl);
+                }
             }
+
+            const finalImageUrlsList = editingReading 
+                ? [...existingImages, ...uploadedImageUrls] 
+                : [...uploadedImageUrls];
+            const imagePublicUrl = finalImageUrlsList.length > 0 ? JSON.stringify(finalImageUrlsList) : null;
 
             // --- 4. 백엔드 API 서버 전송 ---
             setUploadStatus(editingReading ? '서버 데이터베이스 수정 중...' : '서버 데이터베이스 기록 중...');
@@ -275,10 +310,10 @@ export default function BibleReadingManageView({
                 setDescription('');
                 setSelectedFile(null);
                 setSelectedFile2(null);
-                setSelectedImage(null);
+                setSelectedImages([]);
+                setExistingImages([]);
                 setEditingReading(null);
                 setClearAudio2(false);
-                setClearImage(false);
 
                 // 파일 인풋들 초기화
                 const fileInput = document.getElementById('audio-file-input') as HTMLInputElement;
@@ -447,32 +482,106 @@ export default function BibleReadingManageView({
 
                     {/* 본문 이미지 선택 */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#4A5568' }}>본문 이미지 파일 업로드 (선택)</label>
+                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#4A5568' }}>본문 이미지 파일 업로드 (중복 선택 가능 / 선택)</label>
                         <input
                             id="image-file-input"
                             type="file"
                             accept="image/*"
+                            multiple
                             onChange={handleImageChange}
                             style={{ fontSize: '12px', color: '#4A5568' }}
                         />
-                        {selectedImage && (
-                            <div style={{ fontSize: '11px', color: '#718096', fontWeight: 600, marginTop: '2px' }}>
-                                선택된 이미지 크기: {(selectedImage.size / (1024 * 1024)).toFixed(2)} MB
+
+                        {/* 새로 선택한 이미지 목록 */}
+                        {selectedImages.length > 0 && (
+                            <div style={{ marginTop: '6px' }}>
+                                <div style={{ fontSize: '11px', color: '#1A5D55', fontWeight: 800, marginBottom: '4px' }}>
+                                    새로 선택한 이미지 ({selectedImages.length}개)
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '4px 0' }}>
+                                    {selectedImages.map((img, idx) => {
+                                        let url = '';
+                                        try { url = URL.createObjectURL(img); } catch (e) {}
+                                        return (
+                                            <div key={idx} style={{ position: 'relative', width: '64px', height: '64px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #CBD5E1', flexShrink: 0 }}>
+                                                {url && <img
+                                                    src={url}
+                                                    alt="preview"
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                />}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeSelectedImage(idx)}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: '2px',
+                                                        right: '2px',
+                                                        width: '16px',
+                                                        height: '16px',
+                                                        borderRadius: '50%',
+                                                        background: 'rgba(0,0,0,0.6)',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        fontSize: '10px',
+                                                        fontWeight: 'bold',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
-                        {editingReading && editingReading.image_url && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '2px' }}>
-                                <div style={{ fontSize: '11px', color: '#7F8C8D', fontWeight: 600 }}>
-                                    🖼️ 기존 본문 이미지 등록됨: <a href={editingReading.image_url} target="_blank" rel="noreferrer" style={{ color: '#3498DB', textDecoration: 'underline' }}>링크 보기</a>
+
+                        {/* 기존에 등록된 이미지 목록 (수정 모드일 때) */}
+                        {editingReading && existingImages.length > 0 && (
+                            <div style={{ marginTop: '6px' }}>
+                                <div style={{ fontSize: '11px', color: '#7F8C8D', fontWeight: 800, marginBottom: '4px' }}>
+                                    🖼️ 기존 등록된 이미지 ({existingImages.length}개)
                                 </div>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#E11D48', cursor: 'pointer', fontWeight: 800 }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={clearImage}
-                                        onChange={(e) => setClearImage(e.target.checked)}
-                                    />
-                                    기존 등록된 본문 참고 이미지 완전히 제거하기
-                                </label>
+                                <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '4px 0' }}>
+                                    {existingImages.map((url, idx) => (
+                                        <div key={idx} style={{ position: 'relative', width: '64px', height: '64px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #CBD5E1', flexShrink: 0 }}>
+                                            <img
+                                                src={url}
+                                                alt="existing"
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeExistingImage(idx)}
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: '2px',
+                                                    right: '2px',
+                                                    width: '16px',
+                                                    height: '16px',
+                                                    borderRadius: '50%',
+                                                    background: 'rgba(225,29,72,0.9)',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    fontSize: '10px',
+                                                    fontWeight: 'bold',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{ fontSize: '10px', color: '#AA7C11', marginTop: '4px', fontWeight: 600 }}>
+                                    (삭제 버튼 ✕ 클릭 후 '정보 수정 완료' 버튼을 눌러야 실제 저장/삭제가 반영됩니다)
+                                </div>
                             </div>
                         )}
                     </div>
