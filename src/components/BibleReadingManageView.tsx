@@ -16,6 +16,7 @@ export default function BibleReadingManageView({
 }: BibleReadingManageViewProps) {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
+    const [publishedAt, setPublishedAt] = useState('');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [selectedFile2, setSelectedFile2] = useState<File | null>(null);
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
@@ -80,6 +81,16 @@ export default function BibleReadingManageView({
         };
         setExistingImages(parseUrls(reading.image_url));
         
+        // published_at 예약 시간 파싱 (datetime-local 용: YYYY-MM-DDTHH:MM 형식으로 변환)
+        if (reading.published_at) {
+            const d = new Date(reading.published_at);
+            const pad = (n: number) => String(n).padStart(2, '0');
+            const localStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            setPublishedAt(localStr);
+        } else {
+            setPublishedAt('');
+        }
+        
         setClearAudio2(false);
 
         // 파일 인풋들 비워주기
@@ -104,6 +115,7 @@ export default function BibleReadingManageView({
         setSelectedImages([]);
         setExistingImages([]);
         setClearAudio2(false);
+        setPublishedAt('');
 
         const fileInput = document.getElementById('audio-file-input') as HTMLInputElement;
         if (fileInput) fileInput.value = '';
@@ -117,7 +129,7 @@ export default function BibleReadingManageView({
     const fetchReadings = async () => {
         setIsLoadingList(true);
         try {
-            const res = await fetch(`/api/bible-readings?church_id=${churchId}`);
+            const res = await fetch(`/api/bible-readings?church_id=${churchId}&user_id=${user?.id}`);
             if (res.ok) {
                 const data = await res.json();
                 setReadings(data);
@@ -287,7 +299,8 @@ export default function BibleReadingManageView({
                 audio_url_2: audioPublicUrl2,
                 image_url: imagePublicUrl,
                 church_id: churchId,
-                user_id: user.id
+                user_id: user.id,
+                published_at: publishedAt ? new Date(publishedAt).toISOString() : new Date().toISOString()
             };
             if (editingReading) {
                 reqBody.id = editingReading.id;
@@ -314,6 +327,7 @@ export default function BibleReadingManageView({
                 setExistingImages([]);
                 setEditingReading(null);
                 setClearAudio2(false);
+                setPublishedAt('');
 
                 // 파일 인풋들 초기화
                 const fileInput = document.getElementById('audio-file-input') as HTMLInputElement;
@@ -412,6 +426,20 @@ export default function BibleReadingManageView({
                             rows={3}
                             style={{ padding: '12px 14px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '13px', outline: 'none', resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5 }}
                         />
+                    </div>
+
+                    {/* 예약 배포 설정 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ fontSize: '12px', fontWeight: 800, color: '#4A5568' }}>예약 배포 일시 (선택)</label>
+                        <input
+                            type="datetime-local"
+                            value={publishedAt}
+                            onChange={(e) => setPublishedAt(e.target.value)}
+                            style={{ padding: '12px 14px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '13px', outline: 'none', color: '#2C3E50', width: '100%' }}
+                        />
+                        <div style={{ fontSize: '11px', color: '#718096', fontWeight: 600, marginTop: '2px', lineHeight: '1.4' }}>
+                            설정하지 않으면 즉시 업로드되어 모든 성도님들께 공개되며, 예약 시간을 정하면 해당 시간 이후에만 성도들에게 노출됩니다.
+                        </div>
                     </div>
 
                     {/* 수정 가이드 정보 안내 */}
@@ -672,6 +700,17 @@ export default function BibleReadingManageView({
                                         {reading.title}
                                         {reading.audio_url_2 && <span style={{ fontSize: '10px', background: '#E2F1E8', color: '#1A5D55', padding: '1px 6px', borderRadius: '4px', fontWeight: 800 }}>파트 2</span>}
                                         {reading.image_url && <span style={{ fontSize: '10px', background: '#FFF3CD', color: '#856404', padding: '1px 6px', borderRadius: '4px', fontWeight: 800 }}>이미지</span>}
+                                        {(() => {
+                                            const isFuture = reading.published_at && new Date(reading.published_at).getTime() > Date.now();
+                                            if (isFuture) {
+                                                return (
+                                                    <span style={{ fontSize: '10px', background: '#DBEAFE', color: '#1E40AF', padding: '1px 6px', borderRadius: '4px', fontWeight: 800 }}>
+                                                        ⏰ 예약: {new Date(reading.published_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                                                    </span>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
                                     </div>
                                     <div style={{ fontSize: '11px', color: '#A0AEC0', wordBreak: 'break-all', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden', maxWidth: '280px' }}>
                                         {reading.description || '설명 없음'}

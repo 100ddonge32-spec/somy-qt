@@ -31,7 +31,10 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // 1. 현재 한국 시간 구하기 (UTC+9)
+        // 1. 예약 배포 성경통독 알림 발송 검사
+        const bibleReadingPushResult = await checkAndTriggerBibleReadingPushes();
+
+        // 2. 현재 한국 시간 구하기 (UTC+9)
         const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
         const currentHour = now.getHours();
         const today = now.toISOString().split('T')[0];
@@ -88,6 +91,7 @@ export async function GET(req: NextRequest) {
             today,
             currentTime: `${currentHour}:00`,
             processedCount: results.length,
+            bibleReadingPushes: bibleReadingPushResult,
             details: results
         });
 
@@ -174,4 +178,91 @@ async function triggerPushForChurch(churchId: string, today: string) {
 
     const sentCount = sendResults.filter(r => r.status === 'fulfilled').length;
     return { church_id: churchId, sentCount, total: subscriptions.length };
+}
+
+// 예약 배포 시간 감지 후 성도들에게 알림 전송 함수
+async function checkAndTriggerBibleReadingPushes() {
+    try {
+        const nowIso = new Date().toISOString();
+        // 아직 알림이 발송되지 않았고, 예약 시간이 현재 시간보다 이전인 통독 파일 가져오기
+        const { data: unsentReadings, error: fetchError } = await supabaseAdmin
+            .from('bible_readings')
+            .select('*')
+            .lte('published_at', nowIso)
+            .eq('notification_sent', false);
+
+        if (fetchError) throw fetchError;
+        if (!unsentReadings || unsentReadings.length === 0) return { checked: true, sentCount: 0 };
+
+        let totalSent = 0;
+
+        for (const reading of unsentReadings) {
+            // 1. 해당 교회의 성도 목록 조회
+            let churchIdsToSearch = [reading.church_id];
+            const normId = normalizeId(reading.church_id);
+            if (normId === 'jesus-in') {
+                churchIdsToSearch = ['jesus-in', '예수인교회', '예수인'];
+            }
+
+            const { data: approvedProfiles } = await supabaseAdmin
+                .from('profiles')
+                .select('id')
+                .in('church_id', churchIdsToSearch)
+                .eq('is_approved', true);
+
+            const approvedIds = (approvedProfiles || []).map(p => p.id);
+            if (approvedIds.length === 0) {
+                // 발송 대상이 없더라도 완료 처리는 해서 무한루프 방지
+                await supabaseAdmin.from('bible_readings').update({ notification_sent: true }).eq('id', reading.id);
+                continue;
+            }
+
+            // 2. 푸시 구독 조회
+            const { data: subscriptions } = await supabaseAdmin
+                .from('push_subscriptions')
+                .select('user_id, subscription')
+                .in('user_id', approvedIds);
+
+            if (subscriptions && subscriptions.length > 0) {
+                // 3. 푸시 알림 전송
+                const messageTitle = '새로운 성경통독이 업로드되었습니다! 🎧';
+                const messageBody = `오늘의 통독: ${reading.title}`;
+
+                await Promise.allSettled(
+                    subscriptions.map(async (sub) => {
+                        try {
+                            await webpush.sendNotification(
+                                sub.subscription,
+                                JSON.stringify({
+                                    title: messageTitle,
+                                    body: messageBody,
+                                    url: '/?view=bibleReading'
+                                })
+                            );
+                        } catch (err: any) {
+                            const statusCode = err.statusCode || (err.response && err.response.statusCode);
+                            if (statusCode === 410 || statusCode === 404 || statusCode === 400) {
+                                await supabaseAdmin
+                                    .from('push_subscriptions')
+                                    .delete()
+                                    .eq('user_id', sub.user_id);
+                            }
+                        }
+                    })
+                );
+                totalSent += subscriptions.length;
+            }
+
+            // 4. 발송 상태를 완료로 업데이트
+            await supabaseAdmin
+                .from('bible_readings')
+                .update({ notification_sent: true })
+                .eq('id', reading.id);
+        }
+
+        return { checked: true, sentCount: totalSent };
+    } catch (e) {
+        console.error('[checkAndTriggerBibleReadingPushes Error]:', e);
+        return { checked: false, error: e };
+    }
 }

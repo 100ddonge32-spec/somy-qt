@@ -49,7 +49,7 @@ async function checkIsAdmin(userId: string, churchId: string): Promise<boolean> 
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { title, description, audio_url, audio_url_2, image_url, church_id, user_id } = body;
+        const { title, description, audio_url, audio_url_2, image_url, church_id, user_id, published_at } = body;
 
         if (!audio_url) return NextResponse.json({ error: '첫 번째 오디오 파일 URL이 없습니다.' }, { status: 400 });
         if (!title) return NextResponse.json({ error: '제목을 입력해주세요.' }, { status: 400 });
@@ -70,7 +70,8 @@ export async function POST(req: NextRequest) {
                 audio_url,
                 audio_url_2,
                 image_url,
-                description: description || ''
+                description: description || '',
+                published_at: published_at || new Date().toISOString()
             }])
             .select()
             .single();
@@ -189,7 +190,7 @@ export async function DELETE(req: NextRequest) {
 export async function PUT(req: NextRequest) {
     try {
         const body = await req.json();
-        const { id, title, description, audio_url, audio_url_2, image_url, church_id, user_id } = body;
+        const { id, title, description, audio_url, audio_url_2, image_url, church_id, user_id, published_at } = body;
 
         if (!id) return NextResponse.json({ error: '회차 ID가 필요합니다.' }, { status: 400 });
         if (!title) return NextResponse.json({ error: '제목을 입력해주세요.' }, { status: 400 });
@@ -238,16 +239,21 @@ export async function PUT(req: NextRequest) {
             }
         }
 
+        const updateFields: any = {
+            title,
+            description: description || '',
+            audio_url: audio_url,
+            audio_url_2: audio_url_2, // null도 가능
+            image_url: image_url // null도 가능
+        };
+        if (published_at) {
+            updateFields.published_at = published_at;
+        }
+
         // 3. DB 업데이트 수행
         const { data: reading, error: updateError } = await supabaseAdmin
             .from('bible_readings')
-            .update({
-                title,
-                description: description || '',
-                audio_url: audio_url,
-                audio_url_2: audio_url_2, // null도 가능
-                image_url: image_url // null도 가능
-            })
+            .update(updateFields)
             .eq('id', id)
             .select()
             .single();

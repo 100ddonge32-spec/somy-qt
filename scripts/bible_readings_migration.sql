@@ -47,3 +47,8 @@ CREATE TABLE IF NOT EXISTS public.bible_reading_comments (
 CREATE INDEX IF NOT EXISTS idx_bible_readings_church ON public.bible_readings(church_id);
 CREATE INDEX IF NOT EXISTS idx_bible_reading_progress_user ON public.bible_reading_progress(user_id);
 CREATE INDEX IF NOT EXISTS idx_bible_reading_comments_reading ON public.bible_reading_comments(reading_id);
+
+-- 4. 예약 배포 기능 추가를 위한 컬럼 변경
+ALTER TABLE public.bible_readings ADD COLUMN IF NOT EXISTS published_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL;
+ALTER TABLE public.bible_readings ADD COLUMN IF NOT EXISTS notification_sent boolean NOT NULL DEFAULT false;
+
