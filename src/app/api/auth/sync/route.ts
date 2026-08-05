@@ -256,7 +256,9 @@ export async function POST(req: NextRequest) {
                     'gallery_posts',
                     'gallery_likes',
                     'gallery_comments',
-                    'activity_logs'
+                    'activity_logs',
+                    'bible_reading_progress',
+                    'bible_reading_comments'
                 ];
 
                 for (const table of migrateTables) {
@@ -293,6 +295,13 @@ export async function POST(req: NextRequest) {
                             const { data: newSub } = await supabaseAdmin.from('push_subscriptions').select('id').eq('user_id', newId).maybeSingle();
                             if (newSub) {
                                 await supabaseAdmin.from('push_subscriptions').delete().eq('user_id', oldId);
+                            }
+                        } else if (table === 'bible_reading_progress') {
+                            // 통독 진행 기록 충돌 방지 (동일 회차 기록이 있으면 구 ID 기록 삭제)
+                            const { data: newProgs } = await supabaseAdmin.from('bible_reading_progress').select('reading_id').eq('user_id', newId);
+                            const newReadingIds = new Set(newProgs?.map(p => p.reading_id) || []);
+                            if (newReadingIds.size > 0) {
+                                await supabaseAdmin.from('bible_reading_progress').delete().eq('user_id', oldId).in('reading_id', Array.from(newReadingIds));
                             }
                         }
 
