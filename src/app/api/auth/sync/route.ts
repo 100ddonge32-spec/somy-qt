@@ -23,6 +23,80 @@ export async function POST(req: NextRequest) {
         let isAdminMember = false;
         let adminChurchId = null;
 
+        const migrateData = async (oldId: string, newId: string) => {
+            console.log(`[Sync] Migrating data from old ID ${oldId} to new ID ${newId}`);
+            
+            const migrateTables = [
+                'thanksgiving_diaries',
+                'thanksgiving_comments',
+                'community_posts',
+                'community_comments',
+                'notifications',
+                'qt_completions',
+                'counseling_requests',
+                'push_subscriptions',
+                'gallery_posts',
+                'gallery_likes',
+                'gallery_comments',
+                'activity_logs',
+                'bible_reading_progress',
+                'bible_reading_comments'
+            ];
+
+            for (const table of migrateTables) {
+                try {
+                    // 1. [특수 처리] 좋아요 배열(liker_ids) 치환 작업
+                    if (table === 'community_posts' || table === 'thanksgiving_diaries') {
+                        const { data: posts } = await supabaseAdmin.from(table).select('id, liker_ids').contains('liker_ids', [oldId]);
+                        if (posts && posts.length > 0) {
+                            for (const post of posts) {
+                                    if (post.liker_ids) {
+                                        const newLikes = Array.from(new Set(post.liker_ids.map((id: string) => id === oldId ? newId : id)));
+                                        await supabaseAdmin.from(table).update({ liker_ids: newLikes }).eq('id', post.id);
+                                    }
+                            }
+                        }
+                    }
+
+                    // 2. [특수 처리] 유니크 제약조건이 있는 테이블 (중복 충돌 방지)
+                    if (table === 'gallery_likes') {
+                        const { data: existingNewLikes } = await supabaseAdmin.from('gallery_likes').select('post_id').eq('user_id', newId);
+                        const existingPostIds = new Set(existingNewLikes?.map(l => l.post_id) || []);
+                        if (existingPostIds.size > 0) {
+                            await supabaseAdmin.from('gallery_likes').delete().eq('user_id', oldId).in('post_id', Array.from(existingPostIds));
+                        }
+                    } else if (table === 'qt_completions') {
+                        // 큐티 기록 충돌 방지 (같은 날짜 기록이 있으면 구기록 삭제)
+                        const { data: newComps } = await supabaseAdmin.from('qt_completions').select('completed_date').eq('user_id', newId);
+                        const newDates = new Set(newComps?.map(c => c.completed_date) || []);
+                        if (newDates.size > 0) {
+                            await supabaseAdmin.from('qt_completions').delete().eq('user_id', oldId).in('completed_date', Array.from(newDates));
+                        }
+                    } else if (table === 'push_subscriptions') {
+                        // 푸시 구독은 한 명당 하나이므로, 새 ID에 이미 있으면 구 ID 기록 삭제
+                        const { data: newSub } = await supabaseAdmin.from('push_subscriptions').select('id').eq('user_id', newId).maybeSingle();
+                        if (newSub) {
+                            await supabaseAdmin.from('push_subscriptions').delete().eq('user_id', oldId);
+                        }
+                    } else if (table === 'bible_reading_progress') {
+                        // 통독 진행 기록 충돌 방지 (동일 회차 기록이 있으면 구 ID 기록 삭제)
+                        const { data: newProgs } = await supabaseAdmin.from('bible_reading_progress').select('reading_id').eq('user_id', newId);
+                        const newReadingIds = new Set(newProgs?.map(p => p.reading_id) || []);
+                        if (newReadingIds.size > 0) {
+                            await supabaseAdmin.from('bible_reading_progress').delete().eq('user_id', oldId).in('reading_id', Array.from(newReadingIds));
+                        }
+                    }
+
+                    // 3. 일반 레코드 소유권 이전 (충돌하지 않는 나머지 레코드들)
+                    await supabaseAdmin.from(table).update({ user_id: newId }).eq('user_id', oldId);
+                } catch (e) {
+                    console.error(`[Sync] Table ${table} migration error:`, e);
+                }
+            }
+
+            await supabaseAdmin.from('profiles').delete().eq('id', oldId);
+        };
+
         // 0. 관리자 테이블에서 먼저 권한 확인 (이메일 및 user_id)
         let adminCheckTerm = null;
         if (email && !email.includes('anonymous.local')) {
@@ -157,13 +231,23 @@ export async function POST(req: NextRequest) {
 
         // [Boss Bypass] 목사님 성함이면 정보 부족해도 무조건 매칭 시도
         if (!match && IS_BOSS) {
-            const { data: bossMatch } = await supabaseAdmin.from('profiles')
+            const { data: bossMatches } = await supabaseAdmin.from('profiles')
                 .select('*')
                 .eq('full_name', nameForMatch.trim())
-                .maybeSingle();
-            if (bossMatch) {
-                match = bossMatch;
-                console.log(`[Sync] Boss detected by backup match: ${match.full_name}`);
+                .order('created_at', { ascending: true }); // oldest first
+            
+            if (bossMatches && bossMatches.length > 0) {
+                match = bossMatches[0];
+                console.log(`[Sync] Boss detected by backup match: ${match.full_name} (${match.id}). Found ${bossMatches.length} duplicates.`);
+                
+                // 만약 중복된 다른 목사님 프로필들이 있다면, 이것들도 모두 현재 매칭된 ID(match.id)로 한 번 통합해 줍니다.
+                if (bossMatches.length > 1) {
+                    for (let i = 1; i < bossMatches.length; i++) {
+                        const duplicateProfile = bossMatches[i];
+                        console.log(`[Sync] Merging duplicate boss profile ${duplicateProfile.id} into ${match.id}`);
+                        await migrateData(duplicateProfile.id, match.id);
+                    }
+                }
             }
         }
 
@@ -240,80 +324,6 @@ export async function POST(req: NextRequest) {
 
             // 응답에는 현재 세션 컨텍스트(체험판 등)를 담아 전달
             const responseData = { ...updateFields, church_id: contextChurch };
-
-            const migrateData = async (oldId: string, newId: string) => {
-                console.log(`[Sync] Migrating data from old ID ${oldId} to new ID ${newId}`);
-                
-                const migrateTables = [
-                    'thanksgiving_diaries',
-                    'thanksgiving_comments',
-                    'community_posts',
-                    'community_comments',
-                    'notifications',
-                    'qt_completions',
-                    'counseling_requests',
-                    'push_subscriptions',
-                    'gallery_posts',
-                    'gallery_likes',
-                    'gallery_comments',
-                    'activity_logs',
-                    'bible_reading_progress',
-                    'bible_reading_comments'
-                ];
-
-                for (const table of migrateTables) {
-                    try {
-                        // 1. [특수 처리] 좋아요 배열(liker_ids) 치환 작업
-                        if (table === 'community_posts' || table === 'thanksgiving_diaries') {
-                            const { data: posts } = await supabaseAdmin.from(table).select('id, liker_ids').contains('liker_ids', [oldId]);
-                            if (posts && posts.length > 0) {
-                                for (const post of posts) {
-                                    if (post.liker_ids) {
-                                        const newLikes = Array.from(new Set(post.liker_ids.map((id: string) => id === oldId ? newId : id)));
-                                        await supabaseAdmin.from(table).update({ liker_ids: newLikes }).eq('id', post.id);
-                                    }
-                                }
-                            }
-                        }
-
-                        // 2. [특수 처리] 유니크 제약조건이 있는 테이블 (중복 충돌 방지)
-                        if (table === 'gallery_likes') {
-                            const { data: existingNewLikes } = await supabaseAdmin.from('gallery_likes').select('post_id').eq('user_id', newId);
-                            const existingPostIds = new Set(existingNewLikes?.map(l => l.post_id) || []);
-                            if (existingPostIds.size > 0) {
-                                await supabaseAdmin.from('gallery_likes').delete().eq('user_id', oldId).in('post_id', Array.from(existingPostIds));
-                            }
-                        } else if (table === 'qt_completions') {
-                            // 큐티 기록 충돌 방지 (같은 날짜 기록이 있으면 구기록 삭제)
-                            const { data: newComps } = await supabaseAdmin.from('qt_completions').select('completed_date').eq('user_id', newId);
-                            const newDates = new Set(newComps?.map(c => c.completed_date) || []);
-                            if (newDates.size > 0) {
-                                await supabaseAdmin.from('qt_completions').delete().eq('user_id', oldId).in('completed_date', Array.from(newDates));
-                            }
-                        } else if (table === 'push_subscriptions') {
-                            // 푸시 구독은 한 명당 하나이므로, 새 ID에 이미 있으면 구 ID 기록 삭제
-                            const { data: newSub } = await supabaseAdmin.from('push_subscriptions').select('id').eq('user_id', newId).maybeSingle();
-                            if (newSub) {
-                                await supabaseAdmin.from('push_subscriptions').delete().eq('user_id', oldId);
-                            }
-                        } else if (table === 'bible_reading_progress') {
-                            // 통독 진행 기록 충돌 방지 (동일 회차 기록이 있으면 구 ID 기록 삭제)
-                            const { data: newProgs } = await supabaseAdmin.from('bible_reading_progress').select('reading_id').eq('user_id', newId);
-                            const newReadingIds = new Set(newProgs?.map(p => p.reading_id) || []);
-                            if (newReadingIds.size > 0) {
-                                await supabaseAdmin.from('bible_reading_progress').delete().eq('user_id', oldId).in('reading_id', Array.from(newReadingIds));
-                            }
-                        }
-
-                        // 3. 일반 레코드 소유권 이전 (충돌하지 않는 나머지 레코드들)
-                        await supabaseAdmin.from(table).update({ user_id: newId }).eq('user_id', oldId);
-                    } catch (e) {
-                        console.error(`[Sync] Table ${table} migration error:`, e);
-                    }
-                }
-
-                await supabaseAdmin.from('profiles').delete().eq('id', oldId);
-            };
 
             // [수정] 이관 시 유니크 제약조건(email, phone 등) 충돌 방지
             if (match && match.id !== user_id) {
