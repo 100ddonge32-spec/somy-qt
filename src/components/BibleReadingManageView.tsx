@@ -457,7 +457,7 @@ export default function BibleReadingManageView({
                         <input
                             id="audio-file-input"
                             type="file"
-                            accept="audio/*"
+                            accept="audio/*,audio/mpeg,audio/mp3,audio/x-m4a,audio/x-mpeg,.mp3,.m4a,.wav"
                             onChange={handleFileChange}
                             style={{ fontSize: '12px', color: '#4A5568' }}
                             required={!editingReading}
@@ -482,7 +482,7 @@ export default function BibleReadingManageView({
                         <input
                             id="audio-file-input-2"
                             type="file"
-                            accept="audio/*"
+                            accept="audio/*,audio/mpeg,audio/mp3,audio/x-m4a,audio/x-mpeg,.mp3,.m4a,.wav"
                             onChange={handleFile2Change}
                             style={{ fontSize: '12px', color: '#4A5568' }}
                         />
