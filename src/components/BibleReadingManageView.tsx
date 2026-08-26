@@ -1,6 +1,52 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
+// 이미지 자동 압축 및 리사이징 헬퍼 함수 (최대 가로 1200px, 75% 화질)
+const compressImage = (file: File, maxWidth: number = 1200, quality: number = 0.75): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target?.result as string;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    resolve(file); // canvas 미지원 브라우저 대응
+                    return;
+                }
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob(
+                    (blob) => {
+                        if (blob) {
+                            resolve(blob);
+                        } else {
+                            resolve(file);
+                        }
+                    },
+                    'image/jpeg',
+                    quality
+                );
+            };
+            img.onerror = (err) => reject(err);
+        };
+        reader.onerror = (err) => reject(err);
+    });
+};
+
 interface BibleReadingManageViewProps {
     user: any;
     churchId: string;
@@ -259,16 +305,23 @@ export default function BibleReadingManageView({
             if (selectedImages.length > 0) {
                 for (let i = 0; i < selectedImages.length; i++) {
                     const img = selectedImages[i];
-                    setUploadStatus(`본문 참고 이미지 ${i + 1}/${selectedImages.length} 업로드 중...`);
-                    const imgExt = img.name.split('.').pop()?.toLowerCase() || 'png';
-                    const imgFileName = `${safeChurchId}-bible-img-${Date.now()}-${i}.${imgExt}`;
+                    setUploadStatus(`본문 참고 이미지 ${i + 1}/${selectedImages.length} 압축 및 업로드 중...`);
+                    
+                    let uploadData: Blob | File = img;
+                    try {
+                        uploadData = await compressImage(img, 1200, 0.75);
+                    } catch (compressErr) {
+                        console.error('Image compression failed, using original:', compressErr);
+                    }
+
+                    const imgFileName = `${safeChurchId}-bible-img-${Date.now()}-${i}.jpg`;
                     const imgPath = `bible-readings/${imgFileName}`;
 
                     const { error: imgUploadError } = await supabase.storage
                         .from('church-assets')
-                        .upload(imgPath, img, {
+                        .upload(imgPath, uploadData, {
                             cacheControl: '31536000',
-                            contentType: img.type || 'image/jpeg',
+                            contentType: 'image/jpeg',
                             upsert: false
                         });
 
