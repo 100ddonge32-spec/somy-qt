@@ -1468,14 +1468,19 @@ export default function App() {
         // 3. 승인 및 생일 체크 폴링
         let pollLoopCount = 0;
         const runPoller = () => {
+            // 브라우저 탭이 백그라운드에 있을 때는 불필요한 요청 방지
+            if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+                return;
+            }
+
             // [💡 Vercel API 호출 폭발(무한 루프) 방지 최적화]
-            // 미승인(대기) 상태일 때는 15초마다 승인 여부를 확인하지만,
-            // 이미 승인된 사용자는 불필요한 서버 호출을 막기 위해 10분(40번째 주기)에 한 번만 실행합니다.
-            if (!isApproved || pollLoopCount % 40 === 0) {
+            // 미승인(대기) 상태일 때는 60초마다 승인 여부를 확인하지만,
+            // 이미 승인된 사용자는 불필요한 서버 호출을 막기 위해 10분(10번째 주기)에 한 번만 실행합니다.
+            if (!isApproved || pollLoopCount % 10 === 0) {
                 checkApprovalStatus();
             }
 
-            // [추가] 실시간 알림 갱신 (15초마다)
+            // [추가] 실시간 알림 갱신 (60초마다)
             if (user) {
                 fetch(`/api/notifications?user_id=${user.id}`)
                     .then(r => r.ok ? r.json() : [])
@@ -1518,7 +1523,7 @@ export default function App() {
         };
 
         runPoller();
-        const poller = setInterval(runPoller, 15000);
+        const poller = setInterval(runPoller, 60000);
 
         // 4. 서비스 워커 등록 (표준 v11)
         if ('serviceWorker' in navigator) {

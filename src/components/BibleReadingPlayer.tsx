@@ -24,6 +24,8 @@ export default function BibleReadingPlayer({
     const [isMuted, setIsMuted] = useState(false);
     const [showSpeedMenu, setShowSpeedMenu] = useState(false);
 
+    const lastSavedTimeRef = useRef<number>(-1);
+
     const speedOptions = [0.8, 1.0, 1.25, 1.5, 2.0];
 
     // 오디오 파일 변경 또는 초기 마운트 시 동작
@@ -31,6 +33,7 @@ export default function BibleReadingPlayer({
         setIsPlaying(false);
         setCurrentTime(0);
         setDuration(0);
+        lastSavedTimeRef.current = -1;
 
         const audio = audioRef.current;
         if (audio) {
@@ -83,8 +86,10 @@ export default function BibleReadingPlayer({
         if (!audio) return;
         setCurrentTime(audio.currentTime);
 
+        const roundedTime = Math.floor(audio.currentTime);
         // 정기적으로 10초 간격으로 진행 상황을 업데이트 (부하 최소화)
-        if (onProgressUpdate && Math.floor(audio.currentTime) % 10 === 0) {
+        if (onProgressUpdate && roundedTime % 10 === 0 && lastSavedTimeRef.current !== roundedTime) {
+            lastSavedTimeRef.current = roundedTime;
             onProgressUpdate(audio.currentTime, audio.currentTime >= audio.duration - 2);
         }
     };
