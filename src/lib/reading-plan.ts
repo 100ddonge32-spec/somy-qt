@@ -102,17 +102,26 @@ const READING_PLAN: string[] = [
  * @param dateStr "YYYY-MM-DD" 형식의 날짜 문자열 (옵션)
  */
 export function getTodayReading(dateStr?: string): string {
-    let now: Date;
+    let year: number;
+    let month: number;
+    let day: number;
 
-    if (dateStr) {
-        now = new Date(dateStr);
+    if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        const parts = dateStr.split('-').map(Number);
+        year = parts[0];
+        month = parts[1] - 1;
+        day = parts[2];
     } else {
-        // 한국 시간 기준
-        now = new Date(Date.now() + 9 * 60 * 60 * 1000);
+        // 한국 시간(UTC+9) 기준
+        const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+        year = kst.getUTCFullYear();
+        month = kst.getUTCMonth();
+        day = kst.getUTCDate();
     }
 
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-    const dayOfYear = Math.floor((now.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
+    const currentDay = Date.UTC(year, month, day);
+    const startOfYear = Date.UTC(year, 0, 1);
+    const dayOfYear = Math.floor((currentDay - startOfYear) / (24 * 60 * 60 * 1000));
     const index = Math.max(0, dayOfYear) % READING_PLAN.length;
     return READING_PLAN[index];
 }

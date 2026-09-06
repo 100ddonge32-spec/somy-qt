@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { getGraceVerse } from '@/lib/navigator-verses';
+import { getTodayReading } from '@/lib/reading-plan';
 import { getTodayCcm, CcmVideo, CCM_LIST } from "@/lib/ccm";
 import { getDailyPsalm, getRandomPsalm } from '@/lib/psalm-verses';
 import * as XLSX from 'xlsx';
@@ -1648,6 +1649,11 @@ export default function App() {
         question1: '', question2: '', question3: '', prayer: '',
         youthInterpretation: '', youthQuestion1: '', youthQuestion2: '', youthQuestion3: ''
     });
+    // [추가] 큐티 본문 등록 상태 관리 (날짜별 등록 여부 확인)
+    const [qtStatusMap, setQtStatusMap] = useState<Record<string, { isUploaded: boolean; reference?: string; ai_generated?: boolean }>>({});
+    const [selectedQtUploaded, setSelectedQtUploaded] = useState<boolean>(false);
+    const [loadingQtDate, setLoadingQtDate] = useState<boolean>(false);
+    const [tomorrowQtStatus, setTomorrowQtStatus] = useState<boolean | null>(null);
     const [sermonManageForm, setSermonManageForm] = useState({ script: '', summary: '', q1: '', q2: '', q3: '', videoUrl: '', inputType: 'text' as 'text' | 'video' });
     const [aiLoading, setAiLoading] = useState(false);
     const [stats, setStats] = useState<{
@@ -2017,6 +2023,92 @@ export default function App() {
 
         return { fullPassage, interpretation, youthData };
     };
+
+    // [추가] 한국 시간 기준 날짜 유틸
+    const getKstDate = useCallback((offsetDays = 0): string => {
+        const d = new Date(Date.now() + 9 * 60 * 60 * 1000 + offsetDays * 24 * 60 * 60 * 1000);
+        return d.toISOString().split('T')[0];
+    }, []);
+
+    // [추가] 기간별 큐티 등록 상태 조회 (어제부터 향후 14일)
+    const fetchQtStatusList = useCallback(async () => {
+        try {
+            const startDate = getKstDate(-2);
+            const endDate = getKstDate(14);
+            const res = await fetch(`/api/qt?status_list=true&startDate=${startDate}&endDate=${endDate}`, { cache: 'no-store' });
+            const data = await res.json();
+            if (data?.list && Array.isArray(data.list)) {
+                const map: Record<string, { isUploaded: boolean; reference?: string; ai_generated?: boolean }> = {};
+                data.list.forEach((item: any) => {
+                    map[item.date] = {
+                        isUploaded: true,
+                        reference: item.reference,
+                        ai_generated: item.ai_generated,
+                    };
+                });
+                setQtStatusMap(map);
+
+                const tomorrow = getKstDate(1);
+                setTomorrowQtStatus(!!map[tomorrow]);
+            }
+        } catch (err) {
+            console.error('[fetchQtStatusList] error:', err);
+        }
+    }, [getKstDate]);
+
+    // [추가] 특정 날짜 큐티 선택 및 폼 로드 (등록 여부 확인 및 자동 세팅)
+    const selectQtDate = useCallback(async (targetDate: string) => {
+        setLoadingQtDate(true);
+        try {
+            const res = await fetch(`/api/qt?check_only=true&date=${targetDate}`, { cache: 'no-store' });
+            const data = await res.json();
+            if (data?.isUploaded && data?.qt) {
+                const { fullPassage, interpretation, youthData } = parsePassage(data.qt.passage);
+                setQtForm({
+                    date: data.qt.date,
+                    reference: data.qt.reference || '',
+                    passage: fullPassage || '',
+                    interpretation: interpretation || '',
+                    question1: data.qt.question1 || '',
+                    question2: data.qt.question2 || '',
+                    question3: data.qt.question3 || '',
+                    prayer: data.qt.prayer || '',
+                    youthInterpretation: youthData?.interpretation || '',
+                    youthQuestion1: youthData?.questions?.[0] || '',
+                    youthQuestion2: youthData?.questions?.[1] || '',
+                    youthQuestion3: youthData?.questions?.[2] || '',
+                });
+                setSelectedQtUploaded(true);
+            } else {
+                const readingRef = getTodayReading(targetDate);
+                setQtForm({
+                    date: targetDate,
+                    reference: readingRef || '',
+                    passage: '',
+                    interpretation: '',
+                    question1: '',
+                    question2: '',
+                    question3: '',
+                    prayer: '',
+                    youthInterpretation: '',
+                    youthQuestion1: '',
+                    youthQuestion2: '',
+                    youthQuestion3: '',
+                });
+                setSelectedQtUploaded(false);
+            }
+        } catch (err) {
+            console.error('[selectQtDate] error:', err);
+        } finally {
+            setLoadingQtDate(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (view === 'admin' || view === 'qtManage') {
+            fetchQtStatusList();
+        }
+    }, [view, fetchQtStatusList]);
 
     const fetchQt = async () => {
         setIsQtLoading(true);
@@ -4426,8 +4518,16 @@ export default function App() {
                     });
                     const data = await res.json();
                     if (data.success) {
-                        alert('큐티 본문이 저장되었습니다! ✅');
-                        const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
+                        setSelectedQtUploaded(true);
+                        setQtStatusMap(prev => ({
+                            ...prev,
+                            [qtForm.date]: { isUploaded: true, reference: qtForm.reference }
+                        }));
+                        const today = getKstDate(0);
+                        const tomorrow = getKstDate(1);
+                        if (qtForm.date === tomorrow) {
+                            setTomorrowQtStatus(true);
+                        }
                         if (qtForm.date === today) {
                             setQtData({
                                 date: new Date(qtForm.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }),
@@ -4439,7 +4539,18 @@ export default function App() {
                                 prayer: qtForm.prayer,
                             });
                         }
-                        setView('home');
+
+                        // 연속 입력 지원: 다음 날짜 계산
+                        const currDateObj = new Date(qtForm.date + 'T00:00:00');
+                        const nextDateStr = new Date(currDateObj.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+                        const continueNext = window.confirm(`[${qtForm.date}] 큐티 본문이 성공적으로 저장되었습니다! ✅\n\n이어서 다음 날짜(${nextDateStr}) 큐티도 확인/작성하시겠습니까?`);
+                        if (continueNext) {
+                            await selectQtDate(nextDateStr);
+                            fetchQtStatusList();
+                        } else {
+                            fetchQtStatusList();
+                        }
                     } else {
                         alert('저장 실패: ' + data.error);
                     }
@@ -4482,15 +4593,209 @@ export default function App() {
 
             const inputStyle = { width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #EEE', fontSize: '13px', boxSizing: 'border-box' as const, outline: 'none', fontFamily: 'inherit' };
 
+            // 어제(-1)부터 2주 후(+14)까지 16일치 날짜 목록 생성
+            const statusDates = [];
+            for (let offset = -1; offset <= 14; offset++) {
+                const dStr = getKstDate(offset);
+                const dObj = new Date(dStr + 'T00:00:00');
+                const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+                const dayOfWeek = dayNames[dObj.getDay()];
+                const month = dObj.getMonth() + 1;
+                const day = dObj.getDate();
+                let relLabel = `D+${offset}`;
+                if (offset === -1) relLabel = '어제';
+                else if (offset === 0) relLabel = '오늘';
+                else if (offset === 1) relLabel = '내일';
+                else if (offset === 2) relLabel = '모레';
+
+                statusDates.push({
+                    dateStr: dStr,
+                    displayDate: `${month}/${day}`,
+                    dayOfWeek,
+                    relLabel,
+                    isUploaded: !!qtStatusMap[dStr]?.isUploaded,
+                    reference: qtStatusMap[dStr]?.reference,
+                    offset
+                });
+            }
+
             return (
                 <div style={{ minHeight: "100vh", background: "white", maxWidth: "600px", margin: "0 auto", ...baseFont }}>
                     {styles}
                     <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", borderBottom: "1px solid #EEE", position: 'sticky', top: 0, background: 'white', zIndex: 10 }}>
                         <button onClick={handleBack} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: '#333' }}>←</button>
-                        <div style={{ fontWeight: 700, color: "#333", fontSize: "14px" }}>📝 큐티 본문 관리</div>
+                        <div style={{ fontWeight: 700, color: "#333", fontSize: "14px", flex: 1 }}>📝 큐티 본문 관리</div>
+                        <button
+                            type="button"
+                            onClick={() => fetchQtStatusList()}
+                            style={{ background: '#F5F5F5', border: '1px solid #E0E0E0', borderRadius: '8px', padding: '5px 10px', fontSize: '11px', color: '#666', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            title="등록 현황 새로고침"
+                        >
+                            🔄 현황 갱신
+                        </button>
                     </div>
-                    <div style={{ padding: "24px 20px", display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <div style={{ background: '#FDFCFB', padding: '16px', borderRadius: '15px', border: '1px solid #F0ECE4', marginBottom: '8px' }}>
+
+                    <div style={{ padding: "20px 20px 40px 20px", display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+                        {/* [추가 1] 날짜별 큐티 등록 현황 가로 스트립 */}
+                        <div style={{ background: '#FAF8F5', padding: '14px 16px', borderRadius: '16px', border: '1px solid #EDE6DB' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <div style={{ fontSize: '12px', fontWeight: 800, color: '#4A3B2C', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span>📅 날짜별 큐티 등록 현황</span>
+                                    <span style={{ fontSize: '10px', color: '#999', fontWeight: 500 }}>(어제 ~ 2주 후)</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '10px' }}>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: '#2E7D32', fontWeight: 700 }}>🟢 등록됨</span>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: '#8D6E63', fontWeight: 600 }}>⚪ 미등록</span>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '6px', WebkitOverflowScrolling: 'touch' }}>
+                                {statusDates.map((item) => {
+                                    const isSelected = qtForm.date === item.dateStr;
+                                    const isTomorrow = item.offset === 1;
+                                    const isToday = item.offset === 0;
+
+                                    return (
+                                        <div
+                                            key={item.dateStr}
+                                            onClick={() => selectQtDate(item.dateStr)}
+                                            style={{
+                                                flexShrink: 0,
+                                                width: '74px',
+                                                padding: '8px 4px',
+                                                borderRadius: '12px',
+                                                cursor: 'pointer',
+                                                textAlign: 'center',
+                                                transition: 'all 0.15s ease',
+                                                border: isSelected
+                                                    ? '2px solid #B8924A'
+                                                    : item.isUploaded
+                                                        ? '1px solid #C8E6C9'
+                                                        : '1px solid #E5E0D8',
+                                                background: isSelected
+                                                    ? '#FFF9E6'
+                                                    : item.isUploaded
+                                                        ? '#F6FBF7'
+                                                        : 'white',
+                                                boxShadow: isSelected
+                                                    ? '0 3px 10px rgba(184, 146, 74, 0.25)'
+                                                    : '0 1px 3px rgba(0,0,0,0.03)',
+                                            }}
+                                        >
+                                            <div style={{
+                                                fontSize: '11px',
+                                                fontWeight: 800,
+                                                color: isTomorrow ? '#D97706' : isToday ? '#2563EB' : '#666',
+                                                marginBottom: '2px'
+                                            }}>
+                                                {item.relLabel}
+                                            </div>
+                                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#333' }}>
+                                                {item.displayDate}
+                                                <span style={{ fontSize: '10px', color: item.dayOfWeek === '일' ? '#E53935' : item.dayOfWeek === '토' ? '#1E88E5' : '#888', marginLeft: '2px' }}>
+                                                    ({item.dayOfWeek})
+                                                </span>
+                                            </div>
+                                            <div style={{
+                                                marginTop: '4px',
+                                                padding: '2px 0',
+                                                borderRadius: '6px',
+                                                fontSize: '9px',
+                                                fontWeight: 700,
+                                                background: item.isUploaded ? '#E8F5E9' : '#F5F5F5',
+                                                color: item.isUploaded ? '#2E7D32' : '#999',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '2px'
+                                            }}>
+                                                {item.isUploaded ? '🟢 등록완료' : '⚪ 미등록'}
+                                            </div>
+                                            {item.reference && (
+                                                <div style={{
+                                                    fontSize: '9px',
+                                                    color: '#666',
+                                                    marginTop: '3px',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                    padding: '0 2px'
+                                                }} title={item.reference}>
+                                                    {item.reference}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* [추가 2] 현재 선택된 날짜 등록 상태 배너 및 삭제 버튼 */}
+                        <div style={{
+                            background: selectedQtUploaded ? '#F0F9F4' : '#FFF9F0',
+                            border: `1.5px solid ${selectedQtUploaded ? '#81C784' : '#FFE082'}`,
+                            borderRadius: '16px',
+                            padding: '14px 16px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            gap: '12px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+                        }}>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                    <span style={{ fontSize: '14px' }}>{selectedQtUploaded ? '🟢' : '⚪'}</span>
+                                    <span style={{ fontSize: '13px', fontWeight: 800, color: selectedQtUploaded ? '#1B5E20' : '#B45309' }}>
+                                        {qtForm.date} {selectedQtUploaded ? '본문 등록 완료 (수정 모드)' : '본문 미등록 (신규 작성)'}
+                                    </span>
+                                </div>
+                                <div style={{ fontSize: '11px', color: selectedQtUploaded ? '#2E7D32' : '#8D6E63', lineHeight: 1.4 }}>
+                                    {selectedQtUploaded
+                                        ? 'DB에 이미 등록된 본문입니다. 내용을 변경하고 저장하면 덮어씌워집니다.'
+                                        : `아직 등록된 큐티가 없습니다. (추천 통독: ${getTodayReading(qtForm.date) || '없음'})`}
+                                </div>
+                            </div>
+                            {selectedQtUploaded && (
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        if (!window.confirm(`🚨 정말로 [${qtForm.date}] 큐티 본문을 삭제하시겠습니까?\n삭제 후 해당 날짜는 '미등록' 상태로 전환됩니다.`)) return;
+                                        try {
+                                            const res = await fetch(`/api/qt?date=${qtForm.date}`, { method: 'DELETE' });
+                                            const d = await res.json();
+                                            if (d.success) {
+                                                alert(`[${qtForm.date}] 큐티가 삭제되었습니다.`);
+                                                await selectQtDate(qtForm.date);
+                                                fetchQtStatusList();
+                                            } else {
+                                                alert('삭제 실패: ' + (d.error || ''));
+                                            }
+                                        } catch {
+                                            alert('삭제 처리 중 오류가 발생했습니다.');
+                                        }
+                                    }}
+                                    style={{
+                                        padding: '6px 10px',
+                                        background: '#FFEBEE',
+                                        color: '#C62828',
+                                        border: '1px solid #FFCDD2',
+                                        borderRadius: '8px',
+                                        fontSize: '11px',
+                                        fontWeight: 700,
+                                        cursor: 'pointer',
+                                        whiteSpace: 'nowrap',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '3px'
+                                    }}
+                                >
+                                    🗑️ 본문 삭제
+                                </button>
+                            )}
+                        </div>
+
+                        <div style={{ background: '#FDFCFB', padding: '16px', borderRadius: '15px', border: '1px solid #F0ECE4', marginBottom: '8px', opacity: loadingQtDate ? 0.6 : 1 }}>
                             <div style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 ✨ AI 추천 기능
                             </div>
@@ -4515,13 +4820,19 @@ export default function App() {
                                             youthQuestion2: youthData?.questions?.[1] || '',
                                             youthQuestion3: youthData?.questions?.[2] || '',
                                         });
+                                        setSelectedQtUploaded(true);
+                                        setQtStatusMap(prev => ({
+                                            ...prev,
+                                            [qt.date]: { isUploaded: true, reference: qt.reference }
+                                        }));
+                                        fetchQtStatusList();
                                     } else {
-                                        alert('오늘의 자동 생성 본문을 가져올 수 없습니다. 유료 버전 설정을 확인해주세요.');
+                                        alert('자동 생성 본문을 가져올 수 없습니다. 유료 버전 설정을 확인해주세요.');
                                     }
                                 } catch { alert('데이터 로드 실패'); }
                                 finally { setAiLoading(false); }
-                            }} disabled={aiLoading} style={{ width: '100%', padding: '12px', background: '#333', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '13px', cursor: 'pointer', marginBottom: '8px' }}>
-                                {aiLoading ? '🔄 로딩 중...' : '📅 오늘 성경 통독 본문 불러오기'}
+                            }} disabled={aiLoading || loadingQtDate} style={{ width: '100%', padding: '12px', background: '#333', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '13px', cursor: 'pointer', marginBottom: '8px' }}>
+                                {aiLoading ? '🔄 로딩 중...' : `📅 ${qtForm.date === getKstDate(0) ? '오늘' : qtForm.date} 성경 통독 본문 AI 자동 생성`}
                             </button>
 
                             <button onClick={async () => {
@@ -4552,7 +4863,7 @@ export default function App() {
                                     setQtForm({ ...qtForm, reference: _ref, passage: _passage });
                                     alert('말씀은 불러왔으나 질문 생성에 실패했습니다.');
                                 } finally { setAiLoading(false); }
-                            }} disabled={aiLoading} style={{ width: '100%', padding: '12px', background: '#F5F2EA', color: '#B8924A', border: '1px solid #B8924A', borderRadius: '10px', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
+                            }} disabled={aiLoading || loadingQtDate} style={{ width: '100%', padding: '12px', background: '#F5F2EA', color: '#B8924A', border: '1px solid #B8924A', borderRadius: '10px', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
                                 🛳️ {churchSettings?.today_verse_text ? '설정된 오늘의 암송 불러오기' : '네비게이토 은혜 말씀 불러오기'}
                             </button>
 
@@ -4562,12 +4873,49 @@ export default function App() {
                         </div>
 
                         <div>
-                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>📅 날짜</label>
-                            <input type="date" value={qtForm.date} onChange={(e: any) => setQtForm((p: any) => ({ ...p, date: e.target.value }))} style={inputStyle} />
+                            <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>📅 날짜 선택</label>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <input
+                                    type="date"
+                                    value={qtForm.date}
+                                    onChange={(e: any) => {
+                                        const val = e.target.value;
+                                        if (val) selectQtDate(val);
+                                    }}
+                                    style={{ ...inputStyle, flex: 1 }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => selectQtDate(getKstDate(0))}
+                                    style={{ padding: '0 12px', background: '#F5F5F5', border: '1px solid #DDD', borderRadius: '10px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                >
+                                    오늘
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => selectQtDate(getKstDate(1))}
+                                    style={{ padding: '0 12px', background: '#FFF8E1', border: '1px solid #FFE082', color: '#B8924A', borderRadius: '10px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                >
+                                    내일
+                                </button>
+                            </div>
                         </div>
+
                         <div>
                             <label style={{ fontSize: '12px', fontWeight: 700, color: '#B8924A', display: 'block', marginBottom: '6px' }}>📖 성경 구절 (예: 시편 23:1-3)</label>
                             <input type="text" value={qtForm.reference} onChange={(e: any) => setQtForm((p: any) => ({ ...p, reference: e.target.value }))} placeholder="예: 시편 23:1-3" style={inputStyle} />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', gap: '6px' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const planRef = getTodayReading(qtForm.date);
+                                        if (planRef) setQtForm((p: any) => ({ ...p, reference: planRef }));
+                                    }}
+                                    style={{ background: 'none', border: 'none', fontSize: '11px', color: '#B8924A', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                                >
+                                    ✨ 통독표 구절({getTodayReading(qtForm.date) || '없음'}) 채우기
+                                </button>
+                            </div>
                             <button onClick={async () => {
                                 if (!qtForm.reference) { alert('성경 구절을 먼저 입력해주세요.'); return; }
                                 setAiLoading(true);
@@ -6336,34 +6684,32 @@ export default function App() {
                             </button>
 
                             <button onClick={async () => {
-                                const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
-                                setQtForm({
-                                    date: today, reference: '', passage: '', interpretation: '',
-                                    question1: '', question2: '', question3: '', prayer: '',
-                                    youthInterpretation: '', youthQuestion1: '', youthQuestion2: '', youthQuestion3: ''
-                                });
-                                setAiLoading(true);
-                                try {
-                                    const res = await fetch(`/api/qt?date=${today}&church_id=${churchId}`, { cache: 'no-store' });
-                                    const { qt } = await res.json();
-                                    if (qt) {
-                                        const { fullPassage, interpretation, youthData } = parsePassage(qt.passage);
-                                        setQtForm({
-                                            date: qt.date, reference: qt.reference, passage: fullPassage, interpretation: interpretation,
-                                            question1: qt.question1 || '', question2: qt.question2 || '', question3: qt.question3 || '',
-                                            prayer: qt.prayer || '', youthInterpretation: youthData?.interpretation || '',
-                                            youthQuestion1: youthData?.questions?.[0] || '', youthQuestion2: youthData?.questions?.[1] || '', youthQuestion3: youthData?.questions?.[2] || '',
-                                        });
-                                    }
-                                } catch (e) {} finally {
-                                    setAiLoading(false);
-                                    setView('qtManage');
-                                }
+                                const today = getKstDate(0);
+                                await selectQtDate(today);
+                                fetchQtStatusList();
+                                setView('qtManage');
                             }} style={{ padding: '24px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
                                 <div style={{ width: '40px', height: '40px', background: '#E1F5FE', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>📖</div>
                                 <div style={{ textAlign: 'center' }}>
                                     <div style={{ fontSize: '12px', fontWeight: 800, color: '#333', marginBottom: '2px', wordBreak: 'keep-all' }}>말씀 관리</div>
                                     <div style={{ fontSize: '9px', color: '#999', wordBreak: 'keep-all' }}>큐티 등록/수정</div>
+                                    {tomorrowQtStatus !== null && (
+                                        <div style={{
+                                            marginTop: '6px',
+                                            fontSize: '9px',
+                                            fontWeight: 700,
+                                            padding: '3px 8px',
+                                            borderRadius: '10px',
+                                            background: tomorrowQtStatus ? '#E8F5E9' : '#FFF3E0',
+                                            color: tomorrowQtStatus ? '#2E7D32' : '#D97706',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '3px',
+                                            border: `1px solid ${tomorrowQtStatus ? '#C8E6C9' : '#FFE082'}`
+                                        }}>
+                                            {tomorrowQtStatus ? '내일 등록됨 ✅' : '내일 미등록 ⚠️'}
+                                        </div>
+                                    )}
                                 </div>
                             </button>
 

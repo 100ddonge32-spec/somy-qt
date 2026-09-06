@@ -85,6 +85,57 @@ export async function GET(req: NextRequest) {
     const date = searchParams.get('date') || getKoreaDateString();
     const force = searchParams.get('force') === 'true';
     const churchId = searchParams.get('church_id') || '';
+    const isStatusList = searchParams.get('status_list') === 'true';
+    const isCheckOnly = searchParams.get('check_only') === 'true';
+
+    // 0-1. 기간별 큐티 등록 상태 목록 조회 (자동생성 없이 순수 조회)
+    if (isStatusList) {
+        try {
+            const startDate = searchParams.get('startDate') || getKoreaDateString();
+            const endDate = searchParams.get('endDate');
+
+            let query = supabaseAdmin
+                .from('daily_qt')
+                .select('date, reference, ai_generated, created_at')
+                .gte('date', startDate);
+
+            if (endDate) {
+                query = query.lte('date', endDate);
+            }
+
+            const { data, error } = await query.order('date', { ascending: true });
+            if (error) {
+                console.error('[QT API] status_list fetch error:', error);
+                return NextResponse.json({ error: error.message }, { status: 500 });
+            }
+
+            return NextResponse.json({ list: data || [] });
+        } catch (err: any) {
+            console.error('[QT API] status_list exception:', err);
+            return NextResponse.json({ error: err.message }, { status: 500 });
+        }
+    }
+
+    // 0-2. 특정 날짜 등록 여부 및 데이터 단건 확인 (자동생성 절대 안 함)
+    if (isCheckOnly) {
+        try {
+            const { data, error } = await supabaseAdmin
+                .from('daily_qt')
+                .select('*')
+                .eq('date', date)
+                .maybeSingle();
+
+            if (error) {
+                console.error('[QT API] check_only fetch error:', error);
+                return NextResponse.json({ isUploaded: false, qt: null, error: error.message }, { status: 500 });
+            }
+
+            return NextResponse.json({ isUploaded: !!data, qt: data || null });
+        } catch (err: any) {
+            console.error('[QT API] check_only exception:', err);
+            return NextResponse.json({ isUploaded: false, qt: null, error: err.message }, { status: 500 });
+        }
+    }
 
     console.log(`[QT API] Request for date: ${date}, force: ${force}, church: ${churchId}`);
 
@@ -200,4 +251,31 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
+}
+
+// 큐티 삭제 (관리자용)
+export async function DELETE(req: NextRequest) {
+    const { searchParams } = new URL(req.url);
+    const date = searchParams.get('date');
+
+    if (!date) {
+        return NextResponse.json({ success: false, error: '삭제할 날짜가 필요합니다.' }, { status: 400 });
+    }
+
+    try {
+        const { error } = await supabaseAdmin
+            .from('daily_qt')
+            .delete()
+            .eq('date', date);
+
+        if (error) {
+            console.error('[QT API] DELETE error:', error);
+            return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        }
+
+        return NextResponse.json({ success: true });
+    } catch (err: any) {
+        console.error('[QT API] DELETE exception:', err);
+        return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    }
 }
