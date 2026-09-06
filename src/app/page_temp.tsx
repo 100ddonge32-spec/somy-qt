@@ -4531,7 +4531,7 @@ export default function App() {
                                                     if (!r) return null;
                                                     return (
                                                         <div key={idx} style={{ fontSize: '11px', color: '#777', background: 'white', padding: '4px 10px', borderRadius: '15px', border: '1px solid #EEE' }}>
-                                                            <span style={{ fontWeight: 800, marginRight: '3px' }}>{idx + 4}위</span> {r.name || '익명'}
+                                                            <span style={{ fontWeight: 800, marginRight: '3px' }}>{idx + 4}위</span> {r.name || '익명'} <span style={{ color: '#888', fontWeight: 600 }}>({r.count || 0}회)</span>
                                                         </div>
                                                     );
                                                 })}

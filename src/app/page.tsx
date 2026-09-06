@@ -1658,7 +1658,8 @@ export default function App() {
             trends: { date: string; count: number }[];
             topUsers: { name: string; count: number }[];
             recent: { name: string; time: string; userId: string }[];
-        }
+        };
+        [key: string]: any;
     } | null>(null);
     const [activityLogs, setActivityLogs] = useState<any[]>([]);
     const [isActivitiesLoading, setIsActivitiesLoading] = useState(false);
@@ -4799,7 +4800,7 @@ export default function App() {
                                                     if (!r) return null;
                                                     return (
                                                         <div key={idx} style={{ fontSize: '11px', color: '#777', background: 'white', padding: '4px 10px', borderRadius: '15px', border: '1px solid #EEE' }}>
-                                                            <span style={{ fontWeight: 800, marginRight: '3px' }}>{idx + 4}위</span> {r.name || '익명'}
+                                                            <span style={{ fontWeight: 800, marginRight: '3px' }}>{idx + 4}위</span> {r.name || '익명'} <span style={{ color: '#888', fontWeight: 600 }}>({r.count || 0}회)</span>
                                                         </div>
                                                     );
                                                 })}
@@ -10511,7 +10512,7 @@ export default function App() {
                                                                 <div style={{ fontSize: '12px', fontWeight: 800, color: '#F57C00', marginBottom: '6px' }}>👑 지난달 최종 랭킹 결과</div>
                                                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                                                                     {stats.previousMonthRanking.slice(0, 5).map((r: any, i: number) => (
-                                                                        <span key={i} style={{ fontSize: '10px', background: 'white', padding: '2px 8px', borderRadius: '10px', border: '1px solid #EEE' }}>{i + 1}위 {r.name}</span>
+                                                                        <span key={i} style={{ fontSize: '10px', background: 'white', padding: '2px 8px', borderRadius: '10px', border: '1px solid #EEE' }}>{i + 1}위 {r.name} ({r.count || 0}회)</span>
                                                                     ))}
                                                                     {stats.previousMonthRanking.length > 5 && <span style={{ fontSize: '10px', color: '#999' }}>...외 {stats.previousMonthRanking.length - 5}명</span>}
                                                                 </div>
