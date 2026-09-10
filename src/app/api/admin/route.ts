@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
             let email = searchParams.get('email');
 
             // 슈퍼어드민 리스트 (본계정)
-            const HARDCODED_ADMINS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
+            const HARDCODED_ADMINS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com").toLowerCase().split(',').map(e => e.trim());
 
             // 익명 유저 이메일 및 실명(Master) 보완
             if (userId && (!email || email.includes('anonymous.local') || email === 'null' || email === 'undefined')) {
@@ -315,7 +315,7 @@ export async function POST(req: NextRequest) {
         const { action, email, user_id, is_approved, church_id, role, requester_id, requester_email: body_requester_email } = body;
 
         // [0순위 보안] 권한 검증 (Gatekeeper Logic)
-        const HARDCODED_ADMINS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
+        const HARDCODED_ADMINS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com").toLowerCase().split(',').map(e => e.trim());
 
         if (!requester_id) {
             return NextResponse.json({ success: false, error: "권한이 없습니다. (No Requester ID)" }, { status: 401 });

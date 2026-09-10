@@ -18,7 +18,7 @@ const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://lfjrfyyl
 const CHURCH_URL = process.env.NEXT_PUBLIC_CHURCH_URL || "";
 const CHURCH_NAME = process.env.NEXT_PUBLIC_CHURCH_NAME || "예수인교회";
 const APP_SUBTITLE = process.env.NEXT_PUBLIC_APP_SUBTITLE || "말씀과 기도로 거룩해지는 공동체";
-const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
+const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com").toLowerCase().split(',').map(e => e.trim());
 
 
 // [개선] 하드코딩된 시편 23편 대신, 라이브러리에서 매일 다른 시편 말씀을 기본값으로 가져옵니다.
@@ -548,7 +548,7 @@ export default function App() {
     const [churchId, setChurchId] = useState('');
     const [isCheckingAuth, setIsCheckingAuth] = useState(true); // ✅ 권한 확인 중 상태 (깜빡임 방지)
     // [보안/개선] adminInfo가 일시적으로 null일 때도 톱니바퀴가 사라지지 않도록 하드코딩된 마스터 체크 추가
-    const MASTER_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com,kakao_4761026797@kakao.somy-qt.local").toLowerCase().split(',').map(e => e.trim());
+    const MASTER_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "pastorbaek@kakao.com").toLowerCase().split(',').map(e => e.trim());
     const isHardcodedAdmin = !!user && !!user.email && MASTER_EMAILS.includes(user.email.toLowerCase().trim());
     const isMasterName = !!user && (user.user_metadata?.full_name === '백동희' || user.user_metadata?.name === '백동희' || profileName === '백동희');
 
@@ -1345,11 +1345,10 @@ export default function App() {
                 const metaName = user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.nickname || user.user_metadata?.display_name || user.user_metadata?.user_name || '';
                 const metaPhone = user.phone || user.user_metadata?.phone || user.user_metadata?.phone_number || user.user_metadata?.mobile || '';
                 const metaBirth = user.user_metadata?.birth || user.user_metadata?.birthdate || '';
-                const isKakaoUser = user.email?.includes('kakao.somy-qt.local');
                 const isAnonymousUser = !user.email || user.email.includes('anonymous.local') || user.is_anonymous;
 
                 const hasRealInfo = (metaName && metaName.length >= 2) || (metaPhone && metaPhone.length > 5);
-                if (isAnonymousUser && !hasRealInfo && !isKakaoUser) {
+                if (isAnonymousUser && !hasRealInfo) {
                     setIsApproved(false);
                     setShowVerification(true);
                     return;
@@ -2223,13 +2222,10 @@ export default function App() {
         };
         checkUser();
 
-        // ★ URL 오류 파라미터 감지 (카카오 켜백 오류 안내)
+        // URL 오류 파라미터 감지
         const urlParams = new URLSearchParams(window.location.search);
         const urlError = urlParams.get('error');
-        if (urlError === 'admin_only') {
-            alert('카카오 로그인은 관리자 전용입니다. \ud83d\udd12\n\n일반 성도님은 아래 "기존 성도 정보 연결" 에서\n이름·전화번호·생년월일을 입력해 주세요.');
-            window.history.replaceState(null, '', window.location.pathname);
-        } else if (urlError && urlError !== 'kakao_cancelled') {
+        if (urlError) {
             console.warn('[URL Error]', urlError);
             window.history.replaceState(null, '', window.location.pathname);
         }
@@ -2326,12 +2322,6 @@ export default function App() {
     };
 
     // [추가] 고유 트라이얼(체험용) 교회 생성 및 진입
-
-
-    const handleLogin = async (provider: 'google' | 'kakao') => {
-        alert("카카오톡 로그인은 더 이상 지원되지 않습니다. 성도/관리자 통합 입구(정보 매칭)를 이용해 주세요.");
-    };
-
     const handleVerification = async () => {
         if (!user || !vName.trim() || !vPhone.trim()) {
             alert("성함과 연락잘를 모두 입력해 주세요.");
