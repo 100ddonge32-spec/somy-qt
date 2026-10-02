@@ -19,8 +19,8 @@ export async function POST(req: NextRequest) {
     try {
         const { name, phoneTail, birthdate, user_id, church_id, pin } = await req.json();
 
-        if (!name || !user_id) {
-            return NextResponse.json({ error: '필수 정보가 누락되었습니다.' }, { status: 400 });
+        if (!name || !name.trim()) {
+            return NextResponse.json({ error: '성함을 입력해 주세요.' }, { status: 400 });
         }
 
         // 너무 일반적인 이름 차단
