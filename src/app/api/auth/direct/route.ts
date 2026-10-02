@@ -49,63 +49,82 @@ export async function POST(req: NextRequest) {
 
         console.log(`[DirectAuth] 이름 후보 수: ${candidates?.length ?? 0}`);
 
-        // ─── 2단계: 정밀 매칭 ─────────────────────────────────────────────────
-        let match = candidates?.find(c => {
+        // ─── 2단계: 정밀 매칭 (점수제 매칭으로 최적의 프로필 1개 선별) ───────
+        const scoredCandidates = (candidates || []).map(c => {
             const dbName = (c.full_name || '').replace(/\s+/g, '').toLowerCase();
             const dbPhone = (c.phone || '').replace(/[^0-9]/g, '');
             const dbBirth = (c.birthdate || '').replace(/[^0-9]/g, '');
 
             const isNameMatch = dbName === inputNameClean;
-            if (!isNameMatch) return false;
+            if (!isNameMatch) return null;
 
-            // [보스/수퍼관리자 긴급 바이패스] 이름이 백동희/동희면 생일이나 번호 달라도 '무조건' 프리패스
-            if (isNameMatch && (inputNameClean === '백동희' || inputNameClean === '동희')) {
-                return true;
+            let score = 10; // 이름 일치 기본 점수
+
+            // 보스/수퍼관리자 프리패스 보너스
+            if (inputNameClean === '백동희' || inputNameClean === '동희') {
+                score += 50;
             }
 
-            // ― 전화번호 매칭 ―
+            // 전화번호 매칭 검사
             let isPhoneMatch = false;
             if (dbPhone && inputPhone) {
-                // 전체 번호 일치 또는 뒤 4자리 이상 일치
-                isPhoneMatch = dbPhone === inputPhone || (inputPhone.length >= 4 && dbPhone.endsWith(inputPhone));
+                if (dbPhone === inputPhone) {
+                    score += 100; // 전체 번호 일치
+                    isPhoneMatch = true;
+                } else if (inputPhone.length >= 4 && dbPhone.endsWith(inputPhone)) {
+                    score += 80; // 뒷자리 일치
+                    isPhoneMatch = true;
+                }
             } else if (!dbPhone) {
-                // DB에 전화번호 없으면 통과 (이름+생년월일로만 확인)
+                // DB에 전화번호가 없는 빈 프로필은 낮은 우선순위
+                score += 5;
+                isPhoneMatch = true;
+            } else if (!inputPhone && (inputNameClean === '백동희' || inputNameClean === '동희')) {
                 isPhoneMatch = true;
             }
 
-            // ― 생년월일 매칭 (★ 입력했으면 반드시 일치해야 함) ―
+            // 생년월일 매칭 검사
             let isBirthMatch = false;
             if (inputBirth && dbBirth) {
-                // 둘 다 있으면 반드시 일치
                 const cleanDb = dbBirth.replace(/[^0-9]/g, '');
                 const cleanIn = inputBirth.replace(/[^0-9]/g, '');
-                isBirthMatch = cleanDb === cleanIn || cleanDb.endsWith(cleanIn) || cleanIn.endsWith(cleanDb);
-            } else if (!dbBirth) {
-                // DB에 생년월일 없으면 통과 (등록 누락)
-                isBirthMatch = true;
-            } else if (!inputBirth) {
-                // 사용자가 안 입력했으면 통과
+                if (cleanDb === cleanIn) {
+                    score += 50;
+                    isBirthMatch = true;
+                } else if (cleanDb.endsWith(cleanIn) || cleanIn.endsWith(cleanDb)) {
+                    score += 30;
+                    isBirthMatch = true;
+                }
+            } else if (!dbBirth || !inputBirth) {
                 isBirthMatch = true;
             }
 
-            // ★ 이름 + 전화번호 + 생년월일 모두 일치
-            return isNameMatch && isPhoneMatch && isBirthMatch;
-        });
+            // 전화번호가 있는 실제 프로필 우선 가점
+            if (dbPhone) score += 20;
 
-        // ─── 3단계: 매칭 성공 → 권한 및 보안 PIN 확인 ──────────────────────
+            if (isNameMatch && isPhoneMatch && isBirthMatch) {
+                return { candidate: c, score };
+            }
+            return null;
+        }).filter(Boolean) as { candidate: any, score: number }[];
+
+        scoredCandidates.sort((a, b) => b.score - a.score);
+        let match = scoredCandidates.length > 0 ? scoredCandidates[0].candidate : null;
+
+        // ─── 3단계: 매칭 성공 → 권한, 보안 PIN 확인 및 영구 Auth 계정 동기화 ───
         if (match) {
+            const targetUserId = match.id;
+
             // ─── [보안 추가] 관리자 PIN 번호 검증 ───
-            // 1. 해당 유저가 관리자인지 확인
             const { data: adminCheck } = await supabaseAdmin
                 .from('app_admins')
                 .select('pin')
-                .or(`user_id.eq.${match.id},email.eq.${match.email}`)
+                .or(`user_id.eq.${targetUserId},email.eq.${match.email}`)
                 .maybeSingle();
 
-            // 2. 관리자인데 PIN이 등록되어 있다면 검증 수행
             if (adminCheck && adminCheck.pin) {
                 if (!pin || pin.toString() !== adminCheck.pin.toString()) {
-                    console.log(`[DirectAuth] ❌ 관리자 PIN 불일치 - ID: ${match.id}`);
+                    console.log(`[DirectAuth] ❌ 관리자 PIN 불일치 - ID: ${targetUserId}`);
                     return NextResponse.json({
                         success: false,
                         error: '관리자 보안 인증(PIN)이 일치하지 않습니다. 관리자에게 문의하세요.'
@@ -114,157 +133,111 @@ export async function POST(req: NextRequest) {
                 console.log(`[DirectAuth] 🛡️ 관리자 PIN 인증 성공: ${match.full_name}`);
             }
 
-            console.log(`[DirectAuth] ✅ 매칭 성공: ${match.full_name} (기존ID: ${match.id} → 신규ID: ${user_id})`);
+            console.log(`[DirectAuth] ✅ 매칭 성공: ${match.full_name} (고유 영구ID: ${targetUserId})`);
 
-            const isSameUser = match.id === user_id;
-            const now = new Date().toISOString();
+            // [영구 Auth 계정 준비] 모바일, PC 등 모든 기기에서 동일한 UUID로 로그인할 수 있도록 Supabase Auth 계정 보장
+            const authEmail = `user_${targetUserId.replace(/-/g, '')}@somy.internal`;
+            const authPassword = `SomyAuth_${targetUserId.slice(0, 8)}!#${(process.env.SUPABASE_SERVICE_ROLE_KEY || '').slice(-6)}`;
 
-            if (isSameUser) {
-                // 같은 ID면 그냥 is_approved 갱신
-                await supabaseAdmin.from('profiles').update({
-                    is_approved: true
-                }).eq('id', user_id);
-            } else {
-                // [수정] 이관 시 유니크 제약조건(email, phone 등) 충돌 방지
-                // 기존 데이터의 유니크 필드를 먼저 제거/변경한 후 새 ID로 이관합니다.
-                const { error: clearError } = await supabaseAdmin.from('profiles').update({
-                    email: null,
-                    phone: null,
-                    member_no: null
-                }).eq('id', match.id);
-
-                if (clearError) {
-                    console.error(`[DirectAuth] 기존 프로필 유니크 필드 제거 실패:`, clearError);
+            try {
+                const { data: existingAuth, error: getUserErr } = await supabaseAdmin.auth.admin.getUserById(targetUserId);
+                if (getUserErr || !existingAuth?.user) {
+                    // 유저가 없으면 생성
+                    await supabaseAdmin.auth.admin.createUser({
+                        id: targetUserId,
+                        email: authEmail,
+                        password: authPassword,
+                        email_confirm: true,
+                        user_metadata: { full_name: match.full_name, phone: match.phone }
+                    });
+                } else {
+                    // 유저가 있으면 비밀번호 및 이메일 보장
+                    await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
+                        email: authEmail,
+                        password: authPassword,
+                        email_confirm: true,
+                        user_metadata: { full_name: match.full_name, phone: match.phone }
+                    });
                 }
-
-                const { error: upsertError } = await supabaseAdmin.from('profiles').upsert({
-                    ...match,
-                    id: user_id,
-                    email: match.email || `${user_id}@anonymous.local`,
-                    is_approved: true
-                });
-
-                if (upsertError) {
-                    // [복구 로직] upsert 실패 시 삭제했던 유니크 컬럼 원상복구
-                    await supabaseAdmin.from('profiles').update({
-                        email: match.email,
-                        phone: match.phone,
-                        member_no: match.member_no
-                    }).eq('id', match.id);
-
-                    console.error(`[DirectAuth] 프로필 이관 실패:`, upsertError);
-                    // [개선] 사용자에게 실제 실패 원인을 조금 더 구체적으로 노출 (디버깅용)
-                    throw new Error(`프로필 연결 실패: ${upsertError.message || '데이터베이스 오류'}`);
-                }
-
-                // 관리자 권한 이전 (강화된 로직)
-                // 1. 기존 ID로 찾기
-                const { data: adminsById } = await supabaseAdmin.from('app_admins').select('*').eq('user_id', match.id);
-                // 2. 이메일로 찾기 (백업)
-                const { data: adminsByEmail } = match.email ? await supabaseAdmin.from('app_admins').select('*').eq('email', match.email) : { data: [] };
-
-                const adminEntries = [...(adminsById || []), ...(adminsByEmail || [])];
-                const uniqueEntries = Array.from(new Map(adminEntries.map(a => [a.id, a])).values());
-
-                if (uniqueEntries && uniqueEntries.length > 0) {
-                    for (const entry of uniqueEntries) {
-                        const updatePayload = {
-                            ...entry,
-                            user_id: user_id // 새로운 UUID로 업데이트
-                        };
-
-                        const { error: adminUpdateErr } = await supabaseAdmin
-                            .from('app_admins')
-                            .upsert(updatePayload, { onConflict: 'email' });
-
-                        if (adminUpdateErr) console.error(`[DirectAuth] 관리자 권한 이전 실패(Email: ${entry.email}):`, adminUpdateErr);
-                        else console.log(`[DirectAuth] 관리자 권한 이전 성공: ${entry.email} -> ${user_id}`);
-                    }
-                }
-
-                // [데이터 이관] 게시글, 댓글 등의 소유권을 신규 ID로 이전하여 데이터 증발 방지
-                console.log(`[DirectAuth] Migrating data from ${match.id} to ${user_id}`);
-                const migrateTables = [
-                    'thanksgiving_diaries',
-                    'thanksgiving_comments',
-                    'community_posts',
-                    'community_comments',
-                    'notifications',
-                    'qt_completions',
-                    'counseling_requests',
-                    'push_subscriptions',
-                    'gallery_posts',
-                    'gallery_likes',
-                    'gallery_comments',
-                    'activity_logs',
-                    'bible_reading_progress',
-                    'bible_reading_comments'
-                ];
-
-                for (const table of migrateTables) {
-                    try {
-                        // [특수 처리] 좋아요(liker_ids 배열) 이관 로직
-                        if (table === 'community_posts' || table === 'thanksgiving_diaries') {
-                            const { data: toUpdate } = await supabaseAdmin
-                                .from(table)
-                                .select('id, liker_ids')
-                                .filter('liker_ids', 'cs', `{"${match.id}"}`);
-
-                            if (toUpdate && toUpdate.length > 0) {
-                                for (const row of toUpdate) {
-                                    let newLikerIds = row.liker_ids.map((id: string) => id === match.id ? user_id : id);
-                                    newLikerIds = Array.from(new Set(newLikerIds));
-                                    await supabaseAdmin.from(table).update({ liker_ids: newLikerIds }).eq('id', row.id);
-                                }
-                            }
-                        }
-
-                        // [특수 처리] gallery_likes 중복 충돌 방지
-                        if (table === 'gallery_likes') {
-                            // 기존(새 ID)에 이미 이 게시물의 좋아요가 있다면 이전(구 ID) 기록은 삭제하여 유니크 제약 충돌 방지
-                            const { data: existingNewLikes } = await supabaseAdmin.from('gallery_likes').select('post_id').eq('user_id', user_id);
-                            const existingPostIds = new Set(existingNewLikes?.map(l => l.post_id) || []);
-                            
-                            if (existingPostIds.size > 0) {
-                                await supabaseAdmin.from('gallery_likes').delete().eq('user_id', match.id).in('post_id', Array.from(existingPostIds));
-                            }
-                        } else if (table === 'bible_reading_progress') {
-                            // 통독 진행 기록 충돌 방지 (동일 회차 기록이 있으면 구 ID 기록 삭제)
-                            const { data: newProgs } = await supabaseAdmin.from('bible_reading_progress').select('reading_id').eq('user_id', user_id);
-                            const newReadingIds = new Set(newProgs?.map(p => p.reading_id) || []);
-                            if (newReadingIds.size > 0) {
-                                await supabaseAdmin.from('bible_reading_progress').delete().eq('user_id', match.id).in('reading_id', Array.from(newReadingIds));
-                            }
-                        }
-
-                        const { error: migrationError } = await supabaseAdmin
-                            .from(table)
-                            .update({ user_id: user_id })
-                            .eq('user_id', match.id);
-                        
-                        if (migrationError) {
-                            console.error(`[DirectAuth] Migration failed for table ${table}:`, migrationError.message);
-                        }
-                    } catch (e) {
-                        console.error(`[DirectAuth] Unexpected error migrating table ${table}:`, e);
-                    }
-                }
-
-                // 기존 프로필 정리 (이관 성공 후에만)
-                await supabaseAdmin.from('profiles').delete().eq('id', match.id);
+            } catch (authSetupErr) {
+                console.warn('[DirectAuth] Auth user setup notice:', authSetupErr);
             }
 
-            // --- 활동 로그 기록 추가 (실시간 통계 반영용) ---
+            // 프로필 상태 승인 활성화
+            await supabaseAdmin.from('profiles').update({
+                is_approved: true
+            }).eq('id', targetUserId);
+
+            // [임시 익명 세션 데이터 역흡수]
+            // 만약 클라이언트가 임시 익명 ID(user_id)로 접속해 있었고, 그 ID가 targetUserId와 다르다면
+            // 그 임시 ID에서 발생한 데이터만 영구 ID(targetUserId)로 안전하게 흡수하고 정리합니다.
+            if (user_id && user_id !== targetUserId) {
+                console.log(`[DirectAuth] Absorbing temporary session data from ${user_id} into ${targetUserId}`);
+                const absorbTables = [
+                    'community_posts',
+                    'community_comments',
+                    'thanksgiving_diaries',
+                    'thanksgiving_comments',
+                    'qt_completions',
+                    'bible_reading_progress',
+                    'bible_reading_comments',
+                    'gallery_posts',
+                    'gallery_comments',
+                    'activity_logs'
+                ];
+
+                for (const table of absorbTables) {
+                    try {
+                        if (table === 'qt_completions') {
+                            const { data: existingDates } = await supabaseAdmin.from('qt_completions').select('completed_date').eq('user_id', targetUserId);
+                            const dates = new Set(existingDates?.map(d => d.completed_date) || []);
+                            if (dates.size > 0) {
+                                await supabaseAdmin.from('qt_completions').delete().eq('user_id', user_id).in('completed_date', Array.from(dates));
+                            }
+                        } else if (table === 'bible_reading_progress') {
+                            const { data: existingReadings } = await supabaseAdmin.from('bible_reading_progress').select('reading_id').eq('user_id', targetUserId);
+                            const readings = new Set(existingReadings?.map(r => r.reading_id) || []);
+                            if (readings.size > 0) {
+                                await supabaseAdmin.from('bible_reading_progress').delete().eq('user_id', user_id).in('reading_id', Array.from(readings));
+                            }
+                        }
+                        await supabaseAdmin.from(table).update({ user_id: targetUserId }).eq('user_id', user_id);
+                    } catch (e) {
+                        console.error(`[DirectAuth] Error absorbing ${table}:`, e);
+                    }
+                }
+                // 임시 프로필이 있었다면 삭제
+                await supabaseAdmin.from('profiles').delete().eq('id', user_id);
+            }
+
+            // 관리자 테이블 권한 동기화
+            const { data: adminEntries } = await supabaseAdmin
+                .from('app_admins')
+                .select('*')
+                .or(`user_id.eq.${targetUserId},email.eq.${match.email}`);
+
+            if (adminEntries && adminEntries.length > 0) {
+                for (const entry of adminEntries) {
+                    await supabaseAdmin
+                        .from('app_admins')
+                        .update({ user_id: targetUserId })
+                        .eq('id', entry.id);
+                }
+            }
+
+            // 활동 로그 기록
             const finalChurchId = match.church_id || church_id || 'somy-main';
-            console.log(`[DirectAuth] Logging login for ${match.full_name} in church ${finalChurchId}`);
-            await logActivity(user_id, match.full_name, 'LOGIN', finalChurchId);
+            await logActivity(targetUserId, match.full_name, 'LOGIN', finalChurchId);
 
             return NextResponse.json({
                 success: true,
                 status: 'linked',
                 name: match.full_name,
-                church_id: match.church_id || 'somy-main', // 매칭된 실제 교회의 식별자를 반환
-                is_approved: true
+                church_id: match.church_id || 'somy-main',
+                is_approved: true,
+                user_id: targetUserId,
+                auth_email: authEmail,
+                auth_token: authPassword
             });
         }
 

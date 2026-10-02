@@ -1342,6 +1342,46 @@ export default function App() {
                 .single();
 
             if (error || !data) {
+                // [자동 복구] 프로필이 없으면 과거 세션이거나 기기 불일치일 수 있으므로 저장된 교인 정보로 정식 세션 복구 시도
+                const savedName = typeof window !== 'undefined' ? localStorage.getItem('login_name') : null;
+                const savedPhone = typeof window !== 'undefined' ? localStorage.getItem('login_phone_tail') : null;
+                const savedBirth = typeof window !== 'undefined' ? localStorage.getItem('login_birthdate') : null;
+                const savedChurch = typeof window !== 'undefined' ? localStorage.getItem('church_id') : churchId;
+                const savedPin = typeof window !== 'undefined' ? localStorage.getItem('login_pin') : null;
+
+                if (savedName && (savedPhone || savedName === '백동희' || savedName === '동희')) {
+                    try {
+                        const directRes = await fetch(`/api/auth/direct?t=${cacheBuster}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                user_id: user.id,
+                                name: savedName,
+                                phoneTail: savedPhone || '',
+                                birthdate: savedBirth || '',
+                                church_id: savedChurch || churchId,
+                                pin: savedPin || ''
+                            })
+                        });
+                        const directJson = await directRes.json();
+                        if (directRes.ok && directJson.success && directJson.auth_email && directJson.auth_token) {
+                            const { data: sData } = await supabase.auth.signInWithPassword({
+                                email: directJson.auth_email,
+                                password: directJson.auth_token
+                            });
+                            if (sData?.session?.user) {
+                                setUser(sData.session.user);
+                                setProfileName(directJson.name || savedName);
+                                setIsApproved(true);
+                                if (directJson.church_id) setChurchId(directJson.church_id);
+                                return;
+                            }
+                        }
+                    } catch (repairErr) {
+                        console.warn('[AutoRepair Notice]', repairErr);
+                    }
+                }
+
                 const metaName = user.user_metadata?.full_name || user.user_metadata?.name || user.user_metadata?.nickname || user.user_metadata?.display_name || user.user_metadata?.user_name || '';
                 const metaPhone = user.phone || user.user_metadata?.phone || user.user_metadata?.phone_number || user.user_metadata?.mobile || '';
                 const metaBirth = user.user_metadata?.birth || user.user_metadata?.birthdate || '';
@@ -2259,19 +2299,11 @@ export default function App() {
 
         setIsDirectLoggingIn(true);
         try {
-            // 1. 익명 로그인 시도 (세션 생성용)
-            // 이미 로그인된 사용자가 있는 경우 (다른 기기 등) 세션이 꼬일 수 있으므로 
-            // 현재 세션이 있다면 그것을 쓰거나, 없으면 새로 생성
+            // 현재 세션 확인 (임시 데이터 흡수용)
             const { data: { session: existingSession } } = await supabase.auth.getSession();
             let authId = existingSession?.user?.id;
 
-            if (!authId) {
-                const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
-                if (authError) throw authError;
-                authId = authData.user?.id;
-            }
-
-            // 2. 서버에 인증 정보 확인 및 프로필 연결 요청
+            // 서버에 인증 정보 확인 및 영구 계정 토큰 발급 요청
             const res = await fetch('/api/auth/direct', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2281,17 +2313,30 @@ export default function App() {
                     phoneTail: loginPhoneTail.trim(),
                     birthdate: loginBirthdate.trim(),
                     church_id: loginChurchId.trim() || churchId,
-                    pin: loginPin.trim() // [추가] 관리자 보안 PIN
+                    pin: loginPin.trim()
                 })
             });
 
             const result = await res.json();
 
-
             if (res.ok && result.success) {
-                // [개선] 불필요한 알럿 창 제거 - 로그인 성공 시 즉시 메인으로 진입
-                const { data: { session } } = await supabase.auth.getSession();
-                setUser(session?.user ?? null);
+                // [핵심] 모바일/PC 동일 영구 계정으로 로그인 (기기간 데이터 불일치 및 핑퐁 완벽 차단)
+                if (result.auth_email && result.auth_token) {
+                    const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+                        email: result.auth_email,
+                        password: result.auth_token
+                    });
+                    if (signInErr) {
+                        console.warn('[DirectLogin] signInWithPassword notice:', signInErr);
+                        const { data: { session } } = await supabase.auth.getSession();
+                        setUser(session?.user ?? null);
+                    } else if (signInData?.session?.user) {
+                        setUser(signInData.session.user);
+                    }
+                } else {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    setUser(session?.user ?? null);
+                }
 
                 if (result.church_id) {
                     setChurchId(result.church_id);
