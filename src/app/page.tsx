@@ -11715,7 +11715,7 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0); // 0 to 100
 
-    const compressImage = (file: File): Promise<File> => {
+    const compressImage = (file: File, max_size: number = 1024, quality: number = 0.75): Promise<File> => {
         return new Promise((resolve) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -11726,7 +11726,6 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
                     const canvas = document.createElement('canvas');
                     let width = img.width;
                     let height = img.height;
-                    const max_size = 1200;
                     if (width > height) {
                         if (width > max_size) {
                             height *= max_size / width;
@@ -11745,8 +11744,10 @@ function GalleryUploadModal({ onClose, onSuccess, user, churchId }: any) {
                     canvas.toBlob((blob) => {
                         if (blob) {
                             resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+                        } else {
+                            resolve(file);
                         }
-                    }, 'image/jpeg', 0.8);
+                    }, 'image/jpeg', quality);
                 };
                 img.onerror = () => {
                     alert("이미지 로드에 실패했습니다.");
@@ -12450,8 +12451,10 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
             } else {
                 alert('프로필 정보가 저장되었습니다! ✨');
             }
-            setInitialProfile(JSON.parse(JSON.stringify(profileForm)));
-            if (profileForm.avatar_url) setProfileAvatar(profileForm.avatar_url);
+            const updatedForm = data.avatar_url ? { ...profileForm, avatar_url: data.avatar_url } : profileForm;
+            setProfileForm(updatedForm);
+            setInitialProfile(JSON.parse(JSON.stringify(updatedForm)));
+            if (updatedForm.avatar_url) setProfileAvatar(updatedForm.avatar_url);
         } catch (e) {
             alert('저장 실패: ' + (e as Error).message);
         } finally {
@@ -12583,7 +12586,7 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
                                     img.onload = () => {
                                         try {
                                             const canvas = document.createElement('canvas');
-                                            const MAX_SIZE = 400;
+                                            const MAX_SIZE = 320;
                                             let width = img.width;
                                             let height = img.height;
                                             if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } }
@@ -12592,7 +12595,7 @@ function ProfileView({ user, supabase, setView, baseFont, allowMemberEdit, setPr
                                             canvas.height = height;
                                             const ctx = canvas.getContext('2d');
                                             ctx?.drawImage(img, 0, 0, width, height);
-                                            const base64Str = canvas.toDataURL('image/jpeg', 0.8);
+                                            const base64Str = canvas.toDataURL('image/jpeg', 0.75);
                                             
                                             if (!base64Str || base64Str === 'data:,') {
                                                 throw new Error('이미지 처리 중 문제가 발생했습니다.');

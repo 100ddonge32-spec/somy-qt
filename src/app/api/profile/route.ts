@@ -7,6 +7,46 @@ const supabaseAdmin = createClient(
     { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
+// Base64 형태의 아바타 이미지를 Supabase Storage(1년 캐시)로 업로드하고 공개 URL로 변환하는 헬퍼
+async function uploadBase64AvatarIfNeeded(userId: string, avatarUrl?: string | null): Promise<string | undefined | null> {
+    if (!avatarUrl || !avatarUrl.startsWith('data:image/')) {
+        return avatarUrl;
+    }
+    try {
+        const matches = avatarUrl.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
+        if (!matches || matches.length !== 3) return avatarUrl;
+
+        const contentType = matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+        const ext = contentType.includes('png') ? 'png' : 'jpg';
+        const filePath = `avatars/${userId}-${Date.now()}.${ext}`;
+
+        await supabaseAdmin.storage.createBucket('member-photos', { public: true }).catch(() => {});
+
+        const { error: uploadError } = await supabaseAdmin.storage
+            .from('member-photos')
+            .upload(filePath, buffer, {
+                contentType,
+                cacheControl: '31536000', // 1년 브라우저/CDN 캐싱
+                upsert: true
+            });
+
+        if (uploadError) {
+            console.error('[Profile API] Avatar storage upload error:', uploadError);
+            return avatarUrl;
+        }
+
+        const { data: { publicUrl } } = supabaseAdmin.storage
+            .from('member-photos')
+            .getPublicUrl(filePath);
+
+        return publicUrl;
+    } catch (err) {
+        console.error('[Profile API] Base64 avatar conversion failed:', err);
+        return avatarUrl;
+    }
+}
+
 export async function POST(req: NextRequest) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -28,6 +68,11 @@ export async function POST(req: NextRequest) {
         }
 
         console.log(`[Profile Update] Updating for: ${user_id}`);
+
+        // Base64 이미지가 전달된 경우 Storage URL로 변환하여 DB 전송량(Egress) 절감
+        if (profileData?.avatar_url && profileData.avatar_url.startsWith('data:image/')) {
+            profileData.avatar_url = await uploadBase64AvatarIfNeeded(user_id, profileData.avatar_url);
+        }
 
         // 1. 휴대폰 중복 체크 및 통합 로직 (선택사항)
         if (profileData.phone) {
@@ -66,7 +111,7 @@ export async function POST(req: NextRequest) {
                     .eq('email', duplicate.email);
 
                 if (mergeError) throw mergeError;
-                return NextResponse.json({ success: true, merged: true });
+                return NextResponse.json({ success: true, merged: true, avatar_url: safeMergedData.avatar_url });
             }
         }
 
@@ -91,7 +136,7 @@ export async function POST(req: NextRequest) {
 
         if (error) throw error;
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, avatar_url: safeData.avatar_url });
     } catch (err: any) {
         console.error('[Profile Update Error]', err);
         return NextResponse.json({ error: err.message }, { status: 500 });

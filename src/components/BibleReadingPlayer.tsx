@@ -25,23 +25,37 @@ export default function BibleReadingPlayer({
     const [showSpeedMenu, setShowSpeedMenu] = useState(false);
 
     const lastSavedTimeRef = useRef<number>(-1);
+    const hasStartedLoadingRef = useRef<boolean>(false);
+    const pendingSeekRef = useRef<number>(initialPosition > 0 ? initialPosition : 0);
 
     const speedOptions = [0.8, 1.0, 1.25, 1.5, 2.0];
 
     // 오디오 파일 변경 또는 초기 마운트 시 동작
+    // [최적화] 회차 진입 시점에는 오디오를 미리 다운로드(load)하지 않고, 재생 버튼을 누를 때만 스트리밍을 시작하여 불필요한 Cached Egress 차단
     useEffect(() => {
         setIsPlaying(false);
-        setCurrentTime(0);
+        const startPos = initialPosition > 0 ? initialPosition : 0;
+        setCurrentTime(startPos);
         setDuration(0);
         lastSavedTimeRef.current = -1;
+        hasStartedLoadingRef.current = false;
+        pendingSeekRef.current = startPos;
 
         const audio = audioRef.current;
         if (audio) {
-            audio.load();
+            audio.pause();
             audio.playbackRate = speed;
             audio.volume = isMuted ? 0 : volume;
         }
     }, [audioUrl]);
+
+    // 초기 이어듣기 위치가 뒤늦게 전달된 경우 반영 (아직 재생 전일 때)
+    useEffect(() => {
+        if (!hasStartedLoadingRef.current && initialPosition > 0) {
+            pendingSeekRef.current = initialPosition;
+            setCurrentTime(initialPosition);
+        }
+    }, [initialPosition]);
 
     // 메타데이터 로드 시 재생길이 설정 및 이어듣기 설정
     const handleLoadedMetadata = () => {
@@ -49,10 +63,12 @@ export default function BibleReadingPlayer({
         if (!audio) return;
         setDuration(audio.duration);
         
-        // 이어듣기 초 위치가 전달되었고 올바른 범위 내에 있을 때 적용
-        if (initialPosition > 0 && initialPosition < audio.duration) {
-            audio.currentTime = initialPosition;
-            setCurrentTime(initialPosition);
+        // 대기 중인 이어듣기 초 위치가 있고 올바른 범위 내에 있을 때 적용
+        const targetSeek = pendingSeekRef.current;
+        if (targetSeek > 0 && targetSeek < audio.duration) {
+            audio.currentTime = targetSeek;
+            setCurrentTime(targetSeek);
+            pendingSeekRef.current = 0;
         }
     };
 
@@ -66,9 +82,18 @@ export default function BibleReadingPlayer({
             setIsPlaying(false);
             // 재생을 멈췄을 때 현재 지점 서버에 자동 업데이트
             if (onProgressUpdate) {
-                onProgressUpdate(audio.currentTime, audio.currentTime >= audio.duration - 2);
+                onProgressUpdate(audio.currentTime, audio.duration > 0 && audio.currentTime >= audio.duration - 2);
             }
         } else {
+            hasStartedLoadingRef.current = true;
+            audio.playbackRate = speed;
+            audio.volume = isMuted ? 0 : volume;
+
+            if (audio.readyState >= 1 && pendingSeekRef.current > 0 && pendingSeekRef.current < audio.duration) {
+                audio.currentTime = pendingSeekRef.current;
+                pendingSeekRef.current = 0;
+            }
+
             audio.play()
                 .then(() => {
                     setIsPlaying(true);
@@ -87,10 +112,10 @@ export default function BibleReadingPlayer({
         setCurrentTime(audio.currentTime);
 
         const roundedTime = Math.floor(audio.currentTime);
-        // 정기적으로 10초 간격으로 진행 상황을 업데이트 (부하 최소화)
-        if (onProgressUpdate && roundedTime % 10 === 0 && lastSavedTimeRef.current !== roundedTime) {
+        // [최적화] 정기 진행 상황 서버 업데이트 주기를 10초 -> 30초 간격으로 완화 (DB/API 호출 및 Egress 절감)
+        if (onProgressUpdate && roundedTime > 0 && roundedTime % 30 === 0 && lastSavedTimeRef.current !== roundedTime) {
             lastSavedTimeRef.current = roundedTime;
-            onProgressUpdate(audio.currentTime, audio.currentTime >= audio.duration - 2);
+            onProgressUpdate(audio.currentTime, audio.duration > 0 && audio.currentTime >= audio.duration - 2);
         }
     };
 
@@ -119,12 +144,16 @@ export default function BibleReadingPlayer({
         const audio = audioRef.current;
         if (!audio) return;
         const seekTime = parseFloat(e.target.value);
-        audio.currentTime = seekTime;
+        if (hasStartedLoadingRef.current && audio.readyState >= 1) {
+            audio.currentTime = seekTime;
+        } else {
+            pendingSeekRef.current = seekTime;
+        }
         setCurrentTime(seekTime);
     };
 
     const handleSeekEnd = () => {
-        if (onProgressUpdate && audioRef.current) {
+        if (onProgressUpdate && audioRef.current && hasStartedLoadingRef.current && audioRef.current.duration > 0) {
             onProgressUpdate(audioRef.current.currentTime, audioRef.current.currentTime >= audioRef.current.duration - 2);
         }
     };
@@ -173,11 +202,11 @@ export default function BibleReadingPlayer({
             position: 'relative',
             overflow: 'visible'
         }}>
-            {/* HTML5 Audio 태그 */}
+            {/* HTML5 Audio 태그 (재생 전 불필요한 스트리밍 차단을 위해 preload="none" 적용) */}
             <audio
                 ref={audioRef}
                 src={audioUrl}
-                preload="metadata"
+                preload="none"
                 onLoadedMetadata={handleLoadedMetadata}
                 onTimeUpdate={handleTimeUpdate}
                 onEnded={handleEnded}

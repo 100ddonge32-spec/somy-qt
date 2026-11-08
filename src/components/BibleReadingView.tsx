@@ -459,6 +459,8 @@ export default function BibleReadingView({
                                             key={index}
                                             src={url}
                                             alt={`본문 참고 이미지 ${index + 1}`}
+                                            loading="lazy"
+                                            decoding="async"
                                             onClick={() => setActiveImageIndex(index)}
                                             style={{
                                                 scrollSnapAlign: 'start',
@@ -561,7 +563,7 @@ export default function BibleReadingView({
                                         {/* 프로필 이미지 */}
                                         <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: '#EEE', overflow: 'hidden', flexShrink: 0 }}>
                                             {comment.profiles?.avatar_url ? (
-                                                <img src={comment.profiles.avatar_url} alt={comment.profiles?.full_name || comment.user_name || '성도'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                <img src={comment.profiles.avatar_url} alt={comment.profiles?.full_name || comment.user_name || '성도'} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                             ) : (
                                                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', background: '#E0E7FF', color: '#4F46E5', fontWeight: 800 }}>
                                                     {(comment.profiles?.full_name || comment.user_name || '성도').slice(0, 1)}
