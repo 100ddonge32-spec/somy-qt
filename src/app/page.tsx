@@ -4859,19 +4859,14 @@ export default function App() {
                                         ? (localStorage.getItem('somy_coommi_url') || 'https://coommi.org/Board/Detail/9579/125816?category=0')
                                         : 'https://coommi.org/Board/Detail/9579/125816?category=0';
 
-                                    // 1단계: 꿈미 구절 + 갓피플 개역개정 본문 먼저 빠르게 가져오기 (통독표 기본 구절이 적혀 있을 경우 무시하고 꿈미에서 가져옴)
-                                    const defaultPlanRef = getTodayReading(qtForm.date);
-                                    const currentRef = qtForm.reference?.trim();
-                                    const isUserCustomRef = currentRef && currentRef !== defaultPlanRef;
-
+                                    // 1단계: 꿈미(coommi.org)에서 해당 날짜 구절 조회 + 갓피플 개역개정 원문 가져오기
                                     const res1 = await fetch('/api/qt/auto-fetch', {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({
                                             date: qtForm.date,
                                             coommiUrl: savedCoommiUrl,
-                                            reference: isUserCustomRef ? currentRef : undefined,
-                                            forceCoommi: !isUserCustomRef,
+                                            forceCoommi: true,
                                             includeReflection: false,
                                             saveToDb: false
                                         })
@@ -4929,18 +4924,13 @@ export default function App() {
                                         const savedCoommiUrl = typeof window !== 'undefined'
                                             ? (localStorage.getItem('somy_coommi_url') || 'https://coommi.org/Board/Detail/9579/125816?category=0')
                                             : 'https://coommi.org/Board/Detail/9579/125816?category=0';
-                                        const defaultPlanRef = getTodayReading(qtForm.date);
-                                        const currentRef = qtForm.reference?.trim();
-                                        const isUserCustomRef = currentRef && currentRef !== defaultPlanRef;
-
                                         const res = await fetch('/api/qt/auto-fetch', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({
                                                 date: qtForm.date,
                                                 coommiUrl: savedCoommiUrl,
-                                                reference: isUserCustomRef ? currentRef : undefined,
-                                                forceCoommi: !isUserCustomRef,
+                                                forceCoommi: true,
                                                 includeReflection: false,
                                                 saveToDb: false
                                             })

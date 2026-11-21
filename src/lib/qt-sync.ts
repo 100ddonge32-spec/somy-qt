@@ -1,10 +1,9 @@
 import OpenAI from 'openai';
-import { getTodayReading } from './reading-plan';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export const DEFAULT_COOMMI_URL = 'https://coommi.org/Board/Detail/9579/125816?category=0';
-export const COOMMI_BOARD_LIST_URL = 'https://coommi.org/Board/List/9579?category=0';
+export const COOMMI_BOARD_LIST_URL = 'https://coommi.org/Board/Index/9579?category=0';
 
 interface BibleBookInfo {
     index: number;
@@ -94,25 +93,18 @@ export interface ParsedBibleRange {
 }
 
 /**
- * HTML 문자열에서 태그를 제거하고(단, __NEXT_DATA__ 등 JSON 데이터와 이미지 alt 속성은 보존) 텍스트로 변환합니다.
+ * HTML 엔티티 디코딩 및 태그 제거
  */
-function htmlToCleanText(html: string): string {
-    // Next.js 등의 SSR 데이터가 있으면 추출하여 하단에 덧붙임
-    let nextDataText = '';
-    const nextDataMatch = html.match(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
-    if (nextDataMatch && nextDataMatch[1]) {
-        nextDataText = '\n' + nextDataMatch[1];
-    }
-
-    const bodyText = html
-        .replace(/<img[^>]*alt=["']([^"']+)["'][^>]*>/gi, '\n$1\n')
+function stripTags(html: string): string {
+    return html
         .replace(/<script[\s\S]*?<\/script>/gi, ' ')
         .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-        .replace(/<(br|p|div|tr|li|h[1-6]|dt|dd|section|article)[^>]*>/gi, '\n')
+        .replace(/<(br|p|div|tr|li|h[1-6])[^>]*>/gi, '\n')
         .replace(/<\/(p|div|tr|li|h[1-6]|table|ul|ol)>/gi, '\n')
-        .replace(/<td[^>]*>/gi, ' | ')
         .replace(/<[^>]+>/g, ' ')
         .replace(/&nbsp;/gi, ' ')
+        .replace(/&ndash;/gi, '–')
+        .replace(/&mdash;/gi, '—')
         .replace(/&amp;/gi, '&')
         .replace(/&lt;/gi, '<')
         .replace(/&gt;/gi, '>')
@@ -122,46 +114,16 @@ function htmlToCleanText(html: string): string {
         .replace(/[ \t]+/g, ' ')
         .replace(/\n\s*\n+/g, '\n')
         .trim();
-
-    return (bodyText + nextDataText).trim();
 }
 
 /**
- * 게시글 HTML 내부에서 본문 이미지(일정표/큐티표 이미지 등) URL을 추출합니다.
- */
-function extractContentImageUrls(html: string, baseUrl: string): string[] {
-    const urls: string[] = [];
-    const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
-    let match: RegExpExecArray | null;
-
-    while ((match = imgRegex.exec(html)) !== null) {
-        const rawSrc = match[1]?.trim();
-        if (!rawSrc || rawSrc.startsWith('data:')) continue;
-
-        // 로고, 아이콘, 버튼 등 UI 에셋 제외
-        if (/logo|icon|btn|button|arrow|bullet|avatar|profile|banner|footer|header|skin|loading|\.svg|\.gif/i.test(rawSrc)) {
-            continue;
-        }
-
-        try {
-            const absUrl = new URL(rawSrc, baseUrl).toString();
-            if (!urls.includes(absUrl)) {
-                urls.push(absUrl);
-            }
-        } catch {
-            // ignore invalid URL
-        }
-    }
-
-    return urls.slice(0, 2);
-}
-
-/**
- * 성경 구절 문자열(예: "요한계시록 2:1-7", "계 2:1~7", "사도행전 15장 1-11절")을 파싱합니다.
+ * 성경 구절 문자열(예: "사도행전 15장 30–35절", "사도행전 15장 36-41절", "요한계시록 2:1-7")을 파싱합니다.
+ * 하이픈(-), 엔대시(–, \u2013), 엠대시(—, \u2014), 물결(~, ∼)을 모두 인식합니다.
  */
 export function parseBibleReference(rawRef: string): ParsedBibleRange | null {
     if (!rawRef) return null;
     const cleaned = rawRef
+        .replace(/[\u2012\u2013\u2014\u2015\u2212~∼]/g, '-') // 모든 종류의 대시/물결을 표준 하이픈(-)으로 통일
         .replace(/\s+/g, ' ')
         .replace(/[()[\]]/g, ' ')
         .trim();
@@ -176,9 +138,9 @@ export function parseBibleReference(rawRef: string): ParsedBibleRange | null {
 
     for (const { alias, book } of allAliases) {
         const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        // 패턴 1: "사도행전 15:1-11" 또는 "사도행전 15장 1-11절"
+        // 패턴 1: "사도행전 15장 30-35절", "사도행전 15:30-35", "사도행전 15:30-16:5"
         const regexColon = new RegExp(
-            `${escaped}\\s*(\\d+)\\s*(?:장|:)\\s*(\\d+)\\s*(?:절)?\\s*(?:[-~∼~—]\\s*(?:(\\d+)\\s*(?:장|:)\\s*)?(\\d+)\\s*(?:절)?)?`,
+            `${escaped}\\s*(\\d+)\\s*(?:장|편|:)\\s*(\\d+)\\s*(?:절)?\\s*(?:-\\s*(?:(\\d+)\\s*(?:장|편|:)\\s*)?(\\d+)\\s*(?:절)?)?`,
             'i'
         );
         const match = cleaned.match(regexColon);
@@ -209,8 +171,8 @@ export function parseBibleReference(rawRef: string): ParsedBibleRange | null {
             };
         }
 
-        // 패턴 2: 장만 있는 경우 (예: "사도행전 15" 또는 "다니엘 11-12")
-        const regexChapterOnly = new RegExp(`${escaped}\\s*(\\d+)(?:\\s*[-~]\\s*(\\d+))?\\s*(?:장)?`, 'i');
+        // 패턴 2: 장만 있는 경우 (예: "사도행전 15장")
+        const regexChapterOnly = new RegExp(`${escaped}\\s*(\\d+)(?:\\s*-\\s*(\\d+))?\\s*(?:장|편)?`, 'i');
         const chapMatch = cleaned.match(regexChapterOnly);
         if (chapMatch) {
             const startChapter = parseInt(chapMatch[1], 10);
@@ -237,22 +199,115 @@ export function parseBibleReference(rawRef: string): ParsedBibleRange | null {
 }
 
 /**
+ * 꿈미 상세 페이지 HTML에서 제목(날짜)과 '본문 : ...' 구절을 추출합니다.
+ */
+function parseCoommiDetailHtml(html: string): {
+    headlineDate: string;
+    reference: string | null;
+} {
+    let headlineDate = '';
+
+    // 1. JSON-LD 또는 .document-title 에서 게시글 제목(예: "2026년 11월 22일") 확인
+    const jsonLdMatch = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/i);
+    if (jsonLdMatch && jsonLdMatch[1]) {
+        try {
+            const ld = JSON.parse(jsonLdMatch[1].trim());
+            if (ld.headline) headlineDate = String(ld.headline).trim();
+            // description 안에도 "본문 : 사도행전 15장 30–35절"이 들어 있음
+            if (ld.description) {
+                const descMatch = String(ld.description).match(/본문\s*[:：]\s*([^\n\r]+?)(?:\s+주\s+안에|\s+\d+\.|\n|$)/);
+                if (descMatch && descMatch[1]) {
+                    const parsed = parseBibleReference(descMatch[1]);
+                    if (parsed) {
+                        return { headlineDate, reference: parsed.formattedReference };
+                    }
+                }
+            }
+        } catch {
+            // ignore JSON-LD parse error
+        }
+    }
+
+    if (!headlineDate) {
+        const titleMatch = html.match(/class=["'][^"']*document-title[^"']*["'][^>]*>([\s\S]*?)<\//i);
+        if (titleMatch && titleMatch[1]) {
+            headlineDate = stripTags(titleMatch[1]);
+        }
+    }
+
+    // 2. 본문 텍스트에서 "본문 : 사도행전 15장 30–35절" 추출
+    const cleanText = stripTags(html);
+    const lines = cleanText.split('\n').map((l) => l.trim()).filter(Boolean);
+    for (const line of lines) {
+        const m = line.match(/^본문\s*[:：]\s*(.+)$/);
+        if (m && m[1]) {
+            const parsed = parseBibleReference(m[1]);
+            if (parsed) {
+                return { headlineDate, reference: parsed.formattedReference };
+            }
+        }
+    }
+
+    // 줄 중간에 "본문 : ..."이 있는 경우
+    const inlineMatch = cleanText.match(/본문\s*[:：]\s*([가-힣]+\s*\d+\s*(?:장|편|:)\s*\d+[\s\u2012-\u2015~∼\-0-9절장:]*)/);
+    if (inlineMatch && inlineMatch[1]) {
+        const parsed = parseBibleReference(inlineMatch[1]);
+        if (parsed) {
+            return { headlineDate, reference: parsed.formattedReference };
+        }
+    }
+
+    return { headlineDate, reference: null };
+}
+
+/**
+ * 꿈미 페이지(상세 페이지 하단 리스트 또는 /Board/Index/9579) HTML에서
+ * 원하는 날짜(예: "2026년 11월 22일")에 해당하는 게시글 URL을 찾습니다.
+ */
+function findCoommiPostUrlForDate(html: string, year: number, month: number, day: number): string | null {
+    const padM = String(month).padStart(2, '0');
+    const padD = String(day).padStart(2, '0');
+
+    // 꿈미 게시판 제목 형식: "2026년 11월 22일" 또는 "11월 22일"
+    const targetPatterns = [
+        new RegExp(`${year}년\\s*0?${month}월\\s*0?${day}일`),
+        new RegExp(`${year}[-./]\\s*${padM}[-./]\\s*${padD}`),
+        new RegExp(`0?${month}월\\s*0?${day}일`),
+    ];
+
+    const linkRegex = /<a[^>]+href=["'](\/Board\/Detail\/9579\/\d+[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
+    let match: RegExpExecArray | null;
+
+    while ((match = linkRegex.exec(html)) !== null) {
+        const href = match[1];
+        const linkText = stripTags(match[2]);
+        if (targetPatterns.some((p) => p.test(linkText))) {
+            return `https://coommi.org${href.replace(/&amp;/g, '&')}`;
+        }
+    }
+
+    return null;
+}
+
+/**
  * 1단계: 꿈미(coommi.org) 사이트에서 특정 날짜(YYYY-MM-DD)의 큐티 성경 구절 범위를 가져옵니다.
- * 게시글 내 텍스트, 표(성경이름과 장:절이 분리된 표 포함), 첨부된 본문표 이미지까지 모두 인식합니다.
+ * - 각 날짜별 게시글(예: 제목 "2026년 11월 22일" -> /Board/Detail/9579/125817?category=0)을 정확히 찾아
+ *   본문 내 "본문 : 사도행전 15장 36-41절"을 추출합니다.
  */
 export async function fetchCoommiReference(
     date: string,
     customCoommiUrl?: string
 ): Promise<{ reference: string; sourceUrl: string; fromCoommi: boolean }> {
-    const targetUrl = customCoommiUrl?.trim() || process.env.COOMMI_QT_URL || DEFAULT_COOMMI_URL;
-    const [, monthStr, dayStr] = date.split('-');
+    const [yearStr, monthStr, dayStr] = date.split('-');
+    const year = parseInt(yearStr, 10);
     const month = parseInt(monthStr, 10);
     const day = parseInt(dayStr, 10);
 
-    const urlsToTry = [targetUrl];
-    if (!urlsToTry.includes(COOMMI_BOARD_LIST_URL)) {
-        urlsToTry.push(COOMMI_BOARD_LIST_URL);
-    }
+    // 사용자가 실수로 /Board/List/9579를 넣었더라도 실제 작동하는 /Board/Index/9579로 자동 보정
+    let initialUrl = (customCoommiUrl?.trim() || process.env.COOMMI_QT_URL || DEFAULT_COOMMI_URL).replace(
+        '/Board/List/9579',
+        '/Board/Index/9579'
+    );
 
     const fetchHeaders = {
         'User-Agent':
@@ -261,65 +316,45 @@ export async function fetchCoommiReference(
         'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
     };
 
-    for (const url of urlsToTry) {
+    const dateTitleRegex = new RegExp(`(?:${year}년\\s*)?0?${month}월\\s*0?${day}일`);
+
+    // 1. 먼저 지정된 URL(예: /Board/Detail/9579/125816?category=0)을 가져옵니다.
+    //    (꿈미 상세 페이지 하단에는 전체 게시글 리스트 테이블이 함께 포함되어 있습니다!)
+    const entryUrls = [initialUrl];
+    if (!entryUrls.includes(COOMMI_BOARD_LIST_URL)) {
+        entryUrls.push(COOMMI_BOARD_LIST_URL);
+    }
+
+    for (const url of entryUrls) {
         try {
-            const res = await fetch(url, {
-                headers: fetchHeaders,
-                cache: 'no-store',
-            });
+            const res = await fetch(url, { headers: fetchHeaders, cache: 'no-store' });
             if (!res.ok) continue;
-
             const html = await res.text();
-            const cleanText = htmlToCleanText(html);
-            const imageUrls = extractContentImageUrls(html, url);
 
-            // 현재 페이지(텍스트 + 본문 이미지)에서 해당 날짜 구절 추출 시도
-            const extracted = await extractReferenceForDateFromPage(cleanText, imageUrls, date, month, day, url);
-            if (extracted) {
-                const parsed = parseBibleReference(extracted);
+            // 1-A. 현재 페이지 자체가 요청한 날짜(예: "2026년 11월 21일")의 상세 게시글인지 확인
+            const detailInfo = parseCoommiDetailHtml(html);
+            if (detailInfo.reference && detailInfo.headlineDate && dateTitleRegex.test(detailInfo.headlineDate)) {
                 return {
-                    reference: parsed ? parsed.formattedReference : extracted,
+                    reference: detailInfo.reference,
                     sourceUrl: url,
                     fromCoommi: true,
                 };
             }
 
-            // 만약 게시판 목록 또는 다른 상세글 링크(/Board/Detail/9579/...)가 있다면 최신 글 최대 3개 탐색
-            const detailLinkMatches = Array.from(
-                html.matchAll(/\/Board\/Detail\/9579\/(\d+)(?:\?category=\d+)?/gi)
-            );
-            const seenIds = new Set<string>();
-            for (const m of detailLinkMatches) {
-                const postId = m[1];
-                if (seenIds.has(postId) || url.includes(postId)) continue;
-                seenIds.add(postId);
-                if (seenIds.size > 3) break;
-
-                const subUrl = `https://coommi.org/Board/Detail/9579/${postId}?category=0`;
-                try {
-                    const subRes = await fetch(subUrl, { headers: fetchHeaders, cache: 'no-store' });
-                    if (!subRes.ok) continue;
-                    const subHtml = await subRes.text();
-                    const subText = htmlToCleanText(subHtml);
-                    const subImages = extractContentImageUrls(subHtml, subUrl);
-                    const subExtracted = await extractReferenceForDateFromPage(
-                        subText,
-                        subImages,
-                        date,
-                        month,
-                        day,
-                        subUrl
-                    );
-                    if (subExtracted) {
-                        const parsed = parseBibleReference(subExtracted);
+            // 1-B. 현재 페이지(또는 하단 게시판 목록)에서 요청한 날짜("2026년 11월 22일")의 게시글 링크 찾기
+            const matchedPostUrl = findCoommiPostUrlForDate(html, year, month, day);
+            if (matchedPostUrl) {
+                const targetRes = await fetch(matchedPostUrl, { headers: fetchHeaders, cache: 'no-store' });
+                if (targetRes.ok) {
+                    const targetHtml = await targetRes.text();
+                    const targetInfo = parseCoommiDetailHtml(targetHtml);
+                    if (targetInfo.reference) {
                         return {
-                            reference: parsed ? parsed.formattedReference : subExtracted,
-                            sourceUrl: subUrl,
+                            reference: targetInfo.reference,
+                            sourceUrl: matchedPostUrl,
                             fromCoommi: true,
                         };
                     }
-                } catch {
-                    // ignore sub-page error
                 }
             }
         } catch (err) {
@@ -327,131 +362,43 @@ export async function fetchCoommiReference(
         }
     }
 
+    // 2. 만약 리스트 1페이지에 없는 과거/미래 날짜라면 2~3페이지까지 추가 탐색
+    for (let page = 2; page <= 3; page++) {
+        const pageUrl = `https://coommi.org/Board/Index/9579?page=${page}&category=0`;
+        try {
+            const res = await fetch(pageUrl, { headers: fetchHeaders, cache: 'no-store' });
+            if (!res.ok) continue;
+            const html = await res.text();
+            const matchedPostUrl = findCoommiPostUrlForDate(html, year, month, day);
+            if (matchedPostUrl) {
+                const targetRes = await fetch(matchedPostUrl, { headers: fetchHeaders, cache: 'no-store' });
+                if (targetRes.ok) {
+                    const targetHtml = await targetRes.text();
+                    const targetInfo = parseCoommiDetailHtml(targetHtml);
+                    if (targetInfo.reference) {
+                        return {
+                            reference: targetInfo.reference,
+                            sourceUrl: matchedPostUrl,
+                            fromCoommi: true,
+                        };
+                    }
+                }
+            }
+        } catch {
+            // ignore pagination error
+        }
+    }
+
     return {
         reference: '',
-        sourceUrl: targetUrl,
+        sourceUrl: initialUrl,
         fromCoommi: false,
     };
 }
 
 /**
- * 페이지 텍스트와 첨부 이미지에서 특정 날짜(month월 day일)에 해당하는 성경 구절을 추출합니다.
- */
-async function extractReferenceForDateFromPage(
-    text: string,
-    imageUrls: string[],
-    date: string,
-    month: number,
-    day: number,
-    refererUrl: string
-): Promise<string | null> {
-    const bookNamesPattern = BIBLE_BOOKS.flatMap((b) => b.aliases)
-        .sort((a, b) => b.length - a.length)
-        .join('|');
-    const fullBibleRefRegex = new RegExp(
-        `(?:${bookNamesPattern})\\s*\\d+\\s*(?:장|:)\\s*\\d+\\s*(?:절)?(?:\\s*[-~∼~—]\\s*(?:\\d+\\s*(?:장|:)\\s*)?\\d+\\s*(?:절)?)?`,
-        'g'
-    );
-
-    // 1. 빠른 정규식 매칭: 날짜와 같은 줄에 완전한 성경 구절(예: "사도행전 15:1-11")이 있는 경우
-    const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
-    const padM = String(month).padStart(2, '0');
-    const padD = String(day).padStart(2, '0');
-    const datePatterns = [
-        new RegExp(`${date}`),
-        new RegExp(`${month}월\\s*${day}일`),
-        new RegExp(`${padM}월\\s*${padD}일`),
-        new RegExp(`(?:^|\\D)${month}\\s*[./-]\\s*${day}(?:\\D|$)`),
-        new RegExp(`(?:^|\\D)${padM}\\s*[./-]\\s*${padD}(?:\\D|$)`),
-    ];
-
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (datePatterns.some((p) => p.test(line))) {
-            const windowText = [line, lines[i + 1] || '', lines[i + 2] || ''].join(' ');
-            const m = windowText.match(fullBibleRefRegex);
-            if (m && m[0]) {
-                return m[0].trim();
-            }
-        }
-    }
-
-    // 2. 페이지 내 텍스트 + (필요시) 게시글 본문 이미지를 OpenAI(gpt-4o-mini Vision)로 분석하여 추출
-    // (성경책 이름이 제목에 한 번만 나오고 표 안에는 "15:1-11"처럼 장:절만 적혀 있는 경우 및 이미지 일정표 완벽 대응)
-    try {
-        const userContent: any[] = [
-            {
-                type: 'text',
-                text: `찾을 날짜: ${date} (${month}월 ${day}일)\n\n웹페이지 텍스트:\n${text.slice(0, 10000)}`,
-            },
-        ];
-
-        // 텍스트에 장:절 패턴(\d+:\d+)이 부족하고 본문 이미지가 있다면 이미지를 base64로 가져와 Vision 입력에 추가
-        const hasVerseNumbersInText = /\d+\s*:\s*\d+/.test(text);
-        if (!hasVerseNumbersInText && imageUrls.length > 0) {
-            for (const imgUrl of imageUrls.slice(0, 2)) {
-                try {
-                    const imgRes = await fetch(imgUrl, {
-                        headers: {
-                            Referer: refererUrl,
-                            'User-Agent':
-                                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-                        },
-                    });
-                    if (imgRes.ok) {
-                        const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
-                        const buf = Buffer.from(await imgRes.arrayBuffer());
-                        if (buf.length > 1000 && buf.length < 4 * 1024 * 1024) {
-                            const dataUrl = `data:${contentType};base64,${buf.toString('base64')}`;
-                            userContent.push({
-                                type: 'image_url',
-                                image_url: { url: dataUrl, detail: 'high' },
-                            });
-                        }
-                    }
-                } catch {
-                    // ignore image fetch error
-                }
-            }
-        }
-
-        const aiRes = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
-            response_format: { type: 'json_object' },
-            messages: [
-                {
-                    role: 'system',
-                    content: `당신은 꿈미(주만나) 큐티 본문 구절 추출기입니다.
-주어진 웹페이지 텍스트(또는 첨부된 월간/주간 본문표 이미지)에서 요청된 날짜(${date}, ${month}월 ${day}일)에 해당하는 성경 본문 구절을 찾아 정확한 한글 성경이름과 장:절 범위(예: "사도행전 15:1-11", "요한계시록 2:1-7")로 변환하여 JSON으로 반환하세요.
-- 만약 표 상단에 성경 이름(예: 사도행전)이 적혀 있고 각 날짜 칸에는 장:절(예: 15:1-11)만 적혀 있다면 둘을 합쳐서 "사도행전 15:1-11"로 반환하세요.
-- 만약 이 게시글 자체가 단일 큐티 본문 게시글이라면 그 게시글의 성경 구절을 반환하세요.
-- 해당 페이지가 단순 게시판 목록이거나 성경 구절 정보가 전혀 없다면 {"reference": null} 로 답하세요.
-반드시 JSON 형식으로만 답하세요: {"reference": "성경이름 장:절-절"}`,
-                },
-                {
-                    role: 'user',
-                    content: userContent,
-                },
-            ],
-            temperature: 0,
-            max_tokens: 150,
-        });
-
-        const content = aiRes.choices[0]?.message?.content || '{}';
-        const parsed = JSON.parse(content);
-        if (parsed.reference && typeof parsed.reference === 'string' && parsed.reference.trim().length > 2) {
-            return parsed.reference.trim();
-        }
-    } catch (e) {
-        console.warn('[Coommi AI Parse Warning]:', e);
-    }
-
-    return null;
-}
-
-/**
- * 2단계: 갓피플 성경(cnts.godpeople.com/words/{BBCCC})에서 개역개정 원문을 가져옵니다.
- * 예: 요한계시록(66) 2장(002) -> https://cnts.godpeople.com/words/66002
+ * 2단계: 갓피플 성경(cnts.godpeople.com/words/{ucode} 및 godpick.godpeople.com/ajax.getbible.php)에서
+ * 개역개정(rv) 성경 원문을 글자 하나 틀리지 않고 그대로 가져옵니다.
  */
 export async function fetchGodpeopleBibleText(reference: string): Promise<{
     reference: string;
@@ -460,172 +407,140 @@ export async function fetchGodpeopleBibleText(reference: string): Promise<{
     fromGodpeople: boolean;
 }> {
     const parsed = parseBibleReference(reference);
-    const targetRef = parsed?.formattedReference || reference.trim();
+    if (!parsed) {
+        return {
+            reference: reference.trim(),
+            passage: '',
+            godpeopleUrl: 'https://cnts.godpeople.com',
+            fromGodpeople: false,
+        };
+    }
 
-    let fetchedGodpeopleSnippet = '';
-    let resolvedGodpeopleUrl = parsed?.godpeopleUrl || 'https://cnts.godpeople.com';
-    let fromGodpeople = false;
+    const endChap = parsed.hasExplicitVerses ? parsed.endChapter : parsed.startChapter;
+    const allVerses: string[] = [];
+    let resolvedUrl = parsed.godpeopleUrl;
 
-    if (parsed) {
-        // 장만 지정된 경우(예: "다니엘 11-12장"), 첫 장만 가져오도록 제한하여 토큰 초과 및 타임아웃 방지
-        const endChap = parsed.hasExplicitVerses ? parsed.endChapter : parsed.startChapter;
-        const chaptersToFetch: number[] = [];
-        for (let ch = parsed.startChapter; ch <= endChap; ch++) {
-            chaptersToFetch.push(ch);
-        }
+    for (let ch = parsed.startChapter; ch <= endChap; ch++) {
+        // ucode 계산: 예) 사도행전(44) 15장(015) -> 44015, 요한계시록(66) 2장(002) -> 66002, 창세기(01) 1장(001) -> 1001
+        const ucodeNum = parsed.bookIndex * 1000 + ch;
+        const ucodeStr5 = `${String(parsed.bookIndex).padStart(2, '0')}${String(ch).padStart(3, '0')}`;
+        const pageUrl = `https://cnts.godpeople.com/words/${ucodeStr5}`;
+        resolvedUrl = pageUrl;
 
-        const fetchedParts: string[] = [];
+        const vStart = ch === parsed.startChapter ? parsed.startVerse : 1;
+        const vEnd = ch === endChap ? parsed.endVerse : 200;
 
-        for (const ch of chaptersToFetch) {
-            const code5 = `${String(parsed.bookIndex).padStart(2, '0')}${String(ch).padStart(3, '0')}`;
-            const code4 = `${parsed.bookIndex}${String(ch).padStart(3, '0')}`;
-            const candidateUrls = [
-                `https://cnts.godpeople.com/words/${code5}`,
-                ...(code4 !== code5 ? [`https://cnts.godpeople.com/words/${code4}`] : []),
-            ];
+        let chapterLoaded = false;
 
-            for (const url of candidateUrls) {
-                try {
-                    const res = await fetch(url, {
-                        headers: {
-                            'User-Agent':
-                                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-                            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                            'Accept-Language': 'ko-KR,ko;q=0.9',
-                        },
-                        cache: 'no-store',
+        // 방법 1: 갓피플 성경 공식 JSON API (https://godpick.godpeople.com/ajax.getbible.php) 직접 호출
+        try {
+            const apiRes = await fetch('https://godpick.godpeople.com/ajax.getbible.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Origin: 'https://cnts.godpeople.com',
+                    Referer: 'https://cnts.godpeople.com/',
+                    'User-Agent':
+                        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                },
+                body: JSON.stringify({
+                    task: 'Phrase',
+                    ver: 'rv', // 개역개정
+                    ucode: ucodeNum,
+                    ujeol_s: vStart,
+                    ujeol_e: vEnd,
+                    full: 1,
+                }),
+                cache: 'no-store',
+            });
+
+            if (apiRes.ok) {
+                const json = await apiRes.json();
+                if (json && json.success && Array.isArray(json.result) && json.result.length > 0) {
+                    const filtered = json.result.filter((item: any) => {
+                        const j = parseInt(String(item.jeol || item.no), 10);
+                        return j >= vStart && j <= vEnd;
                     });
 
-                    if (!res.ok) continue;
-                    const buffer = await res.arrayBuffer();
-                    let html = new TextDecoder('utf-8').decode(buffer);
-                    if (html.includes('euc-kr') || html.includes('EUC-KR')) {
-                        try {
-                            html = new TextDecoder('euc-kr').decode(buffer);
-                        } catch {
-                            // keep utf-8
+                    if (filtered.length > 0) {
+                        for (const item of filtered) {
+                            const j = String(item.jeol || item.no).trim();
+                            const phrase = stripTags(String(item.phrase || '')).trim();
+                            allVerses.push(`${j}. ${phrase}`);
                         }
+                        chapterLoaded = true;
                     }
-
-                    const cleanText = htmlToCleanText(html);
-                    if (cleanText.length > 50) {
-                        resolvedGodpeopleUrl = url;
-                        // 1차: 단일 장이고 절 번호가 명시되어 있을 때 정규식 직접 추출 시도
-                        if (parsed.hasExplicitVerses && parsed.startChapter === parsed.endChapter) {
-                            const directVerses = extractVersesDirectly(
-                                cleanText,
-                                parsed.startVerse,
-                                parsed.endVerse
-                            );
-                            if (directVerses) {
-                                return {
-                                    reference: parsed.formattedReference,
-                                    passage: directVerses,
-                                    godpeopleUrl: url,
-                                    fromGodpeople: true,
-                                };
-                            }
-                        }
-                        fetchedParts.push(`[${parsed.bookName} ${ch}장 웹페이지 데이터]\n${cleanText.slice(0, 12000)}`);
-                        break;
-                    }
-                } catch (err) {
-                    console.warn(`[Godpeople Fetch Warning] Failed on ${url}:`, err);
                 }
             }
+        } catch (apiErr) {
+            console.warn(`[Godpeople API Warning] Failed on ucode ${ucodeNum}:`, apiErr);
         }
 
-        if (fetchedParts.length > 0) {
-            fetchedGodpeopleSnippet = fetchedParts.join('\n\n');
-            fromGodpeople = true;
-        }
-    }
+        // 방법 2: API 응답 실패 시 https://cnts.godpeople.com/words/{ucodeStr5} HTML의 <li id="B{절번호}"> 파싱
+        if (!chapterLoaded) {
+            try {
+                const htmlRes = await fetch(pageUrl, {
+                    headers: {
+                        'User-Agent':
+                            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    },
+                    cache: 'no-store',
+                });
 
-    // 단일 AI 호출(JSON 모드 보장)로 갓피플 텍스트 발췌 또는 개역개정판(KRV) 원문 정확히 반환
-    const rangeInstruction =
-        parsed && !parsed.hasExplicitVerses
-            ? `요청된 범위(${targetRef})에 절 번호가 지정되어 있지 않으므로, ${parsed.bookName} ${parsed.startChapter}장 1절부터 15절까지의 개역개정 본문을 제공하고 reference를 "${parsed.bookName} ${parsed.startChapter}:1-15" 형태로 명시하세요.`
-            : `요청된 구절(${targetRef})의 시작 절부터 끝 절까지 개역개정 본문 전체를 단 한 절도 빠뜨리지 말고 제공하세요.`;
+                if (htmlRes.ok) {
+                    const html = await htmlRes.text();
+                    // <li id="B30" ...><span ...>30</span><span ...>말씀본문</span></li>
+                    const liRegex = /<li[^>]+id=["']B(\d+)["'][^>]*>([\s\S]*?)<\/li>/gi;
+                    let m: RegExpExecArray | null;
+                    const foundInHtml: { num: number; text: string }[] = [];
 
-    const extractRes = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        response_format: { type: 'json_object' },
-        messages: [
-            {
-                role: 'system',
-                content: `당신은 대한민국 대한성서공회 '성경전서 개역개정판(KRV)' 원문 제공기입니다.
-[엄격 준수 사항]
-1. 아래 [갓피플 웹페이지 데이터]에 요청된 성경 구절의 본문이 포함되어 있다면 웹페이지의 개역개정 원문 그대로 발췌하세요.
-2. 만약 웹페이지 데이터가 비어 있거나 동적 렌더링 페이지여서 본문 텍스트가 보이지 않는다면, 절대로 빈 문자열("")을 반환하지 말고 **'성경전서 개역개정판(KRV)'의 정확한 해당 구절 원문**을 토씨 하나 틀리지 않고 그대로 제공하세요.
-3. ${rangeInstruction}
-4. 각 절 앞에는 반드시 절 번호를 붙이고(예: "1. 말씀내용\\n2. 말씀내용") 줄바꿈(\\n)으로 구분하세요.
-반드시 JSON 형식으로만 답하세요:
-{"reference": "정확한 성경 구절 (예: 사도행전 15:1-11)", "passage": "1. ...\\n2. ..."}`,
-            },
-            {
-                role: 'user',
-                content: fetchedGodpeopleSnippet
-                    ? `요청 성경구절: ${targetRef}\n\n[갓피플 웹페이지 데이터]\n${fetchedGodpeopleSnippet}`
-                    : `요청 성경구절: ${targetRef}`,
-            },
-        ],
-        temperature: 0,
-        max_tokens: 3500,
-    });
+                    while ((m = liRegex.exec(html)) !== null) {
+                        const vNum = parseInt(m[1], 10);
+                        if (vNum >= vStart && vNum <= vEnd) {
+                            const innerHtml = m[2];
+                            // 두 번째 span(또는 첫 번째 절번호 span 제거 후 텍스트) 추출
+                            const spans = Array.from(innerHtml.matchAll(/<span[^>]*>([\s\S]*?)<\/span>/gi));
+                            let verseText = '';
+                            if (spans.length >= 2) {
+                                verseText = stripTags(spans[spans.length - 1][1]);
+                            } else {
+                                verseText = stripTags(innerHtml).replace(new RegExp(`^${vNum}\\s*`), '');
+                            }
+                            if (verseText) {
+                                foundInHtml.push({ num: vNum, text: verseText });
+                            }
+                        }
+                    }
 
-    const content = extractRes.choices[0]?.message?.content || '{}';
-    let result: { reference?: string; passage?: string } = {};
-    try {
-        result = JSON.parse(content);
-    } catch {
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            result = JSON.parse(jsonMatch[0]);
-        }
-    }
-
-    const finalPassage = (result.passage || '').trim();
-    const finalRef = (parsed?.hasExplicitVerses ? parsed.formattedReference : result.reference) || targetRef;
-
-    return {
-        reference: finalRef,
-        passage: finalPassage,
-        godpeopleUrl: resolvedGodpeopleUrl,
-        fromGodpeople,
-    };
-}
-
-/**
- * 갓피플 텍스트에서 정규식으로 startVerse ~ endVerse 절을 직접 추출합니다.
- */
-function extractVersesDirectly(rawText: string, startVerse: number, endVerse: number): string | null {
-    const lines = rawText.split('\n').map((l) => l.trim()).filter(Boolean);
-    const verseMap = new Map<number, string>();
-
-    for (const line of lines) {
-        const m = line.match(/^(\d{1,3})(?:[.)]|\s+)\s*([가-힣"'(\[].{4,})$/);
-        if (m) {
-            const vNum = parseInt(m[1], 10);
-            const vText = m[2].trim();
-            if (vNum >= startVerse && vNum <= endVerse && !verseMap.has(vNum)) {
-                verseMap.set(vNum, `${vNum}. ${vText}`);
+                    if (foundInHtml.length > 0) {
+                        for (const v of foundInHtml) {
+                            allVerses.push(`${v.num}. ${v.text}`);
+                        }
+                        chapterLoaded = true;
+                    }
+                }
+            } catch (htmlErr) {
+                console.warn(`[Godpeople HTML Warning] Failed on ${pageUrl}:`, htmlErr);
             }
         }
     }
 
-    const expectedCount = Math.min(endVerse, startVerse + 50) - startVerse + 1;
-    if (verseMap.size >= expectedCount && expectedCount > 0 && verseMap.has(startVerse)) {
-        const resultLines: string[] = [];
-        for (let v = startVerse; v <= endVerse; v++) {
-            const line = verseMap.get(v);
-            if (line) resultLines.push(line);
-        }
-        if (resultLines.length > 0) {
-            return resultLines.join('\n');
-        }
+    if (allVerses.length > 0) {
+        return {
+            reference: parsed.formattedReference,
+            passage: allVerses.join('\n'),
+            godpeopleUrl: resolvedUrl,
+            fromGodpeople: true,
+        };
     }
 
-    return null;
+    return {
+        reference: parsed.formattedReference,
+        passage: '',
+        godpeopleUrl: resolvedUrl,
+        fromGodpeople: false,
+    };
 }
 
 /**

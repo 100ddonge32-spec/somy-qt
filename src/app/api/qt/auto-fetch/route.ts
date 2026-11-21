@@ -5,7 +5,6 @@ import {
     fetchGodpeopleBibleText,
     generateQtReflection,
 } from '@/lib/qt-sync';
-import { getTodayReading } from '@/lib/reading-plan';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -52,26 +51,24 @@ export async function POST(req: NextRequest) {
             reference = manualReference;
         }
 
-        // 그래도 없으면 기본 통독표 폴백
-        if (!reference) {
-            reference = getTodayReading(date);
-        }
-
+        // 주의: 통독표(다니엘 11-12 등)로 임의 폴백하지 않고 명확히 안내
         if (!reference) {
             return NextResponse.json(
-                { error: '꿈미 사이트에서 해당 날짜의 성경 구절을 찾지 못했습니다. 성경 구절 칸에 구절(예: 사도행전 15:1-11)을 입력한 뒤 다시 시도해 주세요.' },
-                { status: 400 }
+                {
+                    error: `꿈미(coommi.org) 게시판에서 [${date}] 날짜의 게시글을 아직 찾을 수 없습니다. 게시글이 등록되었는지 확인하거나 성경 구절을 직접 입력해 주세요.`,
+                },
+                { status: 404 }
             );
         }
 
-        // 2. 갓피플 성경(cnts.godpeople.com/words/...) 기반 개역개정 원문 가져오기
+        // 2. 갓피플 성경(godpick.godpeople.com / cnts.godpeople.com)에서 실제 개역개정 원문 가져오기
         const bibleResult = await fetchGodpeopleBibleText(reference);
         const finalReference = bibleResult.reference || reference;
         const passage = bibleResult.passage;
 
         if (!passage) {
             return NextResponse.json(
-                { error: `개역개정 성경 본문(${finalReference})을 가져오지 못했습니다.` },
+                { error: `갓피플에서 개역개정 성경 본문(${finalReference})을 가져오지 못했습니다.` },
                 { status: 500 }
             );
         }
