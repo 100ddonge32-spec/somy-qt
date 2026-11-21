@@ -2119,10 +2119,9 @@ export default function App() {
                 });
                 setSelectedQtUploaded(true);
             } else {
-                const readingRef = getTodayReading(targetDate);
                 setQtForm({
                     date: targetDate,
-                    reference: readingRef || '',
+                    reference: '',
                     passage: '',
                     interpretation: '',
                     question1: '',
@@ -4859,31 +4858,60 @@ export default function App() {
                                     const savedCoommiUrl = typeof window !== 'undefined'
                                         ? (localStorage.getItem('somy_coommi_url') || 'https://coommi.org/Board/Detail/9579/125816?category=0')
                                         : 'https://coommi.org/Board/Detail/9579/125816?category=0';
-                                    const res = await fetch('/api/qt/auto-fetch', {
+
+                                    // 1단계: 꿈미 구절 + 갓피플 개역개정 본문 먼저 빠르게 가져오기 (통독표 기본 구절이 적혀 있을 경우 무시하고 꿈미에서 가져옴)
+                                    const defaultPlanRef = getTodayReading(qtForm.date);
+                                    const currentRef = qtForm.reference?.trim();
+                                    const isUserCustomRef = currentRef && currentRef !== defaultPlanRef;
+
+                                    const res1 = await fetch('/api/qt/auto-fetch', {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({
                                             date: qtForm.date,
                                             coommiUrl: savedCoommiUrl,
-                                            reference: qtForm.reference?.trim() || undefined,
-                                            includeReflection: true,
+                                            reference: isUserCustomRef ? currentRef : undefined,
+                                            forceCoommi: !isUserCustomRef,
+                                            includeReflection: false,
                                             saveToDb: false
                                         })
                                     });
-                                    const data = await res.json();
-                                    if (res.ok && data.passage) {
+                                    const data1 = await res1.json();
+                                    if (!res1.ok || !data1.passage) {
+                                        alert('자동 불러오기 실패: ' + (data1.error || '알 수 없는 오류'));
+                                        return;
+                                    }
+
+                                    // 화면에 성경 구절과 개역개정 본문 즉시 반영
+                                    setQtForm((prev: any) => ({
+                                        ...prev,
+                                        reference: data1.reference || prev.reference,
+                                        passage: data1.passage || '',
+                                    }));
+
+                                    // 2단계: 가져온 개역개정 본문으로 AI 해설, 질문 3개, 기도문 생성
+                                    const res2 = await fetch('/api/qt-generate', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            reference: data1.reference,
+                                            passage: data1.passage
+                                        })
+                                    });
+                                    const data2 = await res2.json();
+                                    if (res2.ok && data2.question1) {
                                         setQtForm((prev: any) => ({
                                             ...prev,
-                                            reference: data.reference || prev.reference,
-                                            passage: data.passage || '',
-                                            interpretation: data.interpretation || '',
-                                            question1: data.question1 || '',
-                                            question2: data.question2 || '',
-                                            question3: data.question3 || '',
-                                            prayer: data.prayer || '',
+                                            reference: data1.reference || prev.reference,
+                                            passage: data1.passage || prev.passage,
+                                            interpretation: data2.interpretation || '',
+                                            question1: data2.question1 || '',
+                                            question2: data2.question2 || '',
+                                            question3: data2.question3 || '',
+                                            prayer: data2.prayer || '',
                                         }));
                                     } else {
-                                        alert('자동 불러오기 실패: ' + (data.error || '알 수 없는 오류'));
+                                        alert('성경 본문은 가져왔으나 AI 해설 생성에 실패했습니다: ' + (data2.error || ''));
                                     }
                                 } catch {
                                     alert('서버 연결에 실패했습니다.');
@@ -4901,12 +4929,18 @@ export default function App() {
                                         const savedCoommiUrl = typeof window !== 'undefined'
                                             ? (localStorage.getItem('somy_coommi_url') || 'https://coommi.org/Board/Detail/9579/125816?category=0')
                                             : 'https://coommi.org/Board/Detail/9579/125816?category=0';
+                                        const defaultPlanRef = getTodayReading(qtForm.date);
+                                        const currentRef = qtForm.reference?.trim();
+                                        const isUserCustomRef = currentRef && currentRef !== defaultPlanRef;
+
                                         const res = await fetch('/api/qt/auto-fetch', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({
                                                 date: qtForm.date,
                                                 coommiUrl: savedCoommiUrl,
+                                                reference: isUserCustomRef ? currentRef : undefined,
+                                                forceCoommi: !isUserCustomRef,
                                                 includeReflection: false,
                                                 saveToDb: false
                                             })
