@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 import { getTodayReading } from '@/lib/reading-plan';
-import webpush from '@/lib/webpush';
+import {
+    fetchCoommiReference,
+    fetchGodpeopleBibleText,
+    generateQtReflection,
+} from '@/lib/qt-sync';
 
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,8 +29,8 @@ export async function GET(req: NextRequest) {
         }
     }
 
-    const today = getKoreaDateString();
     const { searchParams } = new URL(req.url);
+    const today = searchParams.get('date') || getKoreaDateString();
     const force = searchParams.get('force') === 'true';
     const forceWeekly = searchParams.get('force_weekly') === 'true';
 
@@ -37,58 +41,22 @@ export async function GET(req: NextRequest) {
         .eq('date', today)
         .maybeSingle();
 
-    let reference = existing?.reference || getTodayReading();
+    let reference = existing?.reference || '';
     let passage = existing?.passage?.split('|||')[0] || '';
 
     try {
-        // 2. 오늘의 큐티 본문 생성 (내용이 없거나 force가 true일 때만)
+        // 2. 오늘의 큐티 본문 생성 (꿈미 coommi.org 구절 + 갓피플 cnts.godpeople.com 개역개정 본문 + AI 해설)
         if (!existing || force) {
             try {
-                console.log(`[Cron] Generating Daily QT for ${today}...`);
-                const bibleRes = await openai.chat.completions.create({
-                    model: 'gpt-4o-mini',
-                    messages: [
-                        {
-                            role: 'system',
-                            content: `당신은 성경 전문가이자 신중한 목회자입니다. 
-주어진 성경 범위(예: 민수기 1-2)에서 묵상에 가장 적합한 **연속된 15~20개 절**을 추출하여 제공하세요. 
-1. 절대로 본문의 내용을 요약하거나 현대어로 의역하지 마세요. 반드시 개역개정판의 원문 그대로 제공해야 합니다.
-2. 각 절의 시작에 반드시 절 번호를 기입하세요.
-{"passage":"본문 내용"}`
-                        },
-                        { role: 'user', content: `성경구절: ${reference}` }
-                    ],
-                    temperature: 0,
-                });
+                console.log(`[Cron] Generating Daily QT for ${today} via Coommi & Godpeople...`);
+                const coommiRes = await fetchCoommiReference(today);
+                const rawRef = coommiRes.reference || getTodayReading(today);
 
-                const bibleContent = bibleRes.choices[0]?.message?.content || '';
-                const bibleJson = JSON.parse(bibleContent.match(/\{[\s\S]*\}/)![0]);
-                passage = bibleJson.passage;
+                const bibleRes = await fetchGodpeopleBibleText(rawRef);
+                reference = bibleRes.reference || rawRef;
+                passage = bibleRes.passage;
 
-                const qtRes = await openai.chat.completions.create({
-                    model: 'gpt-4o-mini',
-                    messages: [
-                        {
-                            role: 'system',
-                             content: `당신은 개혁주의 신학(Reformed Theology)에 입각하여 말씀을 해석하는 목회자이자, 성도를 아끼는 따뜻한 큐티 전문가입니다. 성도들이 말씀을 깊이 묵상하고 삶에 적용할 수 있도록, 상담실에서 마주 앉아 대화하듯 부드럽고 친절한 경어체를 사용해 주세요.
-1. 본문 해설: 개혁주의 신학 관점을 반영하여 따뜻하게 해설해주세요. 분량은 10줄 내외로 작성합니다.
-2. 묵상 질문 3개 (오륜교회 '주만나' 큐티 스타일 반영):
-   - 본문의 성경적 흐름과 역사적/문맥적 맥락을 충분히 이해한 깊이 있는 질문이어야 합니다.
-   - 성도가 오늘 하루 삶의 자리(가정, 일터, 인간관계, 개인의 연약함 등)에서 맞닥뜨리는 실존적인 고민들과 본문의 메시지를 긴밀하게 연결하세요.
-   - 내 방법으로 인생을 통제하거나 해결하려 했던 부분을 돌아보고, 하나님의 성품과 절대 주권을 온전히 신뢰하도록 직면시키는 질문이어야 합니다.
-   - 막연한 결단 대신, 오늘 당장 실천할 수 있는 '멈추어야 할 행동'이나 '새롭게 시작해야 할 일' 등 구체적인 적용점을 이끌어내도록 질문을 다듬어 주세요.
-3. 마무리 기도문 1개: 본문의 은혜가 성도의 삶에 임하기를 간구하는 따뜻한 기도
-
-반드시 아래 JSON 형식으로만 답하세요:
-{"interpretation":"해설","question1":"질문1","question2":"질문2","question3":"질문3","prayer":"기도문"}`
-                        },
-                        { role: 'user', content: `성경구절: ${reference}\n본문:\n${passage}` }
-                    ],
-                    temperature: 0.7,
-                });
-
-                const qtContent = qtRes.choices[0]?.message?.content || '';
-                const qtJson = JSON.parse(qtContent.match(/\{[\s\S]*\}/)![0]);
+                const qtJson = await generateQtReflection(reference, passage);
 
                 await supabaseAdmin.from('daily_qt').upsert({
                     date: today,
@@ -100,9 +68,6 @@ export async function GET(req: NextRequest) {
                     prayer: qtJson.prayer,
                     ai_generated: true,
                 }, { onConflict: 'date' });
-
-                // [알림 안내] 자동 생성된 큐티의 알림은 정해진 시간에 스케줄러(push-scheduler)를 통해 발송됩니다.
-                // 중복 발송 방지를 위해 이곳의 즉시 발송 로직은 제거합니다.
             } catch (err) {
                 console.error('Daily QT failed:', err);
                 if (!forceWeekly) throw err;

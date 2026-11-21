@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import OpenAI from 'openai';
 import { getTodayReading } from '@/lib/reading-plan';
+import {
+    fetchCoommiReference,
+    fetchGodpeopleBibleText,
+    generateQtReflection,
+} from '@/lib/qt-sync';
 import webpush from '@/lib/webpush';
 
 const supabaseAdmin = createClient(
@@ -10,62 +14,38 @@ const supabaseAdmin = createClient(
     { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
-
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 // 한국 시간 기준 오늘 날짜 반환
 function getKoreaDateString(): string {
     return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
 }
 
-// 자동 큐티 생성 로직 (성경 읽기표 기반)
+// 자동 큐티 생성 로직 (꿈미 coommi.org 구절 + 갓피플 개역개정 원문 + AI 해설/질문/기도문)
 async function generateAutoQt(date: string) {
-    const baseReference = getTodayReading(date);
-
     try {
-        const response = await openai.chat.completions.create({
-            model: 'gpt-4o',
-            messages: [
-                {
-                    role: 'system',
-                    content: `당신은 개혁주의 신학(Reformed Theology)에 입각하여 본문을 해석하는 탁월한 성경 해석가이자, 성도를 깊이 아끼는 따뜻한 목회자입니다. 
-성도들이 단순한 본문 읽기를 넘어 그 속에 담긴 하나님의 사랑과 풍성한 영감을 발견할 수 있도록 섬세하고 깊이 있게 해설을 작성해주세요.
+        // 1. 꿈미에서 해당 날짜 성경 구절 확인 (실패 시 기본 읽기표 폴백)
+        const coommiRes = await fetchCoommiReference(date);
+        const rawReference = coommiRes.reference || getTodayReading(date);
 
-[작성 가이드라인]
-1. 본문 해설 (Explanation):
-   - 성경 본문의 역사적/신학적 배경을 성도가 이해하기 쉽게 이야기하듯 풀어내세요.
-   - 본지 핵심 내용을 다룬 뒤, 성도 한 명 한 명에게 개별적으로 심방하여 조언하듯 정성스럽고 풍성하게(10줄 이상) 작성합니다.
-   - '~해요', '~해 보세요' 등 부드럽고 따뜻한 경어체를 일관되게 적용하세요.
-   - <참고> 또는 <묵상 포인트>와 같이 구분된 형식을 가끔 활용해 깊이를 더하세요.
-2. 묵상 질문 (Questions) - 오륜교회 '주만나' 큐티 스타일 반영:
-   - 본문의 성경적 흐름과 역사적/문맥적 맥락을 충분히 이해한 깊이 있는 질문이어야 합니다.
-   - 성도가 오늘 하루 삶의 자리(가정, 일터, 인간관계, 개인의 연약함이나 성품 등)에서 맞닥뜨리는 실존적인 고민들과 본문의 사건/메시지를 긴밀하게 연결하세요.
-   - 내 생각과 방법으로 인생을 통제하거나 해결하려 했던 영역은 무엇인지 돌아보게 하고, 하나님의 성품과 절대 주권을 온전히 신뢰하며 내려놓도록 직면시키는 질문이어야 합니다.
-   - 막연하고 추상적인 결단 대신, 오늘 당장 실천할 수 있는 '멈추어야 할 행동'이나 '새롭게 시작해야 할 일' 등 구체적인 적용점을 이끌어내도록 질문을 다듬어 주세요.
-3. 마무리 기도문 (Prayer):
-   - 본문의 내용이 성도의 삶에 실제로 응축되어 나타날 수 있도록 감성적이고도 진실된 기도문을 작성하세요.
+        // 2. 갓피플 성경에서 개역개정 원문 추출
+        const bibleRes = await fetchGodpeopleBibleText(rawReference);
+        const finalReference = bibleRes.reference || rawReference;
+        const bibleText = bibleRes.passage;
 
-반드시 아래 JSON 형식으로만 답하세요:
-{"reference":"확정된 범위","bibleText":"성경 본문 원문","explanation":"본문 해설","question1":"질문1","question2":"질문2","question3":"질문3","prayer":"기도문"}`
-                },
-                { role: 'user', content: `성경 통독 구절: ${baseReference}` }
-            ],
-            temperature: 0,
-            max_tokens: 2000,
-        });
+        if (!bibleText) {
+            throw new Error('개역개정 본문 추출 실패');
+        }
 
-        const content = response.choices[0]?.message?.content || "";
-        const qtJson = JSON.parse(content.match(/\{[\s\S]*\}/)![0]);
+        // 3. 개혁주의/주만나 스타일 해설, 질문 3개, 기도문 생성
+        const qtReflection = await generateQtReflection(finalReference, bibleText);
 
         const newQt = {
             date,
-            reference: qtJson.reference || baseReference,
-            passage: `${qtJson.bibleText}|||${qtJson.explanation}`, // 본문과 해설을 |||로 명확히 구분
-            question1: qtJson.question1,
-            question2: qtJson.question2,
-            question3: qtJson.question3,
-            prayer: qtJson.prayer,
+            reference: finalReference,
+            passage: `${bibleText}|||${qtReflection.interpretation}`, // 본문과 해설을 |||로 명확히 구분
+            question1: qtReflection.question1,
+            question2: qtReflection.question2,
+            question3: qtReflection.question3,
+            prayer: qtReflection.prayer,
             ai_generated: true,
         };
 

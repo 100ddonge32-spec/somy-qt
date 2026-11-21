@@ -4831,79 +4831,139 @@ export default function App() {
                         </div>
 
                         <div style={{ background: '#FDFCFB', padding: '16px', borderRadius: '15px', border: '1px solid #F0ECE4', marginBottom: '8px', opacity: loadingQtDate ? 0.6 : 1 }}>
-                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#B8924A', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                ✨ AI 추천 기능
+                            <div style={{ fontSize: '13px', fontWeight: 800, color: '#B8924A', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <span>⚡ 꿈미(주만나) + 갓피플(개역개정) 자동화</span>
+                                <span style={{ fontSize: '10px', background: '#E8F5E9', color: '#2E7D32', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>매일 새벽 자동등록 활성</span>
                             </div>
+
+                            <div style={{ marginBottom: '10px' }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: '#666', display: 'block', marginBottom: '4px' }}>
+                                    🔗 꿈미 큐티본문 확인 주소 (기본값 자동 적용 / 변경 시 자동 기억)
+                                </label>
+                                <input
+                                    type="text"
+                                    defaultValue={typeof window !== 'undefined' ? (localStorage.getItem('somy_coommi_url') || 'https://coommi.org/Board/Detail/9579/125816?category=0') : 'https://coommi.org/Board/Detail/9579/125816?category=0'}
+                                    onChange={(e: any) => {
+                                        if (typeof window !== 'undefined') {
+                                            localStorage.setItem('somy_coommi_url', e.target.value.trim());
+                                        }
+                                    }}
+                                    placeholder="https://coommi.org/Board/Detail/9579/125816?category=0"
+                                    style={{ ...inputStyle, fontSize: '11px', padding: '8px 10px', background: 'white', color: '#555' }}
+                                />
+                            </div>
+
                             <button onClick={async () => {
                                 setAiLoading(true);
                                 try {
-                                    const res = await fetch(`/api/qt?date=${qtForm.date}&force=true&church_id=${churchId}`, { cache: 'no-store' });
-                                    const { qt } = await res.json();
-                                    if (qt) {
-                                        const { fullPassage, interpretation, youthData } = parsePassage(qt.passage);
-                                        setQtForm({
-                                            date: qt.date,
-                                            reference: qt.reference,
-                                            passage: fullPassage,
-                                            interpretation: interpretation,
-                                            question1: qt.question1 || '',
-                                            question2: qt.question2 || '',
-                                            question3: qt.question3 || '',
-                                            prayer: qt.prayer || '',
-                                            youthInterpretation: youthData?.interpretation || '',
-                                            youthQuestion1: youthData?.questions?.[0] || '',
-                                            youthQuestion2: youthData?.questions?.[1] || '',
-                                            youthQuestion3: youthData?.questions?.[2] || '',
-                                        });
-                                        setSelectedQtUploaded(true);
-                                        setQtStatusMap(prev => ({
-                                            ...prev,
-                                            [qt.date]: { isUploaded: true, reference: qt.reference }
-                                        }));
-                                        fetchQtStatusList();
-                                    } else {
-                                        alert('자동 생성 본문을 가져올 수 없습니다. 유료 버전 설정을 확인해주세요.');
-                                    }
-                                } catch { alert('데이터 로드 실패'); }
-                                finally { setAiLoading(false); }
-                            }} disabled={aiLoading || loadingQtDate} style={{ width: '100%', padding: '12px', background: '#333', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '13px', cursor: 'pointer', marginBottom: '8px' }}>
-                                {aiLoading ? '🔄 로딩 중...' : `📅 ${qtForm.date === getKstDate(0) ? '오늘' : qtForm.date} 성경 통독 본문 AI 자동 생성`}
-                            </button>
-
-                            <button onClick={async () => {
-                                const autoVerse = getGraceVerse();
-                                const isCustom = !!churchSettings?.today_verse_text;
-                                const _ref = isCustom ? (churchSettings.today_verse_ref || '기타') : `${autoVerse.book} ${autoVerse.ref}`;
-                                const _passage = isCustom ? churchSettings.today_verse_text : autoVerse.verse;
-
-                                setAiLoading(true);
-                                try {
-                                    // 본문은 있으니 질문/기도문만 생성 요청
-                                    const res = await fetch('/api/qt-generate', {
+                                    const savedCoommiUrl = typeof window !== 'undefined'
+                                        ? (localStorage.getItem('somy_coommi_url') || 'https://coommi.org/Board/Detail/9579/125816?category=0')
+                                        : 'https://coommi.org/Board/Detail/9579/125816?category=0';
+                                    const res = await fetch('/api/qt/auto-fetch', {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ reference: _ref, passage: _passage })
+                                        body: JSON.stringify({
+                                            date: qtForm.date,
+                                            coommiUrl: savedCoommiUrl,
+                                            reference: qtForm.reference?.trim() || undefined,
+                                            includeReflection: true,
+                                            saveToDb: false
+                                        })
                                     });
                                     const data = await res.json();
-                                    setQtForm({
-                                        ...qtForm,
-                                        reference: _ref,
-                                        passage: _passage,
-                                        question1: data.question1 || '',
-                                        question2: data.question2 || '',
-                                        question3: data.question3 || '',
-                                        prayer: data.prayer || '',
-                                    });
+                                    if (res.ok && data.passage) {
+                                        setQtForm((prev: any) => ({
+                                            ...prev,
+                                            reference: data.reference || prev.reference,
+                                            passage: data.passage || '',
+                                            interpretation: data.interpretation || '',
+                                            question1: data.question1 || '',
+                                            question2: data.question2 || '',
+                                            question3: data.question3 || '',
+                                            prayer: data.prayer || '',
+                                        }));
+                                    } else {
+                                        alert('자동 불러오기 실패: ' + (data.error || '알 수 없는 오류'));
+                                    }
                                 } catch {
-                                    setQtForm({ ...qtForm, reference: _ref, passage: _passage });
-                                    alert('말씀은 불러왔으나 질문 생성에 실패했습니다.');
-                                } finally { setAiLoading(false); }
-                            }} disabled={aiLoading || loadingQtDate} style={{ width: '100%', padding: '12px', background: '#F5F2EA', color: '#B8924A', border: '1px solid #B8924A', borderRadius: '10px', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
-                                🛳️ {churchSettings?.today_verse_text ? '설정된 오늘의 암송 불러오기' : '네비게이토 은혜 말씀 불러오기'}
+                                    alert('서버 연결에 실패했습니다.');
+                                } finally {
+                                    setAiLoading(false);
+                                }
+                            }} disabled={aiLoading || loadingQtDate} style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg, #1A5D55 0%, #134B44 100%)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 800, fontSize: '13px', cursor: 'pointer', marginBottom: '8px', boxShadow: '0 4px 10px rgba(26,93,85,0.2)' }}>
+                                {aiLoading ? '🔄 꿈미 구절 + 갓피플 본문 + AI 해설 생성 중...' : `⚡ [${qtForm.date}] 꿈미 구절 + 갓피플 개역개정 + AI 해설 원클릭 완성`}
                             </button>
 
-                            <p style={{ fontSize: '11px', color: '#999', marginTop: '8px', textAlign: 'center' }}>
-                                * 통독 본문 또는 네비게이토 암송 구절을 자동으로 채워줍니다.
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                                <button onClick={async () => {
+                                    setAiLoading(true);
+                                    try {
+                                        const savedCoommiUrl = typeof window !== 'undefined'
+                                            ? (localStorage.getItem('somy_coommi_url') || 'https://coommi.org/Board/Detail/9579/125816?category=0')
+                                            : 'https://coommi.org/Board/Detail/9579/125816?category=0';
+                                        const res = await fetch('/api/qt/auto-fetch', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                date: qtForm.date,
+                                                coommiUrl: savedCoommiUrl,
+                                                includeReflection: false,
+                                                saveToDb: false
+                                            })
+                                        });
+                                        const data = await res.json();
+                                        if (res.ok && data.passage) {
+                                            setQtForm((prev: any) => ({
+                                                ...prev,
+                                                reference: data.reference || prev.reference,
+                                                passage: data.passage || '',
+                                            }));
+                                        } else {
+                                            alert('본문 불러오기 실패: ' + (data.error || ''));
+                                        }
+                                    } catch {
+                                        alert('서버 연결 실패');
+                                    } finally {
+                                        setAiLoading(false);
+                                    }
+                                }} disabled={aiLoading || loadingQtDate} style={{ flex: 1, padding: '10px', background: '#333', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>
+                                    {aiLoading ? '🔄 로딩 중...' : '📖 꿈미 구절 + 갓피플 본문만 가져오기'}
+                                </button>
+
+                                <button onClick={async () => {
+                                    const autoVerse = getGraceVerse();
+                                    const isCustom = !!churchSettings?.today_verse_text;
+                                    const _ref = isCustom ? (churchSettings.today_verse_ref || '기타') : `${autoVerse.book} ${autoVerse.ref}`;
+                                    const _passage = isCustom ? churchSettings.today_verse_text : autoVerse.verse;
+
+                                    setAiLoading(true);
+                                    try {
+                                        const res = await fetch('/api/qt-generate', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ reference: _ref, passage: _passage })
+                                        });
+                                        const data = await res.json();
+                                        setQtForm({
+                                            ...qtForm,
+                                            reference: _ref,
+                                            passage: _passage,
+                                            question1: data.question1 || '',
+                                            question2: data.question2 || '',
+                                            question3: data.question3 || '',
+                                            prayer: data.prayer || '',
+                                        });
+                                    } catch {
+                                        setQtForm({ ...qtForm, reference: _ref, passage: _passage });
+                                        alert('말씀은 불러왔으나 질문 생성에 실패했습니다.');
+                                    } finally { setAiLoading(false); }
+                                }} disabled={aiLoading || loadingQtDate} style={{ flex: 1, padding: '10px', background: '#F5F2EA', color: '#B8924A', border: '1px solid #B8924A', borderRadius: '10px', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>
+                                    🛳️ {churchSettings?.today_verse_text ? '오늘의 암송 불러오기' : '네비게이토 말씀'}
+                                </button>
+                            </div>
+
+                            <p style={{ fontSize: '11px', color: '#777', marginTop: '6px', textAlign: 'center', lineHeight: 1.4 }}>
+                                * 성경 구절 칸이 비어 있으면 <b>꿈미 사이트</b>에서 해당 날짜 구절을 자동 조회하고, 구절이 적혀 있으면 해당 구절을 <b>갓피플 개역개정</b>에서 가져옵니다.
                             </p>
                         </div>
 
@@ -4957,12 +5017,12 @@ export default function App() {
                                 try {
                                     const res = await fetch('/api/bible', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reference: qtForm.reference }) });
                                     const data = await res.json();
-                                    if (data.passage) { setQtForm(p => ({ ...p, passage: data.passage })); }
+                                    if (data.passage) { setQtForm(p => ({ ...p, reference: data.reference || p.reference, passage: data.passage })); }
                                     else { alert('본문 가져오기 실패: ' + (data.error || '')); }
                                 } catch { alert('서버 연결 실패'); }
                                 finally { setAiLoading(false); }
                             }} disabled={aiLoading} style={{ marginTop: '6px', width: '100%', padding: '10px', background: '#F5F2EA', color: '#B8924A', border: 'none', borderRadius: '8px', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>
-                                {aiLoading ? '📖 가져오는 중...' : '📖 성경 본문 자동 가져오기'}
+                                {aiLoading ? '📖 갓피플 개역개정 본문 가져오는 중...' : '📖 갓피플 개역개정 성경 본문 자동 가져오기'}
                             </button>
                         </div>
                         <div>

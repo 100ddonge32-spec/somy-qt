@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import webpush from '@/lib/webpush';
+import {
+    fetchCoommiReference,
+    fetchGodpeopleBibleText,
+    generateQtReflection,
+} from '@/lib/qt-sync';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,6 +44,41 @@ export async function GET(req: NextRequest) {
         const currentHour = now.getHours();
         const today = now.toISOString().split('T')[0];
 
+        // 2-1. 오늘의 큐티 본문이 아직 등록되어 있지 않다면 꿈미 + 갓피플에서 자동 수집 및 생성
+        let autoQtResult: any = null;
+        try {
+            const { data: existingQt } = await supabaseAdmin
+                .from('daily_qt')
+                .select('date, reference')
+                .eq('date', today)
+                .maybeSingle();
+
+            if (!existingQt) {
+                console.log(`[Push-Scheduler] No daily_qt for ${today}. Auto-fetching from Coommi & Godpeople...`);
+                const coommiRes = await fetchCoommiReference(today);
+                if (coommiRes.reference) {
+                    const bibleRes = await fetchGodpeopleBibleText(coommiRes.reference);
+                    if (bibleRes.passage) {
+                        const reflection = await generateQtReflection(bibleRes.reference, bibleRes.passage);
+                        await supabaseAdmin.from('daily_qt').upsert({
+                            date: today,
+                            reference: bibleRes.reference,
+                            passage: `${bibleRes.passage}|||${reflection.interpretation}`,
+                            question1: reflection.question1,
+                            question2: reflection.question2,
+                            question3: reflection.question3,
+                            prayer: reflection.prayer,
+                            ai_generated: true,
+                        }, { onConflict: 'date' });
+                        autoQtResult = { created: true, reference: bibleRes.reference };
+                    }
+                }
+            }
+        } catch (qtAutoErr: any) {
+            console.error('[Push-Scheduler] Auto QT creation error:', qtAutoErr);
+            autoQtResult = { created: false, error: qtAutoErr.message };
+        }
+
         console.log(`[Push-Scheduler] Request received. TargetChurch: ${targetChurchId || 'ALL'}, Force: ${force}, Time: ${today} ${currentHour}:00 KST`);
 
         const results = [];
@@ -47,7 +87,10 @@ export async function GET(req: NextRequest) {
             // 특정 교회만 발송 (기존 push-send-daily 역할 대체)
             console.log(`[Push-Scheduler] Manual trigger for church: ${targetChurchId}`);
             const pushResult = await triggerPushForChurch(targetChurchId, today);
-            results.push({ church_id: targetChurchId, status: 'success', ...pushResult });
+            if (pushResult) {
+                const { church_id: _cid, ...restPush } = pushResult as any;
+                results.push({ church_id: targetChurchId, status: 'success', ...restPush });
+            }
         } else {
             // 모든 교회 설정 가져오기 (자동 스케줄링)
             const { data: churches, error: churchError } = await supabaseAdmin
@@ -91,6 +134,7 @@ export async function GET(req: NextRequest) {
             today,
             currentTime: `${currentHour}:00`,
             processedCount: results.length,
+            autoQt: autoQtResult,
             bibleReadingPushes: bibleReadingPushResult,
             details: results
         });
