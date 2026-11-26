@@ -30,12 +30,12 @@
     sanctuary: {
       id: 'sanctuary',
       name: '🏛️ 그레이스 대성전',
-      subtitle: '곡선 간접조명 루버천장 · 벽면 월워셔 조명 · 화이트 백라이트 십자가홀',
+      subtitle: '곡선 간접조명 루버천장 · 3열 개별 예배의자 본당 · 화이트 백라이트 십자가홀',
       sky: 0x1f1c18,
       fogColor: 0x2c2721,
       fogDensity: 0.0025,
-      spawn: { x: 0, z: 18.5, rotY: Math.PI },
-      panorama: { pos: [-22, 9.2, 23], look: [2, 3.8, -14] },
+      spawn: { x: 0, z: 24.6, rotY: Math.PI },
+      panorama: { pos: [-22, 9.8, 25], look: [0, 3.5, -8] },
       bounds: { x: 28.5, zMin: -21.5, zMax: 27.5 },
       hasBoard: true,
       boardPos: [0, 6.4, -22.6],
@@ -469,6 +469,11 @@
       const labelEl = document.createElement('div');
       labelEl.className = 'pointer-events-none absolute -translate-x-1/2 -translate-y-full flex flex-col items-center gap-1 z-10';
       labelEl.innerHTML = `
+        <div class="av-cam-wrap hidden w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 ${
+          info.isMe ? 'border-amber-400' : 'border-emerald-400'
+        } shadow-2xl bg-slate-950 mb-0.5">
+          <video autoplay playsinline muted class="av-cam-video w-full h-full object-cover"></video>
+        </div>
         <div class="av-bubble hidden px-2.5 py-1 rounded-xl bg-white/95 text-slate-900 border border-amber-400 text-[11px] font-bold shadow-lg max-w-[210px] text-center break-keep"></div>
         <div class="av-tag px-2.5 py-0.5 rounded-full text-[11px] font-extrabold whitespace-nowrap shadow ${
           info.isMe ? 'bg-amber-400 text-slate-950' : info.isNpc ? 'bg-slate-900/80 text-slate-100 border border-white/15' : 'bg-emerald-500/90 text-slate-950'
@@ -502,6 +507,10 @@
         bagMat,
         myRing,
         labelEl,
+        camWrapEl: labelEl.querySelector('.av-cam-wrap'),
+        camVideoEl: labelEl.querySelector('.av-cam-video'),
+        camStream: null,
+        camMirror: !!info.isMe,
         tagEl: labelEl.querySelector('.av-tag'),
         bubbleEl: labelEl.querySelector('.av-bubble'),
         bubbleTimer: 0,
@@ -580,6 +589,25 @@
       av.bubbleEl.textContent = text;
       av.bubbleEl.classList.remove('hidden');
       av.bubbleTimer = seconds;
+    }
+
+    // 3D 아바타 머리 위 실시간 동그란 얼굴 카메라 버블 연결/해제
+    setAvatarVideoStream(id, stream, isMirror = false) {
+      const av = this.avatars.get(id);
+      if (!av || !av.camWrapEl || !av.camVideoEl) return;
+      av.camStream = stream || null;
+      av.camMirror = isMirror;
+      if (stream) {
+        av.camVideoEl.style.transform = isMirror ? 'scaleX(-1)' : 'none';
+        if (av.camVideoEl.srcObject !== stream) {
+          av.camVideoEl.srcObject = stream;
+        }
+        av.camVideoEl.play().catch(() => {});
+        av.camWrapEl.classList.remove('hidden');
+      } else {
+        av.camVideoEl.srcObject = null;
+        av.camWrapEl.classList.add('hidden');
+      }
     }
 
     triggerSip(id) {
@@ -850,21 +878,20 @@
       floor.receiveShadow = true;
       this.roomGroup.add(floor);
 
-      const arcCarpetGeo = new THREE.RingGeometry(27.5, 30.2, 56, 1, -Math.PI * 0.40, Math.PI * 0.80);
-      arcCarpetGeo.rotateX(-Math.PI / 2);
-      const arcCarpet = new THREE.Mesh(arcCarpetGeo, redAisleMat);
-      arcCarpet.rotation.y = Math.PI;
-      arcCarpet.position.set(0, 0.02, -20);
-      arcCarpet.receiveShadow = true;
-      this.roomGroup.add(arcCarpet);
-
-      [-0.44, 0, 0.44].forEach((ang) => {
-        const radial = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.022, 34), redAisleMat);
-        radial.position.set(Math.sin(ang) * 16, 0.021, -20 + Math.cos(ang) * 24);
-        radial.rotation.y = ang;
-        radial.receiveShadow = true;
-        this.roomGroup.add(radial);
+      // 좌·중·우 3열 개별 의자 구역을 나누는 2줄의 주 복도 & 전·후면 가로 레드카펫 복도
+      [-9.6, 9.6].forEach((ax) => {
+        const mainAisle = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.022, 39.5), redAisleMat);
+        mainAisle.position.set(ax, 0.021, 6.2);
+        mainAisle.receiveShadow = true;
+        this.roomGroup.add(mainAisle);
       });
+      const rearCrossAisle = new THREE.Mesh(new THREE.BoxGeometry(52, 0.021, 2.6), redAisleMat);
+      rearCrossAisle.position.set(0, 0.020, 24.8);
+      rearCrossAisle.receiveShadow = true;
+      const frontCrossAisle = new THREE.Mesh(new THREE.BoxGeometry(48, 0.021, 1.8), redAisleMat);
+      frontCrossAisle.position.set(0, 0.020, -12.6);
+      frontCrossAisle.receiveShadow = true;
+      this.roomGroup.add(rearCrossAisle, frontCrossAisle);
 
       // 6단 동심원 곡선 우드 루버 천장 + 간접 코브(Cove) 조명 + 매립 타공 다운라이트
       const ceilSlat = this.pbr.ceilingFineSlatMaterial(18, 5);
@@ -1064,18 +1091,44 @@
       this.roomGroup.add(this.candleGroup);
       this.updateCandles(candles);
 
-      // 부채꼴 밝은 내추럴 오크 모던 장의자 5열 × 4블록
-      const radii = [12.5, 17.0, 21.5, 25.8, 32.5];
-      const blocks = [-0.62, -0.22, 0.22, 0.62];
-      radii.forEach((r, rIdx) => {
-        blocks.forEach((ang, bIdx) => {
-          const px = Math.sin(ang) * r;
-          const pz = -18.5 + Math.cos(ang) * r;
-          if (Math.abs(px) > 26.5 || pz > 24) return;
-          const faceStageYaw = Math.atan2(-px, -18.5 - pz);
-          this._addFurnitureSeat(`pew_${rIdx}_${bIdx}`, px, 0, pz, faceStageYaw, 4.5, `🪑 ${rIdx + 1}열 모던 장의자 착석`, 'pew');
+      // 좌측열 · 중앙열 · 우측열 3열 구역으로 본당을 빈틈없이 가득 채운 1인용 개별 예배 의자 (11줄 × 39석 = 총 429석!)
+      const sectionSpecs = [
+        { key: 'left',   name: '좌측열', centerX: -18.2, yaw: Math.PI - 0.14, count: 12 },
+        { key: 'center', name: '중앙열', centerX: 0.0,   yaw: Math.PI,        count: 15 },
+        { key: 'right',  name: '우측열', centerX: 18.2,  yaw: Math.PI + 0.14, count: 12 }
+      ];
+      const chairSpacing = 0.74;
+
+      for (let rIdx = 0; rIdx < 11; rIdx++) {
+        const rz = -10.0 + rIdx * 2.92; // -10.0m(1줄 맨앞) ~ +19.2m(11줄 뒷자리)까지 본당 가득 채움
+        sectionSpecs.forEach((sec) => {
+          const rowGrp = this.pbr.createSanctuaryChairRow(sec.count, chairSpacing);
+          rowGrp.position.set(sec.centerX, 0, rz);
+          rowGrp.rotation.y = sec.yaw;
+          this.roomGroup.add(rowGrp);
+
+          // 각 줄의 개별 의자들 중 대표 좌석들에 착석 상호작용 연결 (어느 구역·어느 줄이든 착석 가능)
+          const startLocalX = -((sec.count - 1) * chairSpacing) / 2;
+          for (let cIdx = 0; cIdx < sec.count; cIdx += 2) {
+            const localX = startLocalX + cIdx * chairSpacing;
+            const wx = sec.centerX + Math.cos(sec.yaw) * localX;
+            const wz = rz - Math.sin(sec.yaw) * localX;
+            const chairObj = rowGrp.children[cIdx];
+            const seatMesh = chairObj && chairObj.children ? chairObj.children[1] : null;
+            this.interactables.push({
+              id: `chair_${sec.key}_${rIdx}_${cIdx}`,
+              type: 'seat',
+              label: `🪑 ${sec.name} ${rIdx + 1}줄 개별의자 착석`,
+              x: wx,
+              y: 0,
+              z: wz,
+              rotY: sec.yaw,
+              radius: 1.45,
+              mesh: seatMesh
+            });
+          }
         });
-      });
+      }
 
       const stageLight = new THREE.PointLight(0xfff4de, 0.65, 38);
       stageLight.position.set(0, 10.5, -14);

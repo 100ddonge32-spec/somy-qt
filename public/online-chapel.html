@@ -203,6 +203,10 @@
           ☕ 커피 마시기
         </button>
 
+        <button id="btn-face-cam-toggle" class="shrink-0 px-3 py-1.5 rounded-full bg-emerald-500/90 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold cursor-pointer shadow flex items-center gap-1">
+          <span id="face-cam-btn-label">📹 얼굴켜기</span>
+        </button>
+
         <button id="btn-mic-toggle" class="shrink-0 px-2.5 py-1.5 rounded-full bg-black/70 hover:bg-black/85 backdrop-blur-md border border-emerald-400/40 text-emerald-300 text-xs font-extrabold cursor-pointer flex items-center gap-1.5">
           <span id="mic-btn-label">🎙️ 마이크</span>
           <span id="mic-meter-wrap" class="hidden inline-flex w-8 h-2 bg-black/50 rounded-full overflow-hidden">
@@ -244,6 +248,19 @@
 
     <!-- 상단 안내 토스트 -->
     <div id="world-toast" class="hidden absolute top-24 sm:top-28 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-slate-900/90 border border-amber-400/60 text-amber-200 text-xs font-extrabold shadow-xl pointer-events-none z-30 max-w-[92vw] truncate"></div>
+
+    <!-- 👥 양방향 실시간 얼굴 화상 교제 타일 패널 (성도들이 카메라를 켜면 서로의 얼굴이 여기에 실시간 표시 + 캐릭터 머리 위에도 원형 표시!) -->
+    <div id="face-cam-gallery" class="hidden absolute top-14 sm:top-16 left-2.5 sm:left-4 z-20 max-w-[94vw] sm:max-w-[540px] bg-slate-950/85 backdrop-blur-md border border-emerald-400/45 rounded-2xl p-2 shadow-2xl space-y-1.5">
+      <div class="flex items-center justify-between gap-2 px-1">
+        <span id="face-cam-count-title" class="text-[11px] font-extrabold text-emerald-300">📹 실시간 얼굴 교제 (1명)</span>
+        <div class="flex items-center gap-1">
+          <button id="btn-face-flip" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 cursor-pointer" title="전면/후면 카메라 전환">🔄 전환</button>
+          <button id="btn-face-mute" class="px-2 py-0.5 rounded-lg bg-emerald-500/25 hover:bg-emerald-500/40 text-[10px] font-extrabold text-emerald-200 cursor-pointer">🎙️ 소리켜짐</button>
+          <button id="btn-face-collapse" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-300 cursor-pointer">접기</button>
+        </div>
+      </div>
+      <div id="face-cam-tiles" class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5"></div>
+    </div>
 
     <!-- 기도음악 재생 중 미니 바 -->
     <div id="bgm-mini-bar" class="hidden absolute top-16 right-3 sm:right-4 bg-indigo-950/90 backdrop-blur-md border border-indigo-400/40 rounded-2xl p-2 flex items-center gap-2 z-20 max-w-[92vw]">
@@ -860,8 +877,8 @@
 
   </div>
 
-  <script src="/chapel-pbr.js?v=4"></script>
-  <script src="/chapel-engine.js?v=4"></script>
-  <script src="/chapel-app.js?v=4"></script>
+  <script src="/chapel-pbr.js?v=5"></script>
+  <script src="/chapel-engine.js?v=5"></script>
+  <script src="/chapel-app.js?v=5"></script>
 </body>
 </html>

@@ -136,9 +136,9 @@
       { id: 'npc_g2', name: '박소망 청년', presetId: 'joseph', x: -12.5, z: -5.5, rotY: 0.3, pose: 'stand', drink: 'coffee', isNpc: true, bubble: '☕ 대성전 들어가기 전 커피 한 잔!' }
     ],
     sanctuary: [
-      { id: 'npc_s1', name: '한충성 장로', presetId: 'david', x: -5.0, z: -2.8, rotY: 0.25, pose: 'sit', isNpc: true, bubble: '🙏 주님 홀로 영광 받으소서' },
-      { id: 'npc_s2', name: '이믿음 집사', presetId: 'miriam', x: 5.0, z: -2.8, rotY: -0.25, pose: 'sit', isNpc: true },
-      { id: 'npc_s3', name: '정온유 성도', presetId: 'lydia', x: 0, z: -5.2, rotY: Math.PI, pose: 'kneel', isNpc: true, bubble: '🕯️ 간절히 무릎으로 기도합니다' }
+      { id: 'npc_s1', name: '한충성 장로', presetId: 'david', x: -2.96, z: -4.16, rotY: Math.PI, pose: 'sit', isNpc: true, bubble: '🙏 주님 홀로 영광 받으소서' },
+      { id: 'npc_s2', name: '이믿음 집사', presetId: 'miriam', x: 2.96, z: -4.16, rotY: Math.PI, pose: 'sit', isNpc: true },
+      { id: 'npc_s3', name: '정온유 성도', presetId: 'lydia', x: 0, z: -13.6, rotY: Math.PI, pose: 'kneel', isNpc: true, bubble: '🕯️ 간절히 무릎으로 기도합니다' }
     ],
     sarangbang: [
       { id: 'npc_r1', name: '윤평강 순장', presetId: 'somy', x: -3.6, z: 4.1, rotY: 2.3, pose: 'sit', drink: 'coffee', isNpc: true, bubble: '🏠 사랑방에 오신 것을 환영해요!' }
@@ -239,6 +239,14 @@
   let peerConnections = new Map();
   let webcamStream = null;
   let camFacingMode = 'user';
+
+  // 양방향 성도 얼굴 화상 교제 (WebRTC Mesh P2P) 상태
+  let myFaceCamOn = false;
+  let myFaceStream = null;
+  let faceFacingMode = 'user';
+  let myFaceMuted = false;
+  let faceGalleryCollapsed = false;
+  const facePeers = new Map(); // remoteClientId -> { pc, makingOffer, remoteStream, name }
 
   let micActive = false;
   let micSim = false;
@@ -714,6 +722,9 @@
       candles: worldState.candles,
       sarangbangName: sarangObj ? sarangObj.name : '사랑방'
     });
+    if (myFaceCamOn && myFaceStream) {
+      world3d.setAvatarVideoStream('me', myFaceStream, faceFacingMode === 'user');
+    }
     refreshNpcsForZone();
     applySavedRoomBoard();
 
@@ -815,6 +826,7 @@
       name: myName,
       presetId: myPresetId,
       drink: myDrink,
+      camOn: myFaceCamOn,
       x: me ? me.x : 0,
       y: 0,
       z: me ? me.z : 16,
@@ -838,12 +850,14 @@
       try { peerPc.close(); } catch {}
     }
     peerConnections.clear();
+    closeAllFacePeers();
 
     if (roomChannel && supaClient) {
       supaClient.removeChannel(roomChannel);
       roomChannel = null;
     }
     updateOnlineCounter();
+    renderFaceCamGallery();
     if (!supaClient) return;
 
     const chanName = `somy_world_v2:${getRoomKey()}`;
@@ -861,6 +875,7 @@
         if (!arr || !arr.length) return;
         const p = arr[arr.length - 1];
         seen.add(key);
+        const wasKnown = onlinePeers.has(key);
         onlinePeers.set(key, p);
         world3d.createAvatar(key, {
           isMe: false,
@@ -878,6 +893,18 @@
         if (isSharingMyScreen && localScreenStream && !peerConnections.has(key)) {
           initiateScreenShareOfferTo(key);
         }
+
+        // 양방향 얼굴 화상 교제 자동 연결: 내가 카메라를 켜고 있거나 상대방이 카메라를 켜고 있으면 WebRTC 연결 수립
+        if (myFaceCamOn && myFaceStream && (!facePeers.has(key) || !wasKnown)) {
+          initiateFaceOfferTo(key, p.name || '성도');
+        } else if (p.camOn && !facePeers.has(key)) {
+          broadcastEvent('face_rtc', {
+            type: 'cam_request',
+            fromId: myClientId,
+            targetId: key,
+            name: myName
+          });
+        }
       });
 
       for (const oldKey of Array.from(onlinePeers.keys())) {
@@ -888,6 +915,7 @@
             try { peerConnections.get(oldKey).close(); } catch {}
             peerConnections.delete(oldKey);
           }
+          removeFacePeer(oldKey);
         }
       }
       updateOnlineCounter();
@@ -947,13 +975,371 @@
       await handleRtcSignal(payload);
     });
 
+    // 양방향 성도 얼굴 화상 교제 시그널링 수신
+    roomChannel.on('broadcast', { event: 'face_rtc' }, async ({ payload }) => {
+      if (!payload || payload.fromId === myClientId) return;
+      if (payload.targetId && payload.targetId !== myClientId) return;
+      await handleFaceRtcSignal(payload);
+    });
+
     roomChannel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         syncMyPresence();
         updateOnlineCounter();
+        if (myFaceCamOn && myFaceStream) {
+          broadcastEvent('face_rtc', { type: 'cam_hello', fromId: myClientId, name: myName });
+        }
       }
     });
   }
+
+  // -------------------------------------------------------------------------
+  // 📹 성도 간 양방향 실시간 얼굴 화상 교제 (WebRTC Mesh P2P — Egress 0)
+  // -------------------------------------------------------------------------
+  const FACE_RTC_CFG = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' }
+    ]
+  };
+
+  function renderFaceCamGallery() {
+    const gallery = document.getElementById('face-cam-gallery');
+    const tilesEl = document.getElementById('face-cam-tiles');
+    const titleEl = document.getElementById('face-cam-count-title');
+    if (!gallery || !tilesEl) return;
+
+    const activeItems = [];
+    if (myFaceCamOn && myFaceStream) {
+      activeItems.push({
+        id: 'me',
+        name: `★ ${myName} (나)`,
+        stream: myFaceStream,
+        muted: true,
+        mirror: faceFacingMode === 'user'
+      });
+    }
+    for (const [remoteId, entry] of facePeers.entries()) {
+      if (entry.remoteStream && entry.remoteStream.getVideoTracks().length > 0) {
+        const peerInfo = onlinePeers.get(remoteId);
+        activeItems.push({
+          id: remoteId,
+          name: `🟢 ${(peerInfo && peerInfo.name) || entry.name || '성도'}`,
+          stream: entry.remoteStream,
+          muted: false,
+          mirror: false
+        });
+      }
+    }
+
+    if (activeItems.length === 0) {
+      gallery.classList.add('hidden');
+      tilesEl.innerHTML = '';
+      return;
+    }
+
+    gallery.classList.remove('hidden');
+    if (titleEl) titleEl.textContent = `📹 실시간 얼굴 교제 (${activeItems.length}명)`;
+    tilesEl.classList.toggle('hidden', faceGalleryCollapsed);
+
+    // 기존 비디오 엘리먼트 재사용으로 깜빡임 방지
+    const keepIds = new Set(activeItems.map((it) => it.id));
+    Array.from(tilesEl.children).forEach((child) => {
+      if (!keepIds.has(child.getAttribute('data-fcid'))) {
+        child.remove();
+      }
+    });
+
+    activeItems.forEach((it) => {
+      let card = tilesEl.querySelector(`[data-fcid="${it.id}"]`);
+      if (!card) {
+        card = document.createElement('div');
+        card.setAttribute('data-fcid', it.id);
+        card.className = 'face-tile-card relative shrink-0 w-28 h-20 sm:w-36 sm:h-28 rounded-xl overflow-hidden border-2 border-emerald-400/70 bg-slate-900 shadow-lg cursor-pointer transition-all';
+        card.innerHTML = `
+          <video autoplay playsinline class="w-full h-full object-cover"></video>
+          <div class="face-tile-label absolute bottom-1 inset-x-1 px-1.5 py-0.5 rounded bg-black/70 text-[10px] font-extrabold text-white truncate text-center"></div>
+        `;
+        card.addEventListener('click', () => {
+          card.classList.toggle('w-28');
+          card.classList.toggle('h-20');
+          card.classList.toggle('sm:w-36');
+          card.classList.toggle('sm:h-28');
+          card.classList.toggle('w-52');
+          card.classList.toggle('h-40');
+          card.classList.toggle('sm:w-64');
+          card.classList.toggle('sm:h-48');
+        });
+        tilesEl.appendChild(card);
+      }
+      const vid = card.querySelector('video');
+      const lbl = card.querySelector('.face-tile-label');
+      lbl.textContent = it.name;
+      vid.muted = !!it.muted;
+      vid.style.transform = it.mirror ? 'scaleX(-1)' : 'none';
+      if (vid.srcObject !== it.stream) {
+        vid.srcObject = it.stream;
+        vid.play().catch(() => {});
+      }
+    });
+  }
+
+  function removeFacePeer(remoteId) {
+    const entry = facePeers.get(remoteId);
+    if (entry) {
+      try { entry.pc.close(); } catch {}
+      facePeers.delete(remoteId);
+    }
+    world3d.setAvatarVideoStream(remoteId, null, false);
+    renderFaceCamGallery();
+  }
+
+  function closeAllFacePeers() {
+    for (const remoteId of Array.from(facePeers.keys())) {
+      const entry = facePeers.get(remoteId);
+      if (entry) {
+        try { entry.pc.close(); } catch {}
+      }
+      world3d.setAvatarVideoStream(remoteId, null, false);
+    }
+    facePeers.clear();
+    renderFaceCamGallery();
+  }
+
+  function getOrCreateFacePeer(remoteId, remoteName) {
+    if (facePeers.has(remoteId)) {
+      const existing = facePeers.get(remoteId);
+      if (remoteName) existing.name = remoteName;
+      return existing;
+    }
+
+    const pc = new RTCPeerConnection(FACE_RTC_CFG);
+    const entry = {
+      pc,
+      makingOffer: false,
+      remoteStream: new MediaStream(),
+      name: remoteName || '성도'
+    };
+    facePeers.set(remoteId, entry);
+
+    pc.onicecandidate = (e) => {
+      if (e.candidate) {
+        broadcastEvent('face_rtc', {
+          type: 'ice',
+          fromId: myClientId,
+          targetId: remoteId,
+          name: myName,
+          candidate: e.candidate
+        });
+      }
+    };
+
+    pc.ontrack = (e) => {
+      if (e.streams && e.streams[0]) {
+        entry.remoteStream = e.streams[0];
+      } else if (e.track) {
+        entry.remoteStream.addTrack(e.track);
+      }
+      world3d.setAvatarVideoStream(remoteId, entry.remoteStream, false);
+      renderFaceCamGallery();
+    };
+
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+        removeFacePeer(remoteId);
+      }
+    };
+
+    return entry;
+  }
+
+  function attachMyFaceTracksTo(entry) {
+    if (!myFaceCamOn || !myFaceStream) return;
+    const senders = entry.pc.getSenders();
+    myFaceStream.getTracks().forEach((track) => {
+      const sameKindSender = senders.find((s) => s.track && s.track.kind === track.kind);
+      if (sameKindSender) {
+        sameKindSender.replaceTrack(track).catch(() => {});
+      } else {
+        entry.pc.addTrack(track, myFaceStream);
+      }
+    });
+  }
+
+  async function initiateFaceOfferTo(remoteId, remoteName) {
+    try {
+      const entry = getOrCreateFacePeer(remoteId, remoteName);
+      attachMyFaceTracksTo(entry);
+      entry.makingOffer = true;
+      const offer = await entry.pc.createOffer({
+        offerToReceiveVideo: true,
+        offerToReceiveAudio: true
+      });
+      await entry.pc.setLocalDescription(offer);
+      entry.makingOffer = false;
+      broadcastEvent('face_rtc', {
+        type: 'offer',
+        fromId: myClientId,
+        targetId: remoteId,
+        name: myName,
+        sdp: entry.pc.localDescription
+      });
+    } catch (err) {
+      const entry = facePeers.get(remoteId);
+      if (entry) entry.makingOffer = false;
+      console.warn('Face offer error:', err);
+    }
+  }
+
+  async function handleFaceRtcSignal(msg) {
+    try {
+      const fromId = msg.fromId;
+      if (msg.type === 'cam_hello') {
+        // 상대방이 카메라를 켰음을 알림 -> 연결 요청 전송
+        broadcastEvent('face_rtc', {
+          type: 'cam_request',
+          fromId: myClientId,
+          targetId: fromId,
+          name: myName
+        });
+        return;
+      }
+      if (msg.type === 'cam_request') {
+        if (myFaceCamOn && myFaceStream) {
+          await initiateFaceOfferTo(fromId, msg.name);
+        }
+        return;
+      }
+      if (msg.type === 'cam_off') {
+        const entry = facePeers.get(fromId);
+        if (entry) {
+          entry.remoteStream = new MediaStream();
+        }
+        world3d.setAvatarVideoStream(fromId, null, false);
+        renderFaceCamGallery();
+        return;
+      }
+
+      const entry = getOrCreateFacePeer(fromId, msg.name);
+      const pc = entry.pc;
+
+      if (msg.type === 'offer') {
+        const polite = myClientId < fromId;
+        const offerCollision = entry.makingOffer || pc.signalingState !== 'stable';
+        if (offerCollision) {
+          if (!polite) return;
+          await Promise.all([
+            pc.setLocalDescription({ type: 'rollback' }).catch(() => {}),
+            pc.setRemoteDescription(new RTCSessionDescription(msg.sdp))
+          ]);
+        } else {
+          await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+        }
+
+        // 내 카메라도 켜져 있다면 응답(answer)에 내 영상+음성 트랙도 함께 실어 양방향 연결!
+        attachMyFaceTracksTo(entry);
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        broadcastEvent('face_rtc', {
+          type: 'answer',
+          fromId: myClientId,
+          targetId: fromId,
+          name: myName,
+          sdp: pc.localDescription
+        });
+      } else if (msg.type === 'answer') {
+        if (pc.signalingState === 'have-local-offer') {
+          await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+        }
+      } else if (msg.type === 'ice' && msg.candidate) {
+        await pc.addIceCandidate(new RTCIceCandidate(msg.candidate)).catch(() => {});
+      }
+    } catch (err) {
+      console.warn('Face RTC signal error:', err);
+    }
+  }
+
+  async function startMyFaceCam() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast('⚠️ 카메라 연결은 HTTPS 보안 연결 또는 localhost에서 지원됩니다');
+      return;
+    }
+    try {
+      let stream = null;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: faceFacingMode, width: { ideal: 320 }, height: { ideal: 240 }, frameRate: { ideal: 15 } },
+          audio: true
+        });
+      } catch {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: faceFacingMode, width: { ideal: 320 }, height: { ideal: 240 } },
+          audio: false
+        });
+      }
+
+      if (myFaceStream) {
+        myFaceStream.getTracks().forEach((t) => t.stop());
+      }
+      myFaceStream = stream;
+      myFaceCamOn = true;
+      myFaceMuted = false;
+
+      document.getElementById('face-cam-btn-label').textContent = '⏹️ 얼굴끄기';
+      document.getElementById('btn-face-mute').textContent = '🎙️ 소리켜짐';
+
+      world3d.setAvatarVideoStream('me', myFaceStream, faceFacingMode === 'user');
+      renderFaceCamGallery();
+      syncMyPresence();
+
+      broadcastEvent('face_rtc', { type: 'cam_hello', fromId: myClientId, name: myName });
+      for (const [remoteId, p] of onlinePeers.entries()) {
+        await initiateFaceOfferTo(remoteId, p.name || '성도');
+      }
+      toast('📹 내 얼굴 카메라가 켜졌습니다! 같은 공간 성도들과 서로 얼굴을 보며 교제합니다');
+    } catch {
+      toast('⚠️ 브라우저에서 카메라 접근 권한을 허용해주세요');
+    }
+  }
+
+  function stopMyFaceCam() {
+    myFaceCamOn = false;
+    if (myFaceStream) {
+      myFaceStream.getTracks().forEach((t) => t.stop());
+      myFaceStream = null;
+    }
+    document.getElementById('face-cam-btn-label').textContent = '📹 얼굴켜기';
+    world3d.setAvatarVideoStream('me', null, false);
+    syncMyPresence();
+    broadcastEvent('face_rtc', { type: 'cam_off', fromId: myClientId, name: myName });
+    renderFaceCamGallery();
+    toast('📹 내 얼굴 카메라를 껐습니다');
+  }
+
+  document.getElementById('btn-face-cam-toggle').addEventListener('click', () => {
+    if (myFaceCamOn) stopMyFaceCam();
+    else startMyFaceCam();
+  });
+
+  document.getElementById('btn-face-flip').addEventListener('click', async () => {
+    faceFacingMode = faceFacingMode === 'user' ? 'environment' : 'user';
+    if (myFaceCamOn) {
+      await startMyFaceCam();
+    }
+  });
+
+  document.getElementById('btn-face-mute').addEventListener('click', () => {
+    if (!myFaceStream) return;
+    myFaceMuted = !myFaceMuted;
+    myFaceStream.getAudioTracks().forEach((t) => { t.enabled = !myFaceMuted; });
+    document.getElementById('btn-face-mute').textContent = myFaceMuted ? '🔇 음소거됨' : '🎙️ 소리켜짐';
+  });
+
+  document.getElementById('btn-face-collapse').addEventListener('click', (e) => {
+    faceGalleryCollapsed = !faceGalleryCollapsed;
+    e.currentTarget.textContent = faceGalleryCollapsed ? '펼치기' : '접기';
+    renderFaceCamGallery();
+  });
 
   // -------------------------------------------------------------------------
   // WebRTC P2P 실시간 PC 화면(PPT·문서) 공유
@@ -1396,15 +1782,14 @@
   const chapSel = document.getElementById('bible-chap-select');
   const bibleChapterCache = new Map();
 
-  let currentBibleBook = '시편';
-  let currentBibleChap = 23;
+  let currentBibleBook = '창세기';
+  let currentBibleChap = 1;
   let parsedVerses = [
-    { num: '1', text: '여호와는 나의 목자시니 내게 부족함이 없으리로다' },
-    { num: '2', text: '그가 나를 푸른 풀밭에 누이시며 쉴 만한 물 가로 인도하시는도다' },
-    { num: '3', text: '내 영혼을 소생시키시고 자기 이름을 위하여 의의 길로 인도하시는도다' },
-    { num: '4', text: '내가 사망의 음침한 골짜기로 다닐지라도 해를 두려워하지 않을 것은 주께서 나와 함께 하심이라 주의 지팡이와 막대기가 나를 안위하시나이다' },
-    { num: '5', text: '주께서 내 원수의 목전에서 내게 상을 차려 주시고 기름을 내 머리에 부으셨으니 내 잔이 넘치나이다' },
-    { num: '6', text: '내 평생에 선하심과 인자하심이 반드시 나를 따르리니 내가 여호와의 집에 영원히 살리로다' }
+    { num: '1', text: '태초에 하나님이 천지를 창조하시니라' },
+    { num: '2', text: '땅이 혼돈하고 공허하며 흑암이 깊음 위에 있고 하나님의 영은 수면 위에 운행하시니라' },
+    { num: '3', text: '하나님이 이르시되 빛이 있으라 하시니 빛이 있었고' },
+    { num: '4', text: '빛이 하나님이 보시기에 좋았더라 하나님이 빛과 어둠을 나누사' },
+    { num: '5', text: '하나님이 빛을 낮이라 부르시고 어둠을 밤이라 부르시니라 저녁이 되고 아침이 되니 이는 첫째 날이니라' }
   ];
   let bibleSpreadIdx = 0; // 현재 펼침 페이지 인덱스
   let bibleFontPx = 16;
@@ -1449,6 +1834,9 @@
 
   bookSel.addEventListener('change', () => {
     populateBookAndChapSelects(bookSel.value, 1);
+    activePortionQueue = [];
+    activePortionIdx = 0;
+    loadBibleChapter(bookSel.value, 1, false, 1);
   });
 
   function switchBibleTab(tabName) {
@@ -1595,11 +1983,14 @@
     let verses = bibleChapterCache.get(cacheKey);
     if (!verses) {
       try {
-        // ':1-200' 범위 전달로 20절 제한 없이 장 전체 절을 100% 가져옴
+        const u = unitWord(currentBibleBook);
         const res = await fetch('/api/bible', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reference: `${currentBibleBook} ${currentBibleChap}:1-200` })
+          body: JSON.stringify({
+            reference: `${currentBibleBook} ${currentBibleChap}${u}`,
+            fullChapter: true
+          })
         }).then((r) => r.json());
         if (res && res.passage) {
           verses = parseRawPassageToVerses(res.passage);
@@ -1610,6 +2001,10 @@
 
     if (verses && verses.length) {
       parsedVerses = verses;
+    } else {
+      parsedVerses = [
+        { num: '!', text: `${currentBibleBook} ${currentBibleChap}${unitWord(currentBibleBook)} 본문을 불러오지 못했습니다. 잠시 후 [펼치기]를 다시 눌러주세요.` }
+      ];
     }
     bibleSpreadIdx = 0;
     if (flipDir !== 0) triggerFlipAnimation(flipDir);
@@ -1807,10 +2202,11 @@
       ensureVerseVisibleOnSpread(ttsVerseIdx);
       updateTtsUi();
 
-      const prefix = ttsVerseIdx === 0
-        ? `${currentBibleBook} 제 ${currentBibleChap} ${unitWord(currentBibleBook)}. ${v.num}절, `
-        : `${v.num}절, `;
-      const utter = new SpeechSynthesisUtterance(prefix + v.text);
+      // 절 번호('1절', '2절'...)는 읽지 않고 말씀 본문만 자연스럽게 낭독 (장 시작 시에만 장 제목 안내)
+      const spokenText = ttsVerseIdx === 0
+        ? `${currentBibleBook} ${currentBibleChap}${unitWord(currentBibleBook)}. ${v.text}`
+        : v.text;
+      const utter = new SpeechSynthesisUtterance(spokenText);
       utter.lang = 'ko-KR';
       utter.rate = ttsRate;
       utter.pitch = 1.0;
@@ -2671,7 +3067,11 @@
     if (id === 'bible-modal') {
       updateBiblePlanPreview();
       syncYesTongdokFormDefaults();
-      renderBibleBookPages();
+      if (!bibleChapterCache.has(`${currentBibleBook}:${currentBibleChap}`)) {
+        loadBibleChapter(currentBibleBook, currentBibleChap, false, 0);
+      } else {
+        renderBibleBookPages();
+      }
       renderBibleBoard();
     }
     if (id === 'qt-modal') {

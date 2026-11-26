@@ -651,6 +651,77 @@
       return grp;
     }
 
+    // 2-B) 대성전 본당 전용 고급 개별 예배 의자 행(Row) 생성기
+    //      (장의자가 아닌 1인용 개별 원목·패브릭 쿠션 예배의자들이 일정한 간격으로 나란히 놓인 CAD 실사 행!)
+    createSanctuaryChairRow(chairCount = 11, spacing = 0.76) {
+      const rowGrp = new THREE.Group();
+      const oakMat = this.woodPlankMaterial('sanc_indiv_oak', [216, 184, 140], [172, 140, 98], 1, 1, 0.32);
+      const cushionMat = this.fabricMaterial('sanc_indiv_fabric', [86, 76, 70], 1, 1);
+      const frameMat = this.darkSteelMaterial();
+
+      // 지오메트리 공유로 수백 개 개별 의자도 60FPS 초고속 렌더링
+      if (!this._indivChairGeos) {
+        this._indivChairGeos = {
+          seatWood: new THREE.BoxGeometry(0.58, 0.04, 0.54),
+          seatPad: new THREE.BoxGeometry(0.54, 0.065, 0.50),
+          backWood: new THREE.BoxGeometry(0.56, 0.52, 0.04),
+          backPad: new THREE.BoxGeometry(0.50, 0.42, 0.045),
+          pocket: new THREE.BoxGeometry(0.42, 0.22, 0.025),
+          leg: new THREE.BoxGeometry(0.038, 0.45, 0.038),
+          armPost: new THREE.BoxGeometry(0.035, 0.20, 0.035),
+          armTop: new THREE.BoxGeometry(0.05, 0.03, 0.44)
+        };
+      }
+      const g = this._indivChairGeos;
+      const startX = -((chairCount - 1) * spacing) / 2;
+
+      for (let i = 0; i < chairCount; i++) {
+        const cx = startX + i * spacing;
+        const ch = new THREE.Group();
+        ch.position.x = cx;
+
+        const seatWood = new THREE.Mesh(g.seatWood, oakMat);
+        seatWood.position.set(0, 0.44, 0.02);
+        const seatPad = new THREE.Mesh(g.seatPad, cushionMat);
+        seatPad.position.set(0, 0.49, 0.03);
+        seatPad.castShadow = true;
+        seatPad.receiveShadow = true;
+
+        const backWood = new THREE.Mesh(g.backWood, oakMat);
+        backWood.position.set(0, 0.76, -0.23);
+        backWood.rotation.x = -0.11;
+        backWood.castShadow = true;
+
+        const backPad = new THREE.Mesh(g.backPad, cushionMat);
+        backPad.position.set(0, 0.76, -0.20);
+        backPad.rotation.x = -0.11;
+
+        // 등받이 뒷면 성경·찬송가 꽂이 포켓
+        const pocket = new THREE.Mesh(g.pocket, oakMat);
+        pocket.position.set(0, 0.68, -0.26);
+        pocket.rotation.x = -0.11;
+
+        // 4개 개별 다리 + 양측 개별 팔걸이
+        [[-0.25, -0.21], [0.25, -0.21], [-0.25, 0.23], [0.25, 0.23]].forEach(([lx, lz]) => {
+          const leg = new THREE.Mesh(g.leg, frameMat);
+          leg.position.set(lx, 0.225, lz);
+          ch.add(leg);
+        });
+        [-0.265, 0.265].forEach((ax) => {
+          const post = new THREE.Mesh(g.armPost, frameMat);
+          post.position.set(ax, 0.55, 0.14);
+          const arm = new THREE.Mesh(g.armTop, oakMat);
+          arm.position.set(ax, 0.66, -0.02);
+          ch.add(post, arm);
+        });
+
+        ch.add(seatWood, seatPad, backWood, backPad, pocket);
+        rowGrp.add(ch);
+      }
+
+      return rowGrp;
+    }
+
     // 3) 그랜드 피아노 (고광택 에보니 + 골드 프레임 + 88건반)
     createGrandPiano() {
       const grp = new THREE.Group();
