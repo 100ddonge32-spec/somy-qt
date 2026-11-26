@@ -1,148 +1,153 @@
 /* =========================================================================
- * 소미 3D 온라인 캠퍼스 (그레이스 월드) — Three.js WebGL 3D 엔진
- * 7개 테마 공간 + 3인칭 추적/전체 파노라마 카메라 + 3D 치비 아바타 + 3D 스마트 칠판
+ * 소미 3D 온라인 캠퍼스 — 실사풍 건축 PBR Three.js WebGL 엔진
+ * ACES Filmic 톤매핑 + 실시간 소프트 그림자 + 7개 고품격 건축 인테리어 공간
  * ========================================================================= */
 (function () {
   const THREE = window.THREE;
-  if (!THREE) {
-    console.error('Three.js not loaded');
-    return;
-  }
+  if (!THREE) return;
 
   const AVATAR_PRESETS = [
-    { id: 'david',  label: '다윗 (형제)', hair: 0x261a15, outfit: 0x3b82f6, pants: 0x1e293b, skin: 0xffe0c8, bag: 0x78350f, hairType: 'short' },
-    { id: 'miriam', label: '미리암 (자매)', hair: 0x4a2c18, outfit: 0xf472b6, pants: 0x334155, skin: 0xffe6d5, bag: 0x9d174d, hairType: 'bun' },
-    { id: 'joseph', label: '요셉 (청년)', hair: 0x18181b, outfit: 0x10b981, pants: 0x1f2937, skin: 0xffdfca, bag: 0x3f6212, hairType: 'short' },
-    { id: 'lydia',  label: '루디아 (집사)', hair: 0x5c3a21, outfit: 0xa855f7, pants: 0x312e81, skin: 0xffe4d0, bag: 0x6b21a8, hairType: 'bob' },
-    { id: 'somy',   label: '소미 (인도자)', hair: 0x3f2e21, outfit: 0xf59e0b, pants: 0x1e293b, skin: 0xffe8d6, bag: 0xb45309, hairType: 'bob' }
+    { id: 'david',  label: '다윗 (형제)', hair: 0x241914, outfit: 0x2563eb, pants: 0x1e293b, skin: 0xfce0c8, bag: 0x6b3410, hairType: 'short' },
+    { id: 'miriam', label: '미리암 (자매)', hair: 0x432818, outfit: 0xdb2777, pants: 0x334155, skin: 0xffe6d5, bag: 0x831843, hairType: 'bun' },
+    { id: 'joseph', label: '요셉 (청년)', hair: 0x18181b, outfit: 0x059669, pants: 0x1f2937, skin: 0xfddfca, bag: 0x365314, hairType: 'short' },
+    { id: 'lydia',  label: '루디아 (집사)', hair: 0x58351e, outfit: 0x7c3aed, pants: 0x1e1b4b, skin: 0xffe4d0, bag: 0x581c87, hairType: 'bob' },
+    { id: 'somy',   label: '소미 (인도자)', hair: 0x3b2a1e, outfit: 0xd97706, pants: 0x1e293b, skin: 0xffe8d6, bag: 0x92400e, hairType: 'bob' }
   ];
 
   const ZONE_META = {
     garden: {
       id: 'garden',
       name: '🌿 앞마당 정원',
-      subtitle: '산책로 · 소미카페 · 대성전 입구 계단',
-      sky: 0x0f172a,
-      fogColor: 0x131d35,
-      fogDensity: 0.008,
+      subtitle: '화강암 광장 · 에스프레소 파빌리온 · 대성전 입구',
+      sky: 0x101829,
+      fogColor: 0x162036,
+      fogDensity: 0.007,
       spawn: { x: 0, z: 24, rotY: Math.PI },
-      panorama: { pos: [0, 26, 42], look: [0, 3, -6] },
+      panorama: { pos: [0, 24, 41], look: [0, 3.5, -6] },
       bounds: { x: 34, zMin: -28, zMax: 34 },
       hasBoard: false
     },
     sanctuary: {
       id: 'sanctuary',
       name: '🏛️ 그레이스 대성전',
-      subtitle: '원형 극장석 · 대형 와이드스크린 · 제단 무릎기도',
-      sky: 0x0b0f1d,
-      fogColor: 0x11172b,
-      fogDensity: 0.0065,
-      spawn: { x: 0, z: 26, rotY: Math.PI },
-      panorama: { pos: [0, 25, 38], look: [0, 5, -10] },
-      bounds: { x: 32, zMin: -26, zMax: 30 },
+      subtitle: '월넛 루버 아트월 · 트래버틴 대리석 성단 · 그랜드피아노',
+      sky: 0x0d1017,
+      fogColor: 0x151821,
+      fogDensity: 0.0055,
+      spawn: { x: 0, z: 25, rotY: Math.PI },
+      panorama: { pos: [0, 22, 36], look: [0, 5.2, -10] },
+      bounds: { x: 31, zMin: -25, zMax: 29 },
       hasBoard: true,
-      boardPos: [0, 8.8, -24.2],
-      boardSize: [22, 9.2]
+      boardPos: [0, 8.8, -24.1],
+      boardSize: [21.5, 9.2]
     },
     sarangbang: {
       id: 'sarangbang',
       name: '🏠 사랑방 (소그룹실)',
-      subtitle: '그룹별 독립 모임방 · 원형 소파 교제 · 소그룹 칠판/PPT',
-      sky: 0x181210,
-      fogColor: 0x211815,
-      fogDensity: 0.009,
-      spawn: { x: 0, z: 13, rotY: Math.PI },
-      panorama: { pos: [0, 17, 21], look: [0, 3.2, -3] },
-      bounds: { x: 16, zMin: -14, zMax: 15 },
+      subtitle: '부클레 라운지 소파 · 대리석 티테이블 · 소그룹 칠판/PPT',
+      sky: 0x1c1613,
+      fogColor: 0x241c18,
+      fogDensity: 0.008,
+      spawn: { x: 0, z: 12.5, rotY: Math.PI },
+      panorama: { pos: [0, 16, 20], look: [0, 3.0, -3] },
+      bounds: { x: 15.5, zMin: -13.5, zMax: 14.5 },
       hasBoard: true,
-      boardPos: [0, 5.4, -13.4],
-      boardSize: [12.5, 6.0]
+      boardPos: [0, 5.3, -13.3],
+      boardSize: [12.0, 5.8]
     },
     bible: {
       id: 'bible',
       name: '📖 성경통독방',
-      subtitle: '개역개정 성경 66권 열람 · 통독 책상 · 성경 세미나 보드',
-      sky: 0x121620,
-      fogColor: 0x171d2b,
-      fogDensity: 0.0085,
-      spawn: { x: 0, z: 15, rotY: Math.PI },
-      panorama: { pos: [0, 18, 24], look: [0, 3.5, -4] },
-      bounds: { x: 18, zMin: -16, zMax: 17 },
+      subtitle: '클래식 원목 서가 · 브라스 뱅커스 스탠드 · 개역개정 66권',
+      sky: 0x191512,
+      fogColor: 0x211b17,
+      fogDensity: 0.0075,
+      spawn: { x: 0, z: 14.5, rotY: Math.PI },
+      panorama: { pos: [0, 17, 23], look: [0, 3.5, -4] },
+      bounds: { x: 16.5, zMin: -15.5, zMax: 16.5 },
       hasBoard: true,
-      boardPos: [0, 5.8, -15.3],
-      boardSize: [13.5, 6.4]
+      boardPos: [0, 5.7, -15.2],
+      boardSize: [13.0, 6.2]
     },
     qt: {
       id: 'qt',
-      name: '✏️ 큐티방 (강의·나눔실)',
-      subtitle: '관리자 큐티 기초반 강의안 · 오늘의 큐티 · 실시간 묵상 나눔',
-      sky: 0x111827,
-      fogColor: 0x172033,
-      fogDensity: 0.0085,
-      spawn: { x: 0, z: 15, rotY: Math.PI },
-      panorama: { pos: [0, 18, 24], look: [0, 3.8, -4] },
-      bounds: { x: 18, zMin: -16, zMax: 17 },
+      name: '✏️ 큐티방 (아카데미)',
+      subtitle: '오크 어쿠스틱 세미나실 · 큐티 기초반 강의안 · 묵상 나눔',
+      sky: 0x171920,
+      fogColor: 0x1e222d,
+      fogDensity: 0.0075,
+      spawn: { x: 0, z: 14.5, rotY: Math.PI },
+      panorama: { pos: [0, 17, 23], look: [0, 3.6, -4] },
+      bounds: { x: 17, zMin: -15.5, zMax: 16.5 },
       hasBoard: true,
-      boardPos: [0, 5.8, -15.3],
-      boardSize: [14.0, 6.6]
+      boardPos: [0, 5.7, -15.2],
+      boardSize: [13.6, 6.4]
     },
     prayer: {
       id: 'prayer',
       name: '🕯️ 기도실 & 말씀갤러리',
-      subtitle: '성경 명화·말씀 액자 산책 · 골방 촛불 무릎기도',
-      sky: 0x090b14,
-      fogColor: 0x0f1322,
-      fogDensity: 0.01,
-      spawn: { x: 0, z: 17, rotY: Math.PI },
-      panorama: { pos: [0, 17, 25], look: [0, 3.2, -4] },
-      bounds: { x: 16, zMin: -17, zMax: 19 },
+      subtitle: '대리석 성화 회랑 · 원목 개인 기도 부스 · 촛불 중보기도',
+      sky: 0x0c0b10,
+      fogColor: 0x14121b,
+      fogDensity: 0.009,
+      spawn: { x: 0, z: 16.5, rotY: Math.PI },
+      panorama: { pos: [0, 16, 24], look: [0, 3.2, -4] },
+      bounds: { x: 15, zMin: -16.5, zMax: 18 },
       hasBoard: true,
-      boardPos: [0, 5.5, -16.3],
-      boardSize: [11.5, 5.5]
+      boardPos: [0, 5.4, -16.2],
+      boardSize: [11.2, 5.4]
     },
     rooftop: {
       id: 'rooftop',
       name: '☕ 루프탑 소미카페',
-      subtitle: '별빛 야경 정원 · 커피/음료 마시기 · 4인 교제 테이블',
-      sky: 0x070b19,
-      fogColor: 0x0c1329,
-      fogDensity: 0.0075,
-      spawn: { x: 0, z: 18, rotY: Math.PI },
-      panorama: { pos: [0, 20, 28], look: [0, 2.5, -2] },
-      bounds: { x: 22, zMin: -18, zMax: 21 },
+      subtitle: '티크 우드 데크 · 페스툰 가든 조명 · 대리석 비스트로 테이블',
+      sky: 0x070c18,
+      fogColor: 0x0d1528,
+      fogDensity: 0.007,
+      spawn: { x: 0, z: 17.5, rotY: Math.PI },
+      panorama: { pos: [0, 19, 27], look: [0, 2.5, -2] },
+      bounds: { x: 21, zMin: -17.5, zMax: 20 },
       hasBoard: true,
-      boardPos: [0, 5.4, -17.2],
-      boardSize: [11.5, 5.4]
+      boardPos: [0, 5.3, -17.1],
+      boardSize: [11.2, 5.3]
     }
   };
 
   const GALLERY_ARTWORKS = [
-    { title: '창조의 빛 (창세기 1:3)', desc: '하나님이 이르시되 빛이 있으라 하시니 빛이 있었고 — 어둠 위에 임한 첫 은혜의 빛', color1: '#0f172a', color2: '#fbbf24' },
-    { title: '선한 목자 (시편 23:1-2)', desc: '여호와는 나의 목자시니 내게 부족함이 없으리로다 그가 나를 푸른 풀밭에 누이시며', color1: '#064e3b', color2: '#6ee7b7' },
-    { title: '광야의 기둥 (출애굽기 13:21)', desc: '낮에는 구름 기둥, 밤에는 불 기둥으로 자기 백성 앞길을 인도하시는 신실하신 주님', color1: '#431407', color2: '#fb923c' },
-    { title: '겟세마네의 기도 (누가복음 22:42)', desc: '내 원대로 마시옵고 아버지의 원대로 되기를 원하나이다 — 순종의 무릎', color1: '#1e1b4b', color2: '#818cf8' },
-    { title: '갈보리 십자가 사랑 (로마서 5:8)', desc: '우리가 아직 죄인 되었을 때에 그리스도께서 우리를 위하여 죽으심으로 확증하신 사랑', color1: '#4c0519', color2: '#fda4af' },
-    { title: '부활과 소망 (요한복음 11:25)', desc: '나는 부활이요 생명이니 나를 믿는 자는 죽어도 살겠고 — 영원한 생명의 아침', color1: '#1e3a8a', color2: '#fef08a' }
+    { title: '창조의 빛 (창세기 1:3)', desc: '하나님이 이르시되 빛이 있으라 하시니 빛이 있었고 — 혼돈과 어둠 위에 임한 첫 창조의 광명', color1: '#1e293b', color2: '#d97706' },
+    { title: '선한 목자 (시편 23:1-2)', desc: '여호와는 나의 목자시니 내게 부족함이 없으리로다 그가 나를 푸른 풀밭과 쉴 만한 물 가로 인도하시는도다', color1: '#143829', color2: '#a3b18a' },
+    { title: '광야의 불기둥 (출애굽기 13:21)', desc: '밤에는 불기둥을 비추사 주야로 진행하게 하시니 — 인생의 밤길을 밝히시는 임마누엘 하나님', color1: '#3b180c', color2: '#ea580c' },
+    { title: '겟세마네의 기도 (누가복음 22:42)', desc: '아버지여 만일 아버지의 뜻이거든 이 잔을 내게서 옮기시옵소서 그러나 내 원대로 마시옵고 아버지의 원대로 되기를 원하나이다', color1: '#171a36', color2: '#6366f1' },
+    { title: '갈보리 언덕의 사랑 (로마서 5:8)', desc: '우리가 아직 죄인 되었을 때에 그리스도께서 우리를 위하여 죽으심으로 하나님께서 우리에 대한 자기의 사랑을 확증하셨느니라', color1: '#3f0d1c', color2: '#e11d48' },
+    { title: '부활의 새벽 (요한복음 11:25)', desc: '나는 부활이요 생명이니 나를 믿는 자는 죽어도 살겠고 무릇 살아서 나를 믿는 자는 영원히 죽지 아니하리니', color1: '#1e3a5f', color2: '#facc15' }
   ];
 
   class ChapelWorld3D {
     constructor(opts) {
       this.canvas = opts.canvas;
       this.overlayContainer = opts.overlayContainer;
-      this.boardCanvas = opts.boardCanvas; // 공용 2D 칠판/슬라이드 오프스크린 캔버스
+      this.boardCanvas = opts.boardCanvas;
       this.onInteract = opts.onInteract || (() => {});
       this.onProximityChange = opts.onProximityChange || (() => {});
       this.onPortalEnter = opts.onPortalEnter || (() => {});
       this.onLocalMove = opts.onLocalMove || (() => {});
 
       this.scene = new THREE.Scene();
-      this.camera = new THREE.PerspectiveCamera(58, 16 / 9, 0.2, 260);
+      this.camera = new THREE.PerspectiveCamera(56, 16 / 9, 0.2, 260);
       this.renderer = new THREE.WebGLRenderer({
         canvas: this.canvas,
         antialias: true,
         powerPreference: 'high-performance'
       });
       this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      this.renderer.toneMappingExposure = 1.12;
+      if (THREE.sRGBEncoding) this.renderer.outputEncoding = THREE.sRGBEncoding;
+
+      this.pbr = new window.ArchitecturalPBR(this.renderer);
+      this.scene.environment = this.pbr.envMap;
 
       this.roomGroup = new THREE.Group();
       this.avatarGroup = new THREE.Group();
@@ -151,38 +156,38 @@
 
       this.boardTexture = new THREE.CanvasTexture(this.boardCanvas);
       this.boardTexture.minFilter = THREE.LinearFilter;
+      if (THREE.sRGBEncoding) this.boardTexture.encoding = THREE.sRGBEncoding;
       this.boardMesh = null;
 
-      // 걸어서 이동할 때 바닥 타겟 링
-      const ringGeo = new THREE.RingGeometry(0.42, 0.62, 28);
+      const ringGeo = new THREE.RingGeometry(0.38, 0.54, 32);
       ringGeo.rotateX(-Math.PI / 2);
       this.walkRing = new THREE.Mesh(
         ringGeo,
         new THREE.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.0, side: THREE.DoubleSide })
       );
-      this.walkRing.position.y = 0.06;
+      this.walkRing.position.y = 0.05;
       this.scene.add(this.walkRing);
 
       this.raycaster = new THREE.Raycaster();
       this.floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
       this.currentZone = 'garden';
-      this.cameraMode = 'follow'; // 'follow' | 'panorama'
+      this.cameraMode = 'follow';
       this.camYaw = 0;
-      this.camPitch = 0.34;
-      this.camDist = 9.5;
+      this.camPitch = 0.30;
+      this.camDist = 8.8;
       this.panoYaw = 0;
-      this.panoPitch = 0.42;
-      this.panoDist = 36;
+      this.panoPitch = 0.40;
+      this.panoDist = 35;
 
       this.keys = {};
       this.joyVec = { x: 0, y: 0 };
-      this.interactables = []; // { id, type, label, x, y, z, radius, rotY, payload, mesh }
+      this.interactables = [];
       this.portals = [];
       this.candleGroup = null;
       this.nearestInteractable = null;
 
-      this.avatars = new Map(); // id -> avatarObj
+      this.avatars = new Map();
       this.myId = 'me';
       this.walkTarget = null;
       this.clock = new THREE.Clock();
@@ -212,8 +217,7 @@
       this.viewW = w;
       this.viewH = h;
       this.camera.aspect = w / h;
-      // 모바일 세로 화면에서도 좌우 시야가 답답하지 않도록 세로 비율일 때 수직 FOV 자동 확장
-      this.camera.fov = w < h ? 68 : 56;
+      this.camera.fov = w < h ? 66 : 54;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(w, h, false);
     }
@@ -235,7 +239,7 @@
       if (this.cameraMode === 'panorama') {
         this.panoDist = Math.max(12, Math.min(68, this.panoDist + delta * 2.2));
       } else {
-        this.camDist = Math.max(4.5, Math.min(22, this.camDist + delta));
+        this.camDist = Math.max(4.2, Math.min(22, this.camDist + delta));
       }
     }
 
@@ -245,7 +249,7 @@
     }
 
     // -----------------------------------------------------------------------
-    // 귀여운 3D 치비 아바타 생성 (팔다리 관절, 배낭, 헤어스타일, 커피컵, 기도/착석 포즈)
+    // 부드러운 곡면 실루엣 PBR 캐릭터 (각진 박스 느낌 제거, 패브릭 질감·구두·자연스러운 그림자)
     // -----------------------------------------------------------------------
     createAvatar(id, info) {
       if (this.avatars.has(id)) {
@@ -255,138 +259,151 @@
 
       const preset = AVATAR_PRESETS.find((p) => p.id === info.presetId) || AVATAR_PRESETS[0];
       const root = new THREE.Group();
-
       const bodyPivot = new THREE.Group();
       root.add(bodyPivot);
 
-      const skinMat = new THREE.MeshLambertMaterial({ color: preset.skin });
-      const hairMat = new THREE.MeshLambertMaterial({ color: preset.hair });
-      const outfitMat = new THREE.MeshLambertMaterial({ color: preset.outfit });
-      const pantsMat = new THREE.MeshLambertMaterial({ color: preset.pants });
-      const bagMat = new THREE.MeshLambertMaterial({ color: preset.bag });
-
-      // 발밑 그림자 & 내 캐릭터 링
-      const shadowMesh = new THREE.Mesh(
-        new THREE.CircleGeometry(0.58, 20),
-        new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32 })
-      );
-      shadowMesh.rotation.x = -Math.PI / 2;
-      shadowMesh.position.y = 0.03;
-      root.add(shadowMesh);
+      const skinMat = new THREE.MeshStandardMaterial({ color: preset.skin, roughness: 0.58 });
+      const hairMat = new THREE.MeshStandardMaterial({ color: preset.hair, roughness: 0.72 });
+      const outfitMat = new THREE.MeshStandardMaterial({ color: preset.outfit, roughness: 0.68 });
+      const pantsMat = new THREE.MeshStandardMaterial({ color: preset.pants, roughness: 0.78 });
+      const shoeMat = new THREE.MeshStandardMaterial({ color: 0x1c1917, roughness: 0.42 });
+      const bagMat = new THREE.MeshStandardMaterial({ color: preset.bag, roughness: 0.55 });
 
       let myRing = null;
       if (info.isMe) {
-        const rg = new THREE.RingGeometry(0.64, 0.78, 28);
+        const rg = new THREE.RingGeometry(0.56, 0.68, 32);
         rg.rotateX(-Math.PI / 2);
         myRing = new THREE.Mesh(
           rg,
-          new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
+          new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.85, side: THREE.DoubleSide })
         );
-        myRing.position.y = 0.04;
+        myRing.position.y = 0.03;
         root.add(myRing);
       }
 
-      // 다리 (좌/우 관절)
-      const legGeo = new THREE.BoxGeometry(0.28, 0.62, 0.30);
-      legGeo.translate(0, -0.31, 0);
-      const leftLeg = new THREE.Mesh(legGeo, pantsMat);
-      leftLeg.position.set(-0.19, 0.62, 0);
-      const rightLeg = new THREE.Mesh(legGeo, pantsMat);
-      rightLeg.position.set(0.19, 0.62, 0);
+      // 둥근 원통형 다리 & 구두
+      const makeLeg = () => {
+        const lg = new THREE.Group();
+        const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.11, 0.58, 12), pantsMat);
+        thigh.position.y = -0.29;
+        thigh.castShadow = true;
+        const shoe = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 10), shoeMat);
+        shoe.scale.set(0.95, 0.65, 1.35);
+        shoe.position.set(0, -0.58, 0.04);
+        shoe.castShadow = true;
+        lg.add(thigh, shoe);
+        return lg;
+      };
+
+      const leftLeg = makeLeg();
+      leftLeg.position.set(-0.17, 0.64, 0);
+      const rightLeg = makeLeg();
+      rightLeg.position.set(0.17, 0.64, 0);
       bodyPivot.add(leftLeg, rightLeg);
 
-      // 몸통 & 흰 카라 & 작은 배낭 (작은빛 감성!)
-      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.82, 0.48), outfitMat);
-      torso.position.y = 1.02;
+      // 부드러운 곡면 코트/상의 몸통 & 셔츠 카라 & 가죽 백팩
+      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.36, 0.84, 16), outfitMat);
+      torso.scale.set(1.12, 1, 0.78);
+      torso.position.y = 1.04;
+      torso.castShadow = true;
       bodyPivot.add(torso);
 
+      const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 12), outfitMat);
+      shoulder.scale.set(1.15, 0.45, 0.76);
+      shoulder.position.y = 1.40;
+      bodyPivot.add(shoulder);
+
       const collar = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.24, 0.28, 0.10, 14),
-        new THREE.MeshLambertMaterial({ color: 0xf8fafc })
+        new THREE.CylinderGeometry(0.20, 0.24, 0.10, 14),
+        new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.5 })
       );
-      collar.position.y = 1.44;
+      collar.position.y = 1.48;
       bodyPivot.add(collar);
 
-      const backpack = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.56, 0.24), bagMat);
-      backpack.position.set(0, 1.02, -0.32);
+      const backpack = new THREE.Mesh(new THREE.SphereGeometry(0.28, 14, 12), bagMat);
+      backpack.scale.set(0.95, 1.15, 0.55);
+      backpack.position.set(0, 1.05, -0.28);
+      backpack.castShadow = true;
       bodyPivot.add(backpack);
 
-      // 팔 (좌/우 관절) + 오른손 커피/생수 컵
-      const armGeo = new THREE.BoxGeometry(0.22, 0.64, 0.24);
-      armGeo.translate(0, -0.28, 0);
-      const leftArm = new THREE.Mesh(armGeo, outfitMat);
-      leftArm.position.set(-0.50, 1.34, 0);
-      const rightArm = new THREE.Mesh(armGeo, outfitMat);
-      rightArm.position.set(0.50, 1.34, 0);
+      // 둥근 팔 & 손 & 커피 테이크아웃 컵
+      const makeArm = () => {
+        const ag = new THREE.Group();
+        const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.085, 0.54, 12), outfitMat);
+        sleeve.position.y = -0.27;
+        sleeve.castShadow = true;
+        const hand = new THREE.Mesh(new THREE.SphereGeometry(0.085, 10, 10), skinMat);
+        hand.position.y = -0.56;
+        ag.add(sleeve, hand);
+        return ag;
+      };
+
+      const leftArm = makeArm();
+      leftArm.position.set(-0.44, 1.36, 0);
+      const rightArm = makeArm();
+      rightArm.position.set(0.44, 1.36, 0);
       bodyPivot.add(leftArm, rightArm);
 
       const cupGroup = new THREE.Group();
       const cupBody = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.11, 0.085, 0.26, 12),
-        new THREE.MeshLambertMaterial({ color: 0xffffff })
+        new THREE.CylinderGeometry(0.095, 0.075, 0.24, 14),
+        new THREE.MeshStandardMaterial({ color: 0xfafaf9, roughness: 0.35 })
       );
       const cupSleeve = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.113, 0.095, 0.11, 12),
-        new THREE.MeshLambertMaterial({ color: 0xb45309 })
+        new THREE.CylinderGeometry(0.098, 0.084, 0.10, 14),
+        new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.75 })
       );
-      cupGroup.add(cupBody, cupSleeve);
-      cupGroup.position.set(0, -0.54, 0.18);
+      const cupLid = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.10, 0.10, 0.03, 14),
+        new THREE.MeshStandardMaterial({ color: 0x1c1917, roughness: 0.3 })
+      );
+      cupLid.position.y = 0.13;
+      cupGroup.add(cupBody, cupSleeve, cupLid);
+      cupGroup.position.set(0, -0.56, 0.15);
       cupGroup.visible = !!info.drink;
       rightArm.add(cupGroup);
 
-      // 머리 & 얼굴(눈, 볼터치) & 헤어
+      // 자연스러운 비율의 머리 & 헤어
       const headGroup = new THREE.Group();
       headGroup.position.y = 1.92;
       bodyPivot.add(headGroup);
 
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.52, 20, 16), skinMat);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 22, 18), skinMat);
+      head.castShadow = true;
       headGroup.add(head);
 
-      const eyeGeo = new THREE.SphereGeometry(0.055, 10, 10);
-      const eyeMat = new THREE.MeshBasicMaterial({ color: 0x18181b });
+      const eyeGeo = new THREE.SphereGeometry(0.042, 10, 10);
+      const eyeMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.2 });
       const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
-      leftEye.position.set(-0.17, -0.02, 0.47);
+      leftEye.position.set(-0.14, -0.01, 0.385);
       const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
-      rightEye.position.set(0.17, -0.02, 0.47);
+      rightEye.position.set(0.14, -0.01, 0.385);
       headGroup.add(leftEye, rightEye);
 
-      const blushGeo = new THREE.CircleGeometry(0.075, 12);
-      const blushMat = new THREE.MeshBasicMaterial({ color: 0xf472b6, transparent: true, opacity: 0.45 });
-      const leftBlush = new THREE.Mesh(blushGeo, blushMat);
-      leftBlush.position.set(-0.27, -0.11, 0.46);
-      leftBlush.rotation.y = -0.35;
-      const rightBlush = new THREE.Mesh(blushGeo, blushMat);
-      rightBlush.position.set(0.27, -0.11, 0.46);
-      rightBlush.rotation.y = 0.35;
-      headGroup.add(leftBlush, rightBlush);
-
       const hairCap = new THREE.Mesh(
-        new THREE.SphereGeometry(0.555, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.58),
+        new THREE.SphereGeometry(0.448, 22, 16, 0, Math.PI * 2, 0, Math.PI * 0.58),
         hairMat
       );
-      hairCap.position.y = 0.04;
+      hairCap.position.y = 0.03;
       hairCap.rotation.x = -0.18;
+      hairCap.castShadow = true;
       headGroup.add(hairCap);
 
-      const hairBack = new THREE.Mesh(
-        new THREE.SphereGeometry(0.54, 16, 14),
-        hairMat
-      );
-      hairBack.position.set(0, 0.02, -0.08);
+      const hairBack = new THREE.Mesh(new THREE.SphereGeometry(0.435, 18, 14), hairMat);
+      hairBack.position.set(0, 0.01, -0.06);
       headGroup.add(hairBack);
 
-      const bunMesh = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), hairMat);
-      bunMesh.position.set(0, 0.56, -0.18);
+      const bunMesh = new THREE.Mesh(new THREE.SphereGeometry(0.18, 14, 12), hairMat);
+      bunMesh.position.set(0, 0.44, -0.16);
       bunMesh.visible = preset.hairType === 'bun';
       headGroup.add(bunMesh);
 
-      // HTML 이름표 + 말풍선 DOM 오버레이
       const labelEl = document.createElement('div');
       labelEl.className = 'pointer-events-none absolute -translate-x-1/2 -translate-y-full flex flex-col items-center gap-1 z-10';
       labelEl.innerHTML = `
         <div class="av-bubble hidden px-2.5 py-1 rounded-xl bg-white/95 text-slate-900 border border-amber-400 text-[11px] font-bold shadow-lg max-w-[210px] text-center break-keep"></div>
-        <div class="av-tag px-2 py-0.5 rounded-full text-[11px] font-extrabold whitespace-nowrap shadow ${
-          info.isMe ? 'bg-amber-400 text-slate-950' : info.isNpc ? 'bg-slate-800/80 text-slate-200 border border-white/10' : 'bg-emerald-500/90 text-slate-950'
+        <div class="av-tag px-2.5 py-0.5 rounded-full text-[11px] font-extrabold whitespace-nowrap shadow ${
+          info.isMe ? 'bg-amber-400 text-slate-950' : info.isNpc ? 'bg-slate-900/80 text-slate-100 border border-white/15' : 'bg-emerald-500/90 text-slate-950'
         }"></div>
       `;
       this.overlayContainer.appendChild(labelEl);
@@ -397,7 +414,7 @@
         isMe: !!info.isMe,
         isNpc: !!info.isNpc,
         presetId: preset.id,
-        pose: info.pose || 'stand', // 'stand' | 'sit' | 'kneel'
+        pose: info.pose || 'stand',
         drink: info.drink || '',
         sipTimer: 0,
         micWave: false,
@@ -520,7 +537,7 @@
     }
 
     // -----------------------------------------------------------------------
-    // 7개 3D 공간(맵) 지오메트리 빌더
+    // 실사 건축 조명 & 7개 테마 인테리어 로더
     // -----------------------------------------------------------------------
     loadZone(zoneId, opts = {}) {
       const meta = this.getZoneMeta(zoneId);
@@ -539,14 +556,24 @@
       this.scene.background = new THREE.Color(meta.sky);
       this.scene.fog = new THREE.FogExp2(meta.fogColor, meta.fogDensity);
 
-      // 공통 기본 조명
-      const hemi = new THREE.HemisphereLight(0xfffbeb, 0x1e293b, 0.78);
+      // 자연스러운 건축 환경광 + 소프트 그림자 주광원
+      const hemi = new THREE.HemisphereLight(0xfff8eb, 0x262220, 0.72);
       this.roomGroup.add(hemi);
-      const dir = new THREE.DirectionalLight(0xfff4d6, 0.72);
-      dir.position.set(16, 34, 22);
-      this.roomGroup.add(dir);
 
-      // 공간별 디테일 건축물 배치
+      const mainLight = new THREE.DirectionalLight(0xfff1d6, 0.95);
+      mainLight.position.set(14, 28, 18);
+      mainLight.castShadow = true;
+      mainLight.shadow.mapSize.width = 1024;
+      mainLight.shadow.mapSize.height = 1024;
+      mainLight.shadow.camera.near = 2;
+      mainLight.shadow.camera.far = 85;
+      mainLight.shadow.camera.left = -36;
+      mainLight.shadow.camera.right = 36;
+      mainLight.shadow.camera.top = 36;
+      mainLight.shadow.camera.bottom = -36;
+      mainLight.shadow.bias = -0.0008;
+      this.roomGroup.add(mainLight);
+
       if (meta.id === 'garden') this._buildGarden();
       else if (meta.id === 'sanctuary') this._buildSanctuary(opts.candles || []);
       else if (meta.id === 'sarangbang') this._buildSarangbang(opts.sarangbangName || '사랑방');
@@ -555,17 +582,22 @@
       else if (meta.id === 'prayer') this._buildPrayerGallery();
       else if (meta.id === 'rooftop') this._buildRooftop();
 
-      // 정면 3D 스마트 칠판 / 대형 와이드 스크린 생성
+      // 정면 베젤리스 건축형 대형 LED 월 / 스마트 칠판 (브러시드 브론즈 & 황동 트림)
       if (meta.hasBoard) {
         const [bx, by, bz] = meta.boardPos;
         const [bw, bh] = meta.boardSize;
 
-        const frame = new THREE.Mesh(
-          new THREE.BoxGeometry(bw + 0.7, bh + 0.7, 0.35),
-          new THREE.MeshLambertMaterial({ color: 0xd97706 })
+        const bezel = new THREE.Mesh(
+          new THREE.BoxGeometry(bw + 0.55, bh + 0.55, 0.28),
+          this.pbr.darkSteelMaterial()
         );
-        frame.position.set(bx, by, bz - 0.2);
-        this.roomGroup.add(frame);
+        bezel.position.set(bx, by, bz - 0.16);
+        const trim = new THREE.Mesh(
+          new THREE.BoxGeometry(bw + 0.68, bh + 0.68, 0.14),
+          this.pbr.brassMaterial()
+        );
+        trim.position.set(bx, by, bz - 0.24);
+        this.roomGroup.add(trim, bezel);
 
         this.boardMesh = new THREE.Mesh(
           new THREE.PlaneGeometry(bw, bh),
@@ -586,7 +618,6 @@
         });
       }
 
-      // 내 아바타 스폰 위치 이동
       const me = this.avatars.get(this.myId);
       const sp = opts.spawn || meta.spawn;
       if (me) {
@@ -603,106 +634,106 @@
       this._broadcastMyMove(true);
     }
 
-    _makeSignTexture(title, sub = '', bg = '#1e293b', border = '#fbbf24') {
+    _makePlaqueTexture(title, sub = '', bg = '#1c1917', gold = '#d4af37') {
       const c = document.createElement('canvas');
       c.width = 512;
       c.height = 160;
       const g = c.getContext('2d');
       g.fillStyle = bg;
       g.fillRect(0, 0, 512, 160);
-      g.strokeStyle = border;
-      g.lineWidth = 8;
-      g.strokeRect(6, 6, 500, 148);
-      g.fillStyle = '#ffffff';
+      g.strokeStyle = gold;
+      g.lineWidth = 6;
+      g.strokeRect(10, 10, 492, 140);
+      g.fillStyle = '#fafaf9';
       g.textAlign = 'center';
       g.textBaseline = 'middle';
-      g.font = '800 40px -apple-system, sans-serif';
-      g.fillText(title, 256, sub ? 62 : 80, 468);
+      g.font = '700 36px "Apple SD Gothic Neo", Georgia, sans-serif';
+      g.fillText(title, 256, sub ? 62 : 80, 460);
       if (sub) {
-        g.fillStyle = '#fde047';
-        g.font = '700 24px -apple-system, sans-serif';
-        g.fillText(sub, 256, 114, 468);
+        g.fillStyle = '#e5c158';
+        g.font = '600 22px -apple-system, sans-serif';
+        g.fillText(sub, 256, 112, 460);
       }
       const tex = new THREE.CanvasTexture(c);
       tex.minFilter = THREE.LinearFilter;
+      if (THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
       return tex;
     }
 
+    // 고급 대리석 문설주 & 강화유리·월넛 양개 도어 (포털)
     _addPortalDoor(x, z, rotY, targetZone, title, sub = '') {
       const grp = new THREE.Group();
       grp.position.set(x, 0, z);
       grp.rotation.y = rotY;
 
-      const frame = new THREE.Mesh(
-        new THREE.BoxGeometry(3.6, 5.2, 0.45),
-        new THREE.MeshLambertMaterial({ color: 0x78350f })
-      );
-      frame.position.y = 2.6;
-      grp.add(frame);
+      const marble = this.pbr.marbleMaterial('door_trav', [224, 214, 198], [168, 152, 132], 1, 2, 0.25);
+      const walnut = this.pbr.woodPlankMaterial('door_walnut', [102, 62, 34], [48, 26, 12], 1, 2, 0.28);
+      const glass = this.pbr.glassMaterial(0.45, 0xfef3c7);
+      const brass = this.pbr.brassMaterial();
 
-      const glow = new THREE.Mesh(
-        new THREE.PlaneGeometry(2.8, 4.4),
-        new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.28, side: THREE.DoubleSide })
-      );
-      glow.position.set(0, 2.4, 0.25);
-      grp.add(glow);
+      // 대리석 문틀 기둥 & 상인방
+      const jambL = new THREE.Mesh(new THREE.BoxGeometry(0.42, 5.2, 0.55), marble);
+      jambL.position.set(-1.85, 2.6, 0);
+      const jambR = jambL.clone();
+      jambR.position.x = 1.85;
+      const lintel = new THREE.Mesh(new THREE.BoxGeometry(4.3, 0.55, 0.62), marble);
+      lintel.position.set(0, 5.35, 0);
+
+      // 양개 원목 도어 + 유리창 + 황동 손잡이 바
+      [-0.82, 0.82].forEach((dx) => {
+        const leaf = new THREE.Mesh(new THREE.BoxGeometry(1.58, 4.95, 0.16), walnut);
+        leaf.position.set(dx, 2.48, 0);
+        leaf.castShadow = true;
+        const pane = new THREE.Mesh(new THREE.BoxGeometry(0.95, 3.4, 0.20), glass);
+        pane.position.set(dx, 2.7, 0);
+        const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.9, 10), brass);
+        handle.position.set(dx > 0 ? 0.18 : -0.18, 2.4, 0.14);
+        grp.add(leaf, pane, handle);
+      });
 
       const sign = new THREE.Mesh(
-        new THREE.PlaneGeometry(3.8, 1.2),
-        new THREE.MeshBasicMaterial({ map: this._makeSignTexture(title, sub) })
+        new THREE.BoxGeometry(3.7, 1.05, 0.12),
+        new THREE.MeshStandardMaterial({ map: this._makePlaqueTexture(title, sub), roughness: 0.35 })
       );
-      sign.position.set(0, 5.95, 0.26);
-      grp.add(sign);
+      sign.position.set(0, 6.25, 0.18);
 
-      // 바닥 앞 발판 매트
-      const mat = new THREE.Mesh(
-        new THREE.CircleGeometry(1.4, 24),
-        new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.35 })
-      );
-      mat.rotation.x = -Math.PI / 2;
-      mat.position.set(0, 0.04, 1.5);
-      grp.add(mat);
+      // 바닥 대리석 문지방 매트
+      const threshold = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.04, 1.4), marble);
+      threshold.position.set(0, 0.02, 0.85);
+      threshold.receiveShadow = true;
 
+      grp.add(jambL, jambR, lintel, sign, threshold);
       this.roomGroup.add(grp);
 
-      const frontX = x + Math.sin(rotY) * 1.6;
-      const frontZ = z + Math.cos(rotY) * 1.6;
+      const frontX = x + Math.sin(rotY) * 1.5;
+      const frontZ = z + Math.cos(rotY) * 1.5;
       const item = {
         id: 'portal-' + targetZone + '-' + x + '-' + z,
         type: 'portal',
         targetZone,
-        label: `🚪 ${title} 이동`,
+        label: `🚪 ${title} 입장`,
         x: frontX,
         y: 0,
         z: frontZ,
         radius: 2.3,
-        mesh: frame
+        mesh: lintel
       };
       this.portals.push(item);
       this.interactables.push(item);
     }
 
-    _addBenchOrChair(id, x, y, z, rotY, width, label) {
-      const grp = new THREE.Group();
+    _addRealisticPewOrChair(id, x, y, z, rotY, width, label, style = 'pew') {
+      let grp;
+      if (style === 'sofa') {
+        grp = this.pbr.createLoungeSofa(width);
+      } else {
+        grp = this.pbr.createRealisticPew(width);
+      }
       grp.position.set(x, y, z);
       grp.rotation.y = rotY;
-
-      const wood = new THREE.MeshLambertMaterial({ color: 0x92582a });
-      const dark = new THREE.MeshLambertMaterial({ color: 0x452712 });
-
-      const seat = new THREE.Mesh(new THREE.BoxGeometry(width, 0.22, 0.9), wood);
-      seat.position.y = 0.62;
-      const back = new THREE.Mesh(new THREE.BoxGeometry(width, 0.85, 0.18), wood);
-      back.position.set(0, 1.12, -0.38);
-      const legL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.62, 0.82), dark);
-      legL.position.set(-width / 2 + 0.2, 0.31, 0);
-      const legR = legL.clone();
-      legR.position.x = width / 2 - 0.2;
-
-      grp.add(seat, back, legL, legR);
       this.roomGroup.add(grp);
 
-      // 벤치 길이에 따라 착석 포인트 1~2개 생성
+      const targetMesh = grp.children[0];
       const offsets = width >= 3.2 ? [-width * 0.26, width * 0.26] : [0];
       offsets.forEach((ox, idx) => {
         const sx = x + Math.cos(rotY) * ox;
@@ -710,291 +741,300 @@
         this.interactables.push({
           id: `${id}_${idx}`,
           type: 'seat',
-          label: label || '🪑 의자에 앉기',
+          label: label || '🪑 착석하기',
           x: sx,
           y,
           z: sz,
           rotY,
-          radius: 1.75,
-          mesh: seat
+          radius: 1.85,
+          mesh: targetMesh
         });
       });
     }
 
-    _addLampPost(x, z, height = 4.6) {
+    _addArchitecturalLampPost(x, z, height = 4.5) {
       const grp = new THREE.Group();
       grp.position.set(x, 0, z);
-      const pole = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.09, 0.13, height, 10),
-        new THREE.MeshLambertMaterial({ color: 0x1e293b })
-      );
+      const steel = this.pbr.darkSteelMaterial();
+      const brass = this.pbr.brassMaterial();
+
+      const plinth = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, 0.45, 14), steel);
+      plinth.position.y = 0.22;
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.095, height, 12), steel);
       pole.position.y = height / 2;
-      const bulb = new THREE.Mesh(
-        new THREE.SphereGeometry(0.34, 12, 12),
-        new THREE.MeshBasicMaterial({ color: 0xfef08a })
+      pole.castShadow = true;
+      const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.10, 0.12, 14), brass);
+      collar.position.y = height;
+      const lantern = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.24, 0.18, 0.52, 14),
+        new THREE.MeshStandardMaterial({ color: 0xfffbeb, emissive: 0xfbbf24, emissiveIntensity: 0.9, roughness: 0.2 })
       );
-      bulb.position.y = height + 0.2;
-      grp.add(pole, bulb);
+      lantern.position.y = height + 0.30;
+      const cap = new THREE.Mesh(new THREE.ConeGeometry(0.30, 0.22, 14), steel);
+      cap.position.y = height + 0.65;
+
+      grp.add(plinth, pole, collar, lantern, cap);
       this.roomGroup.add(grp);
     }
 
-    _addTree(x, z, sc = 1) {
-      const grp = new THREE.Group();
-      grp.position.set(x, 0, z);
-      const trunk = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.25 * sc, 0.36 * sc, 2.2 * sc, 8),
-        new THREE.MeshLambertMaterial({ color: 0x5c3a21 })
-      );
-      trunk.position.y = 1.1 * sc;
-      const leafMat = new THREE.MeshLambertMaterial({ color: 0x166534 });
-      const c1 = new THREE.Mesh(new THREE.SphereGeometry(1.45 * sc, 12, 10), leafMat);
-      c1.position.y = 2.8 * sc;
-      const c2 = new THREE.Mesh(new THREE.SphereGeometry(1.05 * sc, 12, 10), leafMat);
-      c2.position.set(0.7 * sc, 2.3 * sc, 0.3 * sc);
-      const c3 = new THREE.Mesh(new THREE.SphereGeometry(1.0 * sc, 12, 10), leafMat);
-      c3.position.set(-0.65 * sc, 2.4 * sc, -0.25 * sc);
-      grp.add(trunk, c1, c2, c3);
-      this.roomGroup.add(grp);
-    }
-
-    // 1) 🌿 앞마당 정원 (야외 광장 & 대성전 입구 계단 & 카페 & 각 방 포털)
+    // -----------------------------------------------------------------------
+    // 1) 🌿 앞마당 정원 (화강암 석재 광장 · 현대식 트래버틴/유리 교회 건축 외관 · 에스프레소 파빌리온)
+    // -----------------------------------------------------------------------
     _buildGarden() {
-      const grass = new THREE.Mesh(
-        new THREE.PlaneGeometry(90, 90),
-        new THREE.MeshLambertMaterial({ color: 0x1b3b28 })
-      );
+      const grass = new THREE.Mesh(new THREE.PlaneGeometry(96, 96), this.pbr.grassMaterial(14, 14));
       grass.rotation.x = -Math.PI / 2;
+      grass.receiveShadow = true;
       this.roomGroup.add(grass);
 
-      // 중앙 석재 산책로 & 광장
-      const path = new THREE.Mesh(
-        new THREE.BoxGeometry(10, 0.08, 62),
-        new THREE.MeshLambertMaterial({ color: 0x8b8579 })
-      );
-      path.position.set(0, 0.04, 5);
-      this.roomGroup.add(path);
+      const granite = this.pbr.granitePaverMaterial(8, 12);
+      const travertine = this.pbr.marbleMaterial('ext_trav', [222, 212, 196], [172, 156, 136], 6, 3, 0.35);
 
-      const crossPath = new THREE.Mesh(
-        new THREE.BoxGeometry(58, 0.07, 7),
-        new THREE.MeshLambertMaterial({ color: 0x7c766b })
-      );
-      crossPath.position.set(0, 0.035, 6);
-      this.roomGroup.add(crossPath);
+      const mainPlaza = new THREE.Mesh(new THREE.BoxGeometry(12, 0.08, 62), granite);
+      mainPlaza.position.set(0, 0.04, 5);
+      mainPlaza.receiveShadow = true;
+      const crossWalk = new THREE.Mesh(new THREE.BoxGeometry(58, 0.07, 8), granite);
+      crossWalk.position.set(0, 0.035, 6);
+      crossWalk.receiveShadow = true;
+      this.roomGroup.add(mainPlaza, crossWalk);
 
-      // 중앙 분수대
-      const fountainBase = new THREE.Mesh(
-        new THREE.CylinderGeometry(3.4, 3.7, 0.65, 24),
-        new THREE.MeshLambertMaterial({ color: 0x94a3b8 })
+      // 2단 천연 대리석 분수대 & 반사 수면
+      const fOuter = new THREE.Mesh(new THREE.CylinderGeometry(3.6, 3.8, 0.62, 32), travertine);
+      fOuter.position.set(0, 0.31, 6);
+      fOuter.castShadow = true;
+      fOuter.receiveShadow = true;
+      const fWater = new THREE.Mesh(
+        new THREE.CylinderGeometry(3.25, 3.25, 0.54, 32),
+        new THREE.MeshStandardMaterial({ color: 0x0ea5e9, roughness: 0.05, metalness: 0.25, envMap: this.pbr.envMap, envMapIntensity: 1.5, transparent: true, opacity: 0.82 })
       );
-      fountainBase.position.set(0, 0.32, 6);
-      const water = new THREE.Mesh(
-        new THREE.CylinderGeometry(3.0, 3.0, 0.55, 24),
-        new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.72 })
-      );
-      water.position.set(0, 0.42, 6);
-      this.roomGroup.add(fountainBase, water);
+      fWater.position.set(0, 0.38, 6);
+      const fTier2 = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.3, 1.35, 24), travertine);
+      fTier2.position.set(0, 0.95, 6);
+      this.roomGroup.add(fOuter, fWater, fTier2);
 
-      // 정면 대성전 외벽 파사드 & 계단 (작은빛 감성 + 현대식 대형교회)
+      // 현대식 대성전 화강암 계단 & 트래버틴·커튼월 유리·원목 루버 파사드
       for (let s = 0; s < 4; s++) {
-        const step = new THREE.Mesh(
-          new THREE.BoxGeometry(22 - s * 1.4, 0.28, 3.2),
-          new THREE.MeshLambertMaterial({ color: 0xa8a29e })
-        );
-        step.position.set(0, 0.14 + s * 0.2, -16 - s * 1.6);
+        const step = new THREE.Mesh(new THREE.BoxGeometry(24 - s * 1.2, 0.24, 3.0), travertine);
+        step.position.set(0, 0.12 + s * 0.18, -16.5 - s * 1.6);
+        step.receiveShadow = true;
         this.roomGroup.add(step);
       }
 
-      const facade = new THREE.Mesh(
-        new THREE.BoxGeometry(30, 16, 4),
-        new THREE.MeshLambertMaterial({ color: 0x292524 })
-      );
-      facade.position.set(0, 8, -26.5);
-      this.roomGroup.add(facade);
+      const facadeStone = new THREE.Mesh(new THREE.BoxGeometry(34, 17, 3.5), travertine);
+      facadeStone.position.set(0, 8.5, -26.8);
+      facadeStone.castShadow = true;
+      facadeStone.receiveShadow = true;
 
-      // 외벽 발광 십자가
-      const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.7, 5.4, 0.4), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
-      crossV.position.set(0, 12.2, -24.3);
-      const crossH = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.7, 0.4), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
-      crossH.position.set(0, 13.1, -24.3);
-      this.roomGroup.add(crossV, crossH);
+      const curtainGlass = new THREE.Mesh(new THREE.PlaneGeometry(14, 12), this.pbr.glassMaterial(0.55, 0x93c5fd));
+      curtainGlass.position.set(0, 9.5, -24.98);
+      this.roomGroup.add(facadeStone, curtainGlass);
 
-      const warmLight = new THREE.PointLight(0xfbbf24, 1.4, 38);
-      warmLight.position.set(0, 9, -18);
-      this.roomGroup.add(warmLight);
+      // 외벽 수직 아키텍처 루버 핀 & 브론즈 발광 십자가
+      for (let lx = -14; lx <= 14; lx += 2.8) {
+        if (Math.abs(lx) < 3.2) continue;
+        const fin = new THREE.Mesh(new THREE.BoxGeometry(0.28, 16.5, 0.65), this.pbr.woodPlankMaterial('fin_w', [118, 76, 44], [58, 34, 18], 1, 3));
+        fin.position.set(lx, 8.25, -24.85);
+        fin.castShadow = true;
+        this.roomGroup.add(fin);
+      }
 
-      // 포털 도어들
-      this._addPortalDoor(0, -24.2, 0, 'sanctuary', '✧ 그레이스 대성전', '정문 입장');
-      this._addPortalDoor(-24, 2, Math.PI / 2, 'sarangbang', '🏠 사랑방 센터', '그룹별 소그룹실');
-      this._addPortalDoor(24, 2, -Math.PI / 2, 'bible', '📖 성경통독방', '66권 말씀 읽기');
-      this._addPortalDoor(24, 11, -Math.PI / 2, 'qt', '✏️ 큐티 아카데미', '기초반 강의·나눔');
+      const crossMat = new THREE.MeshStandardMaterial({ color: 0xfef3c7, emissive: 0xf59e0b, emissiveIntensity: 0.95, roughness: 0.2 });
+      const cv = new THREE.Mesh(new THREE.BoxGeometry(0.55, 5.2, 0.35), crossMat);
+      cv.position.set(0, 11.8, -24.6);
+      const ch = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.55, 0.35), crossMat);
+      ch.position.set(0, 12.7, -24.6);
+      this.roomGroup.add(cv, ch);
 
-      // 야외 소미 카페 부스
-      const cafeBox = new THREE.Mesh(
-        new THREE.BoxGeometry(6.5, 3.8, 4.2),
-        new THREE.MeshLambertMaterial({ color: 0x451a03 })
-      );
-      cafeBox.position.set(-14, 1.9, -9);
+      const entryGlow = new THREE.PointLight(0xffedd5, 1.4, 34);
+      entryGlow.position.set(0, 8.5, -19);
+      this.roomGroup.add(entryGlow);
+
+      this._addPortalDoor(0, -24.5, 0, 'sanctuary', '✧ 그레이스 대성전', '본당 정문 입장');
+      this._addPortalDoor(-25, 2, Math.PI / 2, 'sarangbang', '🏠 사랑방 센터', '그룹별 소그룹실');
+      this._addPortalDoor(25, 2, -Math.PI / 2, 'bible', '📖 성경통독방', '클래식 통독 도서관');
+      this._addPortalDoor(25, 11, -Math.PI / 2, 'qt', '✏️ 큐티 아카데미', '기초반 강의·나눔실');
+
+      // 야외 글래스 & 우드 에스프레소 카페 파빌리온
+      const cafeRoof = new THREE.Mesh(new THREE.BoxGeometry(7.6, 0.32, 5.2), this.pbr.darkSteelMaterial());
+      cafeRoof.position.set(-14.5, 3.85, -9);
+      cafeRoof.castShadow = true;
+      const cafeBack = new THREE.Mesh(new THREE.BoxGeometry(7.0, 3.7, 0.4), this.pbr.acousticSlatMaterial(3, 1));
+      cafeBack.position.set(-14.5, 1.85, -11.2);
+      const cafeCounter = new THREE.Mesh(new THREE.BoxGeometry(5.6, 1.12, 1.1), travertine);
+      cafeCounter.position.set(-14.5, 0.56, -8.2);
+      cafeCounter.castShadow = true;
+      const espressoMachine = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.62, 0.58), this.pbr.darkSteelMaterial());
+      espressoMachine.position.set(-15.5, 1.42, -8.2);
       const cafeSign = new THREE.Mesh(
-        new THREE.PlaneGeometry(5.2, 1.1),
-        new THREE.MeshBasicMaterial({ map: this._makeSignTexture('☕ SOMY CAFE', '무료 커피 & 생수 나눔', '#292524', '#34d399') })
+        new THREE.BoxGeometry(5.2, 0.95, 0.12),
+        new THREE.MeshStandardMaterial({ map: this._makePlaqueTexture('☕ SOMY ESPRESSO BAR', '따뜻한 커피 & 티 나눔', '#18181b', '#34d399') })
       );
-      cafeSign.position.set(-14, 4.25, -6.8);
-      this.roomGroup.add(cafeBox, cafeSign);
+      cafeSign.position.set(-14.5, 4.45, -6.5);
+      this.roomGroup.add(cafeRoof, cafeBack, cafeCounter, espressoMachine, cafeSign);
 
       this.interactables.push({
         id: 'garden-cafe',
         type: 'cafe',
-        label: '☕ 따뜻한 커피 받기',
         drinkType: 'coffee',
-        x: -14,
+        label: '☕ 에스프레소 바에서 커피 받기',
+        x: -14.5,
         y: 0,
-        z: -5.5,
+        z: -6.2,
         radius: 2.8,
-        mesh: cafeBox
+        mesh: cafeCounter
       });
 
-      // 정원 벤치 & 가로등 & 나무
-      this._addBenchOrChair('gbench1', -8.5, 0, 13, Math.PI / 2, 3.6, '🪑 정원 벤치에 앉기');
-      this._addBenchOrChair('gbench2', 8.5, 0, 13, -Math.PI / 2, 3.6, '🪑 정원 벤치에 앉기');
-      this._addBenchOrChair('gbench3', -8.5, 0, -2, Math.PI / 2, 3.6, '🪑 정원 벤치에 앉기');
-      this._addBenchOrChair('gbench4', 8.5, 0, -2, -Math.PI / 2, 3.6, '🪑 정원 벤치에 앉기');
+      this._addRealisticPewOrChair('gbench1', -8.8, 0, 13.5, Math.PI / 2, 3.4, '🪑 정원 원목 벤치에 앉기');
+      this._addRealisticPewOrChair('gbench2', 8.8, 0, 13.5, -Math.PI / 2, 3.4, '🪑 정원 원목 벤치에 앉기');
+      this._addRealisticPewOrChair('gbench3', -8.8, 0, -2.5, Math.PI / 2, 3.4, '🪑 정원 원목 벤치에 앉기');
+      this._addRealisticPewOrChair('gbench4', 8.8, 0, -2.5, -Math.PI / 2, 3.4, '🪑 정원 원목 벤치에 앉기');
 
-      [[-6, 18], [6, 18], [-6, -8], [6, -8], [-16, 6], [16, 6]].forEach(([lx, lz]) => this._addLampPost(lx, lz));
-      [[-20, -16], [20, -16], [-22, 18], [22, 18], [-16, 24], [16, 24]].forEach(([tx, tz]) => this._addTree(tx, tz, 1.15));
+      [[-6.5, 18], [6.5, 18], [-6.5, -7.5], [6.5, -7.5], [-17, 6], [17, 6]].forEach(([lx, lz]) => this._addArchitecturalLampPost(lx, lz));
+      [[-20, -15], [20, -15], [-21, 18], [21, 18], [-15, 25], [15, 25]].forEach(([tx, tz]) => {
+        const tree = this.pbr.createRealisticTree(1.15);
+        tree.position.set(tx, 0, tz);
+        this.roomGroup.add(tree);
+      });
     }
 
-    // 2) 🏛️ 그레이스 대성전 (원형 스타디움 장의자 + 조각 조명벽 + 와이드스크린 + 제단 무릎기도)
+    // -----------------------------------------------------------------------
+    // 2) 🏛️ 그레이스 대성전 (월넛 어쿠스틱 루버월 + 트래버틴 대리석 기둥 + 그랜드피아노 + 크리스탈 강대상)
+    // -----------------------------------------------------------------------
     _buildSanctuary(candles) {
-      const floor = new THREE.Mesh(
-        new THREE.PlaneGeometry(76, 66),
-        new THREE.MeshLambertMaterial({ color: 0x352720 })
-      );
+      const floorWood = this.pbr.woodPlankMaterial('sanc_walnut', [108, 72, 46], [56, 34, 20], 10, 10, 0.28);
+      const travertine = this.pbr.marbleMaterial('sanc_trav', [232, 222, 206], [178, 160, 138], 4, 2, 0.22);
+      const darkMarble = this.pbr.marbleMaterial('sanc_darkm', [48, 42, 38], [118, 96, 72], 4, 2, 0.18);
+      const slatMat = this.pbr.acousticSlatMaterial(8, 2);
+      const carpetMat = this.pbr.fabricMaterial('royal_carpet', [124, 22, 38], 2, 12);
+
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(74, 64), floorWood);
       floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
       this.roomGroup.add(floor);
 
-      // 중앙 레드카펫 통로
-      const carpet = new THREE.Mesh(
-        new THREE.BoxGeometry(4.2, 0.05, 48),
-        new THREE.MeshLambertMaterial({ color: 0x881d2f })
-      );
-      carpet.position.set(0, 0.025, 6);
+      const carpet = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.03, 46), carpetMat);
+      carpet.position.set(0, 0.015, 6);
+      carpet.receiveShadow = true;
       this.roomGroup.add(carpet);
 
-      // 2단 원형 강단 무대
-      const stage1 = new THREE.Mesh(
-        new THREE.CylinderGeometry(12.5, 13.0, 0.7, 32),
-        new THREE.MeshLambertMaterial({ color: 0x5c3a24 })
-      );
-      stage1.position.set(0, 0.35, -18);
-      const stage2 = new THREE.Mesh(
-        new THREE.CylinderGeometry(9.6, 10.0, 0.6, 32),
-        new THREE.MeshLambertMaterial({ color: 0x784b2e })
-      );
-      stage2.position.set(0, 1.0, -19.2);
-      this.roomGroup.add(stage1, stage2);
+      // 2단 트래버틴 & 다크월넛 원형 성단(강단) + 황동 간접조명 엣지
+      const stage1 = new THREE.Mesh(new THREE.CylinderGeometry(12.6, 12.9, 0.56, 48), travertine);
+      stage1.position.set(0, 0.28, -18);
+      stage1.receiveShadow = true;
+      const stage1Trim = new THREE.Mesh(new THREE.CylinderGeometry(12.94, 12.94, 0.08, 48), this.pbr.brassMaterial());
+      stage1Trim.position.set(0, 0.54, -18);
 
-      // 전면 백월 & 양옆 골드 기둥 & 발광 십자가
-      const frontWall = new THREE.Mesh(
-        new THREE.BoxGeometry(68, 18, 1.2),
-        new THREE.MeshLambertMaterial({ color: 0x18141c })
-      );
-      frontWall.position.set(0, 9, -25.2);
-      this.roomGroup.add(frontWall);
+      const stage2 = new THREE.Mesh(new THREE.CylinderGeometry(9.6, 9.8, 0.52, 48), floorWood);
+      stage2.position.set(0, 0.82, -19.2);
+      stage2.receiveShadow = true;
+      this.roomGroup.add(stage1, stage1Trim, stage2);
 
-      const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.65, 5.2, 0.35), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
-      crossV.position.set(16.5, 10.2, -24.3);
-      const crossH = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.65, 0.35), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
-      crossH.position.set(16.5, 11.1, -24.3);
-      this.roomGroup.add(crossV, crossH);
+      // 전면 어쿠스틱 루버 아트월 & 다크 엠페라도르 대리석 중앙 백월
+      const frontWall = new THREE.Mesh(new THREE.BoxGeometry(66, 18, 0.9), slatMat);
+      frontWall.position.set(0, 9, -24.8);
+      frontWall.receiveShadow = true;
+      const centerBackdrop = new THREE.Mesh(new THREE.BoxGeometry(26, 18, 1.05), darkMarble);
+      centerBackdrop.position.set(0, 9, -24.7);
+      this.roomGroup.add(frontWall, centerBackdrop);
 
-      // 크리스탈 강대상 & 그랜드 피아노
-      const pulpit = new THREE.Mesh(
-        new THREE.BoxGeometry(2.0, 2.2, 1.2),
-        new THREE.MeshLambertMaterial({ color: 0xe2e8f0, transparent: true, opacity: 0.85 })
-      );
-      pulpit.position.set(0, 2.4, -14.8);
-      const piano = new THREE.Mesh(
-        new THREE.BoxGeometry(3.2, 1.5, 2.6),
-        new THREE.MeshLambertMaterial({ color: 0x0f172a })
-      );
-      piano.position.set(-6.8, 2.0, -16.8);
-      this.roomGroup.add(pulpit, piano);
+      // 양옆 현대 대형교회 어쿠스틱 루버월 + 트래버틴 대리석 필라스터 기둥 + 간접 코브 조명
+      [-32.5, 32.5].forEach((wx) => {
+        const sideWall = new THREE.Mesh(new THREE.BoxGeometry(0.9, 17.5, 58), slatMat);
+        sideWall.position.set(wx, 8.75, 2);
+        sideWall.receiveShadow = true;
+        this.roomGroup.add(sideWall);
 
-      // 제단 앞 무릎 기도 매트 구역 (작은빛 제단 무릎기도 감성!)
-      const kneelMat = new THREE.Mesh(
-        new THREE.BoxGeometry(7.2, 0.14, 1.4),
-        new THREE.MeshLambertMaterial({ color: 0x9f1239 })
-      );
-      kneelMat.position.set(0, 0.07, -5.2);
-      this.roomGroup.add(kneelMat);
-      [-2.2, 0, 2.2].forEach((kx, idx) => {
+        const inward = wx > 0 ? -0.55 : 0.55;
+        for (let i = 0; i < 6; i++) {
+          const pz = -19 + i * 8.2;
+          const pilaster = new THREE.Mesh(new THREE.BoxGeometry(0.85, 17.5, 1.55), travertine);
+          pilaster.position.set(wx + inward, 8.75, pz);
+          pilaster.castShadow = true;
+          pilaster.receiveShadow = true;
+
+          // 기둥 옆 매립형 웜화이트 간접 LED 라인 바
+          const ledStrip = new THREE.Mesh(
+            new THREE.BoxGeometry(0.12, 15.5, 0.14),
+            new THREE.MeshBasicMaterial({ color: 0xfef3c7 })
+          );
+          ledStrip.position.set(wx + inward * 1.65, 8.5, pz + 0.88);
+          this.roomGroup.add(pilaster, ledStrip);
+        }
+      });
+
+      // 천장 우드 어쿠스틱 서까래 배플 (시야를 가리지 않는 상단 건축 디테일)
+      for (let cz = -20; cz <= 16; cz += 9) {
+        const beam = new THREE.Mesh(new THREE.BoxGeometry(64, 0.55, 0.65), floorWood);
+        beam.position.set(0, 17.4, cz);
+        this.roomGroup.add(beam);
+      }
+
+      // 브러시드 골드 백라이트 십자가
+      const crossMat = new THREE.MeshStandardMaterial({ color: 0xfffbeb, emissive: 0xf59e0b, emissiveIntensity: 0.85, roughness: 0.2, metalness: 0.6 });
+      const cv = new THREE.Mesh(new THREE.BoxGeometry(0.52, 5.2, 0.28), crossMat);
+      cv.position.set(16.2, 10.4, -24.1);
+      const ch = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.52, 0.28), crossMat);
+      ch.position.set(16.2, 11.3, -24.1);
+      this.roomGroup.add(cv, ch);
+
+      // 실사 크리스탈·월넛 강대상 & 그랜드 피아노 & 강단 화분
+      const pulpit = this.pbr.createModernPulpit();
+      pulpit.position.set(0, 1.08, -14.8);
+      const piano = this.pbr.createGrandPiano();
+      piano.position.set(-6.8, 1.08, -16.8);
+      piano.rotation.y = 0.42;
+      const plantL = this.pbr.createPottedPlant(1.25);
+      plantL.position.set(-10.5, 0.56, -15.2);
+      const plantR = this.pbr.createPottedPlant(1.25);
+      plantR.position.set(10.5, 0.56, -15.2);
+      this.roomGroup.add(pulpit, piano, plantL, plantR);
+
+      // 강단 앞 벨벳 무릎기도 방석 레일
+      const kneelCushion = new THREE.Mesh(new THREE.BoxGeometry(7.6, 0.18, 1.15), carpetMat);
+      kneelCushion.position.set(0, 0.09, -5.2);
+      kneelCushion.castShadow = true;
+      kneelCushion.receiveShadow = true;
+      this.roomGroup.add(kneelCushion);
+
+      [-2.3, 0, 2.3].forEach((kx, idx) => {
         this.interactables.push({
           id: `altar_kneel_${idx}`,
           type: 'kneel',
-          label: '🧎 강단 앞 무릎 꿇고 기도하기',
+          label: '🧎 성단 앞 무릎 꿇고 기도하기',
           x: kx,
           y: 0,
           z: -5.2,
           rotY: Math.PI,
           radius: 2.0,
-          mesh: kneelMat
+          mesh: kneelCushion
         });
       });
 
-      // 양옆 다이아몬드 입체 조각 아트월 & 골드 조명
-      [-33, 33].forEach((wx) => {
-        const sWall = new THREE.Mesh(
-          new THREE.BoxGeometry(1.2, 17, 58),
-          new THREE.MeshLambertMaterial({ color: 0x29211e })
-        );
-        sWall.position.set(wx, 8.5, 2);
-        this.roomGroup.add(sWall);
+      const warmL = new THREE.PointLight(0xffedd5, 1.1, 45);
+      warmL.position.set(-16, 12, -6);
+      const warmR = new THREE.PointLight(0xffedd5, 1.1, 45);
+      warmR.position.set(16, 12, -6);
+      this.roomGroup.add(warmL, warmR);
 
-        for (let i = 0; i < 6; i++) {
-          const pz = -18 + i * 8;
-          const diamond = new THREE.Mesh(
-            new THREE.OctahedronGeometry(2.3, 0),
-            new THREE.MeshLambertMaterial({ color: 0xd9a05b })
-          );
-          diamond.scale.set(0.35, 1.85, 1.1);
-          diamond.position.set(wx > 0 ? wx - 0.5 : wx + 0.5, 8.5, pz);
-          this.roomGroup.add(diamond);
-        }
-      });
-
-      const spotL = new THREE.PointLight(0xfbbf24, 1.25, 48);
-      spotL.position.set(-18, 12, -4);
-      const spotR = new THREE.PointLight(0xfbbf24, 1.25, 48);
-      spotR.position.set(18, 12, -4);
-      this.roomGroup.add(spotL, spotR);
-
-      // 원형 부채꼴 장의자 4열 × 4블록 배치
+      // 4열 × 4블록 실사 원목·벨벳 장의자 배치
       const radii = [15.5, 20.5, 25.5, 30.5];
-      const blocks = [-0.62, -0.24, 0.24, 0.62];
+      const blocks = [-0.62, -0.23, 0.23, 0.62];
       radii.forEach((r, rIdx) => {
         blocks.forEach((ang, bIdx) => {
           const px = Math.sin(ang) * r;
           const pz = -18 + Math.cos(ang) * r;
           const faceStageYaw = Math.atan2(-px, -18 - pz);
-          this._addBenchOrChair(
-            `pew_${rIdx}_${bIdx}`,
-            px,
-            0,
-            pz,
-            faceStageYaw,
-            4.6,
-            `🪑 ${rIdx + 1}열 장의자 착석`
-          );
+          this._addRealisticPewOrChair(`pew_${rIdx}_${bIdx}`, px, 0, pz, faceStageYaw, 4.5, `🪑 ${rIdx + 1}열 장의자 착석`, 'pew');
         });
       });
 
-      // 기도 등불 봉헌대
-      const stand = new THREE.Mesh(
-        new THREE.BoxGeometry(11, 0.9, 1.2),
-        new THREE.MeshLambertMaterial({ color: 0x6e4427 })
-      );
-      stand.position.set(0, 0.45, -8.2);
-      this.roomGroup.add(stand);
+      // 단조 철제 & 황동 기도 등불 봉헌대
+      const standTop = new THREE.Mesh(new THREE.BoxGeometry(11.2, 0.14, 1.1), this.pbr.brassMaterial());
+      standTop.position.set(0, 0.88, -8.2);
+      const standBody = new THREE.Mesh(new THREE.BoxGeometry(10.8, 0.82, 0.95), darkMarble);
+      standBody.position.set(0, 0.41, -8.2);
+      standBody.castShadow = true;
+      this.roomGroup.add(standTop, standBody);
+
       this.interactables.push({
         id: 'candle-altar',
         type: 'candle_altar',
@@ -1003,20 +1043,19 @@
         y: 0,
         z: -6.8,
         radius: 2.5,
-        mesh: stand
+        mesh: standBody
       });
 
       this.candleGroup = new THREE.Group();
       this.roomGroup.add(this.candleGroup);
       this.updateCandles(candles);
 
-      // 다른 방으로 연결되는 포털 문들
-      this._addPortalDoor(0, 29.5, Math.PI, 'garden', '🌿 앞마당 정원', '야외 출구');
-      this._addPortalDoor(-31.8, -8, Math.PI / 2, 'sarangbang', '🏠 사랑방 (소그룹)', '그룹별 모임방');
-      this._addPortalDoor(-31.8, 6, Math.PI / 2, 'prayer', '🕯️ 기도·갤러리실', '성화·골방기도');
-      this._addPortalDoor(31.8, -8, -Math.PI / 2, 'bible', '📖 성경통독방', '성경 66권 읽기');
-      this._addPortalDoor(31.8, 6, -Math.PI / 2, 'qt', '✏️ 큐티방', '기초반 강의·나눔');
-      this._addPortalDoor(18, 29.5, Math.PI, 'rooftop', '☕ 루프탑 소미카페', '옥상 정원 교제');
+      this._addPortalDoor(0, 28.8, Math.PI, 'garden', '🌿 앞마당 정원', '야외 광장 출구');
+      this._addPortalDoor(-31.5, -8, Math.PI / 2, 'sarangbang', '🏠 사랑방 (소그룹)', '그룹별 모임방');
+      this._addPortalDoor(-31.5, 6, Math.PI / 2, 'prayer', '🕯️ 기도·갤러리실', '성화·골방기도');
+      this._addPortalDoor(31.5, -8, -Math.PI / 2, 'bible', '📖 성경통독방', '클래식 도서관');
+      this._addPortalDoor(31.5, 6, -Math.PI / 2, 'qt', '✏️ 큐티방', '아카데미·나눔실');
+      this._addPortalDoor(17.5, 28.8, Math.PI, 'rooftop', '☕ 루프탑 소미카페', '옥상 정원 라운지');
     }
 
     updateCandles(candles = []) {
@@ -1024,63 +1063,70 @@
       while (this.candleGroup.children.length > 0) {
         this.candleGroup.remove(this.candleGroup.children[0]);
       }
+      const glassMat = this.pbr.glassMaterial(0.5, 0xfef3c7);
       const count = Math.min(candles.length, 14);
       for (let i = 0; i < count; i++) {
         const ox = -4.8 + (i % 14) * 0.74;
-        const wax = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.11, 0.11, 0.34, 8),
-          new THREE.MeshBasicMaterial({ color: 0xfef3c7 })
-        );
-        wax.position.set(ox, 1.06, -8.2);
+        const holder = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.10, 0.30, 12), glassMat);
+        holder.position.set(ox, 1.10, -8.2);
         const flame = new THREE.Mesh(
-          new THREE.SphereGeometry(0.12, 8, 8),
-          new THREE.MeshBasicMaterial({ color: 0xfbbf24 })
+          new THREE.SphereGeometry(0.085, 8, 8),
+          new THREE.MeshBasicMaterial({ color: 0xfde047 })
         );
-        flame.position.set(ox, 1.32, -8.2);
-        this.candleGroup.add(wax, flame);
+        flame.scale.set(0.8, 1.5, 0.8);
+        flame.position.set(ox, 1.28, -8.2);
+        this.candleGroup.add(holder, flame);
       }
     }
 
-    // 3) 🏠 사랑방 (그룹별 소그룹실 — 원형 거실 소파 + 티테이블 + 소그룹 화이트보드/PPT)
+    // -----------------------------------------------------------------------
+    // 3) 🏠 사랑방 (부티크 거실형 소그룹 라운지: 오크 마루 + 페르시안 러그 + 부클레 소파 + 대리석 티테이블)
+    // -----------------------------------------------------------------------
     _buildSarangbang(roomTitle) {
-      const floor = new THREE.Mesh(
-        new THREE.PlaneGeometry(36, 34),
-        new THREE.MeshLambertMaterial({ color: 0x4a3325 })
-      );
+      const oakFloor = this.pbr.woodPlankMaterial('sarang_oak', [156, 112, 72], [96, 64, 38], 7, 7, 0.32);
+      const plaster = this.pbr.marbleMaterial('warm_wall', [238, 232, 222], [216, 206, 192], 3, 2, 0.55);
+      const slat = this.pbr.acousticSlatMaterial(5, 1);
+      const calacatta = this.pbr.marbleMaterial('table_calacatta', [246, 244, 240], [164, 158, 150], 1, 1, 0.15);
+
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(34, 32), oakFloor);
       floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
       this.roomGroup.add(floor);
 
-      const rug = new THREE.Mesh(
-        new THREE.CircleGeometry(7.2, 32),
-        new THREE.MeshLambertMaterial({ color: 0x7c2d12 })
-      );
+      const rug = new THREE.Mesh(new THREE.CircleGeometry(6.8, 40), this.pbr.persianRugMaterial());
       rug.rotation.x = -Math.PI / 2;
-      rug.position.set(0, 0.03, 0);
+      rug.position.set(0, 0.02, 0.5);
+      rug.receiveShadow = true;
       this.roomGroup.add(rug);
 
-      // 벽면 3면 & 그룹 현판
-      const bWall = new THREE.Mesh(new THREE.BoxGeometry(36, 11, 0.8), new THREE.MeshLambertMaterial({ color: 0x2e231f }));
-      bWall.position.set(0, 5.5, -14.2);
-      const lWall = new THREE.Mesh(new THREE.BoxGeometry(0.8, 11, 34), new THREE.MeshLambertMaterial({ color: 0x362924 }));
-      lWall.position.set(-17, 5.5, 0);
+      const bWall = new THREE.Mesh(new THREE.BoxGeometry(34, 10.5, 0.6), slat);
+      bWall.position.set(0, 5.25, -13.9);
+      bWall.receiveShadow = true;
+      const lWall = new THREE.Mesh(new THREE.BoxGeometry(0.6, 10.5, 32), plaster);
+      lWall.position.set(-16.5, 5.25, 0.5);
       const rWall = lWall.clone();
-      rWall.position.x = 17;
+      rWall.position.x = 16.5;
       this.roomGroup.add(bWall, lWall, rWall);
 
-      const banner = new THREE.Mesh(
-        new THREE.PlaneGeometry(8.5, 1.7),
-        new THREE.MeshBasicMaterial({ map: this._makeSignTexture(`🏠 ${roomTitle}`, '사랑과 말씀이 흐르는 소그룹방', '#431407', '#fbbf24') })
+      const sign = new THREE.Mesh(
+        new THREE.BoxGeometry(8.2, 1.35, 0.14),
+        new THREE.MeshStandardMaterial({ map: this._makePlaqueTexture(`🏠 ${roomTitle}`, '말씀과 사랑의 교제가 흐르는 소그룹 라운지') })
       );
-      banner.position.set(0, 9.4, -13.6);
-      this.roomGroup.add(banner);
+      sign.position.set(0, 9.1, -13.45);
+      this.roomGroup.add(sign);
 
-      // 중앙 원형 티테이블 & 성경책/찻잔 소품
-      const table = new THREE.Mesh(
-        new THREE.CylinderGeometry(2.6, 2.4, 0.72, 24),
-        new THREE.MeshLambertMaterial({ color: 0x9a5b2d })
-      );
-      table.position.set(0, 0.36, 0.5);
-      this.roomGroup.add(table);
+      // 칼라카타 대리석 원형 티테이블 + 다기 세트 + 펼쳐진 성경
+      const tableTop = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.3, 0.10, 32), calacatta);
+      tableTop.position.set(0, 0.68, 0.5);
+      tableTop.castShadow = true;
+      tableTop.receiveShadow = true;
+      const tableBase = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 1.15, 0.64, 24), this.pbr.woodPlankMaterial('tbase', [92, 58, 34], [48, 28, 14], 1, 1));
+      tableBase.position.set(0, 0.32, 0.5);
+      const bibleOnTable = this.pbr.createOpenBibleProp();
+      bibleOnTable.position.set(-0.45, 0.74, 0.5);
+      const teapot = new THREE.Mesh(new THREE.SphereGeometry(0.20, 16, 14), new THREE.MeshStandardMaterial({ color: 0xfafaf9, roughness: 0.2 }));
+      teapot.position.set(0.55, 0.86, 0.45);
+      this.roomGroup.add(tableTop, tableBase, bibleOnTable, teapot);
 
       this.interactables.push({
         id: 'sarang-switcher',
@@ -1090,367 +1136,401 @@
         y: 0,
         z: 0.5,
         radius: 3.1,
-        mesh: table
+        mesh: tableTop
       });
 
-      // 원형으로 둘러앉는 소파 좌석 8석
       for (let i = 0; i < 8; i++) {
         const ang = (i / 8) * Math.PI * 2;
-        if (Math.abs(Math.sin(ang)) < 0.35 && Math.cos(ang) < -0.7) continue; // 칠판 정면 시야 확보
-        const sx = Math.sin(ang) * 5.2;
-        const sz = 0.5 + Math.cos(ang) * 5.2;
+        if (Math.abs(Math.sin(ang)) < 0.36 && Math.cos(ang) < -0.7) continue;
+        const sx = Math.sin(ang) * 5.1;
+        const sz = 0.5 + Math.cos(ang) * 5.1;
         const faceCenter = Math.atan2(-sx, 0.5 - sz);
-        this._addBenchOrChair(`sofa_${i}`, sx, 0, sz, faceCenter, 2.4, '🛋️ 사랑방 소파에 둘러앉기');
+        this._addRealisticPewOrChair(`sofa_${i}`, sx, 0, sz, faceCenter, 2.4, '🛋️ 패브릭 소파에 둘러앉기', 'sofa');
       }
 
-      const warm = new THREE.PointLight(0xffedd5, 1.35, 32);
-      warm.position.set(0, 8.5, 0);
-      this.roomGroup.add(warm);
+      // 코너 원목 책장 & 올리브 화분 & 스탠드 조명
+      const cornerShelf = this.pbr.createRealisticBookshelf(3.6, 5.4);
+      cornerShelf.position.set(-15.5, 0, -6);
+      cornerShelf.rotation.y = Math.PI / 2;
+      this.roomGroup.add(cornerShelf);
 
-      this._addLampPost(-12, -9, 3.8);
-      this._addLampPost(12, -9, 3.8);
+      [[-13.5, -11], [13.5, -11], [-13.5, 11], [13.5, 11]].forEach(([px, pz]) => {
+        const p = this.pbr.createPottedPlant(1.2);
+        p.position.set(px, 0, pz);
+        this.roomGroup.add(p);
+      });
 
-      this._addPortalDoor(-11, 14.5, Math.PI, 'sanctuary', '🏛️ 대성전 복귀', '');
-      this._addPortalDoor(11, 14.5, Math.PI, 'qt', '✏️ 큐티방 이동', '');
+      const warmLight = new THREE.PointLight(0xffe8cc, 1.15, 30);
+      warmLight.position.set(0, 8, 0.5);
+      this.roomGroup.add(warmLight);
+
+      this._addPortalDoor(-10, 14.2, Math.PI, 'sanctuary', '🏛️ 대성전 복귀', '');
+      this._addPortalDoor(10, 14.2, Math.PI, 'qt', '✏️ 큐티방 이동', '');
     }
 
-    // 4) 📖 성경통독방 (도서관 서가 + 통독 책상 + 개역개정 성경 리더 연동)
+    // -----------------------------------------------------------------------
+    // 4) 📖 성경통독방 (클래식 월넛 서재 & 가죽장정 성경 서가 & 브라스 뱅커스 램프 열람석)
+    // -----------------------------------------------------------------------
     _buildBibleRoom() {
-      const floor = new THREE.Mesh(
-        new THREE.PlaneGeometry(40, 38),
-        new THREE.MeshLambertMaterial({ color: 0x3b2a1e })
-      );
+      const walnutFloor = this.pbr.woodPlankMaterial('lib_floor', [118, 76, 44], [62, 36, 18], 8, 8, 0.30);
+      const creamWall = this.pbr.marbleMaterial('lib_wall', [236, 228, 214], [198, 186, 168], 4, 2, 0.5);
+      const wainscot = this.pbr.woodPlankMaterial('lib_wain', [96, 58, 32], [48, 26, 12], 6, 1, 0.32);
+
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(38, 36), walnutFloor);
       floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
       this.roomGroup.add(floor);
 
-      const bWall = new THREE.Mesh(new THREE.BoxGeometry(40, 12, 0.8), new THREE.MeshLambertMaterial({ color: 0x1e2433 }));
-      bWall.position.set(0, 6, -16.2);
-      this.roomGroup.add(bWall);
+      const runner = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.025, 28), this.pbr.persianRugMaterial());
+      runner.position.set(0, 0.013, 1);
+      runner.receiveShadow = true;
+      this.roomGroup.add(runner);
 
-      // 양쪽 대형 원목 책장(서가) 8개
-      const shelfMat = new THREE.MeshLambertMaterial({ color: 0x5c3a21 });
-      const bookColors = [0xb91c1c, 0x1d4ed8, 0x047857, 0xd97706, 0x6d28d9];
-      [-17.2, 17.2].forEach((sx) => {
-        for (let z = -11; z <= 11; z += 5.5) {
-          const shelf = new THREE.Mesh(new THREE.BoxGeometry(1.4, 6.8, 4.4), shelfMat);
-          shelf.position.set(sx, 3.4, z);
-          this.roomGroup.add(shelf);
+      // 정면 & 좌우 클래식 웨인스코팅 + 크림 플라스터 벽면
+      const bWall = new THREE.Mesh(new THREE.BoxGeometry(38, 11.5, 0.6), creamWall);
+      bWall.position.set(0, 5.75, -15.8);
+      const bWain = new THREE.Mesh(new THREE.BoxGeometry(38, 3.0, 0.72), wainscot);
+      bWain.position.set(0, 1.5, -15.75);
+      this.roomGroup.add(bWall, bWain);
 
-          for (let r = 0; r < 4; r++) {
-            const books = new THREE.Mesh(
-              new THREE.BoxGeometry(1.5, 0.85, 3.8),
-              new THREE.MeshLambertMaterial({ color: bookColors[(r + Math.abs(z)) % bookColors.length] })
-            );
-            books.position.set(sx, 1.2 + r * 1.5, z);
-            this.roomGroup.add(books);
-          }
+      [-17.8, 17.8].forEach((wx) => {
+        const sw = new THREE.Mesh(new THREE.BoxGeometry(0.6, 11.5, 36), creamWall);
+        sw.position.set(wx, 5.75, 1);
+        this.roomGroup.add(sw);
+
+        // 양쪽 벽면 정교한 가죽장정 원목 서가 4연속 배치
+        for (let z = -10.5; z <= 10.5; z += 7.0) {
+          const bookcase = this.pbr.createRealisticBookshelf(5.8, 6.8);
+          bookcase.position.set(wx > 0 ? wx - 0.65 : wx + 0.65, 0, z);
+          bookcase.rotation.y = wx > 0 ? -Math.PI / 2 : Math.PI / 2;
+          this.roomGroup.add(bookcase);
         }
       });
 
-      // 성경 통독 열람 책상 6개 + 녹색 뱅커 스탠드
-      const deskRows = [-5, 3];
-      const deskCols = [-7.5, 0, 7.5];
+      // 6개 클래식 원목 열람 책상 + 황동 뱅커스 스탠드 + 펼쳐진 성경책
+      const deskRows = [-5.2, 3.0];
+      const deskCols = [-7.6, 0, 7.6];
       deskRows.forEach((dz, rIdx) => {
         deskCols.forEach((dx, cIdx) => {
-          const desk = new THREE.Mesh(
-            new THREE.BoxGeometry(4.2, 1.1, 1.8),
-            new THREE.MeshLambertMaterial({ color: 0x784724 })
-          );
-          desk.position.set(dx, 0.55, dz);
-          const lamp = new THREE.Mesh(
-            new THREE.ConeGeometry(0.32, 0.28, 12),
-            new THREE.MeshBasicMaterial({ color: 0x34d399 })
-          );
-          lamp.position.set(dx + 1.2, 1.45, dz - 0.3);
-          const bibleBook = new THREE.Mesh(
-            new THREE.BoxGeometry(0.85, 0.12, 0.62),
-            new THREE.MeshLambertMaterial({ color: 0xfef3c7 })
-          );
-          bibleBook.position.set(dx, 1.16, dz);
-          this.roomGroup.add(desk, lamp, bibleBook);
+          const deskGrp = this.pbr.createLibraryDeskWithLamp(3.9);
+          deskGrp.position.set(dx, 0, dz);
+          this.roomGroup.add(deskGrp);
 
-          this._addBenchOrChair(`bdesk_${rIdx}_${cIdx}`, dx, 0, dz + 1.5, Math.PI, 1.8, '📖 통독 책상에 앉아 성경 펴기');
+          this._addRealisticPewOrChair(`bdesk_${rIdx}_${cIdx}`, dx, 0, dz + 1.45, Math.PI, 1.55, '📖 통독 열람석에 앉아 성경 펴기', 'pew');
           this.interactables.push({
             id: `bible_open_${rIdx}_${cIdx}`,
             type: 'bible_desk',
-            label: '📖 성경 66권 통독 리더 열기',
+            label: '📖 개역개정 성경 66권 펼치기',
             x: dx,
             y: 0,
-            z: dz + 1.5,
+            z: dz + 1.45,
             rotY: Math.PI,
             radius: 2.2,
-            mesh: desk
+            mesh: deskGrp.children[0]
           });
         });
       });
 
-      this._addPortalDoor(-11, 16.5, Math.PI, 'sanctuary', '🏛️ 대성전 이동', '');
-      this._addPortalDoor(11, 16.5, Math.PI, 'qt', '✏️ 큐티방 이동', '기초반 강의·나눔');
+      const libLight = new THREE.PointLight(0xffe8c2, 1.15, 34);
+      libLight.position.set(0, 9, -1);
+      this.roomGroup.add(libLight);
+
+      this._addPortalDoor(-10.5, 16.2, Math.PI, 'sanctuary', '🏛️ 대성전 이동', '');
+      this._addPortalDoor(10.5, 16.2, Math.PI, 'qt', '✏️ 큐티방 이동', '기초반 강의·나눔');
     }
 
-    // 5) ✏️ 큐티방 (관리자 큐티 기초반 강의안 + 세미나 책상 + 실시간 큐티 나눔)
+    // -----------------------------------------------------------------------
+    // 5) ✏️ 큐티방 (모던 오크 루버 & 트래버틴 아카데미 세미나실)
+    // -----------------------------------------------------------------------
     _buildQtRoom() {
-      const floor = new THREE.Mesh(
-        new THREE.PlaneGeometry(40, 38),
-        new THREE.MeshLambertMaterial({ color: 0x2c3444 })
-      );
+      const lightOak = this.pbr.woodPlankMaterial('qt_oak', [176, 134, 88], [116, 82, 48], 8, 8, 0.30);
+      const travWall = this.pbr.marbleMaterial('qt_trav', [240, 235, 226], [196, 186, 172], 4, 2, 0.40);
+      const slat = this.pbr.acousticSlatMaterial(6, 1);
+
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(38, 36), lightOak);
       floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
       this.roomGroup.add(floor);
 
-      const bWall = new THREE.Mesh(new THREE.BoxGeometry(40, 12, 0.8), new THREE.MeshLambertMaterial({ color: 0x1b2232 }));
-      bWall.position.set(0, 6, -16.2);
-      this.roomGroup.add(bWall);
+      const bWall = new THREE.Mesh(new THREE.BoxGeometry(38, 11.5, 0.6), slat);
+      bWall.position.set(0, 5.75, -15.8);
+      const lWall = new THREE.Mesh(new THREE.BoxGeometry(0.6, 11.5, 36), travWall);
+      lWall.position.set(-18, 5.75, 1);
+      const rWall = lWall.clone();
+      rWall.position.x = 18;
+      this.roomGroup.add(bWall, lWall, rWall);
 
-      // 강사 강연대
-      const lectern = new THREE.Mesh(
-        new THREE.BoxGeometry(2.2, 2.0, 1.2),
-        new THREE.MeshLambertMaterial({ color: 0xb45309 })
-      );
-      lectern.position.set(-5.8, 1.0, -11.5);
-      this.roomGroup.add(lectern);
+      // 강사용 모던 강연대
+      const podium = this.pbr.createModernPulpit();
+      podium.position.set(-6.2, 0, -11.2);
+      this.roomGroup.add(podium);
 
       this.interactables.push({
         id: 'qt-lectern',
         type: 'qt_academy',
         label: '📚 큐티 기초반 강의안 & 나눔 열기',
-        x: -5.8,
+        x: -6.2,
         y: 0,
-        z: -9.8,
+        z: -9.5,
         radius: 2.6,
-        mesh: lectern
+        mesh: podium.children[0]
       });
 
-      // 아카데미 세미나 테이블 2열 × 2블록
-      [-5.2, 1.2].forEach((dz, rIdx) => {
-        [-6.5, 6.5].forEach((dx, cIdx) => {
-          const table = new THREE.Mesh(
-            new THREE.BoxGeometry(6.8, 1.05, 1.7),
-            new THREE.MeshLambertMaterial({ color: 0x94a3b8 })
-          );
-          table.position.set(dx, 0.52, dz);
-          this.roomGroup.add(table);
+      // 아카데미 원목 세미나 데스크 + 스탠드 + 성경 노트 세트
+      [-5.0, 1.6].forEach((dz, rIdx) => {
+        [-6.6, 6.6].forEach((dx, cIdx) => {
+          const semDesk = this.pbr.createLibraryDeskWithLamp(6.4);
+          semDesk.position.set(dx, 0, dz);
+          this.roomGroup.add(semDesk);
 
-          this._addBenchOrChair(`qtseat_${rIdx}_${cIdx}`, dx, 0, dz + 1.55, Math.PI, 4.4, '✏️ 큐티 강의석 착석');
+          this._addRealisticPewOrChair(`qtseat_${rIdx}_${cIdx}`, dx, 0, dz + 1.5, Math.PI, 4.4, '✏️ 큐티 세미나석 착석', 'pew');
           this.interactables.push({
             id: `qt_desk_${rIdx}_${cIdx}`,
             type: 'qt_academy',
             label: '📚 큐티 기초반 강의안 & 나눔 열기',
             x: dx,
             y: 0,
-            z: dz + 1.55,
+            z: dz + 1.5,
             rotY: Math.PI,
             radius: 2.5,
-            mesh: table
+            mesh: semDesk.children[0]
           });
         });
       });
 
-      this._addPortalDoor(-11, 16.5, Math.PI, 'bible', '📖 성경통독방', '');
-      this._addPortalDoor(0, 16.5, Math.PI, 'sanctuary', '🏛️ 대성전 이동', '');
-      this._addPortalDoor(11, 16.5, Math.PI, 'sarangbang', '🏠 사랑방 이동', '');
+      [[-15.5, -12], [15.5, -12]].forEach(([px, pz]) => {
+        const plant = this.pbr.createPottedPlant(1.3);
+        plant.position.set(px, 0, pz);
+        this.roomGroup.add(plant);
+      });
+
+      this._addPortalDoor(-11, 16.2, Math.PI, 'bible', '📖 성경통독방', '');
+      this._addPortalDoor(0, 16.2, Math.PI, 'sanctuary', '🏛️ 대성전 이동', '');
+      this._addPortalDoor(11, 16.2, Math.PI, 'sarangbang', '🏠 사랑방 이동', '');
     }
 
-    // 6) 🕯️ 골방 기도실 & 성화·말씀 갤러리
+    // -----------------------------------------------------------------------
+    // 6) 🕯️ 골방 기도실 & 성화·말씀 갤러리 (다크 대리석 뮤지엄 회랑 + 원목 개인 기도 부스)
+    // -----------------------------------------------------------------------
     _buildPrayerGallery() {
-      const floor = new THREE.Mesh(
-        new THREE.PlaneGeometry(36, 40),
-        new THREE.MeshLambertMaterial({ color: 0x231d28 })
-      );
+      const darkMarbleFloor = this.pbr.marbleMaterial('pray_floor', [54, 48, 46], [122, 104, 84], 5, 5, 0.16);
+      const stoneWall = this.pbr.marbleMaterial('pray_wall', [198, 190, 178], [148, 138, 124], 4, 2, 0.45);
+      const walnut = this.pbr.woodPlankMaterial('booth_w', [102, 62, 34], [48, 26, 12], 2, 2, 0.30);
+      const velvet = this.pbr.fabricMaterial('kneel_velvet', [118, 22, 38], 2, 2);
+
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(34, 38), darkMarbleFloor);
       floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
       this.roomGroup.add(floor);
 
-      const aisle = new THREE.Mesh(
-        new THREE.BoxGeometry(4.5, 0.05, 36),
-        new THREE.MeshLambertMaterial({ color: 0x4c1d95 })
-      );
-      aisle.position.set(0, 0.025, 1);
-      this.roomGroup.add(aisle);
-
-      const bWall = new THREE.Mesh(new THREE.BoxGeometry(36, 11, 0.8), new THREE.MeshLambertMaterial({ color: 0x16121d }));
-      bWall.position.set(0, 5.5, -17.2);
-      const lWall = new THREE.Mesh(new THREE.BoxGeometry(0.8, 11, 40), new THREE.MeshLambertMaterial({ color: 0x1d1826 }));
-      lWall.position.set(-16.5, 5.5, 1);
+      const bWall = new THREE.Mesh(new THREE.BoxGeometry(34, 11, 0.6), stoneWall);
+      bWall.position.set(0, 5.5, -16.8);
+      const lWall = new THREE.Mesh(new THREE.BoxGeometry(0.6, 11, 38), stoneWall);
+      lWall.position.set(-16, 5.5, 1);
       const rWall = lWall.clone();
-      rWall.position.x = 16.5;
+      rWall.position.x = 16;
       this.roomGroup.add(bWall, lWall, rWall);
 
-      // 좌·우 6점 성화/말씀 액자 전시 (다가가면 해설 & 성경 구절 보기)
+      // 좌·우 금장 조각 액자 성화 6점 전시
       GALLERY_ARTWORKS.forEach((art, i) => {
         const isLeft = i < 3;
         const idx = i % 3;
-        const az = -9 + idx * 9.5;
-        const ax = isLeft ? -15.9 : 15.9;
+        const az = -8.5 + idx * 9.2;
+        const ax = isLeft ? -15.55 : 15.55;
         const rotY = isLeft ? Math.PI / 2 : -Math.PI / 2;
 
-        const c = document.createElement('canvas');
-        c.width = 384;
-        c.height = 256;
-        const g = c.getContext('2d');
-        const grd = g.createLinearGradient(0, 0, 384, 256);
-        grd.addColorStop(0, art.color1);
-        grd.addColorStop(1, art.color2);
-        g.fillStyle = grd;
-        g.fillRect(0, 0, 384, 256);
-        g.strokeStyle = '#fde047';
-        g.lineWidth = 10;
-        g.strokeRect(8, 8, 368, 240);
-        g.fillStyle = '#ffffff';
-        g.font = '800 24px -apple-system, sans-serif';
-        g.textAlign = 'center';
-        g.fillText(art.title, 192, 130, 330);
-
-        const painting = new THREE.Mesh(
-          new THREE.PlaneGeometry(5.2, 3.5),
-          new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c) })
-        );
-        painting.position.set(ax, 4.5, az);
-        painting.rotation.y = rotY;
-        this.roomGroup.add(painting);
+        const framed = this.pbr.createFramedSacredPainting(art, i);
+        framed.position.set(ax, 4.4, az);
+        framed.rotation.y = rotY;
+        this.roomGroup.add(framed);
 
         this.interactables.push({
           id: `art_${i}`,
           type: 'artwork',
-          label: `🖼️ '${art.title}' 해설 보기`,
+          label: `🖼️ '${art.title}' 성화 묵상하기`,
           artwork: art,
-          x: isLeft ? -13.2 : 13.2,
+          x: isLeft ? -12.8 : 12.8,
           y: 0,
           z: az,
           radius: 3.0,
-          mesh: painting
+          mesh: framed.children[1]
         });
       });
 
-      // 골방 무릎 기도 쿠션 4개
-      [-6, -2, 2, 6].forEach((kx, idx) => {
-        const cushion = new THREE.Mesh(
-          new THREE.BoxGeometry(1.8, 0.22, 1.3),
-          new THREE.MeshLambertMaterial({ color: 0x9f1239 })
-        );
-        cushion.position.set(kx, 0.11, -11.5);
-        this.roomGroup.add(cushion);
-        this._addLampPost(kx, -13.2, 2.2);
+      // 원목 파티션 개인 골방 기도 부스 4칸 (기도 선반 + 십자가 + 벨벳 무릎방석)
+      [-6.3, -2.1, 2.1, 6.3].forEach((kx, idx) => {
+        const dividerL = new THREE.Mesh(new THREE.BoxGeometry(0.14, 2.4, 2.2), walnut);
+        dividerL.position.set(kx - 1.95, 1.2, -11.8);
+        dividerL.castShadow = true;
+        if (idx === 3) {
+          const dividerR = dividerL.clone();
+          dividerR.position.x = kx + 1.95;
+          this.roomGroup.add(dividerR);
+        }
+        const kneelDesk = new THREE.Mesh(new THREE.BoxGeometry(3.7, 0.08, 0.55), walnut);
+        kneelDesk.position.set(kx, 0.92, -12.55);
+        kneelDesk.rotation.x = 0.14;
+
+        const miniBible = this.pbr.createOpenBibleProp();
+        miniBible.scale.set(0.75, 0.75, 0.75);
+        miniBible.position.set(kx, 0.96, -12.52);
+
+        const cushion = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.18, 0.95), velvet);
+        cushion.position.set(kx, 0.09, -11.3);
+        cushion.castShadow = true;
+
+        this.roomGroup.add(dividerL, kneelDesk, miniBible, cushion);
 
         this.interactables.push({
           id: `prayer_kneel_${idx}`,
           type: 'kneel',
-          label: '🧎 골방 기도석에서 무릎 기도하기',
+          label: `🧎 ${idx + 1}번 개인 골방 기도석 무릎기도`,
           x: kx,
           y: 0,
-          z: -11.5,
+          z: -11.3,
           rotY: Math.PI,
           radius: 1.9,
           mesh: cushion
         });
       });
 
-      this._addPortalDoor(-8, 18.5, Math.PI, 'sanctuary', '🏛️ 대성전 이동', '');
-      this._addPortalDoor(8, 18.5, Math.PI, 'bible', '📖 성경통독방', '');
+      const warmGlow = new THREE.PointLight(0xffd89b, 1.0, 32);
+      warmGlow.position.set(0, 7.5, -8);
+      this.roomGroup.add(warmGlow);
+
+      this._addPortalDoor(-7.5, 18.2, Math.PI, 'sanctuary', '🏛️ 대성전 이동', '');
+      this._addPortalDoor(7.5, 18.2, Math.PI, 'bible', '📖 성경통독방', '');
     }
 
-    // 7) ☕ 루프탑 소미카페 (별빛 야경 + SOMY CAFE + 4인 교제 테이블)
+    // -----------------------------------------------------------------------
+    // 7) ☕ 루프탑 소미카페 (티크 우드 데크 + 강화유리 난간 + 대리석 비스트로 테이블 + 페스툰 가든 전구)
+    // -----------------------------------------------------------------------
     _buildRooftop() {
-      const deck = new THREE.Mesh(
-        new THREE.PlaneGeometry(48, 44),
-        new THREE.MeshLambertMaterial({ color: 0x3b2f28 })
-      );
+      const teakDeck = this.pbr.woodPlankMaterial('teak_deck', [124, 86, 56], [68, 44, 26], 10, 10, 0.42);
+      const glassRail = this.pbr.glassMaterial(0.38, 0xcbd5e1);
+      const steel = this.pbr.darkSteelMaterial();
+      const calacatta = this.pbr.marbleMaterial('bistro_m', [245, 242, 236], [168, 160, 150], 1, 1, 0.18);
+
+      const deck = new THREE.Mesh(new THREE.PlaneGeometry(46, 42), teakDeck);
       deck.rotation.x = -Math.PI / 2;
+      deck.receiveShadow = true;
       this.roomGroup.add(deck);
 
-      // 옥상 유리/우드 안전 난간
-      const railMat = new THREE.MeshLambertMaterial({ color: 0x64748b, transparent: true, opacity: 0.55 });
-      const rBack = new THREE.Mesh(new THREE.BoxGeometry(48, 1.6, 0.3), railMat);
-      rBack.position.set(0, 0.8, -21);
-      const rLeft = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.6, 44), railMat);
-      rLeft.position.set(-23.5, 0.8, 0);
+      // 강화유리 & 다크스틸 핸드레일 난간
+      const rBack = new THREE.Mesh(new THREE.BoxGeometry(46, 1.35, 0.08), glassRail);
+      rBack.position.set(0, 0.68, -20.2);
+      const rBackTop = new THREE.Mesh(new THREE.BoxGeometry(46, 0.08, 0.14), steel);
+      rBackTop.position.set(0, 1.38, -20.2);
+      const rLeft = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.35, 42), glassRail);
+      rLeft.position.set(-22.5, 0.68, 0);
       const rRight = rLeft.clone();
-      rRight.position.x = 23.5;
-      this.roomGroup.add(rBack, rLeft, rRight);
+      rRight.position.x = 22.5;
+      this.roomGroup.add(rBack, rBackTop, rLeft, rRight);
 
-      // 밤하늘 별빛 입자
+      // 밤하늘 별빛
       const starGeo = new THREE.BufferGeometry();
       const pts = [];
-      for (let i = 0; i < 180; i++) {
+      for (let i = 0; i < 200; i++) {
         pts.push((Math.random() - 0.5) * 140, 22 + Math.random() * 38, (Math.random() - 0.5) * 140);
       }
       starGeo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-      const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xfef9c3, size: 0.45 }));
-      this.roomGroup.add(stars);
+      this.roomGroup.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xfef9c3, size: 0.42 })));
 
-      // 루프탑 카페 부스 & 생수 부스
-      const cafe = new THREE.Mesh(
-        new THREE.BoxGeometry(7.2, 3.8, 4.0),
-        new THREE.MeshLambertMaterial({ color: 0x27272a })
+      // 상공 페스툰 스트링 가든 전구 라인
+      const bulbMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+      [-2, 7, 15].forEach((sz) => {
+        for (let sx = -16; sx <= 16; sx += 3.2) {
+          const sag = Math.cos((sx / 16) * (Math.PI / 2)) * 0.65;
+          const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 8), bulbMat);
+          bulb.position.set(sx, 5.6 - sag, sz);
+          this.roomGroup.add(bulb);
+        }
+      });
+
+      // 루프탑 시더우드 & 대리석 에스프레소 바
+      const barRoof = new THREE.Mesh(new THREE.BoxGeometry(7.8, 0.28, 4.4), steel);
+      barRoof.position.set(-13.2, 3.85, -11);
+      const barBack = new THREE.Mesh(new THREE.BoxGeometry(7.4, 3.7, 0.45), this.pbr.acousticSlatMaterial(4, 1));
+      barBack.position.set(-13.2, 1.85, -12.8);
+      const barCounter = new THREE.Mesh(new THREE.BoxGeometry(6.4, 1.12, 1.05), calacatta);
+      barCounter.position.set(-13.2, 0.56, -9.5);
+      barCounter.castShadow = true;
+      const barSign = new THREE.Mesh(
+        new THREE.BoxGeometry(5.8, 0.95, 0.12),
+        new THREE.MeshStandardMaterial({ map: this._makePlaqueTexture('☕ SOMY ROOFTOP LOUNGE', '스페셜티 커피 & 티') })
       );
-      cafe.position.set(-13.5, 1.9, -11);
-      const cSign = new THREE.Mesh(
-        new THREE.PlaneGeometry(6.0, 1.25),
-        new THREE.MeshBasicMaterial({ map: this._makeSignTexture('☕ SOMY ROOFTOP CAFE', '따뜻한 커피 나눔', '#18181b', '#fbbf24') })
-      );
-      cSign.position.set(-13.5, 4.3, -8.9);
-      this.roomGroup.add(cafe, cSign);
+      barSign.position.set(-13.2, 4.42, -8.8);
+      this.roomGroup.add(barRoof, barBack, barCounter, barSign);
 
       this.interactables.push({
         id: 'roof-coffee',
         type: 'cafe',
         drinkType: 'coffee',
-        label: '☕ 루프탑 커피 받기',
-        x: -13.5,
+        label: '☕ 루프탑 바에서 따뜻한 커피 받기',
+        x: -13.2,
         y: 0,
-        z: -7.5,
+        z: -7.6,
         radius: 2.8,
-        mesh: cafe
+        mesh: barCounter
       });
 
-      const store = new THREE.Mesh(
-        new THREE.BoxGeometry(5.6, 3.5, 3.8),
-        new THREE.MeshLambertMaterial({ color: 0x0f172a })
+      // 우측 미네랄 워터 & 리프레시먼트 바
+      const waterCounter = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.12, 1.0), calacatta);
+      waterCounter.position.set(13.2, 0.56, -9.5);
+      const waterSign = new THREE.Mesh(
+        new THREE.BoxGeometry(4.8, 0.92, 0.12),
+        new THREE.MeshStandardMaterial({ map: this._makePlaqueTexture('💧 REFRESHMENT BAR', '시원한 생수 & 음료', '#0f172a', '#38bdf8') })
       );
-      store.position.set(13.5, 1.75, -11);
-      const sSign = new THREE.Mesh(
-        new THREE.PlaneGeometry(4.8, 1.15),
-        new THREE.MeshBasicMaterial({ map: this._makeSignTexture('💧 은혜샘 편의점', '시원한 생수 나눔', '#0c4a6e', '#38bdf8') })
-      );
-      sSign.position.set(13.5, 4.0, -9.0);
-      this.roomGroup.add(store, sSign);
+      waterSign.position.set(13.2, 3.6, -9.5);
+      this.roomGroup.add(waterCounter, waterSign);
 
       this.interactables.push({
         id: 'roof-water',
         type: 'cafe',
         drinkType: 'water',
         label: '💧 시원한 생수 받기',
-        x: 13.5,
+        x: 13.2,
         y: 0,
-        z: -7.5,
+        z: -7.6,
         radius: 2.8,
-        mesh: store
+        mesh: waterCounter
       });
 
-      // 4인 원형 카페 테이블 4세트
+      // 대리석 원형 비스트로 테이블 4세트 + 테이블 캔들 랜턴
       [[-8, 3], [8, 3], [-8, 12], [8, 12]].forEach(([tx, tz], tIdx) => {
-        const tbl = new THREE.Mesh(
-          new THREE.CylinderGeometry(1.5, 1.3, 0.85, 18),
-          new THREE.MeshLambertMaterial({ color: 0xd6d3d1 })
+        const top = new THREE.Mesh(new THREE.CylinderGeometry(1.45, 1.45, 0.08, 28), calacatta);
+        top.position.set(tx, 0.78, tz);
+        top.castShadow = true;
+        const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.42, 0.76, 16), steel);
+        ped.position.set(tx, 0.38, tz);
+        const lantern = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.11, 0.11, 0.24, 12),
+          new THREE.MeshStandardMaterial({ color: 0xfef3c7, emissive: 0xf59e0b, emissiveIntensity: 0.85 })
         );
-        tbl.position.set(tx, 0.42, tz);
-        this.roomGroup.add(tbl);
+        lantern.position.set(tx, 0.94, tz);
+        this.roomGroup.add(top, ped, lantern);
 
         for (let c = 0; c < 4; c++) {
           const a = (c / 4) * Math.PI * 2 + Math.PI / 4;
           const cx = tx + Math.sin(a) * 2.35;
           const cz = tz + Math.cos(a) * 2.35;
-          this._addBenchOrChair(`rtbl_${tIdx}_${c}`, cx, 0, cz, Math.atan2(tx - cx, tz - cz), 1.2, `☕ ${tIdx + 1}번 카페 테이블 착석`);
+          this._addRealisticPewOrChair(`rtbl_${tIdx}_${c}`, cx, 0, cz, Math.atan2(tx - cx, tz - cz), 1.15, `☕ ${tIdx + 1}번 비스트로 테이블 착석`, 'pew');
         }
       });
 
-      [[-18, -2], [18, -2], [-18, 14], [18, 14], [0, -6]].forEach(([lx, lz]) => this._addLampPost(lx, lz, 4.2));
-      [[-20, -16], [20, -16], [-20, 18], [20, 18]].forEach(([tx, tz]) => this._addTree(tx, tz, 0.95));
+      [[-18, -2], [18, -2], [-18, 14], [18, 14]].forEach(([lx, lz]) => this._addArchitecturalLampPost(lx, lz, 4.2));
+      [[-19.5, -16], [19.5, -16], [-19.5, 17], [19.5, 17]].forEach(([tx, tz]) => {
+        const p = this.pbr.createPottedPlant(1.45);
+        p.position.set(tx, 0, tz);
+        this.roomGroup.add(p);
+      });
 
-      this._addPortalDoor(-8, 20.2, Math.PI, 'sanctuary', '🏛️ 대성전 내려가기', '');
-      this._addPortalDoor(8, 20.2, Math.PI, 'garden', '🌿 앞마당 정원', '');
+      this._addPortalDoor(-7.5, 19.5, Math.PI, 'sanctuary', '🏛️ 대성전 내려가기', '');
+      this._addPortalDoor(7.5, 19.5, Math.PI, 'garden', '🌿 앞마당 정원', '');
     }
 
     // -----------------------------------------------------------------------
-    // 키보드(WASD/방향키) + 마우스 클릭 이동 + 모바일 멀티터치/핀치 줌
+    // 입력 처리 및 메인 애니메이션 루프
     // -----------------------------------------------------------------------
     _setupInput() {
       window.addEventListener('keydown', (e) => {
@@ -1514,10 +1594,7 @@
         const singleTap = pointers.size === 1 && !moved;
         pointers.delete(e.pointerId);
         if (pointers.size < 2) pinchDist = 0;
-
-        if (singleTap) {
-          this._handleTap(e.clientX, e.clientY);
-        }
+        if (singleTap) this._handleTap(e.clientX, e.clientY);
       };
 
       this.canvas.addEventListener('pointerup', onPointerEnd);
@@ -1540,7 +1617,6 @@
       );
       this.raycaster.setFromCamera(ndc, this.camera);
 
-      // 1순위: 상호작용 오브젝트(문, 의자, 칠판, 카페 등) 클릭 판정
       const meshes = this.interactables.map((it) => it.mesh).filter(Boolean);
       const hits = this.raycaster.intersectObjects(meshes, false);
       if (hits.length > 0) {
@@ -1552,23 +1628,21 @@
             this.onInteract(found);
             return;
           }
-          // 멀리 있으면 해당 오브젝트 앞으로 걸어가서 자동 실행!
           this.walkTarget = { x: found.x, z: found.z, pendingInteract: found };
-          this.walkRing.position.set(found.x, 0.06, found.z);
+          this.walkRing.position.set(found.x, 0.05, found.z);
           this.walkRing.material.opacity = 0.85;
           if (me) me.pose = 'stand';
           return;
         }
       }
 
-      // 2순위: 바닥 클릭 이동
       const pt = new THREE.Vector3();
       if (this.raycaster.ray.intersectPlane(this.floorPlane, pt)) {
         const b = this.getZoneMeta(this.currentZone).bounds;
         const tx = Math.max(-b.x, Math.min(b.x, pt.x));
         const tz = Math.max(b.zMin, Math.min(b.zMax, pt.z));
         this.walkTarget = { x: tx, z: tz, pendingInteract: null };
-        this.walkRing.position.set(tx, 0.06, tz);
+        this.walkRing.position.set(tx, 0.05, tz);
         this.walkRing.material.opacity = 0.85;
         const me = this.avatars.get(this.myId);
         if (me) me.pose = 'stand';
@@ -1591,9 +1665,6 @@
       });
     }
 
-    // -----------------------------------------------------------------------
-    // 메인 프레임 업데이트 & 렌더링 루프
-    // -----------------------------------------------------------------------
     start() {
       const loop = () => {
         const dt = Math.min(0.05, this.clock.getDelta());
@@ -1672,7 +1743,6 @@
           }
         }
 
-        // 포털 문 앞에 직접 걸어가서 닿으면 자동 공간 이동!
         if (manualMoving) {
           for (const p of this.portals) {
             if (Math.hypot(me.x - p.x, me.z - p.z) < 1.15) {
@@ -1682,7 +1752,6 @@
           }
         }
 
-        // 가장 가까운 상호작용 오브젝트 탐색
         let best = null;
         let bestD = Infinity;
         for (const it of this.interactables) {
@@ -1698,7 +1767,6 @@
         }
       }
 
-      // 모든 아바타 애니메이션 & 보간 업데이트
       for (const av of this.avatars.values()) {
         if (!av.isMe) {
           const dx = av.tx - av.x;
@@ -1720,13 +1788,13 @@
         if (av.sipTimer > 0) av.sipTimer = Math.max(0, av.sipTimer - dt);
 
         if (av.pose === 'sit') {
-          av.bodyPivot.position.y = -0.22;
-          av.leftLeg.rotation.x = -Math.PI * 0.46;
-          av.rightLeg.rotation.x = -Math.PI * 0.46;
-          av.leftArm.rotation.x = -0.35;
-          av.rightArm.rotation.x = av.sipTimer > 0 ? -1.35 : -0.35;
+          av.bodyPivot.position.y = -0.18;
+          av.leftLeg.rotation.x = -Math.PI * 0.45;
+          av.rightLeg.rotation.x = -Math.PI * 0.45;
+          av.leftArm.rotation.x = -0.32;
+          av.rightArm.rotation.x = av.sipTimer > 0 ? -1.35 : -0.32;
         } else if (av.pose === 'kneel') {
-          av.bodyPivot.position.y = -0.34;
+          av.bodyPivot.position.y = -0.32;
           av.leftLeg.rotation.x = 1.35;
           av.rightLeg.rotation.x = 1.35;
           av.leftArm.rotation.x = -0.95;
@@ -1739,14 +1807,14 @@
             : Math.hypot(av.tx - av.x, av.tz - av.z) > 0.04;
 
           if (moving) {
-            const sw = Math.sin(av.walkPhase) * 0.65;
-            av.bodyPivot.position.y = Math.abs(Math.sin(av.walkPhase * 2)) * 0.08;
+            const sw = Math.sin(av.walkPhase) * 0.60;
+            av.bodyPivot.position.y = Math.abs(Math.sin(av.walkPhase * 2)) * 0.06;
             av.leftLeg.rotation.x = sw;
             av.rightLeg.rotation.x = -sw;
-            av.leftArm.rotation.x = -sw * 0.75;
-            av.rightArm.rotation.x = av.sipTimer > 0 ? -1.35 : sw * 0.75;
+            av.leftArm.rotation.x = -sw * 0.72;
+            av.rightArm.rotation.x = av.sipTimer > 0 ? -1.35 : sw * 0.72;
           } else {
-            av.bodyPivot.position.y = Math.sin(elapsed * 2 + (av.isMe ? 0 : 1)) * 0.025;
+            av.bodyPivot.position.y = Math.sin(elapsed * 2 + (av.isMe ? 0 : 1)) * 0.02;
             av.leftLeg.rotation.x *= 0.82;
             av.rightLeg.rotation.x *= 0.82;
             av.leftArm.rotation.x *= 0.82;
@@ -1766,7 +1834,6 @@
         }
       }
 
-      // 카메라 추적(3인칭) 또는 전체 파노라마 뷰 업데이트
       if (this.cameraMode === 'panorama') {
         const [lx, ly, lz] = meta.panorama.look;
         const cx = lx + Math.sin(this.panoYaw) * Math.cos(this.panoPitch) * this.panoDist;
@@ -1775,19 +1842,19 @@
         this.camera.position.lerp(new THREE.Vector3(cx, cy, cz), 0.12);
         this.camera.lookAt(lx, ly, lz);
       } else if (me) {
-        const targetY = me.y + 1.85;
+        const targetY = me.y + 1.80;
         const cx = me.x + Math.sin(this.camYaw) * Math.cos(this.camPitch) * this.camDist;
         const cy = Math.max(1.2, targetY + Math.sin(this.camPitch) * this.camDist);
         const cz = me.z + Math.cos(this.camYaw) * Math.cos(this.camPitch) * this.camDist;
         this.camera.position.lerp(new THREE.Vector3(cx, cy, cz), 0.16);
-        this.camera.lookAt(me.x, targetY + 0.35, me.z);
+        this.camera.lookAt(me.x, targetY + 0.32, me.z);
       }
     }
 
     _updateHtmlOverlays() {
       const v = new THREE.Vector3();
       for (const av of this.avatars.values()) {
-        v.set(av.x, av.y + 2.75, av.z);
+        v.set(av.x, av.y + 2.62, av.z);
         v.project(this.camera);
         if (v.z > 1) {
           av.labelEl.style.display = 'none';
