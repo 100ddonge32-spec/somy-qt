@@ -9,11 +9,11 @@
   <meta name="apple-mobile-web-app-title" content="소미 3D 캠퍼스" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta property="og:title" content="소미 3D 온라인 캠퍼스 — 그레이스 월드" />
-  <meta property="og:description" content="예배당 · 사랑방(소그룹) · 성경통독방 · 큐티방 · 루프탑카페를 걸으며 만나는 3D 온라인 교회" />
+  <meta property="og:description" content="예배당 · 사랑방(소그룹) · 성경통독방 · 큐티방 · 사계절 루프탑카페를 걸으며 만나는 3D 온라인 교회" />
   <meta property="og:image" content="/og-image.png" />
   <link rel="icon" href="/somy.png" />
   <link rel="apple-touch-icon" href="/somy.png" />
-  <title>소미 3D 온라인 캠퍼스 — 예배당 · 사랑방 · 성경통독방 · 큐티방</title>
+  <title>소미 3D 온라인 캠퍼스 — 예배당 · 사랑방 · 성경통독방 · 큐티방 · 루프탑카페</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -35,6 +35,108 @@
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* =====================================================================
+       실물 성경전서(HOLY BIBLE) 가죽 표지 · 금박 · 양면 책장 펼침 스타일
+       ===================================================================== */
+    .holy-bible-cover {
+      position: relative;
+      background: linear-gradient(145deg, #3a1d15 0%, #24100b 55%, #341810 100%);
+      padding: 8px;
+      border-radius: 18px;
+      border: 1.5px solid rgba(212, 175, 55, 0.58);
+      box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.65),
+        inset 0 0 0 2px rgba(255, 223, 128, 0.16);
+      perspective: 1400px;
+    }
+    @media (min-width: 768px) {
+      .holy-bible-cover {
+        padding: 12px 15px 14px;
+      }
+    }
+    /* 진홍색 성경 가늠끈 리본 */
+    .holy-bible-ribbon {
+      position: absolute;
+      top: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 14px;
+      height: 28px;
+      background: linear-gradient(180deg, #991b1b 0%, #dc2626 70%, #b91c1c 100%);
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.45);
+      z-index: 12;
+      pointer-events: none;
+    }
+    .holy-bible-pages {
+      position: relative;
+      background: #faf5ea;
+      border-radius: 11px;
+      box-shadow:
+        0 2px 0 #e6dcc8,
+        0 5px 0 #d8ccb4,
+        0 7px 14px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+      transform-origin: center center;
+    }
+    /* 중앙 책 제본선 입체 그림자 (PC/태블릿 양면 펼침 시 표시) */
+    .holy-bible-gutter {
+      display: none;
+    }
+    @media (min-width: 768px) {
+      .holy-bible-gutter {
+        display: block;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        width: 34px;
+        transform: translateX(-50%);
+        background: linear-gradient(
+          90deg,
+          rgba(92, 68, 42, 0.0) 0%,
+          rgba(82, 58, 34, 0.14) 38%,
+          rgba(48, 32, 18, 0.30) 50%,
+          rgba(82, 58, 34, 0.14) 62%,
+          rgba(92, 68, 42, 0.0) 100%
+        );
+        pointer-events: none;
+        z-index: 5;
+      }
+    }
+    .bible-page-sheet {
+      font-family: "AppleMyungjo", "Nanum Myeongjo", "Batang", "Noto Serif KR", Georgia, serif;
+      color: #231b14;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    .bible-verse-item {
+      padding: 4px 6px;
+      border-radius: 8px;
+      transition: background-color 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+    }
+    .bible-verse-item:hover {
+      background: rgba(217, 119, 6, 0.09);
+    }
+    .verse-reading-active {
+      background: linear-gradient(90deg, rgba(251, 191, 36, 0.38), rgba(253, 230, 138, 0.52)) !important;
+      box-shadow: inset 3px 0 0 #b45309;
+      font-weight: 700;
+    }
+    @keyframes flipNextAnim {
+      0% { transform: rotateY(0deg); opacity: 1; }
+      45% { transform: rotateY(-12deg) scale(0.985); opacity: 0.82; }
+      100% { transform: rotateY(0deg); opacity: 1; }
+    }
+    @keyframes flipPrevAnim {
+      0% { transform: rotateY(0deg); opacity: 1; }
+      45% { transform: rotateY(12deg) scale(0.985); opacity: 0.82; }
+      100% { transform: rotateY(0deg); opacity: 1; }
+    }
+    .page-flip-next { animation: flipNextAnim 0.36s cubic-bezier(0.22, 0.61, 0.36, 1); }
+    .page-flip-prev { animation: flipPrevAnim 0.36s cubic-bezier(0.22, 0.61, 0.36, 1); }
   </style>
 </head>
 <body>
@@ -74,11 +176,19 @@
         </button>
 
         <button id="btn-bible-reader" class="hidden shrink-0 px-3 py-1.5 rounded-full bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow">
-          📖 성경 66권 펴기
+          📖 성경책 펴기 · 음성통독
+        </button>
+
+        <button id="btn-yes-tongdok-quick" class="hidden shrink-0 px-3 py-1.5 rounded-full bg-amber-300 hover:bg-amber-200 text-slate-950 text-xs font-extrabold cursor-pointer shadow">
+          🙌 예스통독 현황판
         </button>
 
         <button id="btn-qt-academy" class="hidden shrink-0 px-3 py-1.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow">
-          📚 큐티 강의안 & 나눔
+          🌅 오늘의 소미 큐티 & 강의안
+        </button>
+
+        <button id="btn-rooftop-season" class="hidden shrink-0 px-3 py-1.5 rounded-full bg-teal-400 hover:bg-teal-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow">
+          🏞️ 사계절·날씨 배경
         </button>
 
         <button id="btn-candle-board" class="hidden shrink-0 px-3 py-1.5 rounded-full bg-amber-500/90 hover:bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer shadow">
@@ -118,8 +228,22 @@
       </div>
     </div>
 
+    <!-- ☕ 루프탑 카페 전용: 사계절·날씨 산과 바다 실사 파노라마 전환 바 -->
+    <div id="rooftop-season-bar" class="hidden absolute top-14 sm:top-16 left-1/2 -translate-x-1/2 z-20 max-w-[96vw]">
+      <div class="inline-flex items-center gap-1 p-1.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-teal-400/40 shadow-2xl overflow-x-auto no-scrollbar max-w-full">
+        <button data-season="auto" class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-teal-400 text-slate-950 cursor-pointer">🗓️ 계절자동</button>
+        <button data-season="spring" class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold text-pink-200 hover:bg-white/10 cursor-pointer">🌸 봄 벚꽃·바다</button>
+        <button data-season="summer" class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold text-sky-200 hover:bg-white/10 cursor-pointer">🌊 여름 오션·녹음</button>
+        <button data-season="autumn" class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold text-amber-200 hover:bg-white/10 cursor-pointer">🍁 가을 단풍산맥</button>
+        <button data-season="winter" class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold text-slate-100 hover:bg-white/10 cursor-pointer">❄️ 겨울 설산·눈쌓임</button>
+        <button data-season="rain" class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold text-cyan-200 hover:bg-white/10 cursor-pointer">🌧️ 우천 운무·비</button>
+        <button data-season="night" class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold text-indigo-200 hover:bg-white/10 cursor-pointer">🌌 별빛·달빛바다</button>
+        <button id="btn-rain-sound" class="hidden shrink-0 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-cyan-500/30 text-cyan-200 border border-cyan-400/40 cursor-pointer">🔊 빗소리 ON</button>
+      </div>
+    </div>
+
     <!-- 상단 안내 토스트 -->
-    <div id="world-toast" class="hidden absolute top-16 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-slate-900/90 border border-amber-400/60 text-amber-200 text-xs font-extrabold shadow-xl pointer-events-none z-30 max-w-[92vw] truncate"></div>
+    <div id="world-toast" class="hidden absolute top-24 sm:top-28 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-slate-900/90 border border-amber-400/60 text-amber-200 text-xs font-extrabold shadow-xl pointer-events-none z-30 max-w-[92vw] truncate"></div>
 
     <!-- 기도음악 재생 중 미니 바 -->
     <div id="bgm-mini-bar" class="hidden absolute top-16 right-3 sm:right-4 bg-indigo-950/90 backdrop-blur-md border border-indigo-400/40 rounded-2xl p-2 flex items-center gap-2 z-20 max-w-[92vw]">
@@ -142,7 +266,7 @@
       </div>
     </div>
 
-    <!-- 근접 상호작용 원터치 팝업 버튼 (문, 의자, 제단, 책상, 카페 등 다가갔을 때 자동 표시) -->
+    <!-- 근접 상호작용 원터치 팝업 버튼 -->
     <button
       id="proximity-btn"
       class="hidden absolute bottom-28 sm:bottom-24 left-1/2 -translate-x-1/2 px-5 py-2.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-extrabold shadow-2xl border-2 border-white cursor-pointer z-20 animate-bounce"
@@ -350,59 +474,258 @@
     </div>
 
     <!-- =================================================================== -->
-    <!-- [모달 3] 📖 성경통독방 — 개역개정 성경 66권 열람 & 통독 공유 -->
+    <!-- [모달 3] 📖 성경통독방 — 실물 성경책 펼침 뷰어 · 음성통독(배속) · 연대기 플랜 · 예스통독 게시판 -->
     <!-- =================================================================== -->
-    <div id="bible-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
-      <div class="bg-slate-800 text-white rounded-2xl max-w-xl w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3 max-h-[92dvh] overflow-y-auto">
-        <div class="flex items-center justify-between">
-          <span class="text-sm font-extrabold text-emerald-300">📖 성경통독방 — 개역개정 성경 66권 열람</span>
-          <button data-close="bible-modal" class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
+    <div id="bible-modal" class="hidden absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-40">
+      <div class="bg-slate-900 text-white rounded-2xl max-w-4xl w-full p-3 sm:p-5 border border-amber-500/35 shadow-2xl space-y-3 max-h-[95dvh] overflow-y-auto">
+        <!-- 상단 타이틀 & 탭 -->
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="text-sm sm:text-base font-extrabold text-amber-300">📖 성경통독방 — 성경전서 & 음성통독</span>
+            <span id="bible-active-plan-chip" class="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[11px] font-bold text-emerald-300">⏳ 연대기순 통독</span>
+          </div>
+          <button data-close="bible-modal" class="px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-bold cursor-pointer">닫기 ✕</button>
         </div>
 
-        <div class="flex flex-wrap gap-2">
-          <select id="bible-book-select" class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white outline-none"></select>
-          <input id="bible-chap-input" type="text" value="23" placeholder="장 (예: 23 또는 23:1-6)" class="w-28 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white outline-none" />
-          <button id="btn-fetch-bible" class="px-4 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-extrabold cursor-pointer">
-            성경 펼치기
-          </button>
+        <!-- 3개 서브탭: 1) 성경책 펼치기 & 음성통독 / 2) 통독 분량·방식 설정 / 3) 예스통독 게시판 -->
+        <div class="flex flex-wrap gap-1.5">
+          <button data-bmtab="book" class="bible-mtab-btn px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-400 text-slate-950 cursor-pointer">📖 성경책 펼치기 · 음성통독</button>
+          <button data-bmtab="plan" class="bible-mtab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-200 cursor-pointer">📅 통독 분량 · 읽기방식(연대기순 등)</button>
+          <button data-bmtab="board" class="bible-mtab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-200 cursor-pointer">🙌 '예스통독' 인증 게시판</button>
         </div>
 
-        <div class="p-4 rounded-2xl bg-[#FDFBF7] text-slate-800 border border-amber-200 max-h-64 overflow-y-auto space-y-2">
-          <div id="bible-passage-title" class="text-sm font-extrabold text-amber-900">📖 시편 23장 (개역개정)</div>
-          <div id="bible-passage-box" class="text-xs sm:text-sm leading-relaxed whitespace-pre-line font-medium">1. 여호와는 나의 목자시니 내게 부족함이 없으리로다
-2. 그가 나를 푸른 풀밭에 누이시며 쉴 만한 물 가로 인도하시는도다
-3. 내 영혼을 소생시키시고 자기 이름을 위하여 의의 길로 인도하시는도다</div>
+        <!-- [통독 탭 1] 실물 성경책 양면/단면 펼침 리더 & 음성 통독 플레이어 -->
+        <div id="bmtab-book" class="bible-mtab-pane space-y-2.5">
+          <!-- 권/장 선택 & 글자크기 바 -->
+          <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-800/90 p-2 rounded-xl border border-slate-700">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <select id="bible-book-select" class="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-600 text-xs font-bold text-amber-200 outline-none"></select>
+              <select id="bible-chap-select" class="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-600 text-xs font-bold text-white outline-none"></select>
+              <button id="btn-fetch-bible" class="px-3 py-1.5 rounded-lg bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-extrabold cursor-pointer">펼치기</button>
+              <button id="btn-prev-chap" class="px-2 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-[11px] font-bold cursor-pointer" title="이전 장">◀장</button>
+              <button id="btn-next-chap" class="px-2 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-[11px] font-bold cursor-pointer" title="다음 장">장▶</button>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+              <span id="bible-portion-progress" class="text-[11px] text-amber-300 font-bold mr-1"></span>
+              <button id="btn-bible-font-down" class="px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-extrabold cursor-pointer">가-</button>
+              <button id="btn-bible-font-up" class="px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-extrabold cursor-pointer">가+</button>
+            </div>
+          </div>
+
+          <!-- 🔊 실시간 음성 성경통독 오디오 바 (배속 조절 + 절 추적) -->
+          <div class="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-amber-950/80 via-slate-800 to-slate-800 px-3 py-2 rounded-xl border border-amber-400/35">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button id="btn-tts-toggle" class="px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow">
+                🔊 음성 통독 시작
+              </button>
+              <button id="btn-tts-stop" class="px-2.5 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold cursor-pointer">⏹️ 정지</button>
+              <button id="btn-tts-prev" class="px-2 py-1.5 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-[11px] font-bold cursor-pointer">⏮️절</button>
+              <button id="btn-tts-next" class="px-2 py-1.5 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-[11px] font-bold cursor-pointer">절⏭️</button>
+              <span id="tts-status-label" class="text-[11px] text-amber-200 font-bold ml-1">절을 클릭하거나 [음성 통독 시작]을 누르세요</span>
+            </div>
+
+            <!-- 속도(배속) 조절 칩 -->
+            <div class="flex items-center gap-1">
+              <span class="text-[11px] text-slate-300 font-bold mr-0.5">배속:</span>
+              <button data-rate="0.85" class="tts-rate-btn px-2 py-0.5 rounded-md bg-slate-700 text-slate-200 text-[11px] font-bold cursor-pointer">0.8x</button>
+              <button data-rate="1.0" class="tts-rate-btn px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 text-[11px] font-extrabold cursor-pointer">1.0x</button>
+              <button data-rate="1.25" class="tts-rate-btn px-2 py-0.5 rounded-md bg-slate-700 text-slate-200 text-[11px] font-bold cursor-pointer">1.25x</button>
+              <button data-rate="1.5" class="tts-rate-btn px-2 py-0.5 rounded-md bg-slate-700 text-slate-200 text-[11px] font-bold cursor-pointer">1.5x</button>
+              <button data-rate="1.8" class="tts-rate-btn px-2 py-0.5 rounded-md bg-slate-700 text-slate-200 text-[11px] font-bold cursor-pointer">1.8x</button>
+              <button data-rate="2.0" class="tts-rate-btn px-2 py-0.5 rounded-md bg-slate-700 text-slate-200 text-[11px] font-bold cursor-pointer">2.0x</button>
+            </div>
+          </div>
+
+          <!-- 📕 실물 성경전서(HOLY BIBLE) 가죽 표지 + 양면/모바일 반응형 책장 -->
+          <div class="holy-bible-cover">
+            <div class="holy-bible-ribbon"></div>
+            <div id="holy-bible-spread" class="holy-bible-pages">
+              <div class="holy-bible-gutter"></div>
+
+              <!-- 성경 상단 러닝 헤더 -->
+              <div class="flex items-center justify-between px-4 sm:px-6 py-2 border-b border-[#e2d6be] bg-[#f4ede0] text-[#5c3d24]">
+                <span id="bible-running-header-left" class="text-xs font-extrabold tracking-wider">성경전서 개역개정판</span>
+                <span id="bible-passage-title" class="text-xs sm:text-sm font-extrabold text-[#7c2d12]">시편 제 23 편</span>
+                <span id="bible-page-indicator" class="text-[11px] font-bold text-[#785c42]">1 / 1 쪽</span>
+              </div>
+
+              <!-- PC 양면 2단 / 모바일 단면 1단 본문 영역 -->
+              <div id="bible-spread-grid" class="grid grid-cols-1 md:grid-cols-2 min-h-[290px] sm:min-h-[340px] max-h-[46dvh] md:max-h-[48dvh]">
+                <!-- 왼쪽 면 (모바일에서는 전체 면) -->
+                <div id="bible-left-page" class="bible-page-sheet p-4 sm:p-6 overflow-y-auto space-y-2 border-b md:border-b-0 md:border-r border-[#e8dec9]"></div>
+                <!-- 오른쪽 면 (PC/태블릿 전용 양면 펼침 우측 페이지) -->
+                <div id="bible-right-page" class="hidden md:block bible-page-sheet p-4 sm:p-6 overflow-y-auto space-y-2"></div>
+              </div>
+
+              <!-- 성경 하단 책장 넘기기 바 -->
+              <div class="flex items-center justify-between px-3 sm:px-6 py-2 border-t border-[#e2d6be] bg-[#f4ede0] text-[#4a321f]">
+                <button id="btn-bible-page-prev" class="px-3.5 py-1.5 rounded-lg bg-[#e5d8c0] hover:bg-[#dac8a8] text-xs font-extrabold cursor-pointer shadow-sm">
+                  ◀ 이전 책장 넘기기
+                </button>
+                <span class="text-[11px] text-[#785c42] font-semibold hidden sm:inline">💡 절을 터치하면 그 절부터 음성 낭독이 시작됩니다</span>
+                <button id="btn-bible-page-next" class="px-3.5 py-1.5 rounded-lg bg-[#e5d8c0] hover:bg-[#dac8a8] text-xs font-extrabold cursor-pointer shadow-sm">
+                  다음 책장 넘기기 ▶
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 하단 액션 버튼 -->
+          <div class="flex flex-wrap gap-2 pt-0.5">
+            <button id="btn-send-bible-board" class="flex-1 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-extrabold cursor-pointer">
+              🖥️ 이 본문을 방 칠판에 띄우기
+            </button>
+            <button id="btn-complete-bible" class="flex-1 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-extrabold cursor-pointer shadow-lg">
+              🙌 통독 완료! '예스통독' 기록하기
+            </button>
+          </div>
         </div>
 
-        <div class="flex flex-wrap gap-2">
-          <button id="btn-send-bible-board" class="flex-1 py-2 rounded-xl bg-sky-500 text-slate-950 text-xs font-extrabold cursor-pointer">
-            🖥️ 이 본문을 방 칠판에 띄우기
-          </button>
-          <button id="btn-complete-bible" class="flex-1 py-2 rounded-xl bg-emerald-500 text-slate-950 text-xs font-extrabold cursor-pointer">
-            ✅ 통독 완료 인사 나누기
-          </button>
+        <!-- [통독 탭 2] 📅 통독 방식(연대기순 등) & 하루 분량 설정 -->
+        <div id="bmtab-plan" class="hidden bible-mtab-pane space-y-3">
+          <div class="p-3.5 rounded-2xl bg-slate-800 border border-slate-700 space-y-2.5">
+            <div class="text-xs font-extrabold text-amber-300">1. 어떻게 성경을 통독할까요? (읽기 방식 선택)</div>
+            <div id="bible-plan-cards" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button type="button" data-plan="chronological" class="plan-type-btn text-left p-3 rounded-xl border border-amber-400 bg-amber-400/15 cursor-pointer">
+                <div class="text-xs font-extrabold text-amber-300">⏳ 연대기순 성경통독 (역사 시간순)</div>
+                <div class="text-[11px] text-slate-300 mt-0.5">창세기 1~11장 ➔ 욥기 ➔ 족장·출애굽 ➔ 왕정·시편·선지서 시대순 ➔ 복음서·사도행전·서신서 순</div>
+              </button>
+              <button type="button" data-plan="canonical" class="plan-type-btn text-left p-3 rounded-xl border border-slate-700 bg-slate-900 cursor-pointer">
+                <div class="text-xs font-extrabold text-emerald-300">📖 성경 순서 정독 (창세기 ➔ 요한계시록)</div>
+                <div class="text-[11px] text-slate-300 mt-0.5">구약 창세기 1장부터 신약 요한계시록 22장까지 총 1,189장을 차례대로 완독</div>
+              </button>
+              <button type="button" data-plan="balanced" class="plan-type-btn text-left p-3 rounded-xl border border-slate-700 bg-slate-900 cursor-pointer">
+                <div class="text-xs font-extrabold text-sky-300">⚖️ 구약 + 신약 + 시편 균형 통독</div>
+                <div class="text-[11px] text-slate-300 mt-0.5">구약과 신약, 시편·지혜서를 날마다 번갈아 읽으며 지루함 없이 완주하는 맥체인 스타일</div>
+              </button>
+              <button type="button" data-plan="nt_psalms" class="plan-type-btn text-left p-3 rounded-xl border border-slate-700 bg-slate-900 cursor-pointer">
+                <div class="text-xs font-extrabold text-pink-300">🌱 신약 · 시편 · 잠언 먼저 통독</div>
+                <div class="text-[11px] text-slate-300 mt-0.5">마태복음~요한계시록(260장)과 시편·잠언을 먼저 깊이 읽는 은혜 집중 코스</div>
+              </button>
+            </div>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-slate-800 border border-slate-700 space-y-2.5">
+            <div class="text-xs font-extrabold text-emerald-300">2. 하루에 몇 장씩 읽을까요? (일일 통독 분량)</div>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" data-chaps="1" class="plan-chaps-btn px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold cursor-pointer">하루 1장 (묵상형)</button>
+              <button type="button" data-chaps="2" class="plan-chaps-btn px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold cursor-pointer">하루 2장</button>
+              <button type="button" data-chaps="3" class="plan-chaps-btn px-3.5 py-2 rounded-xl bg-amber-400 text-slate-950 border border-amber-400 text-xs font-extrabold cursor-pointer">하루 3장 (표준 추천)</button>
+              <button type="button" data-chaps="4" class="plan-chaps-btn px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold cursor-pointer">하루 4장 (1년 1독)</button>
+              <button type="button" data-chaps="5" class="plan-chaps-btn px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold cursor-pointer">하루 5장 (집중)</button>
+              <button type="button" data-chaps="10" class="plan-chaps-btn px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold cursor-pointer">하루 10장 (단기완독)</button>
+            </div>
+          </div>
+
+          <!-- 오늘 배정된 통독 분량 프리뷰 & 진도 조절 -->
+          <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 to-slate-800 border border-emerald-400/40 space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div id="plan-preview-badge" class="text-xs font-extrabold text-emerald-300">⏳ 연대기순 성경통독 · Day 1</div>
+                <div id="plan-preview-range" class="text-sm sm:text-base font-extrabold text-white mt-0.5">창세기 1장 ~ 3장 (총 3장)</div>
+              </div>
+              <div class="inline-flex items-center gap-1.5">
+                <button id="btn-plan-day-prev" class="px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-bold cursor-pointer">◀ 이전 Day</button>
+                <span id="plan-day-indicator" class="text-xs font-extrabold text-amber-300 px-2">Day 1</span>
+                <button id="btn-plan-day-next" class="px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-bold cursor-pointer">다음 Day ▶</button>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-1">
+              <button id="btn-start-plan-reading" class="flex-1 py-2.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs sm:text-sm font-extrabold cursor-pointer">
+                📖 오늘 통독 분량 성경책으로 펼치기
+              </button>
+              <button id="btn-start-plan-audio" class="flex-1 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-extrabold cursor-pointer">
+                🔊 오늘 분량 연속 음성통독 바로 시작
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- [통독 탭 3] 🙌 '예스통독' 인증 게시판 & 참여 성도 한눈에 보기 -->
+        <div id="bmtab-board" class="hidden bible-mtab-pane space-y-3">
+          <!-- 참여 성도 한눈에 보기 요약 보드 -->
+          <div class="p-3.5 rounded-2xl bg-slate-800 border border-amber-400/40 space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="text-xs sm:text-sm font-extrabold text-amber-300">👥 통독 참여 성도 한눈에 보기</span>
+              <span id="bible-community-total" class="text-xs font-extrabold text-emerald-300">🔥 공동체 누적 8장 · 참여 성도 3명</span>
+            </div>
+            <div id="bible-participants-grid" class="flex flex-wrap gap-2"></div>
+          </div>
+
+          <!-- '예스통독' 완료 작성 폼 -->
+          <div class="p-3.5 rounded-2xl bg-slate-800 border border-emerald-400/40 space-y-2.5">
+            <div class="text-xs font-extrabold text-emerald-300">✍️ 성경통독 완료 인증 — '예스통독' 기록 남기기</div>
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+              <input id="yes-plan-input" type="text" value="연대기순 통독" placeholder="통독 방식" class="sm:col-span-4 px-3 py-2 rounded-xl bg-slate-900 border border-slate-600 text-xs text-amber-200 font-bold outline-none" />
+              <input id="yes-range-input" type="text" value="시편 23장" placeholder="읽은 성경 분량 (예: 창세기 1장 ~ 3장)" class="sm:col-span-6 px-3 py-2 rounded-xl bg-slate-900 border border-slate-600 text-xs text-white font-bold outline-none" />
+              <input id="yes-count-input" type="number" min="1" max="50" value="1" title="읽은 장수" class="sm:col-span-2 px-3 py-2 rounded-xl bg-slate-900 border border-slate-600 text-xs text-emerald-300 font-extrabold outline-none text-center" />
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" data-yesmsg="예스통독! 오늘 말씀 통독 완료했습니다 아멘 🙏" class="yes-preset-chip px-2.5 py-1 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-200 text-[11px] font-bold cursor-pointer">🙌 예스통독! 완료</button>
+              <button type="button" data-yesmsg="예스통독! 음성으로 함께 들으니 말씀이 꿀송이처럼 답니다 ✨" class="yes-preset-chip px-2.5 py-1 rounded-full bg-emerald-400/20 border border-emerald-400/40 text-emerald-200 text-[11px] font-bold cursor-pointer">🔊 음성통독 예스통독!</button>
+              <button type="button" data-yesmsg="예스통독! 연대기순으로 읽으니 성경 역사가 한눈에 들어옵니다 📖" class="yes-preset-chip px-2.5 py-1 rounded-full bg-sky-400/20 border border-sky-400/40 text-sky-200 text-[11px] font-bold cursor-pointer">⏳ 연대기순 예스통독!</button>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input id="yes-comment-input" type="text" value="예스통독! 오늘 정한 말씀 분량을 기쁨으로 완독했습니다 🙏" placeholder="'예스통독'과 함께 은혜 소감을 남겨주세요!" class="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-600 text-xs text-white outline-none" />
+              <button id="btn-submit-yestongdok" class="shrink-0 px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow">
+                🙌 예스통독 기록하기
+              </button>
+            </div>
+          </div>
+
+          <!-- 실시간 예스통독 게시판 목록 -->
+          <div id="bible-logs-list" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
         </div>
       </div>
     </div>
 
     <!-- =================================================================== -->
-    <!-- [모달 4] ✏️ 큐티방 — 관리자 큐티 기초반 강의안 & 오늘의 큐티 & 실시간 나눔 -->
+    <!-- [모달 4] ✏️ 큐티방 — 오늘의 소미 큐티 본문 & 큐티 기초반 강의안 & 실시간 나눔 -->
     <!-- =================================================================== -->
     <div id="qt-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
       <div class="bg-slate-800 text-white rounded-2xl max-w-2xl w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3 max-h-[92dvh] overflow-y-auto">
         <div class="flex items-center justify-between">
-          <span class="text-sm font-extrabold text-amber-300">✏️ 큐티 아카데미 & 실시간 큐티 나눔방</span>
+          <span class="text-sm font-extrabold text-amber-300">✏️ 큐티방 — 오늘의 소미 큐티 & 기초반 아카데미</span>
           <button data-close="qt-modal" class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
         </div>
 
+        <!-- 첫 번째 기본 탭을 '오늘의 소미 큐티'로 배치하여 열자마자 본문이 바로 보이도록 구성 -->
         <div class="flex flex-wrap gap-1.5">
-          <button data-qtab="lectures" class="qt-tab-btn px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-400 text-slate-950 cursor-pointer">📘 큐티 기초반 강의안</button>
-          <button data-qtab="today" class="qt-tab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 cursor-pointer">🌅 오늘의 소미 큐티</button>
+          <button data-qtab="today" class="qt-tab-btn px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-400 text-slate-950 cursor-pointer">🌅 오늘의 소미 큐티 본문</button>
+          <button data-qtab="lectures" class="qt-tab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 cursor-pointer">📘 큐티 기초반 강의안</button>
           <button data-qtab="share" class="qt-tab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 cursor-pointer">🙏 큐티 서로 나누기</button>
         </div>
 
-        <!-- 서브탭 1: 관리자 큐티 기초반 강의안 -->
-        <div id="qtab-lectures" class="qt-tab-pane space-y-3">
+        <!-- 서브탭 1: 오늘의 소미 큐티 본문 (날짜 선택 + 성경 원문 + 해설 + 질문 1·2·3 + 기도문) -->
+        <div id="qtab-today" class="qt-tab-pane space-y-2.5">
+          <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-900 p-2.5 rounded-xl border border-slate-700">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-xs font-extrabold text-amber-300">📅 큐티 날짜:</span>
+              <input id="qt-date-picker" type="date" class="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+              <button id="btn-reload-qt" class="px-3 py-1 rounded-lg bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">조회</button>
+            </div>
+            <select id="qt-recent-select" class="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-600 text-xs text-slate-200 outline-none">
+              <option value="">최근 등록된 소미 큐티 바로가기</option>
+            </select>
+          </div>
+
+          <div id="today-qt-box" class="p-4 rounded-2xl bg-[#FDFBF7] text-slate-800 border border-amber-200 max-h-[52dvh] overflow-y-auto space-y-3">
+            <div class="text-xs font-bold text-amber-900">🌅 오늘의 소미 큐티 본문을 불러오는 중입니다...</div>
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <button id="btn-project-today-qt" class="flex-1 py-2 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold cursor-pointer">
+              🖥️ 이 큐티 본문을 방 3D 칠판에 띄우기
+            </button>
+            <button id="btn-write-share-from-qt" class="flex-1 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer">
+              ✍️ 이 말씀으로 큐티 나눔 작성하기
+            </button>
+          </div>
+        </div>
+
+        <!-- 서브탭 2: 관리자 큐티 기초반 강의안 -->
+        <div id="qtab-lectures" class="hidden qt-tab-pane space-y-3">
           <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
             <div id="qt-lecture-list" class="sm:col-span-4 space-y-1.5 max-h-60 overflow-y-auto"></div>
             <div class="sm:col-span-8 p-3.5 rounded-2xl bg-[#FDFBF7] text-slate-800 space-y-2 max-h-60 overflow-y-auto">
@@ -427,13 +750,6 @@
             </div>
             <textarea id="lec-content-input" rows="4" placeholder="성도들이 읽고 배울 큐티 강의안 내용을 작성하세요..." class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none resize-none"></textarea>
             <button id="btn-save-qt-lec" class="w-full py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">📘 강의안 저장 및 게시</button>
-          </div>
-        </div>
-
-        <!-- 서브탭 2: 오늘의 소미 큐티 -->
-        <div id="qtab-today" class="hidden qt-tab-pane">
-          <div id="today-qt-box" class="p-3.5 rounded-2xl bg-slate-900 border border-slate-700 max-h-64 overflow-y-auto text-xs text-slate-200">
-            불러오는 중...
           </div>
         </div>
 
@@ -544,8 +860,8 @@
 
   </div>
 
-  <script src="/chapel-pbr.js?v=3"></script>
-  <script src="/chapel-engine.js?v=3"></script>
-  <script src="/chapel-app.js?v=3"></script>
+  <script src="/chapel-pbr.js?v=4"></script>
+  <script src="/chapel-engine.js?v=4"></script>
+  <script src="/chapel-app.js?v=4"></script>
 </body>
 </html>

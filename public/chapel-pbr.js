@@ -1033,6 +1033,406 @@
       });
       return grp;
     }
+
+    // =========================================================================
+    // 10) ☕ 루프탑 사계절·날씨 실사 파노라마 배경 전용 PBR 텍스처 & 지형 생성기
+    //     (봄 벚꽃·산바다 / 여름 에메랄드 오션 / 가을 단풍 산맥 / 겨울 설경·적설 / 우천 운무 / 별빛 야경)
+    // =========================================================================
+    rooftopSkyPanoramaMaterial(theme = 'autumn') {
+      const ck = `roof_sky_pano_${theme}`;
+      if (this.cache[ck]) return this.cache[ck];
+
+      const palettes = {
+        spring: { zenith: '#2563eb', mid: '#60a5fa', horizon: '#fde68a', haze: '#fff1f2', sunColor: 'rgba(255,252,235,0.95)', sunY: 0.28, cloudAlpha: 0.52 },
+        summer: { zenith: '#0284c7', mid: '#38bdf8', horizon: '#bae6fd', haze: '#e0f2fe', sunColor: 'rgba(255,254,240,0.98)', sunY: 0.22, cloudAlpha: 0.65 },
+        autumn: { zenith: '#1d4ed8', mid: '#fb923c', horizon: '#fde047', haze: '#fed7aa', sunColor: 'rgba(255,237,175,0.96)', sunY: 0.39, cloudAlpha: 0.44 },
+        winter: { zenith: '#334155', mid: '#94a3b8', horizon: '#e2e8f0', haze: '#f8fafc', sunColor: 'rgba(255,255,255,0.75)', sunY: 0.34, cloudAlpha: 0.58 },
+        rain:   { zenith: '#1e293b', mid: '#475569', horizon: '#94a3b8', haze: '#cbd5e1', sunColor: 'rgba(226,232,240,0.20)', sunY: 0.30, cloudAlpha: 0.85 },
+        night:  { zenith: '#020617', mid: '#0f172a', horizon: '#1e3a5f', haze: '#1e293b', sunColor: 'rgba(254,249,195,0.95)', sunY: 0.26, cloudAlpha: 0.16 }
+      };
+      const pal = palettes[theme] || palettes.autumn;
+
+      const map = makeCanvasTex(1024, 512, (ctx, w, h) => {
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.62);
+        skyGrad.addColorStop(0.0, pal.zenith);
+        skyGrad.addColorStop(0.52, pal.mid);
+        skyGrad.addColorStop(0.86, pal.horizon);
+        skyGrad.addColorStop(1.0, pal.haze);
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, w, h);
+
+        // 하반부 수평선 안개 연결 톤
+        const lowGrad = ctx.createLinearGradient(0, h * 0.52, 0, h);
+        lowGrad.addColorStop(0.0, pal.haze);
+        lowGrad.addColorStop(0.3, theme === 'night' ? '#0b192c' : pal.mid);
+        lowGrad.addColorStop(1.0, theme === 'night' ? '#020617' : '#1e293b');
+        ctx.fillStyle = lowGrad;
+        ctx.fillRect(0, h * 0.52, w, h * 0.48);
+
+        // 밤하늘 은하수 & 별빛
+        if (theme === 'night') {
+          for (let s = 0; s < 520; s++) {
+            const sx = hash2(s, 11) * w;
+            const sy = hash2(s, 37) * (h * 0.48);
+            const sr = 0.5 + hash2(s, 73) * 1.4;
+            const sa = 0.35 + hash2(s, 91) * 0.65;
+            ctx.fillStyle = `rgba(255, 253, 240, ${sa.toFixed(2)})`;
+            ctx.beginPath();
+            ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        // 태양 / 노을 / 보름달 광원 헤일로 (북서쪽 바다 수평선 방향 u ≈ 0.48)
+        const sunX = w * 0.48;
+        const sunY = h * pal.sunY;
+        const haloR = theme === 'autumn' ? 190 : theme === 'night' ? 75 : 135;
+        const sunRg = ctx.createRadialGradient(sunX, sunY, 6, sunX, sunY, haloR);
+        sunRg.addColorStop(0.0, pal.sunColor);
+        sunRg.addColorStop(0.22, theme === 'autumn' ? 'rgba(251,146,60,0.62)' : theme === 'night' ? 'rgba(186,230,253,0.32)' : 'rgba(255,250,220,0.45)');
+        sunRg.addColorStop(1.0, 'rgba(255,255,255,0.0)');
+        ctx.fillStyle = sunRg;
+        ctx.fillRect(0, 0, w, h * 0.65);
+
+        if (theme === 'night') {
+          ctx.fillStyle = '#fef9c3';
+          ctx.beginPath();
+          ctx.arc(sunX, sunY, 13, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 절차적 FBM 실사 구름층 (비구름, 양떼구름, 노을구름)
+        const cloudImg = ctx.getImageData(0, 0, w, Math.floor(h * 0.54));
+        const cd = cloudImg.data;
+        const chMax = Math.floor(h * 0.54);
+        for (let y = 16; y < chMax; y++) {
+          const vNorm = y / chMax;
+          const bandFade = Math.sin(vNorm * Math.PI);
+          for (let x = 0; x < w; x++) {
+            const nx = (x / w) * 9.0;
+            const ny = vNorm * 4.5;
+            const n = fbm(nx, ny, 4);
+            const thresh = theme === 'rain' ? 0.34 : 0.48;
+            if (n > thresh) {
+              const density = Math.min(1, (n - thresh) * 2.4) * bandFade * pal.cloudAlpha;
+              const idx = (y * w + x) * 4;
+              const cr = theme === 'autumn' ? 255 : theme === 'rain' ? 203 : 255;
+              const cg = theme === 'autumn' ? 226 : theme === 'rain' ? 213 : 252;
+              const cb = theme === 'autumn' ? 196 : theme === 'rain' ? 225 : 248;
+              cd[idx] = Math.round(cd[idx] * (1 - density) + cr * density);
+              cd[idx + 1] = Math.round(cd[idx + 1] * (1 - density) + cg * density);
+              cd[idx + 2] = Math.round(cd[idx + 2] * (1 - density) + cb * density);
+            }
+          }
+        }
+        ctx.putImageData(cloudImg, 0, 0);
+      }, 1, 1);
+
+      const mat = new THREE.MeshBasicMaterial({ map, side: THREE.BackSide, fog: false });
+      this.cache[ck] = mat;
+      return mat;
+    }
+
+    // 계절·날씨별 실사 바다 수면 재질 (잔물결 노멀/범프 + 윤슬 반사)
+    oceanWaterMaterial(theme = 'autumn') {
+      const ck = `roof_ocean_${theme}`;
+      if (this.cache[ck]) return this.cache[ck];
+
+      const seaColors = {
+        spring: { deep: [14, 116, 144], shallow: [45, 212, 191], glint: [255, 250, 225] },
+        summer: { deep: [3, 105, 161], shallow: [14, 165, 233], glint: [255, 255, 255] },
+        autumn: { deep: [23, 58, 94], shallow: [59, 110, 140], glint: [253, 186, 116] },
+        winter: { deep: [30, 58, 95], shallow: [100, 136, 168], glint: [241, 245, 249] },
+        rain:   { deep: [30, 41, 59], shallow: [71, 85, 105], glint: [203, 213, 225] },
+        night:  { deep: [8, 20, 44], shallow: [23, 45, 82], glint: [254, 243, 199] }
+      };
+      const sc = seaColors[theme] || seaColors.autumn;
+
+      const map = makeCanvasTex(512, 512, (ctx, w, h) => {
+        const img = ctx.createImageData(w, h);
+        const d = img.data;
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const wave1 = Math.sin((y / h) * Math.PI * 26 + fbm(x * 0.03, y * 0.05, 3) * 5.0);
+            const wave2 = fbm(x * 0.06, y * 0.14, 4);
+            const mix = Math.max(0, Math.min(1, 0.45 + wave1 * 0.22 + (wave2 - 0.5) * 0.45));
+            let r = sc.deep[0] + (sc.shallow[0] - sc.deep[0]) * mix;
+            let g = sc.deep[1] + (sc.shallow[1] - sc.deep[1]) * mix;
+            let b = sc.deep[2] + (sc.shallow[2] - sc.deep[2]) * mix;
+
+            // 윤슬 반짝임 또는 빗방울 동심원 파문
+            if (theme === 'rain') {
+              const ring = Math.sin(Math.hypot((x % 64) - 32, (y % 64) - 32) * 0.55);
+              if (ring > 0.88) {
+                r += 28; g += 32; b += 38;
+              }
+            } else if (wave1 > 0.86 && wave2 > 0.56) {
+              r = r * 0.4 + sc.glint[0] * 0.6;
+              g = g * 0.4 + sc.glint[1] * 0.6;
+              b = b * 0.4 + sc.glint[2] * 0.6;
+            }
+            const idx = (y * w + x) * 4;
+            d[idx] = Math.min(255, Math.round(r));
+            d[idx + 1] = Math.min(255, Math.round(g));
+            d[idx + 2] = Math.min(255, Math.round(b));
+            d[idx + 3] = 255;
+          }
+        }
+        ctx.putImageData(img, 0, 0);
+      }, 10, 8);
+
+      const bump = makeCanvasTex(256, 256, (ctx, w, h) => {
+        const img = ctx.createImageData(w, h);
+        const d = img.data;
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const v = Math.round((0.5 + 0.3 * Math.sin(y * 0.35 + fbm(x * 0.05, y * 0.08, 3) * 4.5)) * 255);
+            const idx = (y * w + x) * 4;
+            d[idx] = d[idx + 1] = d[idx + 2] = v;
+            d[idx + 3] = 255;
+          }
+        }
+        ctx.putImageData(img, 0, 0);
+      }, 14, 12, false);
+
+      const mat = new THREE.MeshStandardMaterial({
+        map,
+        bumpMap: bump,
+        bumpScale: 0.18,
+        roughness: theme === 'rain' ? 0.18 : 0.09,
+        metalness: 0.25,
+        envMap: this.envMap,
+        envMapIntensity: theme === 'autumn' ? 1.45 : theme === 'night' ? 1.2 : 1.15
+      });
+      this.cache[ck] = mat;
+      return mat;
+    }
+
+    // 계절·날씨별 다층 3D 산맥 지형 PBR 재질 (단풍림 / 설산 / 벚꽃산 / 신록 / 운무산)
+    mountainRidgeMaterial(theme = 'autumn', distLayer = 0) {
+      const ck = `roof_mtn_${theme}_${distLayer}`;
+      if (this.cache[ck]) return this.cache[ck];
+
+      const map = makeCanvasTex(512, 512, (ctx, w, h) => {
+        const img = ctx.createImageData(w, h);
+        const d = img.data;
+        const hazeAmt = distLayer * 0.26; // 원경일수록 대기 원근법 안개 블렌딩
+
+        for (let y = 0; y < h; y++) {
+          // y=0 산 정상(봉우리), y=h 산기슭/해안선
+          const elev = 1.0 - y / h;
+          for (let x = 0; x < w; x++) {
+            const n1 = fbm(x * 0.035, y * 0.035, 4);
+            const n2 = fbm(x * 0.11 + 13, y * 0.11 + 7, 3);
+            const ridge = Math.abs(fbm(x * 0.05, y * 0.015, 3) - 0.5) * 2.0;
+
+            let r = 60, g = 90, b = 65;
+
+            if (theme === 'autumn') {
+              // 실사 한국 가을 단풍산: 정상 암릉 + 진홍 단풍 + 주황·황금 은행림 + 상록 소나무 군락 조화
+              if (n1 > 0.58) {
+                // 진홍 단풍 군락
+                r = 188 + n2 * 52; g = 38 + n2 * 28; b = 28 + n2 * 18;
+              } else if (n1 > 0.44) {
+                // 황금빛·주황 단풍 군락
+                r = 218 + n2 * 35; g = 128 + n2 * 65; b = 26 + n2 * 20;
+              } else if (n1 > 0.34) {
+                // 노란 은행·갈참나무 숲
+                r = 196 + n2 * 36; g = 152 + n2 * 40; b = 42 + n2 * 20;
+              } else {
+                // 짙은 소나무·전나무 상록 군락 (단풍을 더욱 실사처럼 돋보이게 하는 대비!)
+                r = 42 + n2 * 25; g = 74 + n2 * 30; b = 44 + n2 * 18;
+              }
+              if (elev > 0.82 && ridge > 0.45) {
+                // 화강암 암봉 디테일
+                r = 138 + n2 * 30; g = 128 + n2 * 28; b = 118 + n2 * 25;
+              }
+            } else if (theme === 'winter') {
+              // 실사 겨울 설산: 봉우리 만년설 + 능선 적설 + 눈 덮인 침엽수림 암벽 대비
+              const snowLine = elev + (n1 - 0.45) * 0.55;
+              if (snowLine > 0.36) {
+                const shade = 222 + n2 * 33 - ridge * 24;
+                r = shade; g = shade + 3; b = Math.min(255, shade + 10);
+              } else {
+                // 눈 사이로 드러난 겨울 바위와 상록수
+                r = 68 + n2 * 45; g = 78 + n2 * 48; b = 88 + n2 * 52;
+              }
+            } else if (theme === 'spring') {
+              // 봄 신록 산맥 + 연분홍 산벚꽃/진달래 군락
+              if (n1 > 0.57 && elev < 0.72) {
+                r = 244 + n2 * 11; g = 182 + n2 * 38; b = 204 + n2 * 34;
+              } else {
+                r = 68 + n2 * 46; g = 128 + n2 * 52; b = 64 + n2 * 32;
+              }
+              if (elev > 0.85) {
+                r = 134 + n2 * 28; g = 138 + n2 * 26; b = 132 + n2 * 24;
+              }
+            } else if (theme === 'summer') {
+              // 여름 짙푸른 녹음 산맥 + 기암절벽
+              r = 28 + n1 * 42; g = 88 + n1 * 64 + n2 * 22; b = 46 + n1 * 34;
+              if (elev > 0.84 && ridge > 0.42) {
+                r = 126 + n2 * 35; g = 130 + n2 * 32; b = 128 + n2 * 30;
+              }
+            } else if (theme === 'rain') {
+              // 비 오는 날 운무(물안개)가 허리에 걸린 수묵 실사 산맥
+              r = 44 + n1 * 32; g = 62 + n1 * 38; b = 74 + n1 * 42;
+              const mistBand = Math.exp(-Math.pow((elev - 0.46) * 5.2, 2)) * (0.45 + n2 * 0.45);
+              r = r * (1 - mistBand) + 212 * mistBand;
+              g = g * (1 - mistBand) + 220 * mistBand;
+              b = b * (1 - mistBand) + 230 * mistBand;
+            } else {
+              // 별빛 야경 산맥 실루엣 + 해안가 은은한 마을 불빛
+              r = 16 + n1 * 18; g = 28 + n1 * 24; b = 48 + n1 * 32;
+              if (elev < 0.10 && n2 > 0.72 && distLayer === 0) {
+                r = 253; g = 224; b = 130;
+              }
+            }
+
+            // 원경 대기 안개(Atmospheric Perspective) 적용
+            const hazeRgb = theme === 'autumn' ? [245, 202, 162]
+              : theme === 'winter' ? [226, 232, 240]
+              : theme === 'rain' ? [168, 180, 196]
+              : theme === 'night' ? [20, 34, 62]
+              : [186, 222, 248];
+
+            r = r * (1 - hazeAmt) + hazeRgb[0] * hazeAmt;
+            g = g * (1 - hazeAmt) + hazeRgb[1] * hazeAmt;
+            b = b * (1 - hazeAmt) + hazeRgb[2] * hazeAmt;
+
+            const idx = (y * w + x) * 4;
+            d[idx] = Math.max(0, Math.min(255, Math.round(r)));
+            d[idx + 1] = Math.max(0, Math.min(255, Math.round(g)));
+            d[idx + 2] = Math.max(0, Math.min(255, Math.round(b)));
+            d[idx + 3] = 255;
+          }
+        }
+        ctx.putImageData(img, 0, 0);
+      }, 2, 1);
+
+      const mat = new THREE.MeshStandardMaterial({
+        map,
+        roughness: 0.88,
+        metalness: 0.02,
+        fog: true
+      });
+      this.cache[ck] = mat;
+      return mat;
+    }
+
+    // 실제 3D 입체 능선 산맥 메시 생성기 (수평선 해안과 만을 감싸는 호형 3D 지형!)
+    createMountainRangeMesh(radius, arcAngle, centerAngle, maxHeight, radialDepth, theme, distLayer = 0) {
+      const segsU = 96;
+      const segsV = 18;
+      const geo = new THREE.PlaneGeometry(1, 1, segsU, segsV);
+      const pos = geo.attributes.position;
+
+      for (let i = 0; i < pos.count; i++) {
+        const u = pos.getX(i) + 0.5; // 0 .. 1 along arc
+        const v = pos.getY(i) + 0.5; // 0 (front shoreline) .. 1 (back base)
+
+        const ang = centerAngle - arcAngle * 0.5 + u * arcAngle;
+        const prof = Math.sin(v * Math.PI); // 0 at shore & far back, peak in middle
+        const edgeTaper = Math.sin(u * Math.PI);
+
+        const nMain = fbm(u * 8.5 + distLayer * 3.7, v * 2.8 + distLayer, 4);
+        const nSharp = 1.0 - Math.abs(fbm(u * 15.0 + 5.2, v * 4.0, 3) - 0.5) * 2.0;
+        const h = Math.max(0, (nMain * 0.68 + nSharp * 0.38) * prof * Math.pow(edgeTaper, 0.45) * maxHeight);
+
+        const r = radius + v * radialDepth;
+        const wx = Math.sin(ang) * r;
+        const wz = -Math.cos(ang) * r;
+        const wy = -2.8 + h; // 수면(-2.6) 아래에서 자연스럽게 솟아오름
+
+        pos.setXYZ(i, wx, wy, wz);
+      }
+      geo.computeVertexNormals();
+      const mesh = new THREE.Mesh(geo, this.mountainRidgeMaterial(theme, distLayer));
+      return mesh;
+    }
+
+    // 루프탑 겨울 적설(쌓인 눈) PBR 재질
+    snowDriftMaterial() {
+      if (this.cache.snow_drift) return this.cache.snow_drift;
+      const map = makeCanvasTex(256, 256, (ctx, w, h) => {
+        const img = ctx.createImageData(w, h);
+        const d = img.data;
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const n = fbm(x * 0.08, y * 0.08, 3);
+            const sparkle = hash2(x, y) > 0.985 ? 18 : 0;
+            const v = Math.min(255, Math.round(234 + n * 18 + sparkle));
+            const idx = (y * w + x) * 4;
+            d[idx] = v;
+            d[idx + 1] = Math.min(255, v + 2);
+            d[idx + 2] = Math.min(255, v + 6);
+            d[idx + 3] = 255;
+          }
+        }
+        ctx.putImageData(img, 0, 0);
+      }, 4, 4);
+      const mat = new THREE.MeshStandardMaterial({
+        map,
+        roughness: 0.65,
+        metalness: 0.05,
+        envMap: this.envMap,
+        envMapIntensity: 0.45
+      });
+      this.cache.snow_drift = mat;
+      return mat;
+    }
+
+    // 계절 날씨 파티클 스프라이트 텍스처 (눈송이 / 빗방울 / 단풍잎 / 벚꽃잎)
+    weatherParticleTexture(kind = 'snow') {
+      const ck = `weather_pt_${kind}`;
+      if (this.cache[ck]) return this.cache[ck];
+
+      const tex = makeCanvasTex(64, 64, (ctx, w, h) => {
+        ctx.clearRect(0, 0, w, h);
+        if (kind === 'snow') {
+          const rg = ctx.createRadialGradient(w / 2, h / 2, 2, w / 2, h / 2, w / 2 - 2);
+          rg.addColorStop(0.0, 'rgba(255,255,255,1.0)');
+          rg.addColorStop(0.45, 'rgba(241,245,249,0.85)');
+          rg.addColorStop(1.0, 'rgba(255,255,255,0.0)');
+          ctx.fillStyle = rg;
+          ctx.fillRect(0, 0, w, h);
+        } else if (kind === 'rain') {
+          const lg = ctx.createLinearGradient(w / 2, 2, w / 2, h - 2);
+          lg.addColorStop(0.0, 'rgba(224,242,254,0.0)');
+          lg.addColorStop(0.5, 'rgba(224,242,254,0.88)');
+          lg.addColorStop(1.0, 'rgba(255,255,255,0.95)');
+          ctx.strokeStyle = lg;
+          ctx.lineWidth = 3.5;
+          ctx.beginPath();
+          ctx.moveTo(w / 2 + 3, 3);
+          ctx.lineTo(w / 2 - 3, h - 3);
+          ctx.stroke();
+        } else if (kind === 'maple') {
+          ctx.fillStyle = '#ea580c';
+          ctx.beginPath();
+          ctx.moveTo(32, 6);
+          ctx.lineTo(40, 22);
+          ctx.lineTo(58, 18);
+          ctx.lineTo(44, 34);
+          ctx.lineTo(52, 50);
+          ctx.lineTo(32, 42);
+          ctx.lineTo(12, 50);
+          ctx.lineTo(20, 34);
+          ctx.lineTo(6, 18);
+          ctx.lineTo(24, 22);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          // 벚꽃잎 (petal)
+          ctx.fillStyle = '#fbcfe8';
+          ctx.beginPath();
+          ctx.ellipse(32, 32, 18, 11, 0.45, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }, 1, 1);
+
+      this.cache[ck] = tex;
+      return tex;
+    }
   }
 
   window.ArchitecturalPBR = ArchitecturalPBR;

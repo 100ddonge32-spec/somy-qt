@@ -100,16 +100,17 @@
     rooftop: {
       id: 'rooftop',
       name: '☕ 루프탑 글래스 소미카페',
-      subtitle: '알루미늄 루버 파고라 · 테라조 커피바 · 야경 라운지 테라스',
-      sky: 0x0b1324,
-      fogColor: 0x111c33,
-      fogDensity: 0.006,
-      spawn: { x: 0, z: 15.5, rotY: Math.PI },
-      panorama: { pos: [-16, 12, 24], look: [0, 2.5, -3] },
-      bounds: { x: 21, zMin: -17.5, zMax: 19.5 },
+      subtitle: '사계절 산과 바다 파노라마 · 눈/비/단풍/벚꽃 실사 전망 테라스',
+      sky: 0x1e3a5f,
+      fogColor: 0x94a3b8,
+      fogDensity: 0.0022,
+      spawn: { x: 0, z: 14.5, rotY: Math.PI },
+      panorama: { pos: [-14, 9.5, 22], look: [0, 3.2, -28] },
+      bounds: { x: 21, zMin: -18.6, zMax: 19.5 },
       hasBoard: true,
-      boardPos: [0, 5.1, -17.0],
-      boardSize: [11.0, 5.2]
+      boardPos: [18.8, 3.9, 2.5],
+      boardRotY: -Math.PI / 2,
+      boardSize: [7.6, 4.3]
     }
   };
 
@@ -133,7 +134,7 @@
       this.onLocalMove = opts.onLocalMove || (() => {});
 
       this.scene = new THREE.Scene();
-      this.camera = new THREE.PerspectiveCamera(56, 16 / 9, 0.2, 260);
+      this.camera = new THREE.PerspectiveCamera(56, 16 / 9, 0.2, 480);
       this.renderer = new THREE.WebGLRenderer({
         canvas: this.canvas,
         antialias: true,
@@ -175,6 +176,11 @@
       this.lightingDimmed = false;
       this.hemiLight = null;
       this.mainDirLight = null;
+
+      // 루프탑 사계절·날씨 실사 배경 상태 ('auto' | 'spring' | 'summer' | 'autumn' | 'winter' | 'rain' | 'night')
+      this.rooftopSeasonMode = 'auto';
+      this.oceanMesh = null;
+      this.weatherSystem = null;
 
       this.cameraMode = 'follow';
       this.camYaw = 0;
@@ -221,17 +227,39 @@
     }
 
     _applyLightingMood() {
-      const isOutdoorNight = this.currentZone === 'garden' || this.currentZone === 'rooftop';
+      const resolvedRoof = this.getResolvedRooftopSeason();
+      const isOutdoorNight = this.currentZone === 'garden' || (this.currentZone === 'rooftop' && resolvedRoof === 'night');
       if (this.lightingDimmed) {
         this.renderer.toneMappingExposure = 0.72;
         if (this.hemiLight) this.hemiLight.intensity = isOutdoorNight ? 0.38 : 0.42;
         if (this.mainDirLight) this.mainDirLight.intensity = 0.32;
       } else {
-        // 과노출(화이트아웃) 없이 CAD 가구·천장 단차·벽면 줄눈이 선명하게 살아나는 최적 노출값!
-        this.renderer.toneMappingExposure = 0.98;
-        if (this.hemiLight) this.hemiLight.intensity = isOutdoorNight ? 0.62 : 0.72;
-        if (this.mainDirLight) this.mainDirLight.intensity = isOutdoorNight ? 0.72 : 0.78;
+        // 과노출(화이트아웃) 없이 CAD 가구·천장 단차·벽면 줄눈·산바다 원경이 선명하게 살아나는 최적 노출값
+        this.renderer.toneMappingExposure = this.currentZone === 'rooftop' && resolvedRoof === 'winter' ? 0.94 : 0.98;
+        if (this.hemiLight) this.hemiLight.intensity = isOutdoorNight ? 0.62 : 0.74;
+        if (this.mainDirLight) this.mainDirLight.intensity = isOutdoorNight ? 0.72 : 0.82;
       }
+    }
+
+    getResolvedRooftopSeason() {
+      if (this.rooftopSeasonMode && this.rooftopSeasonMode !== 'auto') {
+        return this.rooftopSeasonMode;
+      }
+      const m = new Date().getMonth() + 1; // 1..12
+      if (m >= 3 && m <= 5) return 'spring';
+      if (m >= 6 && m <= 8) return 'summer';
+      if (m >= 9 && m <= 11) return 'autumn';
+      return 'winter';
+    }
+
+    setRooftopSeason(mode) {
+      this.rooftopSeasonMode = mode || 'auto';
+      if (this.currentZone === 'rooftop') {
+        const me = this.avatars.get(this.myId);
+        const keepPos = me ? { x: me.x, z: me.z, rotY: me.rotY } : undefined;
+        this.loadZone('rooftop', { spawn: keepPos, preserveCamera: true });
+      }
+      return this.getResolvedRooftopSeason();
     }
 
     resize() {
@@ -588,6 +616,8 @@
       this.portals = [];
       this.boardMesh = null;
       this.candleGroup = null;
+      this.oceanMesh = null;
+      this.weatherSystem = null;
 
       while (this.roomGroup.children.length > 0) {
         this.roomGroup.remove(this.roomGroup.children[0]);
@@ -626,29 +656,36 @@
       if (meta.hasBoard) {
         const [bx, by, bz] = meta.boardPos;
         const [bw, bh] = meta.boardSize;
+        const bRotY = meta.boardRotY || 0;
+
+        const boardGrp = new THREE.Group();
+        boardGrp.position.set(bx, by, bz);
+        boardGrp.rotation.y = bRotY;
 
         const bezel = new THREE.Mesh(
           new THREE.PlaneGeometry(bw + 0.28, bh + 0.28),
           this.pbr.darkSteelMaterial()
         );
-        bezel.position.set(bx, by, bz - 0.02);
-        this.roomGroup.add(bezel);
+        bezel.position.set(0, 0, -0.02);
+        boardGrp.add(bezel);
 
         this.boardMesh = new THREE.Mesh(
           new THREE.PlaneGeometry(bw, bh),
           new THREE.MeshBasicMaterial({ map: this.boardTexture })
         );
-        this.boardMesh.position.set(bx, by, bz);
-        this.roomGroup.add(this.boardMesh);
+        boardGrp.add(this.boardMesh);
+        this.roomGroup.add(boardGrp);
 
+        const frontOffX = Math.sin(bRotY) * 4.2;
+        const frontOffZ = Math.cos(bRotY) * 4.2;
         this.interactables.push({
           id: 'room-board',
           type: 'board',
           label: '👨‍🏫 칠판·PPT·화면공유 열기',
-          x: bx,
+          x: bx + frontOffX,
           y: 0,
-          z: bz + 4.5,
-          radius: 5.2,
+          z: bz + frontOffZ,
+          radius: 5.0,
           mesh: this.boardMesh
         });
       }
@@ -656,7 +693,7 @@
       const me = this.avatars.get(this.myId);
       const sp = opts.spawn || meta.spawn;
       if (me) {
-        me.pose = 'stand';
+        if (!opts.preserveCamera) me.pose = 'stand';
         me.x = me.tx = sp.x;
         me.y = me.ty = 0;
         me.z = me.tz = sp.z;
@@ -664,12 +701,14 @@
         me.root.position.set(me.x, 0, me.z);
         me.root.rotation.y = me.rotY;
       }
-      this.camYaw = 0;
-      if (this.cameraMode === 'panorama') this.setCameraMode('panorama');
-      else {
-        // 방 입장 첫 프레임에 카메라 위치 즉시 정렬
-        this.camera.position.set(sp.x, 3.8, sp.z + 7.2);
-        this.camera.lookAt(sp.x, 2.1, sp.z);
+      if (!opts.preserveCamera) {
+        this.camYaw = 0;
+        if (this.cameraMode === 'panorama') this.setCameraMode('panorama');
+        else {
+          // 방 입장 첫 프레임에 카메라 위치 즉시 정렬
+          this.camera.position.set(sp.x, 3.8, sp.z + 7.2);
+          this.camera.lookAt(sp.x, 2.1, sp.z);
+        }
       }
       this._broadcastMyMove(true);
     }
@@ -1195,6 +1234,36 @@
         });
       });
 
+      // 성경통독방 정면 우측: '예스통독' 공동체 통독 인증 현황판 스탠드
+      const statusStand = new THREE.Group();
+      statusStand.position.set(10.8, 0, -13.2);
+      statusStand.rotation.y = -0.22;
+      const standPostL = new THREE.Mesh(new THREE.BoxGeometry(0.10, 3.6, 0.10), this.pbr.darkSteelMaterial());
+      standPostL.position.set(-1.9, 1.8, 0);
+      const standPostR = standPostL.clone();
+      standPostR.position.x = 1.9;
+      const standBoard = new THREE.Mesh(
+        new THREE.BoxGeometry(4.0, 2.1, 0.12),
+        new THREE.MeshStandardMaterial({
+          map: this._makePlaqueTexture('🙌 예스통독 인증 게시판', '통독 참여 성도 & 읽은 분량 한눈에 보기', '#064e3b', '#fde047'),
+          roughness: 0.35
+        })
+      );
+      standBoard.position.set(0, 2.45, 0);
+      statusStand.add(standPostL, standPostR, standBoard);
+      this.roomGroup.add(statusStand);
+
+      this.interactables.push({
+        id: 'bible-yes-board',
+        type: 'bible_board',
+        label: '🙌 예스통독 인증 게시판 열기',
+        x: 10.2,
+        y: 0,
+        z: -11.4,
+        radius: 2.8,
+        mesh: standBoard
+      });
+
       this._addPortalDoor(-9.5, 16.3, Math.PI, 'sanctuary', '🏛️ 대성전 이동', '');
       this._addPortalDoor(9.5, 16.3, Math.PI, 'qt', '✏️ 큐티방 이동', '세미나·나눔실');
     }
@@ -1434,39 +1503,191 @@
     }
 
     _buildRooftop() {
-      const deckMat = this.pbr.woodPlankMaterial('mod_roof_deck', [156, 126, 92], [116, 88, 58], 10, 10, 0.38);
-      const glassRail = this.pbr.glassMaterial(0.36, 0xe2e8f0);
-      const steel = this.pbr.darkSteelMaterial();
-      const whiteStone = this.pbr.marbleMaterial('roof_terrazzo', [240, 236, 228], [204, 198, 188], 2, 2, 0.22);
+      const theme = this.getResolvedRooftopSeason();
 
+      // 계절·날씨별 대기 안개 & 자연광 컬러 세팅
+      const envConfigs = {
+        spring: { fog: 0xdbeafe, density: 0.0018, sunColor: 0xfffbeb, sunPos: [-35, 36, -65], hemiSky: 0xe0f2fe, hemiGround: 0x6b7280 },
+        summer: { fog: 0xbae6fd, density: 0.0015, sunColor: 0xffffff, sunPos: [15, 48, -55], hemiSky: 0xbae6fd, hemiGround: 0x4b5563 },
+        autumn: { fog: 0xfed7aa, density: 0.0020, sunColor: 0xffedd5, sunPos: [-45, 24, -80], hemiSky: 0xffedd5, hemiGround: 0x78350f },
+        winter: { fog: 0xe2e8f0, density: 0.0028, sunColor: 0xf8fafc, sunPos: [-25, 28, -60], hemiSky: 0xf1f5f9, hemiGround: 0x94a3b8 },
+        rain:   { fog: 0x94a3b8, density: 0.0042, sunColor: 0xcbd5e1, sunPos: [0, 38, -40], hemiSky: 0x94a3b8, hemiGround: 0x334155 },
+        night:  { fog: 0x0f172a, density: 0.0030, sunColor: 0xe0f2fe, sunPos: [-30, 34, -85], hemiSky: 0x1e293b, hemiGround: 0x0f172a }
+      };
+      const cfg = envConfigs[theme] || envConfigs.autumn;
+      this.scene.fog = new THREE.FogExp2(cfg.fog, cfg.density);
+      if (this.hemiLight) {
+        this.hemiLight.color.setHex(cfg.hemiSky);
+        this.hemiLight.groundColor.setHex(cfg.hemiGround);
+      }
+      if (this.mainDirLight) {
+        this.mainDirLight.color.setHex(cfg.sunColor);
+        this.mainDirLight.position.set(cfg.sunPos[0], cfg.sunPos[1], cfg.sunPos[2]);
+      }
+
+      // 1) 360도 초대형 실사 파노라마 스카이돔
+      const skyDome = new THREE.Mesh(
+        new THREE.SphereGeometry(235, 48, 32),
+        this.pbr.rooftopSkyPanoramaMaterial(theme)
+      );
+      skyDome.rotation.y = -Math.PI * 0.46;
+      this.roomGroup.add(skyDome);
+
+      // 2) 끝없이 펼쳐진 실사 바다 수평선 (북·서·동 3면 조망 오션) + 해안 파도 포말
+      const oceanMat = this.pbr.oceanWaterMaterial(theme);
+      this.oceanMesh = new THREE.Mesh(new THREE.PlaneGeometry(440, 290, 32, 32), oceanMat);
+      this.oceanMesh.rotation.x = -Math.PI / 2;
+      this.oceanMesh.position.set(0, -2.6, -125);
+      this.roomGroup.add(this.oceanMesh);
+
+      // 해안 백사장/갯바위 포말 띠
+      const surfGeo = new THREE.RingGeometry(54, 59, 64, 1, -Math.PI * 0.85, Math.PI * 0.70);
+      surfGeo.rotateX(-Math.PI / 2);
+      const surfMesh = new THREE.Mesh(
+        surfGeo,
+        new THREE.MeshBasicMaterial({ color: theme === 'night' ? 0x94a3b8 : 0xf8fafc, transparent: true, opacity: 0.42 })
+      );
+      surfMesh.position.set(0, -2.52, -18);
+      this.roomGroup.add(surfMesh);
+
+      // 3) 바다와 만을 감싸 안는 3중 다층 입체 3D 산맥 (단풍산 / 설산 / 벚꽃산 / 녹음산 / 운무산)
+      const nearWestCape = this.pbr.createMountainRangeMesh(56, 0.95, -0.78, 25, 28, theme, 0);
+      const nearEastCape = this.pbr.createMountainRangeMesh(58, 0.95, 0.78, 27, 30, theme, 0);
+      const midBayRange = this.pbr.createMountainRangeMesh(106, 2.25, 0.04, 38, 38, theme, 1);
+      const farAlpinePeaks = this.pbr.createMountainRangeMesh(155, 2.65, -0.10, 54, 46, theme, 2);
+      this.roomGroup.add(nearWestCape, nearEastCape, midBayRange, farAlpinePeaks);
+
+      // 바다 위 작은 섬 실루엣 (조망 포인트)
+      const islet = this.pbr.createMountainRangeMesh(74, 0.28, -0.18, 12.5, 14, theme, 0);
+      this.roomGroup.add(islet);
+
+      // 4) 루프탑 테라스 우드 데크 (우천 시 빗물에 젖은 반사 데크로 자동 변환!)
+      const baseDeckMat = this.pbr.woodPlankMaterial('mod_roof_deck', [156, 126, 92], [116, 88, 58], 10, 10, 0.38);
+      let deckMat = baseDeckMat;
+      if (theme === 'rain') {
+        deckMat = baseDeckMat.clone();
+        deckMat.roughness = 0.08;
+        deckMat.metalness = 0.22;
+        deckMat.envMapIntensity = 1.5;
+      }
       const deck = new THREE.Mesh(new THREE.PlaneGeometry(46, 42), deckMat);
       deck.rotation.x = -Math.PI / 2;
       deck.receiveShadow = true;
       this.roomGroup.add(deck);
 
-      const rBack = new THREE.Mesh(new THREE.BoxGeometry(46, 1.3, 0.06), glassRail);
-      rBack.position.set(0, 0.65, -20.2);
-      const rLed = new THREE.Mesh(new THREE.BoxGeometry(46, 0.06, 0.10), new THREE.MeshBasicMaterial({ color: 0xfff8dc }));
+      // 테라스 하부 건축 슬래브 엣지 (공중에 떠 보이지 않도록 모던 콘크리트 처마 마감)
+      const slabEdge = new THREE.Mesh(
+        new THREE.BoxGeometry(46.6, 2.4, 42.6),
+        this.pbr.marbleMaterial('roof_slab', [68, 72, 78], [48, 52, 58], 4, 1, 0.6)
+      );
+      slabEdge.position.set(0, -1.22, 0);
+      this.roomGroup.add(slabEdge);
+
+      // 시야를 가리지 않는 크리스탈 투명 강화유리 난간
+      const glassRail = this.pbr.glassMaterial(0.20, 0xe0f2fe);
+      const steel = this.pbr.darkSteelMaterial();
+      const whiteStone = this.pbr.marbleMaterial('roof_terrazzo', [240, 236, 228], [204, 198, 188], 2, 2, 0.22);
+
+      const rBack = new THREE.Mesh(new THREE.BoxGeometry(46, 1.12, 0.05), glassRail);
+      rBack.position.set(0, 0.56, -20.2);
+      const rTopCap = new THREE.Mesh(new THREE.BoxGeometry(46.1, 0.05, 0.10), steel);
+      rTopCap.position.set(0, 1.13, -20.2);
+      const rLed = new THREE.Mesh(new THREE.BoxGeometry(46, 0.05, 0.10), new THREE.MeshBasicMaterial({ color: 0xfff8dc }));
       rLed.position.set(0, 0.03, -20.15);
-      const rLeft = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.3, 42), glassRail);
-      rLeft.position.set(-22.5, 0.65, 0);
+      const rLeft = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.12, 42), glassRail);
+      rLeft.position.set(-22.5, 0.56, 0);
       const rRight = rLeft.clone();
       rRight.position.x = 22.5;
-      this.roomGroup.add(rBack, rLed, rLeft, rRight);
+      this.roomGroup.add(rBack, rTopCap, rLed, rLeft, rRight);
 
-      [-14, 14].forEach((px) => {
-        [-4, 14].forEach((pz) => {
-          const post = new THREE.Mesh(new THREE.BoxGeometry(0.24, 5.2, 0.24), steel);
+      // 북쪽 전망대 중앙: 사계절 산·바다 전망 망원경 & 계절 전환 안내 스탠드
+      const scopeGrp = new THREE.Group();
+      scopeGrp.position.set(0, 0, -19.0);
+      const scopePed = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.22, 1.28, 14), steel);
+      scopePed.position.y = 0.64;
+      const scopeBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 0.68, 14), this.pbr.whiteMetalMaterial());
+      scopeBarrel.rotation.x = Math.PI / 2 - 0.12;
+      scopeBarrel.position.set(0, 1.34, -0.08);
+      scopeGrp.add(scopePed, scopeBarrel);
+      this.roomGroup.add(scopeGrp);
+
+      this.interactables.push({
+        id: 'rooftop-season-spot',
+        type: 'rooftop_season',
+        label: '🏞️ 루프탑 사계절·날씨 배경 바꾸기 (봄·여름·단풍·설경·비)',
+        x: 0,
+        y: 0,
+        z: -17.6,
+        radius: 3.0,
+        mesh: scopeBarrel
+      });
+
+      // 알루미늄 루버 파고라 (중앙 전망 시야 확보를 위해 세련되게 배치)
+      [-14.5, 14.5].forEach((px) => {
+        [-3.5, 13.5].forEach((pz) => {
+          const post = new THREE.Mesh(new THREE.BoxGeometry(0.22, 5.2, 0.22), steel);
           post.position.set(px, 2.6, pz);
           this.roomGroup.add(post);
         });
       });
-      for (let bz = -4; bz <= 14; bz += 3.6) {
-        const beam = new THREE.Mesh(new THREE.BoxGeometry(28.5, 0.18, 0.20), steel);
+      for (let bz = -3.5; bz <= 13.5; bz += 3.4) {
+        const beam = new THREE.Mesh(new THREE.BoxGeometry(29.4, 0.16, 0.18), steel);
         beam.position.set(0, 5.2, bz);
-        const strip = new THREE.Mesh(new THREE.BoxGeometry(27.5, 0.04, 0.08), new THREE.MeshBasicMaterial({ color: 0xfff6d6 }));
-        strip.position.set(0, 5.09, bz);
+        const strip = new THREE.Mesh(new THREE.BoxGeometry(28.4, 0.04, 0.08), new THREE.MeshBasicMaterial({ color: 0xfff6d6 }));
+        strip.position.set(0, 5.10, bz);
         this.roomGroup.add(beam, strip);
+      }
+
+      // 5) 겨울('winter') 전용: 테라스 가장자리·난간·파고라·테이블에 실제로 소복하게 쌓인 눈(적설)!
+      if (theme === 'winter') {
+        const snowMat = this.pbr.snowDriftMaterial();
+        // 전면 및 좌우 유리 난간 아래 길게 쌓인 눈더미
+        for (let sx = -21; sx <= 21; sx += 3.5) {
+          const drift = new THREE.Mesh(new THREE.SphereGeometry(2.1 + (Math.abs(sx) % 2) * 0.5, 14, 10), snowMat);
+          drift.scale.set(1.3, 0.16, 0.65);
+          drift.position.set(sx, 0.04, -19.35);
+          this.roomGroup.add(drift);
+        }
+        [-21.6, 21.6].forEach((edgeX) => {
+          for (let sz = -17; sz <= 17; sz += 4.2) {
+            const sideDrift = new THREE.Mesh(new THREE.SphereGeometry(2.0, 12, 8), snowMat);
+            sideDrift.scale.set(0.55, 0.15, 1.35);
+            sideDrift.position.set(edgeX, 0.04, sz);
+            this.roomGroup.add(sideDrift);
+          }
+        });
+        // 난간 상단과 파고라 루버 위에 쌓인 눈
+        const railSnow = new THREE.Mesh(new THREE.BoxGeometry(46.0, 0.07, 0.14), snowMat);
+        railSnow.position.set(0, 1.18, -20.2);
+        this.roomGroup.add(railSnow);
+        for (let bz = -3.5; bz <= 13.5; bz += 3.4) {
+          const beamSnow = new THREE.Mesh(new THREE.BoxGeometry(29.3, 0.09, 0.20), snowMat);
+          beamSnow.position.set(0, 5.32, bz);
+          this.roomGroup.add(beamSnow);
+        }
+        // 테라스 귀퉁이 아담한 눈사람 소품
+        const sm1 = new THREE.Mesh(new THREE.SphereGeometry(0.45, 14, 12), snowMat);
+        sm1.position.set(-16.2, 0.42, -17.2);
+        const sm2 = new THREE.Mesh(new THREE.SphereGeometry(0.32, 14, 12), snowMat);
+        sm2.position.set(-16.2, 1.05, -17.2);
+        this.roomGroup.add(sm1, sm2);
+      }
+
+      // 가을('autumn') 전용: 데크 가장자리에 떨어진 단풍잎·은행잎 카펫 디테일
+      if (theme === 'autumn') {
+        const leafColors = [0xdc2626, 0xea580c, 0xf59e0b, 0xb91c1c];
+        for (let i = 0; i < 48; i++) {
+          const lx = -20 + ((i * 17) % 40);
+          const lz = -19.2 + ((i * 29) % 36) * (i % 3 === 0 ? 0.15 : 1);
+          if (Math.abs(lx) < 12 && lz > -14 && lz < 14) continue;
+          const leafPatch = new THREE.Mesh(
+            new THREE.CircleGeometry(0.22 + (i % 3) * 0.08, 7),
+            new THREE.MeshStandardMaterial({ color: leafColors[i % leafColors.length], roughness: 0.8 })
+          );
+          leafPatch.rotation.x = -Math.PI / 2;
+          leafPatch.position.set(lx, 0.015, Math.max(-19.5, Math.min(18.5, lz)));
+          this.roomGroup.add(leafPatch);
+        }
       }
 
       const barCounter = new THREE.Mesh(new THREE.BoxGeometry(6.6, 1.1, 1.05), whiteStone);
@@ -1511,6 +1732,10 @@
         mesh: waterCounter
       });
 
+      // 바다 전망 커플 벤치 2개 (북쪽 유리 난간 앞 — 앉으면 산과 바다 정면 감상!)
+      this._addFurnitureSeat('roof_view_bench_L', -6.2, 0, -17.6, Math.PI, 3.0, '🏞️ 산·바다 전망석에 앉아 감상하기', 'sofa');
+      this._addFurnitureSeat('roof_view_bench_R', 6.2, 0, -17.6, Math.PI, 3.0, '🏞️ 산·바다 전망석에 앉아 감상하기', 'sofa');
+
       [[-7.5, 2.5], [7.5, 2.5], [-7.5, 11.5], [7.5, 11.5]].forEach(([tx, tz], tIdx) => {
         const top = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 0.06, 28), whiteStone);
         top.position.set(tx, 0.76, tz);
@@ -1526,11 +1751,60 @@
         }
       });
 
-      [[-19, -15], [19, -15], [-19, 16], [19, 16]].forEach(([tx, tz]) => {
-        const p = this.pbr.createPottedPlant(1.4);
-        p.position.set(tx, 0, tz);
-        this.roomGroup.add(p);
+      // 테라스 조경 나무 (계절에 따라 벚꽃 / 녹음 / 단풍 / 설경 나무로 옷을 갈아입음!)
+      [[-19.5, -16.5], [19.5, -16.5], [-19.5, 16], [19.5, 16]].forEach(([tx, tz]) => {
+        const tree = this.pbr.createRealisticTree(1.15);
+        tree.position.set(tx, 0, tz);
+        const seasonalColor = theme === 'spring' ? 0xf9a8d4
+          : theme === 'autumn' ? 0xea580c
+          : theme === 'winter' ? 0xe2e8f0
+          : null;
+        if (seasonalColor) {
+          tree.children.forEach((ch, idx) => {
+            if (idx > 0 && ch.material) {
+              ch.material = ch.material.clone();
+              ch.material.color.setHex(idx % 2 === 0 ? seasonalColor : (theme === 'autumn' ? 0xdc2626 : seasonalColor));
+            }
+          });
+        }
+        this.roomGroup.add(tree);
       });
+
+      // 6) 실시간 3D 날씨 파티클 시스템 (눈 내림 / 비 내림 / 가을 단풍잎 흩날림 / 봄 벚꽃잎 흩날림)
+      if (theme === 'winter' || theme === 'rain' || theme === 'autumn' || theme === 'spring') {
+        const isRain = theme === 'rain';
+        const isSnow = theme === 'winter';
+        const count = isRain ? 900 : isSnow ? 720 : 240;
+        const pGeo = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        const seeds = new Float32Array(count);
+
+        for (let i = 0; i < count; i++) {
+          positions[i * 3] = (Math.random() - 0.5) * 68;
+          positions[i * 3 + 1] = Math.random() * 28;
+          positions[i * 3 + 2] = -32 + Math.random() * 56;
+          seeds[i] = Math.random() * Math.PI * 2;
+        }
+        pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+        const texKind = isRain ? 'rain' : isSnow ? 'snow' : theme === 'autumn' ? 'maple' : 'petal';
+        const pMat = new THREE.PointsMaterial({
+          map: this.pbr.weatherParticleTexture(texKind),
+          size: isRain ? 0.65 : isSnow ? 0.36 : 0.44,
+          transparent: true,
+          opacity: isRain ? 0.72 : 0.92,
+          depthWrite: false
+        });
+        const points = new THREE.Points(pGeo, pMat);
+        this.roomGroup.add(points);
+        this.weatherSystem = {
+          points,
+          seeds,
+          kind: texKind,
+          fallSpeed: isRain ? 24.0 : isSnow ? 2.6 : 1.7,
+          driftAmp: isRain ? 0.4 : isSnow ? 1.5 : 2.6
+        };
+      }
 
       this._addPortalDoor(-8.0, 19.8, Math.PI, 'sanctuary', '🏛️ 대성전 내려가기', '');
       this._addPortalDoor(8.0, 19.8, Math.PI, 'garden', '🌿 앞마당 광장', '');
@@ -1839,6 +2113,34 @@
           av.bubbleTimer -= dt;
           if (av.bubbleTimer <= 0) av.bubbleEl.classList.add('hidden');
         }
+      }
+
+      // 루프탑 바다 잔물결 흐름 & 눈·비·단풍·벚꽃 3D 파티클 애니메이션
+      if (this.oceanMesh && this.oceanMesh.material && this.oceanMesh.material.map) {
+        this.oceanMesh.material.map.offset.y = (elapsed * 0.035) % 1;
+        this.oceanMesh.material.map.offset.x = Math.sin(elapsed * 0.25) * 0.02;
+      }
+      if (this.weatherSystem && this.weatherSystem.points) {
+        const ws = this.weatherSystem;
+        const attr = ws.points.geometry.attributes.position;
+        const arr = attr.array;
+        const n = ws.seeds.length;
+        for (let i = 0; i < n; i++) {
+          const i3 = i * 3;
+          arr[i3 + 1] -= ws.fallSpeed * dt;
+          if (ws.kind === 'rain') {
+            arr[i3] -= 2.2 * dt;
+          } else {
+            arr[i3] += Math.sin(elapsed * 1.4 + ws.seeds[i]) * ws.driftAmp * dt;
+            arr[i3 + 2] += Math.cos(elapsed * 1.1 + ws.seeds[i]) * (ws.driftAmp * 0.5) * dt;
+          }
+          if (arr[i3 + 1] < -1.5) {
+            arr[i3 + 1] = 27.5;
+            arr[i3] = (Math.random() - 0.5) * 68;
+            arr[i3 + 2] = -32 + Math.random() * 56;
+          }
+        }
+        attr.needsUpdate = true;
       }
 
       if (this.cameraMode === 'panorama') {

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getTodayReading } from '@/lib/reading-plan';
+import { fetchCoommiReference, fetchGodpeopleBibleText } from '@/lib/qt-sync';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -11,6 +13,31 @@ const supabaseAdmin = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
 );
+
+function getKoreaDateString(): string {
+    return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
+}
+
+function getKoreaTimeStamp(): string {
+    const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    const mm = String(kst.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(kst.getUTCDate()).padStart(2, '0');
+    const hh = String(kst.getUTCHours()).padStart(2, '0');
+    const mi = String(kst.getUTCMinutes()).padStart(2, '0');
+    return `${mm}.${dd} ${hh}:${mi}`;
+}
+
+export interface BibleTongdokLog {
+    id: string;
+    reader: string;
+    planName: string;
+    rangeLabel: string;
+    chaptersCount: number;
+    comment: string;
+    amens: number;
+    createdAt: string;
+    dateKey: string;
+}
 
 export interface ChapelWorldState {
     sarangbangs: {
@@ -36,6 +63,7 @@ export interface ChapelWorldState {
         amens: number;
         createdAt: string;
     }[];
+    bibleLogs: BibleTongdokLog[];
     candles: {
         id: number;
         name: string;
@@ -128,6 +156,41 @@ const DEFAULT_WORLD_STATE: ChapelWorldState = {
             createdAt: '오늘',
         },
     ],
+    bibleLogs: [
+        {
+            id: 'bl-1',
+            reader: '강기쁨 청년',
+            planName: '연대기순 통독',
+            rangeLabel: '창세기 1장 ~ 3장',
+            chaptersCount: 3,
+            comment: '예스통독! 태초에 말씀으로 빛을 창조하신 주님을 찬양합니다.',
+            amens: 8,
+            createdAt: '오늘 07:30',
+            dateKey: '2026-11-26',
+        },
+        {
+            id: 'bl-2',
+            reader: '김은혜 권사',
+            planName: '성경 순서 정독',
+            rangeLabel: '시편 23편 ~ 25편',
+            chaptersCount: 3,
+            comment: '예스통독! 음성 낭독으로 함께 들으니 말씀이 마음에 깊이 새겨집니다.',
+            amens: 11,
+            createdAt: '오늘 08:15',
+            dateKey: '2026-11-26',
+        },
+        {
+            id: 'bl-3',
+            reader: '한충성 장로',
+            planName: '구약+신약 균형',
+            rangeLabel: '요한복음 1장 ~ 2장',
+            chaptersCount: 2,
+            comment: '예스통독! 말씀이 육신이 되어 우리 가운데 거하시매 아멘!',
+            amens: 9,
+            createdAt: '오늘 09:05',
+            dateKey: '2026-11-26',
+        },
+    ],
     candles: [
         { id: 1, name: '김은혜 권사', text: '환우들의 치유와 회복을 위해 간절히 기도합니다.', amens: 21, angle: -0.45 },
         { id: 2, name: '이믿음 집사', text: '온 가정이 주님만 섬기는 믿음의 명문가 되게 하소서.', amens: 15, angle: -0.27 },
@@ -144,13 +207,13 @@ const DEFAULT_WORLD_STATE: ChapelWorldState = {
         },
         qt: {
             mode: 'slide',
-            badge: 'QT ACADEMY · 큐티 기초반 1강',
+            badge: 'QT ACADEMY · 오늘의 소미 큐티 & 기초반',
             body: '관찰(무엇을) ➔ 해석(왜) ➔ 적용(오늘 나의 순종)\n말씀 앞에서 주님의 음성을 듣는 복된 시간',
         },
         bible: {
             mode: 'slide',
-            badge: 'BIBLE READING · 성경통독방',
-            body: '주의 말씀은 내 발에 등이요 내 길에 빛이니이다 (시 119:105)\n책상에 앉아 원하는 성경 본문을 펴서 읽어보세요!',
+            badge: 'BIBLE READING · 성경통독방 · 예스통독!',
+            body: '주의 말씀은 내 발에 등이요 내 길에 빛이니이다 (시 119:105)\n성경책을 펴서 음성으로 통독하고 [예스통독]을 남겨보세요!',
         },
         'sarangbang:group-1': {
             mode: 'slide',
@@ -174,6 +237,9 @@ async function loadStateFromDb(): Promise<ChapelWorldState> {
             return {
                 ...DEFAULT_WORLD_STATE,
                 ...parsed,
+                bibleLogs: Array.isArray(parsed.bibleLogs) && parsed.bibleLogs.length > 0
+                    ? parsed.bibleLogs
+                    : DEFAULT_WORLD_STATE.bibleLogs,
                 roomBoards: { ...DEFAULT_WORLD_STATE.roomBoards, ...(parsed.roomBoards || {}) },
             };
         }
@@ -207,13 +273,105 @@ async function saveStateToDb(state: ChapelWorldState): Promise<void> {
     }
 }
 
-export async function GET() {
-    const state = await loadStateFromDb();
+// 소미 큐티(daily_qt) 안전 조회 헬퍼: 요청 날짜 -> 최근 등록된 큐티 -> 실시간 말씀 본문 순으로 100% 보장
+async function resolveSomyQtForChapel(requestedDate?: string) {
+    const today = getKoreaDateString();
+    const targetDate = requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) ? requestedDate : today;
+
+    // 최근 등록된 큐티 날짜 목록 (드롭다운 선택용)
+    let recentDates: { date: string; reference: string }[] = [];
+    try {
+        const { data: listData } = await supabaseAdmin
+            .from('daily_qt')
+            .select('date, reference')
+            .order('date', { ascending: false })
+            .limit(15);
+        if (Array.isArray(listData)) {
+            recentDates = listData;
+        }
+    } catch {}
+
+    // 1. 요청 날짜와 정확히 일치하는 daily_qt 본문 조회
+    try {
+        const { data: exactQt } = await supabaseAdmin
+            .from('daily_qt')
+            .select('*')
+            .eq('date', targetDate)
+            .maybeSingle();
+
+        if (exactQt && exactQt.passage) {
+            return { qt: exactQt, isExactDate: true, requestedDate: targetDate, recentDates };
+        }
+    } catch {}
+
+    // 2. 사용자가 날짜를 직접 지정하지 않았는데 당일 데이터가 아직 등록 전이라면,
+    //    가장 최근에 등록된 소미 큐티 본문을 우선 확인하거나 오늘의 본문을 실시간 로드
+    if (!requestedDate) {
+        try {
+            const { data: latestQt } = await supabaseAdmin
+                .from('daily_qt')
+                .select('*')
+                .lte('date', today)
+                .order('date', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (latestQt && latestQt.passage) {
+                return { qt: latestQt, isExactDate: latestQt.date === today, requestedDate: targetDate, recentDates };
+            }
+        } catch {}
+    }
+
+    // 3. DB에 해당 날짜 데이터가 없을 때 꿈미/읽기표 + 갓피플 개역개정 원문으로 즉시 구성
+    try {
+        const coommi = await fetchCoommiReference(targetDate).catch(() => ({ reference: '' }));
+        const rawRef = coommi.reference || getTodayReading(targetDate);
+        const bibleRes = await fetchGodpeopleBibleText(rawRef.includes(':') ? rawRef : `${rawRef}:1-30`);
+        if (bibleRes && bibleRes.passage) {
+            return {
+                qt: {
+                    date: targetDate,
+                    reference: bibleRes.reference || rawRef,
+                    passage: `${bibleRes.passage}|||오늘 본문 말씀을 천천히 세 번 소리 내어 읽으며, 하나님께서 나에게 주시는 위로와 교훈, 그리고 순종할 한 가지 적용점을 묵상해 보세요.`,
+                    question1: '오늘 본문에서 가장 마음에 와닿는 구절이나 단어는 무엇입니까?',
+                    question2: '이 말씀을 통해 깨닫게 되는 하나님의 성품과 마음은 어떠합니까?',
+                    question3: '오늘 가정과 일터에서 구체적으로 실천할 나의 순종(적용) 한 가지는 무엇입니까?',
+                    prayer: '사랑의 주님, 오늘 주신 말씀을 내 발의 등이요 내 길의 빛으로 삼아 순종하며 살아가게 하옵소서. 예수님의 이름으로 기도드립니다. 아멘.',
+                },
+                isExactDate: true,
+                requestedDate: targetDate,
+                recentDates,
+            };
+        }
+    } catch {}
+
+    return { qt: null, isExactDate: false, requestedDate: targetDate, recentDates };
+}
+
+export async function GET(req: NextRequest) {
+    const { searchParams } = new URL(req.url);
+    const qtOnly = searchParams.get('qt_only') === 'true';
+    const qtDate = searchParams.get('qt_date') || undefined;
+
+    if (qtOnly) {
+        const qtBundle = await resolveSomyQtForChapel(qtDate);
+        return NextResponse.json(qtBundle, {
+            headers: { 'Cache-Control': 'no-store, max-age=0' },
+        });
+    }
+
+    const [state, qtBundle] = await Promise.all([
+        loadStateFromDb(),
+        resolveSomyQtForChapel(qtDate),
+    ]);
+
     return NextResponse.json(
         {
             supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
             supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
             state,
+            somyQt: qtBundle.qt,
+            somyQtRecentDates: qtBundle.recentDates,
         },
         {
             headers: {
@@ -239,7 +397,7 @@ export async function POST(req: NextRequest) {
                     name: name.slice(0, 40),
                     leader: leader.slice(0, 24),
                     topic: topic.slice(0, 80),
-                    createdAt: new Date().toISOString().slice(0, 10),
+                    createdAt: getKoreaDateString(),
                 };
                 state.sarangbangs.push(newRoom);
                 state.roomBoards[`sarangbang:${newRoom.id}`] = {
@@ -272,7 +430,7 @@ export async function POST(req: NextRequest) {
                     title,
                     summary: summary || content.split('\n')[0].slice(0, 60),
                     content,
-                    updatedAt: new Date().toISOString().slice(0, 10),
+                    updatedAt: getKoreaDateString(),
                 };
                 if (idx >= 0) state.qtLectures[idx] = item;
                 else state.qtLectures.push(item);
@@ -297,9 +455,9 @@ export async function POST(req: NextRequest) {
                     passage,
                     content,
                     amens: 1,
-                    createdAt: new Date().toISOString().slice(5, 10),
+                    createdAt: getKoreaTimeStamp(),
                 });
-                state.qtShares = state.qtShares.slice(0, 30);
+                state.qtShares = state.qtShares.slice(0, 40);
                 await saveStateToDb(state);
                 return NextResponse.json({ success: true, state });
             }
@@ -311,10 +469,45 @@ export async function POST(req: NextRequest) {
                 await saveStateToDb(state);
             }
             return NextResponse.json({ success: true, state });
+        } else if (action === 'add_bible_log') {
+            const reader = String(payload?.reader || '성도').trim().slice(0, 24);
+            const planName = String(payload?.planName || '성경통독').trim().slice(0, 36);
+            const rangeLabel = String(payload?.rangeLabel || '오늘의 말씀').trim().slice(0, 60);
+            const chaptersCount = Math.max(1, Math.min(50, Number(payload?.chaptersCount) || 1));
+            let comment = String(payload?.comment || '예스통독!').trim().slice(0, 240);
+            if (!comment.includes('예스통독')) {
+                comment = `예스통독! ${comment}`.trim();
+            }
+
+            const newLog: BibleTongdokLog = {
+                id: 'bl-' + Date.now(),
+                reader,
+                planName,
+                rangeLabel,
+                chaptersCount,
+                comment,
+                amens: 1,
+                createdAt: getKoreaTimeStamp(),
+                dateKey: getKoreaDateString(),
+            };
+            if (!Array.isArray(state.bibleLogs)) state.bibleLogs = [];
+            state.bibleLogs.unshift(newLog);
+            state.bibleLogs = state.bibleLogs.slice(0, 120);
+            await saveStateToDb(state);
+            return NextResponse.json({ success: true, log: newLog, state });
+        } else if (action === 'amen_bible_log') {
+            const id = String(payload?.id || '');
+            if (Array.isArray(state.bibleLogs)) {
+                const target = state.bibleLogs.find((l) => l.id === id);
+                if (target) {
+                    target.amens = (target.amens || 0) + 1;
+                    await saveStateToDb(state);
+                }
+            }
+            return NextResponse.json({ success: true, state });
         } else if (action === 'update_room_board') {
             const roomKey = String(payload?.roomKey || 'sanctuary');
             const boardData = payload?.board || {};
-            // 슬라이드 이미지는 DB 용량 보호를 위해 외부 URL 위주로 저장하고 거대 DataURL은 실시간 브로드캐스트로만 처리
             const safeSlides = Array.isArray(boardData.slideImages)
                 ? boardData.slideImages.filter((u: string) => typeof u === 'string' && u.length < 2000).slice(0, 20)
                 : undefined;
