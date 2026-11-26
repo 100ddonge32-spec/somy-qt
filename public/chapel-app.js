@@ -1710,6 +1710,11 @@
   document.getElementById('btn-qt-academy').addEventListener('click', () => openModal('qt-modal'));
   document.getElementById('btn-candle-board').addEventListener('click', () => openModal('candle-modal'));
   document.getElementById('btn-open-bgm').addEventListener('click', () => openModal('bgm-modal'));
+  document.getElementById('btn-light-mood').addEventListener('click', (e) => {
+    const dimmed = world3d.toggleLightingMood();
+    e.currentTarget.textContent = dimmed ? '🕯️ 간접조명 모드' : '💡 본당조명 ON';
+    toast(dimmed ? '🕯️ 은은한 기도회 간접조명 모드로 전환했습니다' : '💡 화사한 CAD 본예배 전체조명 모드로 전환했습니다');
+  });
   document.getElementById('btn-open-share').addEventListener('click', () => openModal('share-modal'));
 
   document.getElementById('btn-cam-mode').addEventListener('click', (e) => {
@@ -1782,3 +1787,4 @@
 
   boot();
 })();
+
