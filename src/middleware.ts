@@ -12,8 +12,24 @@ export function middleware(request: NextRequest) {
     // 2. 경로(Path)에서 church_id 추출 (예: /mychurch)
     if (!churchId) {
         const pathParts = pathname.split('/').filter(Boolean);
-        // /api, /auth, /_next 등 시스템 경로는 제외
-        if (pathParts.length === 1 && !['api', 'auth', 'manifest.json', 'somy.png', 'og-image.png', 'sw.js', 'favicon.ico'].includes(pathParts[0].toLowerCase())) {
+        // /api, /auth, /chapel, 정적 HTML 등 시스템·독립 경로는 제외
+        const seg = decodeURIComponent(pathParts[0]).toLowerCase();
+        const excluded = [
+            'api',
+            'auth',
+            'chapel',
+            '예배당',
+            'online-chapel.html',
+            'online-chapel-3d.html',
+            'manifest.json',
+            'somy.png',
+            'og-image.png',
+            'og-image-jesus.png',
+            'sw.js',
+            'sw-v10.js',
+            'favicon.ico',
+        ];
+        if (pathParts.length === 1 && !excluded.includes(seg) && !seg.endsWith('.html')) {
             churchId = pathParts[0];
             
             // ✅ [핵심 수정] Next.js 서버리스 환경에서는 /[church_id] 폴더가 없으므로 404 에러가 발생합니다.

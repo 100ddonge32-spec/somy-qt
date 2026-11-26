@@ -11,6 +11,17 @@ const nextConfig = {
     images: {
         unoptimized: true,
     },
+    ...(!process.env.CAPACITOR_BUILD
+        ? {
+              async rewrites() {
+                  return [
+                      { source: '/chapel', destination: '/online-chapel.html' },
+                      { source: '/%EC%98%88%EB%B0%B0%EB%8B%B9', destination: '/online-chapel.html' },
+                      { source: '/예배당', destination: '/online-chapel.html' },
+                  ];
+              },
+          }
+        : {}),
 };
 
 export default nextConfig;
