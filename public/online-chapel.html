@@ -6,2547 +6,541 @@
   <meta name="theme-color" content="#0B0F19" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="온라인 예배당" />
+  <meta name="apple-mobile-web-app-title" content="소미 3D 캠퍼스" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <meta property="og:title" content="소미 3D 온라인 대성전" />
-  <meta property="og:description" content="언제 어디서나 웹과 스마트폰으로 함께 모이는 3D 온라인 예배당" />
+  <meta property="og:title" content="소미 3D 온라인 캠퍼스 — 그레이스 월드" />
+  <meta property="og:description" content="예배당 · 사랑방(소그룹) · 성경통독방 · 큐티방 · 루프탑카페를 걸으며 만나는 3D 온라인 교회" />
   <meta property="og:image" content="/og-image.png" />
   <link rel="icon" href="/somy.png" />
   <link rel="apple-touch-icon" href="/somy.png" />
-  <title>소미 3D 현대식 대형교회 온라인 예배당</title>
+  <title>소미 3D 온라인 캠퍼스 — 예배당 · 사랑방 · 성경통독방 · 큐티방</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root {
-      --background: #0B0F19;
-      --foreground: #F8FAFC;
-      --card: #161E2E;
-      --border: #2A364F;
-      --muted-foreground: #94A3B8;
-      --primary: #F59E0B;
-      --primary-foreground: #0F172A;
-      --secondary: #263248;
-      --secondary-foreground: #F8FAFC;
-    }
     * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
-    body {
+    html, body {
       margin: 0;
-      padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
-      overflow-x: hidden;
-      background: var(--background);
-      color: var(--foreground);
+      padding: 0;
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      background: #0b0f19;
+      color: #f8fafc;
       font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", sans-serif;
     }
-    canvas { display: block; touch-action: none; }
-    input, textarea { user-select: text; -webkit-user-select: text; font-size: 16px; }
+    input, textarea, select { user-select: text; -webkit-user-select: text; font-size: 16px; }
     @media (min-width: 640px) {
-      input, textarea { font-size: 12px; }
+      input, textarea, select { font-size: 13px; }
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    .chapel-viewport {
-      height: min(58dvh, 520px);
-      min-height: 360px;
-    }
-    @media (min-width: 640px) {
-      .chapel-viewport {
-        height: min(68dvh, 620px);
-        min-height: 480px;
-      }
-    }
-    .chapel-fullscreen {
-      position: fixed !important;
-      inset: 0 !important;
-      width: 100vw !important;
-      height: 100dvh !important;
-      max-height: none !important;
-      border-radius: 0 !important;
-      border: 0 !important;
-      z-index: 50 !important;
-    }
   </style>
 </head>
-<body class="antialiased m-0 p-2.5 sm:p-4">
-  <div class="max-w-7xl mx-auto space-y-2.5 sm:space-y-3">
+<body>
+  <div id="appRoot" class="relative w-full h-full overflow-hidden bg-[#0B0F19]">
 
-    <!-- 숨겨진 웹캠 비디오 & 커스텀 기도음악 오디오 엘리먼트 -->
+    <!-- 3D 칠판/슬라이드 오프스크린 캔버스 & 미디어 엘리먼트 -->
+    <canvas id="boardOffscreenCanvas" width="960" height="540" class="hidden"></canvas>
     <video id="webcamVideo" autoplay playsinline muted class="hidden"></video>
     <audio id="customBgmAudio" loop preload="auto" class="hidden"></audio>
 
-    <!-- 1. 메인 3D 대형교회 와이드 뷰포트 (PC & 스마트폰 완벽 대응) -->
-    <div id="viewportBox" class="chapel-viewport relative rounded-2xl overflow-hidden border border-slate-700 shadow-2xl" style="background: #0B0E17;">
-      <canvas id="chapelCanvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+    <!-- 메인 Three.js 3D WebGL 캔버스 -->
+    <canvas id="worldCanvas" class="w-full h-full block touch-none cursor-grab active:cursor-grabbing"></canvas>
 
-      <!-- 유튜브 영상 송출 시 3D 와이드 스크린 위치에 정확히 매핑되는 레이어 -->
-      <div id="ytScreenBox" class="hidden absolute overflow-hidden rounded-lg border-2 border-amber-300/60 shadow-2xl bg-black z-10">
-        <iframe
-          id="ytIframe"
-          class="w-full h-full border-0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen
-        ></iframe>
-        <button
-          id="btn-close-yt"
-          class="absolute top-1.5 right-1.5 px-2 py-0.5 rounded bg-black/75 text-white text-xs font-bold cursor-pointer hover:bg-rose-600"
-        >
-          ✕ 영상 끄기
+    <!-- 3D 캐릭터 머리 위 이름표 & 말풍선 투사 레이어 -->
+    <div id="avatarOverlayLayer" class="pointer-events-none absolute inset-0 overflow-hidden z-10"></div>
+
+    <!-- 1. 상단 글로벌 HUD 바 -->
+    <div class="absolute top-2.5 sm:top-3.5 inset-x-2.5 sm:inset-x-4 flex flex-wrap items-center justify-between gap-2 pointer-events-none z-20" style="padding-top: env(safe-area-inset-top, 0px);">
+      <div class="pointer-events-auto flex items-center gap-1.5 flex-wrap">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/70 backdrop-blur-md border border-white/15 text-xs font-extrabold shadow">
+          <span id="zone-title-badge" class="text-amber-300">🌿 앞마당 정원</span>
+          <span class="text-white/30">|</span>
+          <span id="online-count-label" class="text-emerald-300">🟢 실시간 1명</span>
+        </div>
+
+        <button id="btn-open-profile" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800/85 hover:bg-slate-700 backdrop-blur-md border border-white/15 text-xs font-bold text-white cursor-pointer">
+          <span>😊</span>
+          <span id="my-name-badge">백동희 성도</span>
+          <span class="text-amber-300 text-[11px]">변경</span>
         </button>
       </div>
 
-      <!-- 상단 슬림 컨트롤 바 (모바일 가로 스와이프 지원으로 화면 가림 방지) -->
-      <div class="absolute top-2.5 sm:top-3 inset-x-2.5 sm:inset-x-3 flex items-center justify-between gap-2 pointer-events-none z-20">
-        <div class="pointer-events-auto shrink-0 inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-white text-[11px] sm:text-xs font-bold">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span class="hidden xs:inline sm:inline">그레이스 대성전</span>
-          <span class="text-amber-300 font-extrabold" id="live-count">12명 예배 중</span>
-        </div>
-
-        <div class="pointer-events-auto flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-full py-0.5">
-          <button id="btn-open-caption" class="shrink-0 px-2.5 sm:px-3 py-1.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] sm:text-xs font-extrabold cursor-pointer shadow transition">
-            ✍️ 스크린 글 입력
-          </button>
-          <button id="btn-screen-mode" class="shrink-0 px-2.5 py-1.5 rounded-full bg-black/65 hover:bg-black/85 backdrop-blur-md border border-white/15 text-amber-300 text-[11px] sm:text-xs font-bold cursor-pointer transition">
-            🖥️ 슬라이드 (1/4)
-          </button>
-          <button id="btn-open-bgm" class="shrink-0 px-2.5 sm:px-3 py-1.5 rounded-full bg-indigo-500/85 hover:bg-indigo-500 backdrop-blur-md border border-indigo-300/30 text-white text-[11px] sm:text-xs font-extrabold cursor-pointer transition">
-            🎵 기도음악
-          </button>
-          <button id="btn-mood" class="shrink-0 px-2.5 py-1.5 rounded-full bg-black/65 hover:bg-black/85 backdrop-blur-md border border-white/15 text-white text-[11px] sm:text-xs font-bold cursor-pointer transition">
-            ✨ 조명
-          </button>
-          <button id="btn-open-share" class="shrink-0 px-2.5 py-1.5 rounded-full bg-emerald-500/80 hover:bg-emerald-500 backdrop-blur-md border border-emerald-300/30 text-white text-[11px] sm:text-xs font-extrabold cursor-pointer transition">
-            📱 폰/링크
-          </button>
-        </div>
-      </div>
-
-      <!-- 하단 시점 전환 & 핀치/줌/전체화면 플로팅 바 (모바일 한 줄 가로 스크롤) -->
-      <div class="absolute bottom-2.5 sm:bottom-3 inset-x-2.5 sm:inset-x-3 flex items-center justify-between gap-2 pointer-events-none z-20">
-        <div class="pointer-events-auto flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-full py-0.5">
-          <div class="inline-flex items-center gap-1 p-1 rounded-full bg-black/65 backdrop-blur-md border border-white/15 shrink-0">
-            <button data-cam="overview" class="cam-preset shrink-0 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-amber-400 text-slate-950 cursor-pointer transition">
-              🏛️ 전체 한눈에
-            </button>
-            <button data-cam="panorama" class="cam-preset shrink-0 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold text-white/90 hover:bg-white/10 cursor-pointer transition">
-              📐 파노라마
-            </button>
-            <button data-cam="center" class="cam-preset shrink-0 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold text-white/90 hover:bg-white/10 cursor-pointer transition">
-              🖥️ 스크린정면
-            </button>
-            <button data-cam="walls" class="cam-preset shrink-0 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold text-white/90 hover:bg-white/10 cursor-pointer transition">
-              ✨ 벽면조명
-            </button>
-            <button data-cam="myface" class="cam-preset shrink-0 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold text-white/90 hover:bg-white/10 cursor-pointer transition">
-              😊 내 아바타
-            </button>
-          </div>
-
-          <div class="inline-flex items-center gap-1 p-1 rounded-full bg-black/65 backdrop-blur-md border border-white/15 shrink-0">
-            <button id="btn-zoom-out" title="더 넓게 보기" class="px-2 py-1 rounded-full text-[11px] sm:text-xs font-extrabold text-white hover:bg-white/15 cursor-pointer transition">
-              ➖넓게
-            </button>
-            <button id="btn-zoom-in" title="가까이 보기" class="px-2 py-1 rounded-full text-[11px] sm:text-xs font-extrabold text-white hover:bg-white/15 cursor-pointer transition">
-              ➕가까이
-            </button>
-            <button id="btn-fullscreen" title="전체화면 전환" class="px-2 py-1 rounded-full text-[11px] sm:text-xs font-extrabold text-amber-300 hover:bg-white/15 cursor-pointer transition">
-              ⛶ 전체화면
-            </button>
-          </div>
-        </div>
-
-        <div id="guide-pill" class="hidden xl:block pointer-events-none px-3 py-1.5 rounded-full bg-black/65 backdrop-blur-md border border-white/10 text-white/90 text-xs font-medium truncate max-w-xs">
-          ✨ 한 손가락 회전 · 두 손가락 핀치 줌 · 초록 빈자리 터치 착석
-        </div>
-      </div>
-
-      <!-- 모바일/PC 공통 상단 안내 토스트 (상태 변경 시 잠깐 표시) -->
-      <div id="mobile-toast" class="hidden absolute top-14 left-1/2 -translate-x-1/2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-amber-400/50 text-amber-200 text-xs font-bold shadow-lg pointer-events-none z-20 whitespace-nowrap max-w-[92vw] truncate"></div>
-
-      <!-- [모달 A] 관리자 대형 스크린 글(자막/공지/기도제목) 직접 입력 스튜디오 -->
-      <div id="caption-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-30">
-        <div class="bg-slate-800 text-white rounded-2xl max-w-lg w-full p-4 sm:p-5 shadow-2xl border border-slate-600 space-y-3 max-h-[92%] overflow-y-auto">
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-extrabold text-amber-300">✍️ 관리자 대형 스크린 글 직접 입력</span>
-            <button id="btn-close-caption" class="text-xs px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 cursor-pointer">닫기</button>
-          </div>
-
-          <div class="space-y-2">
-            <div>
-              <label class="block text-xs font-bold text-slate-300 mb-1">상단 배지 / 소제목 (비워두면 본문만 크게 표시)</label>
-              <input
-                id="cap-badge-input"
-                type="text"
-                value="합심기도 제목 · PRAYER TOGETHER"
-                placeholder="예: 오늘의 말씀 / 합심기도 제목 / 교회 소식"
-                class="w-full px-3 py-2 rounded-xl text-xs bg-slate-900 border border-slate-700 text-white outline-none focus:border-amber-400"
-              />
-            </div>
-
-            <div>
-              <label class="block text-xs font-bold text-slate-300 mb-1">대형 스크린 본문 (엔터로 여러 줄 입력 가능 · 글자 크기 자동 맞춤)</label>
-              <textarea
-                id="cap-body-input"
-                rows="3"
-                placeholder="스크린에 띄울 말씀, 기도제목, 찬양가사, 환영 문구를 자유롭게 타이핑하세요."
-                class="w-full px-3 py-2 rounded-xl text-xs bg-slate-900 border border-slate-700 text-white outline-none focus:border-amber-400 leading-relaxed resize-none"
-              >1. 환우들의 온전한 치유와 회복을 위해
-2. 다음 세대와 가정이 믿음 위에 굳게 서도록</textarea>
-            </div>
-
-            <div class="flex flex-wrap items-center justify-between gap-2 pt-0.5">
-              <div class="flex items-center gap-1.5">
-                <span class="text-xs text-slate-300 font-bold">강조 색상:</span>
-                <button type="button" data-accent="#FDE047" class="cap-accent-btn w-5 h-5 rounded-full bg-yellow-300 ring-2 ring-white cursor-pointer"></button>
-                <button type="button" data-accent="#38BDF8" class="cap-accent-btn w-5 h-5 rounded-full bg-sky-400 opacity-70 cursor-pointer"></button>
-                <button type="button" data-accent="#6EE7B7" class="cap-accent-btn w-5 h-5 rounded-full bg-emerald-300 opacity-70 cursor-pointer"></button>
-                <button type="button" data-accent="#FDA4AF" class="cap-accent-btn w-5 h-5 rounded-full bg-rose-300 opacity-70 cursor-pointer"></button>
-              </div>
-              <label class="inline-flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
-                <input id="cap-focus-cam" type="checkbox" checked class="accent-amber-400" />
-                <span>적용 시 스크린 정면 보기</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="flex flex-wrap gap-2">
-            <button id="btn-apply-caption" class="flex-1 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer">
-              🖥️ 지금 대형 스크린에 바로 올리기
-            </button>
-            <button id="btn-save-slide" class="px-3.5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-extrabold cursor-pointer">
-              ➕ 슬라이드 저장
-            </button>
-          </div>
-
-          <div class="border-t border-slate-700 pt-2.5 space-y-1.5">
-            <div class="text-xs font-bold text-slate-400">📋 준비된 스크린 슬라이드 (터치 시 즉시 송출)</div>
-            <div id="saved-slides-list" class="space-y-1.5 max-h-28 overflow-y-auto pr-1"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- [모달 B] 기도음악(BGM) 선곡 & 유튜브 음악 링크 모달 -->
-      <div id="bgm-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-30">
-        <div class="bg-slate-800 text-white rounded-2xl max-w-lg w-full p-4 sm:p-5 shadow-2xl border border-slate-600 space-y-3 max-h-[92%] overflow-y-auto">
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-extrabold text-indigo-300">🎵 예배당 배경 기도음악 설정</span>
-            <button id="btn-close-bgm" class="text-xs px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 cursor-pointer">닫기</button>
-          </div>
-
-          <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-700 space-y-2">
-            <div class="flex flex-wrap items-center justify-between gap-1">
-              <span class="text-xs font-extrabold text-rose-300">1. 🔗 유튜브 기도음악 / 찬양 연주 링크 걸기</span>
-              <span class="text-[11px] text-slate-400">스크린 자막은 그대로 유지됩니다</span>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-2">
-              <input
-                id="bgm-yt-input"
-                type="text"
-                value="https://www.youtube.com/watch?v=jfKfPfyJRdk"
-                placeholder="https://www.youtube.com/watch?v=... 또는 youtu.be/..."
-                class="flex-1 px-3 py-2 rounded-xl text-xs bg-slate-800 border border-slate-600 text-white outline-none focus:border-rose-400"
-              />
-              <button id="btn-start-yt-bgm" class="shrink-0 px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold cursor-pointer">
-                ▶️ 유튜브 음악 켜기
-              </button>
-            </div>
-          </div>
-
-          <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-700 space-y-2.5">
-            <div class="text-xs font-extrabold text-emerald-300">2. 📁 내 폰/PC 기도음악 파일(MP3·M4A·WAV) 또는 오디오 주소</div>
-            <div class="flex flex-wrap items-center gap-2">
-              <label class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold cursor-pointer inline-flex items-center gap-1.5">
-                <span>📂 내 기기에서 음악 파일 선택</span>
-                <input id="bgm-file-input" type="file" accept="audio/*" class="hidden" />
-              </label>
-              <span id="bgm-file-name" class="text-xs text-slate-400 truncate max-w-[220px]">선택된 파일 없음 (반복 재생)</span>
-            </div>
-            <div class="flex gap-2">
-              <input
-                id="bgm-audio-url-input"
-                type="text"
-                placeholder="직접 오디오 주소 입력 (https://.../prayer.mp3)"
-                class="flex-1 px-3 py-1.5 rounded-xl text-xs bg-slate-800 border border-slate-600 text-white outline-none focus:border-emerald-400"
-              />
-              <button id="btn-start-url-bgm" class="shrink-0 px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold cursor-pointer">
-                주소 재생
-              </button>
-            </div>
-          </div>
-
-          <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
-            <button id="btn-start-synth-bgm" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold cursor-pointer">
-              🎹 기본 내장 잔잔한 패드 반주 켜기
-            </button>
-            <button id="btn-stop-all-bgm" class="px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-rose-700 text-white text-xs font-bold cursor-pointer">
-              ⏹️ 기도음악 끄기
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- [모달 C] 대형 스크린 유튜브 영상 송출 모달 -->
-      <div id="yt-modal" class="hidden absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-30">
-        <div class="bg-slate-800 text-white rounded-2xl max-w-md w-full p-4 sm:p-5 shadow-2xl border border-slate-600 space-y-3">
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-extrabold">▶️ 대성전 와이드 스크린 유튜브 영상 송출</span>
-            <button id="btn-cancel-yt" class="text-xs px-2 py-1 rounded-lg bg-slate-700 cursor-pointer">닫기</button>
-          </div>
-          <p class="text-xs text-slate-300 m-0 leading-relaxed">
-            실시간 예배 스트리밍이나 설교 영상을 대성전 정면 대형 스크린에 띄웁니다.
-          </p>
-          <input
-            id="yt-url-input"
-            type="text"
-            value="https://www.youtube.com/watch?v=M7lc1UVf-VE"
-            placeholder="https://www.youtube.com/watch?v=... 또는 youtu.be/..."
-            class="w-full px-3 py-2 rounded-xl text-xs bg-slate-900 border border-slate-700 text-white outline-none"
-          />
-          <div class="flex gap-2">
-            <button id="btn-Apply-yt" class="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-extrabold cursor-pointer hover:bg-rose-700">
-              ▶️ 대형 스크린에 영상 송출 시작
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- [모달 D] 웹 & 스마트폰 열기 (QR코드 / 주소 복사 / 카톡 공유 / 홈화면 앱 추가 안내) -->
-      <div id="share-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-30">
-        <div class="bg-slate-800 text-white rounded-2xl max-w-md w-full p-4 sm:p-5 shadow-2xl border border-slate-600 space-y-3.5 max-h-[92%] overflow-y-auto">
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-extrabold text-emerald-300">📱 스마트폰 & 웹에서 바로 열기</span>
-            <button id="btn-close-share" class="text-xs px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 cursor-pointer">닫기</button>
-          </div>
-
-          <div class="flex flex-col items-center bg-white rounded-2xl p-3.5 text-slate-900 space-y-2">
-            <img
-              id="share-qr-img"
-              alt="스마트폰 접속 QR코드"
-              class="w-36 h-36 rounded-lg object-contain"
-              onerror="this.style.display='none'"
-            />
-            <span class="text-[11px] font-bold text-slate-600">스마트폰 카메라로 스캔하면 즉시 입장합니다</span>
-          </div>
-
-          <div class="space-y-2">
-            <label class="block text-xs font-bold text-slate-300">온라인 예배당 전용 웹 주소</label>
-            <div class="flex gap-1.5">
-              <input
-                id="share-url-input"
-                type="text"
-                readonly
-                value="https://somy-qt.vercel.app/chapel"
-                class="flex-1 px-3 py-2 rounded-xl text-xs bg-slate-900 border border-slate-700 text-emerald-300 font-bold outline-none"
-              />
-              <button id="btn-copy-url" class="shrink-0 px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold cursor-pointer">
-                📋 복사
-              </button>
-            </div>
-            <button id="btn-native-share" class="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer">
-              📤 카카오톡 / 문자로 예배당 링크 공유하기
-            </button>
-          </div>
-
-          <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-700 text-xs text-slate-300 space-y-1 leading-relaxed">
-            <div class="font-extrabold text-amber-300">📲 폰 홈 화면에 앱처럼 설치하는 법</div>
-            <div>• <b>아이폰(Safari)</b>: 하단 공유 버튼(↑) ➔ <b>홈 화면에 추가</b></div>
-            <div>• <b>갤럭시(Chrome)</b>: 우측 상단 메뉴(⋮) ➔ <b>홈 화면에 추가</b></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 말씀 카드 모달 -->
-      <div id="word-modal" class="hidden absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-30">
-        <div class="bg-[#FDFBF7] text-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-amber-200 text-center space-y-3">
-          <div class="text-xs font-extrabold tracking-widest text-amber-700 uppercase">Today's Promise</div>
-          <div id="word-text" class="text-sm font-bold leading-relaxed text-slate-800 break-keep"></div>
-          <div id="word-ref" class="text-xs font-extrabold text-amber-800"></div>
-          <button id="btn-close-word" class="mt-2 w-full py-2.5 rounded-xl bg-amber-600 text-white text-xs font-extrabold cursor-pointer hover:bg-amber-700">
-            아멘으로 마음에 새기기 🙏
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 현재 재생 중인 기도음악(BGM) 미니 컨트롤 바 (재생 중일 때만 표시) -->
-    <div id="bgm-player-bar" class="hidden bg-indigo-950/80 border border-indigo-500/40 rounded-2xl px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2.5">
-      <div class="flex items-center gap-2 min-w-0">
-        <span class="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-ping shrink-0"></span>
-        <span id="bgm-now-label" class="text-xs font-extrabold text-indigo-200 truncate">🎵 기도음악 재생 중</span>
-      </div>
-
-      <div id="bgm-yt-mini-wrap" class="hidden flex items-center gap-2">
-        <span class="text-[11px] text-indigo-300">소리 켜기 ▶:</span>
-        <div class="w-40 sm:w-44 h-11 rounded-lg overflow-hidden border border-indigo-400/40 bg-black">
-          <iframe
-            id="bgmYtIframe"
-            class="w-full h-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          ></iframe>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <div id="bgm-vol-wrap" class="flex items-center gap-1.5">
-          <span class="text-xs text-indigo-200">🔊</span>
-          <input id="bgm-volume" type="range" min="0" max="100" value="65" class="w-20 accent-indigo-400 cursor-pointer" />
-        </div>
-        <button id="btn-change-bgm-bar" class="px-2.5 py-1 rounded-lg bg-indigo-500/30 hover:bg-indigo-500/50 text-indigo-100 text-xs font-bold cursor-pointer">
-          곡 변경
-        </button>
-        <button id="btn-stop-bgm-bar" class="px-2.5 py-1 rounded-lg bg-rose-500/30 hover:bg-rose-500/50 text-rose-200 text-xs font-bold cursor-pointer">
-          ⏹️ 끄기
-        </button>
-      </div>
-    </div>
-
-    <!-- 2. 관리자 자막·음성·영상 스튜디오 & 성도 참여 바 (모바일 터치 최적화) -->
-    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-2">
-      <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
-        <span class="hidden sm:inline text-xs font-extrabold text-white">🎛️ 예배 인도·송출:</span>
-
-        <button id="btn-studio-caption" class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40 cursor-pointer hover:bg-amber-500/30 transition">
-          ✍️ 스크린 글
+      <!-- 방별 핵심 기능 & 강의·미디어 버튼들 -->
+      <div class="pointer-events-auto flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-full py-0.5">
+        <button id="btn-sarang-Menu" class="hidden shrink-0 px-3 py-1.5 rounded-full bg-orange-500 hover:bg-orange-400 text-slate-950 text-xs font-extrabold cursor-pointer shadow">
+          🏠 사랑방 선택 / +방 만들기
         </button>
 
-        <button id="btn-studio-bgm" class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 cursor-pointer hover:bg-indigo-500/30 transition">
-          🎵 기도음악
+        <button id="btn-bible-reader" class="hidden shrink-0 px-3 py-1.5 rounded-full bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow">
+          📖 성경 66권 펴기
         </button>
 
-        <button id="btn-mic" class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 cursor-pointer hover:bg-emerald-500/30 flex items-center gap-1.5 transition">
-          <span id="mic-label">🎙️ 마이크</span>
-          <span id="mic-meter-wrap" class="hidden inline-flex items-center w-8 sm:w-10 h-2 bg-black/40 rounded-full overflow-hidden">
-            <span id="mic-meter-bar" class="h-full bg-emerald-400 transition-all duration-75" style="width: 0%;"></span>
+        <button id="btn-qt-academy" class="hidden shrink-0 px-3 py-1.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow">
+          📚 큐티 강의안 & 나눔
+        </button>
+
+        <button id="btn-candle-board" class="hidden shrink-0 px-3 py-1.5 rounded-full bg-amber-500/90 hover:bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer shadow">
+          🕯️ 기도 등불
+        </button>
+
+        <button id="btn-board-studio" class="hidden shrink-0 px-3 py-1.5 rounded-full bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow">
+          👨‍🏫 칠판·PPT·화면공유
+        </button>
+
+        <button id="btn-sip-drink" class="hidden shrink-0 px-3 py-1.5 rounded-full bg-amber-700/90 hover:bg-amber-600 text-white text-xs font-extrabold cursor-pointer border border-amber-300/40">
+          ☕ 커피 마시기
+        </button>
+
+        <button id="btn-mic-toggle" class="shrink-0 px-2.5 py-1.5 rounded-full bg-black/70 hover:bg-black/85 backdrop-blur-md border border-emerald-400/40 text-emerald-300 text-xs font-extrabold cursor-pointer flex items-center gap-1.5">
+          <span id="mic-btn-label">🎙️ 마이크</span>
+          <span id="mic-meter-wrap" class="hidden inline-flex w-8 h-2 bg-black/50 rounded-full overflow-hidden">
+            <span id="mic-meter-bar" class="h-full bg-emerald-400" style="width:0%"></span>
           </span>
         </button>
 
-        <button id="btn-webcam" class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-extrabold bg-sky-500/20 text-sky-400 border border-sky-500/30 cursor-pointer hover:bg-sky-500/30 transition">
-          📹 카메라 송출
+        <button id="btn-open-bgm" class="shrink-0 px-2.5 py-1.5 rounded-full bg-indigo-500/85 hover:bg-indigo-500 text-white text-xs font-extrabold cursor-pointer">
+          🎵 기도음악
         </button>
 
-        <button id="btn-flip-cam" class="hidden px-2.5 py-1.5 rounded-xl text-xs font-extrabold bg-sky-500/30 text-white border border-sky-400/40 cursor-pointer">
-          🔄 전/후면
-        </button>
-
-        <button id="btn-yt-open" class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-extrabold bg-rose-500/20 text-rose-400 border border-rose-500/30 cursor-pointer hover:bg-rose-500/30 transition">
-          ▶️ 유튜브 영상
-        </button>
-      </div>
-
-      <div class="flex flex-wrap items-center gap-1.5">
-        <button id="btn-avatar-custom" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-700 text-white border border-slate-600 cursor-pointer hover:opacity-90">
-          🎨 아바타
-        </button>
-        <button id="btn-draw-word" class="px-2.5 py-1.5 rounded-xl text-xs font-extrabold bg-amber-500/20 text-amber-400 border border-amber-500/30 cursor-pointer hover:bg-amber-500/30">
-          💌 말씀뽑기
-        </button>
-        <button id="btn-send-amen" class="px-3 py-1.5 rounded-xl text-xs font-extrabold bg-rose-500 text-white cursor-pointer hover:bg-rose-600 shadow-sm">
+        <button id="btn-amen-shout" class="shrink-0 px-2.5 py-1.5 rounded-full bg-rose-500 hover:bg-rose-400 text-white text-xs font-extrabold cursor-pointer">
           🙌 아멘!
         </button>
-      </div>
-    </div>
 
-    <!-- 3. 기도 등불 봉헌 & 중보기도 나눔 보드 -->
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 sm:gap-3">
-      <div class="md:col-span-5 bg-slate-800 border border-slate-700 rounded-2xl p-3 sm:p-3.5 space-y-2.5">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-extrabold text-white">🕯️ 강단 앞 기도 등불 밝히기</span>
-          <span id="candle-counter" class="text-xs font-bold text-amber-400">8개 점등</span>
-        </div>
-        <div class="flex flex-col sm:flex-row gap-2">
-          <input
-            id="prayer-author"
-            type="text"
-            value="백동희 성도"
-            placeholder="이름/직분"
-            class="sm:w-28 px-3 py-2 sm:py-1.5 rounded-xl text-xs bg-slate-900 border border-slate-700 text-white outline-none"
-          />
-          <input
-            id="prayer-input"
-            type="text"
-            placeholder="기도 제목을 입력하면 강단 앞에 등불이 켜집니다"
-            class="flex-1 px-3 py-2 sm:py-1.5 rounded-xl text-xs bg-slate-900 border border-slate-700 text-white outline-none"
-          />
-        </div>
-        <button id="btn-light-candle" class="w-full py-2.5 sm:py-2 rounded-xl text-xs font-extrabold bg-amber-500 text-slate-950 cursor-pointer hover:bg-amber-400">
-          🕯️ 기도 등불 올리기
+        <button id="btn-open-share" class="shrink-0 px-2.5 py-1.5 rounded-full bg-black/70 hover:bg-black/85 border border-white/15 text-white text-xs font-bold cursor-pointer">
+          📱 초대/QR
         </button>
       </div>
+    </div>
 
-      <div class="md:col-span-7 bg-slate-800 border border-slate-700 rounded-2xl p-3 sm:p-3.5">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-extrabold text-white">🙏 실시간 중보기도 나눔</span>
-          <span class="text-[11px] sm:text-xs text-slate-400">아멘 터치 시 은혜의 불빛이 올라갑니다</span>
-        </div>
-        <div id="prayer-cards" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 sm:max-h-32 overflow-y-auto pr-1"></div>
+    <!-- 상단 안내 토스트 -->
+    <div id="world-toast" class="hidden absolute top-16 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-slate-900/90 border border-amber-400/60 text-amber-200 text-xs font-extrabold shadow-xl pointer-events-none z-30 max-w-[92vw] truncate"></div>
+
+    <!-- 기도음악 재생 중 미니 바 -->
+    <div id="bgm-mini-bar" class="hidden absolute top-16 right-3 sm:right-4 bg-indigo-950/90 backdrop-blur-md border border-indigo-400/40 rounded-2xl p-2 flex items-center gap-2 z-20 max-w-[92vw]">
+      <span id="bgm-mini-label" class="text-[11px] font-extrabold text-indigo-200 truncate max-w-[140px]">🎵 기도음악</span>
+      <div id="bgm-yt-wrap" class="hidden w-36 h-9 rounded overflow-hidden border border-indigo-400/30 bg-black">
+        <iframe id="bgmYtIframe" class="w-full h-full border-0" allow="autoplay; encrypted-media"></iframe>
+      </div>
+      <button id="btn-stop-bgm-mini" class="px-2 py-1 rounded-lg bg-rose-500/40 text-white text-[11px] font-bold cursor-pointer">⏹️</button>
+    </div>
+
+    <!-- 실시간 공유 PPT(웹 링크) / 유튜브 / PC화면 공유 플로팅 뷰어 -->
+    <div id="live-media-dock" class="hidden absolute top-28 right-3 sm:right-4 w-[min(92vw,420px)] bg-slate-900/95 border-2 border-sky-400/70 rounded-2xl overflow-hidden shadow-2xl z-20">
+      <div class="px-3 py-1.5 bg-slate-800 flex items-center justify-between">
+        <span id="dock-title" class="text-xs font-extrabold text-sky-300">📊 실시간 공유 자료</span>
+        <button id="btn-close-dock" class="text-xs px-2 py-0.5 rounded bg-slate-700 text-white cursor-pointer">접기 ✕</button>
+      </div>
+      <div class="w-full aspect-video bg-black relative">
+        <iframe id="dockEmbedFrame" class="hidden w-full h-full border-0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
+        <video id="screenShareVideo" autoplay playsinline class="hidden w-full h-full object-contain"></video>
       </div>
     </div>
-  </div>
 
-  <script>
-    (() => {
-      const viewportBox = document.getElementById('viewportBox');
-      const canvas = document.getElementById('chapelCanvas');
-      const ctx = canvas.getContext('2d');
-      const webcamVideo = document.getElementById('webcamVideo');
-      const customBgmAudio = document.getElementById('customBgmAudio');
-      const bgmYtIframe = document.getElementById('bgmYtIframe');
-      const ytScreenBox = document.getElementById('ytScreenBox');
-      const ytIframe = document.getElementById('ytIframe');
-      const mobileToast = document.getElementById('mobile-toast');
-
-      let toastTimer = null;
-      function notifyStatus(msg) {
-        const pill = document.getElementById('guide-pill');
-        if (pill) pill.textContent = msg;
-        if (mobileToast) {
-          mobileToast.textContent = msg;
-          mobileToast.classList.remove('hidden');
-          if (toastTimer) clearTimeout(toastTimer);
-          toastTimer = setTimeout(() => {
-            mobileToast.classList.add('hidden');
-          }, 2800);
-        }
-      }
-
-      const STAGE_Z = -245;
-
-      let screenSource = 'slides';
-      let webcamStream = null;
-      let camFacingMode = 'user';
-
-      let micActive = false;
-      let micSimMode = false;
-      let micStream = null;
-      let micAudioCtx = null;
-      let micAnalyser = null;
-      let micDataArray = null;
-      let currentMicLevel = 0;
-
-      const cam = {
-        yaw: 0.0,
-        pitch: 0.36,
-        dist: 760,
-        target: { x: 0, y: 46, z: -45 },
-        tYaw: 0.0,
-        tPitch: 0.36,
-        tDist: 760,
-        tTarget: { x: 0, y: 46, z: -45 },
-        eye: { x: 0, y: 315, z: 665 },
-        forward: { x: 0, y: 0, z: -1 },
-        right: { x: 1, y: 0, z: 0 },
-        up: { x: 0, y: 1, z: 0 },
-        focal: 420
-      };
-
-      let viewW = 960, viewH = 580, tick = 0;
-
-      function updateCamera() {
-        // 스마트폰 세로 화면(폭 360px~)부터 데스크톱 와이드까지 양쪽 조각벽과 대형스크린이 한눈에 다 들어오도록 자동 광각 계산
-        cam.focal = Math.max(155, Math.min(viewW * 0.51, viewH * 0.85));
-
-        cam.yaw += (cam.tYaw - cam.yaw) * 0.085;
-        cam.pitch += (cam.tPitch - cam.pitch) * 0.085;
-        cam.dist += (cam.tDist - cam.dist) * 0.085;
-        cam.target.x += (cam.tTarget.x - cam.target.x) * 0.085;
-        cam.target.y += (cam.tTarget.y - cam.target.y) * 0.085;
-        cam.target.z += (cam.tTarget.z - cam.target.z) * 0.085;
-
-        const cosP = Math.cos(cam.pitch);
-        const sinP = Math.sin(cam.pitch);
-        const sinY = Math.sin(cam.yaw);
-        const cosY = Math.cos(cam.yaw);
-
-        cam.eye.x = cam.target.x + cam.dist * sinY * cosP;
-        cam.eye.y = Math.max(22, cam.target.y + cam.dist * sinP);
-        cam.eye.z = cam.target.z + cam.dist * cosY * cosP;
-
-        let fx = cam.target.x - cam.eye.x;
-        let fy = cam.target.y - cam.eye.y;
-        let fz = cam.target.z - cam.eye.z;
-        const fl = Math.hypot(fx, fy, fz) || 1;
-        fx /= fl; fy /= fl; fz /= fl;
-        cam.forward = { x: fx, y: fy, z: fz };
-
-        let rx = -fz, rz = fx;
-        const rl = Math.hypot(rx, rz) || 1;
-        rx /= rl; rz /= rl;
-        cam.right = { x: rx, y: 0, z: rz };
-
-        cam.up = {
-          x: -rz * fy,
-          y: rz * fx - rx * fz,
-          z: rx * fy
-        };
-      }
-
-      function project(x, y, z) {
-        const dx = x - cam.eye.x;
-        const dy = y - cam.eye.y;
-        const dz = z - cam.eye.z;
-
-        const cx = dx * cam.right.x + dy * cam.right.y + dz * cam.right.z;
-        const cy = dx * cam.up.x + dy * cam.up.y + dz * cam.up.z;
-        const cz = dx * cam.forward.x + dy * cam.forward.y + dz * cam.forward.z;
-
-        if (cz < 18) return null;
-        const scale = cam.focal / cz;
-        return {
-          sx: viewW * 0.5 + cx * scale,
-          sy: viewH * 0.52 - cy * scale,
-          scale,
-          depth: cz
-        };
-      }
-
-      const MOODS = [
-        {
-          label: '✨ 주일조명',
-          bgTop: '#0B1020',
-          bgBot: '#1A2238',
-          floorMain: '#3A2D25',
-          floorAlt: '#32261F',
-          carpet: '#881D2F',
-          wallBase: '#2B2421',
-          reliefLight: '#DEA55F',
-          reliefMid: '#8F6036',
-          reliefShadow: '#3D2B1F',
-          uplightA: '255, 205, 110',
-          uplightB: '255, 235, 180',
-          stageBeam: '255, 230, 165',
-          screenBg1: '#0C223D',
-          screenBg2: '#1B4978',
-          screenAccent: '#FDE047'
-        },
-        {
-          label: '💜 워십조명',
-          bgTop: '#080616',
-          bgBot: '#1A1033',
-          floorMain: '#241D30',
-          floorAlt: '#1E1729',
-          carpet: '#5B1846',
-          wallBase: '#1D162B',
-          reliefLight: '#A855F7',
-          reliefMid: '#6B21A8',
-          reliefShadow: '#2E1065',
-          uplightA: '192, 132, 252',
-          uplightB: '56, 189, 248',
-          stageBeam: '168, 85, 247',
-          screenBg1: '#1B0E3D',
-          screenBg2: '#3B0764',
-          screenAccent: '#38BDF8'
-        },
-        {
-          label: '🕯️ 기도회조명',
-          bgTop: '#060913',
-          bgBot: '#101729',
-          floorMain: '#291E19',
-          floorAlt: '#221814',
-          carpet: '#59161E',
-          wallBase: '#1C1817',
-          reliefLight: '#F59E0B',
-          reliefMid: '#78350F',
-          reliefShadow: '#291811',
-          uplightA: '245, 158, 11',
-          uplightB: '253, 224, 71',
-          stageBeam: '251, 191, 36',
-          screenBg1: '#171310',
-          screenBg2: '#362212',
-          screenAccent: '#FBBF24'
-        }
-      ];
-      let moodIdx = 0;
-
-      const DEFAULT_SLIDES = [
-        {
-          badge: 'SUNDAY WORSHIP · 오늘의 본문',
-          body: '여호와는 나의 빛이요 나의 구원이시니\n내가 누구를 두려워하리요 (시편 27:1)',
-          accent: '#FDE047'
-        },
-        {
-          badge: 'PRAISE & WORSHIP · 경배와 찬양',
-          body: '주님 큰 영광 받으소서 홀로 찬양 받으소서\n모든 이름 위에 뛰어난 그 이름 예수 ♪',
-          accent: '#38BDF8'
-        },
-        {
-          badge: 'PRAYER TOGETHER · 합심기도 제목',
-          body: '1. 환우들의 온전한 치유와 회복을 위해\n2. 다음 세대와 가정이 믿음 위에 굳게 서도록',
-          accent: '#6EE7B7'
-        },
-        {
-          badge: 'WELCOME · 환영 및 공지',
-          body: '소미 온라인 대성전에 오신 성도님들을 환영합니다!\n초록색 빈자리를 터치해 착석 후 기도 등불을 밝혀주세요.',
-          accent: '#FDA4AF'
-        }
-      ];
-
-      let screenSlides = DEFAULT_SLIDES.slice();
-      try {
-        const savedRaw = localStorage.getItem('somy_chapel_slides_v1');
-        if (savedRaw) {
-          const parsed = JSON.parse(savedRaw);
-          if (Array.isArray(parsed) && parsed.length > 0) screenSlides = parsed;
-        }
-      } catch {}
-
-      let screenModeIdx = 0;
-      let activeCustomSlide = screenSlides[0];
-      let selectedCapAccent = '#FDE047';
-
-      function persistSlides() {
-        try {
-          localStorage.setItem('somy_chapel_slides_v1', JSON.stringify(screenSlides));
-        } catch {}
-      }
-
-      function updateSlideCycleBtnLabel() {
-        const btn = document.getElementById('btn-screen-mode');
-        if (btn) {
-          btn.textContent = `🖥️ 슬라이드 (${screenModeIdx + 1}/${screenSlides.length})`;
-        }
-      }
-
-      function splitSlideBodyLines(rawBody) {
-        const rawLines = String(rawBody || '')
-          .split('\n')
-          .map((l) => l.trim())
-          .filter(Boolean);
-        if (rawLines.length === 0) return [''];
-
-        const wrapped = [];
-        for (const line of rawLines) {
-          if (line.length <= 28 || !line.includes(' ')) {
-            wrapped.push(line);
-          } else {
-            const words = line.split(' ');
-            let cur = '';
-            for (const w of words) {
-              if ((cur + ' ' + w).trim().length > 26 && cur) {
-                wrapped.push(cur);
-                cur = w;
-              } else {
-                cur = (cur + ' ' + w).trim();
-              }
-            }
-            if (cur) wrapped.push(cur);
-          }
-        }
-        return wrapped.slice(0, 5);
-      }
-
-      const GRACE_WORDS = [
-        { text: '그러므로 우리는 긍휼하심을 받고 때를 따라 돕는 은혜를 얻기 위하여 은혜의 보좌 앞에 담대히 나아갈 것이니라', ref: '히브리서 4:16' },
-        { text: '여호와는 네게 복을 주시고 너를 지키시기를 원하며 여호와는 그의 얼굴을 네게 비추사 은혜 베푸시기를 원하며', ref: '민수기 6:24-25' },
-        { text: '내게 능력 주시는 자 안에서 내가 모든 것을 할 수 있느니라', ref: '빌립보서 4:13' },
-        { text: '주의 말씀은 내 발에 등이요 내 길에 빛이니이다', ref: '시편 119:105' },
-      ];
-
-      const TIER_ROWS = [
-        { r: 175, elev: 0 },
-        { r: 235, elev: 6.0 },
-        { r: 295, elev: 12.0 },
-        { r: 355, elev: 18.0 },
-        { r: 415, elev: 24.0 }
-      ];
-
-      const PEW_BLOCKS = [
-        { key: 'LL', name: '좌측외곽', a0: -0.84, a1: -0.50, seatAngles: [-0.74, -0.58] },
-        { key: 'LC', name: '좌측중앙', a0: -0.38, a1: -0.07, seatAngles: [-0.29, -0.15] },
-        { key: 'RC', name: '우측중앙', a0:  0.07, a1:  0.38, seatAngles: [ 0.15,  0.29] },
-        { key: 'RR', name: '우측외곽', a0:  0.50, a1:  0.84, seatAngles: [ 0.58,  0.74] }
-      ];
-
-      const SEATS = [];
-      TIER_ROWS.forEach((row, rIdx) => {
-        PEW_BLOCKS.forEach((blk) => {
-          blk.seatAngles.forEach((ang, sIdx) => {
-            const sx = row.r * Math.sin(ang);
-            const sz = STAGE_Z + row.r * Math.cos(ang);
-            SEATS.push({
-              id: `${blk.key}${rIdx}_${sIdx}`,
-              x: sx,
-              y: row.elev,
-              z: sz,
-              angle: ang,
-              rowIdx: rIdx,
-              label: `${blk.name} ${rIdx + 1}열 ${sIdx + 1}번석`
-            });
-          });
-        });
-      });
-
-      const STYLES = [
-        { hair: '#2A1E1A', hairShade: '#160F0D', hairStyle: 'bob',   outfit: '#60A5FA', outfitDark: '#2563EB', skin: '#FFE2CC' },
-        { hair: '#543824', hairShade: '#362214', hairStyle: 'round', outfit: '#34D399', outfitDark: '#059669', skin: '#FFE5D1' },
-        { hair: '#1F1B18', hairShade: '#0E0C0A', hairStyle: 'bun',   outfit: '#F472B6', outfitDark: '#DB2777', skin: '#FFE6D5' },
-        { hair: '#744C2E', hairShade: '#4B2F1A', hairStyle: 'part',  outfit: '#A78BFA', outfitDark: '#7C3AED', skin: '#FFE0C8' },
-        { hair: '#3F3F46', hairShade: '#27272A', hairStyle: 'round', outfit: '#FBBF24', outfitDark: '#D97706', skin: '#FCD9B8' },
-      ];
-      let myStyleIdx = 0;
-
-      function makeAvatarAtSeat(id, name, isMe, seatId, styleIdx, bubble = '', bubbleTick = 0) {
-        const seat = SEATS.find((s) => s.id === seatId) || SEATS[0];
-        const yawToStage = Math.atan2(0 - seat.x, STAGE_Z - seat.z);
-        return {
-          id,
-          name,
-          isMe,
-          seatId: seat.id,
-          x: seat.x,
-          y: seat.y,
-          z: seat.z,
-          waypoints: [],
-          facingYaw: yawToStage,
-          style: STYLES[styleIdx % STYLES.length],
-          bubble,
-          bubbleTick,
-          floats: [],
-          voiceWaves: []
-        };
-      }
-
-      const avatars = [
-        makeAvatarAtSeat('me',  '백동희 성도', true,  'LC1_1', 0, '🙏 주님, 예배를 받아주소서', 220),
-        makeAvatarAtSeat('u1',  '김은혜 권사', false, 'LL0_1', 2, '🙏 성령의 충만을 주소서', 130),
-        makeAvatarAtSeat('u2',  '이믿음 집사', false, 'RC0_0', 1, '', 0),
-        makeAvatarAtSeat('u3',  '박소망 청년', false, 'RR0_0', 3, '🙌 할렐루야 아멘!', 95),
-        makeAvatarAtSeat('u4',  '최사랑 집사', false, 'LL1_0', 4, '', 0),
-        makeAvatarAtSeat('u5',  '정온유 성도', false, 'RC1_1', 0, '', 0),
-        makeAvatarAtSeat('u6',  '강기쁨 청년', false, 'RR2_1', 2, '', 0),
-        makeAvatarAtSeat('u7',  '윤평강 권사', false, 'LC2_0', 1, '', 0),
-        makeAvatarAtSeat('u8',  '한충성 장로', false, 'RC3_0', 4, '', 0),
-        makeAvatarAtSeat('u9',  '오감사 집사', false, 'LL3_1', 3, '', 0),
-        makeAvatarAtSeat('u10', '송찬양 청년', false, 'LC4_1', 2, '', 0),
-        makeAvatarAtSeat('u11', '류화평 성도', false, 'RR4_0', 1, '', 0),
-      ];
-
-      const candles = [
-        { id: 1, name: '김은혜 권사', text: '환우들의 치유와 회복을 위해 간절히 기도합니다.', amens: 21, angle: -0.52 },
-        { id: 2, name: '이믿음 집사', text: '온 가정이 주님만 섬기는 믿음의 명문가 되게 하소서.', amens: 15, angle: -0.37 },
-        { id: 3, name: '박소망 청년', text: '다음 세대와 청년부가 말씀으로 부흥하게 하소서.', amens: 29, angle: -0.22 },
-        { id: 4, name: '한충성 장로', text: '교회가 지역 사회의 따뜻한 방주가 되게 하소서.', amens: 34, angle: -0.07 },
-        { id: 5, name: '최사랑 집사', text: '삶의 자리에서 그리스도의 빛과 소금이 되게 하소서.', amens: 12, angle:  0.07 },
-        { id: 6, name: '정온유 성도', text: '주일 예배마다 하나님의 임재가 넘치게 하소서.', amens: 18, angle:  0.22 },
-        { id: 7, name: '윤평강 권사', text: '나라와 민족, 열방의 선교사님들을 지켜주소서.', amens: 16, angle:  0.37 },
-        { id: 8, name: '송찬양 청년', text: '마음의 염려를 내려놓고 평안을 누리게 하소서.', amens: 19, angle:  0.52 },
-      ];
-
-      let clickableSeats = [];
-
-      function pushQuad(list, pts3d, fill, stroke, depthBias = 0, noCull = false) {
-        const proj = [];
-        for (const p of pts3d) {
-          const pr = project(p[0], p[1], p[2]);
-          if (!pr) return;
-          proj.push(pr);
-        }
-        if (!noCull) {
-          const cross =
-            (proj[1].sx - proj[0].sx) * (proj[2].sy - proj[0].sy) -
-            (proj[1].sy - proj[0].sy) * (proj[2].sx - proj[0].sx);
-          if (cross > 0) return;
-        }
-        const avgDepth = proj.reduce((s, p) => s + p.depth, 0) / proj.length;
-        list.push({ kind: 'quad', pts: proj, fill, stroke, depth: avgDepth + depthBias });
-      }
-
-      function pushArcSolid(list, rIn, rOut, a0, a1, yBot, yTop, subSteps, cols, depthBias = 0) {
-        const da = (a1 - a0) / subSteps;
-        for (let i = 0; i < subSteps; i++) {
-          const s0 = a0 + i * da;
-          const s1 = s0 + da;
-
-          const ilX = rIn * Math.sin(s0), ilZ = STAGE_Z + rIn * Math.cos(s0);
-          const irX = rIn * Math.sin(s1), irZ = STAGE_Z + rIn * Math.cos(s1);
-          const olX = rOut * Math.sin(s0), olZ = STAGE_Z + rOut * Math.cos(s0);
-          const orX = rOut * Math.sin(s1), orZ = STAGE_Z + rOut * Math.cos(s1);
-
-          if (cols.top)   pushQuad(list, [[olX, yTop, olZ], [orX, yTop, orZ], [irX, yTop, irZ], [ilX, yTop, ilZ]], cols.top, cols.stroke, depthBias);
-          if (cols.outer) pushQuad(list, [[olX, yBot, olZ], [orX, yBot, orZ], [orX, yTop, orZ], [olX, yTop, olZ]], cols.outer, cols.stroke, depthBias);
-          if (cols.inner) pushQuad(list, [[irX, yBot, irZ], [ilX, yBot, ilZ], [ilX, yTop, ilZ], [irX, yTop, irZ]], cols.inner, cols.stroke, depthBias);
-          if (i === 0 && cols.side) pushQuad(list, [[ilX, yBot, ilZ], [olX, yBot, olZ], [olX, yTop, olZ], [ilX, yTop, ilZ]], cols.side, cols.stroke, depthBias);
-          if (i === subSteps - 1 && cols.side) pushQuad(list, [[orX, yBot, orZ], [irX, yBot, irZ], [irX, yTop, irZ], [orX, yTop, orZ]], cols.side, cols.stroke, depthBias);
-        }
-      }
-
-      function pushBox(list, cx, cy, cz, sx, sy, sz, cols, depthBias = 0) {
-        const x0 = cx - sx / 2, x1 = cx + sx / 2;
-        const y0 = cy - sy / 2, y1 = cy + sy / 2;
-        const z0 = cz - sz / 2, z1 = cz + sz / 2;
-        if (cols.top)   pushQuad(list, [[x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [x0, y1, z0]], cols.top, cols.stroke, depthBias);
-        if (cols.front) pushQuad(list, [[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], cols.front, cols.stroke, depthBias);
-        if (cols.back)  pushQuad(list, [[x1, y0, z0], [x0, y0, z0], [x0, y1, z0], [x1, y1, z0]], cols.back, cols.stroke, depthBias);
-        if (cols.left)  pushQuad(list, [[x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0]], cols.left, cols.stroke, depthBias);
-        if (cols.right) pushQuad(list, [[x1, y0, z1], [x1, y0, z0], [x1, y1, z0], [x1, y1, z1]], cols.right, cols.stroke, depthBias);
-      }
-
-      function pushSculptedSideWalls(list, mood, lightSpots) {
-        [-1, 1].forEach((side) => {
-          const panels = 8;
-          const zStart = STAGE_Z - 30;
-          const zEnd = 225;
-          const dz = (zEnd - zStart) / panels;
-
-          for (let p = 0; p < panels; p++) {
-            const z0 = zStart + p * dz;
-            const z1 = z0 + dz;
-            const zm = (z0 + z1) / 2;
-
-            const xAt = (z) => side * (290 + ((z - zStart) / (zEnd - zStart)) * 155);
-            const x0 = xAt(z0), x1 = xAt(z1), xm = xAt(zm);
-            const inward = -side;
-            const yBot = 0, yTop = 186, yMid = 93;
-
-            pushQuad(list, [[x0, yBot, z0], [x1, yBot, z1], [x1, yTop, z1], [x0, yTop, z0]], mood.wallBase, 'rgba(255,255,255,0.06)', 24, true);
-
-            const apexX = xm + inward * 13;
-            const dBotY = 20, dTopY = 166;
-
-            pushQuad(list, [[x0, yMid, z0], [apexX, yMid, zm], [xm, dTopY, zm]], mood.reliefLight, 'rgba(255,255,255,0.22)', 20, true);
-            pushQuad(list, [[apexX, yMid, zm], [x1, yMid, z1], [xm, dTopY, zm]], mood.reliefMid, 'rgba(255,255,255,0.15)', 20, true);
-            pushQuad(list, [[x0, yMid, z0], [xm, dBotY, zm], [apexX, yMid, zm]], mood.reliefMid, 'rgba(255,255,255,0.18)', 20, true);
-            pushQuad(list, [[apexX, yMid, zm], [xm, dBotY, zm], [x1, yMid, z1]], mood.reliefShadow, 'rgba(0,0,0,0.25)', 20, true);
-
-            pushBox(list, x0 + inward * 2.5, yMid, z0, 5, yTop, 5, {
-              top: '#FDE68A', front: '#D97706', back: '#D97706', left: '#FBBF24', right: '#FBBF24'
-            }, 18);
-
-            lightSpots.push({ x: xm + inward * 7, yBot: 10, yMid, yTop: 174, z: zm, idx: p, side });
-          }
-        });
-      }
-
-      function buildCurvedWideScreenGeom() {
-        const segs = 10;
-        const scrR = 540;
-        const scrCenterZ = STAGE_Z + 512;
-        const aSpan = 0.37;
-
-        const screenPtsTop = [];
-        const screenPtsBot = [];
-
-        for (let i = 0; i <= segs; i++) {
-          const t = i / segs;
-          const a = -aSpan + t * (aSpan * 2);
-          const sx = scrR * Math.sin(a);
-          const sz = scrCenterZ - scrR * Math.cos(a);
-          screenPtsTop.push([sx, 150, sz]);
-          screenPtsBot.push([sx, 48, sz]);
-        }
-
-        return { screenPtsTop, screenPtsBot };
-      }
-
-      function drawWideScreenUnified(screenGeom, mood, tick) {
-        const { screenPtsTop, screenPtsBot } = screenGeom;
-        const topProj = screenPtsTop.map((p) => project(p[0], p[1], p[2]));
-        const botProj = screenPtsBot.map((p) => project(p[0], p[1], p[2]));
-        if (topProj.some((p) => !p) || botProj.some((p) => !p)) {
-          ytScreenBox.classList.add('hidden');
-          return;
-        }
-
-        const leftX = topProj[0].sx;
-        const rightX = topProj[topProj.length - 1].sx;
-        const midIdx = Math.floor(topProj.length / 2);
-        const midTop = topProj[midIdx];
-        const midBot = botProj[midIdx];
-        const isFacingFront = rightX > leftX + 35;
-
-        if (screenSource === 'youtube') {
-          if (isFacingFront) {
-            const minX = Math.min(topProj[0].sx, botProj[0].sx);
-            const maxX = Math.max(topProj[topProj.length - 1].sx, botProj[botProj.length - 1].sx);
-            const minY = Math.min(topProj[0].sy, midTop.sy, topProj[topProj.length - 1].sy);
-            const maxY = Math.max(botProj[0].sy, midBot.sy, botProj[botProj.length - 1].sy);
-            ytScreenBox.style.left = `${Math.round(minX)}px`;
-            ytScreenBox.style.top = `${Math.round(minY)}px`;
-            ytScreenBox.style.width = `${Math.max(110, Math.round(maxX - minX))}px`;
-            ytScreenBox.style.height = `${Math.max(62, Math.round(maxY - minY))}px`;
-            ytScreenBox.classList.remove('hidden');
-          } else {
-            ytScreenBox.classList.add('hidden');
-          }
-          return;
-        } else {
-          ytScreenBox.classList.add('hidden');
-        }
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(topProj[0].sx, topProj[0].sy);
-        for (let i = 1; i < topProj.length; i++) ctx.lineTo(topProj[i].sx, topProj[i].sy);
-        for (let i = botProj.length - 1; i >= 0; i--) ctx.lineTo(botProj[i].sx, botProj[i].sy);
-        ctx.closePath();
-
-        ctx.strokeStyle = 'rgba(253, 224, 71, 0.5)';
-        ctx.lineWidth = 2.2;
-        ctx.stroke();
-        ctx.clip();
-
-        const boundX = Math.min(leftX, rightX) - 20;
-        const boundW = Math.abs(rightX - leftX) + 40;
-        const boundY = Math.min(topProj[0].sy, midTop.sy, topProj[topProj.length - 1].sy) - 20;
-        const boundH = Math.max(botProj[0].sy, midBot.sy, botProj[botProj.length - 1].sy) - boundY + 40;
-
-        if (screenSource === 'webcam' && webcamVideo.readyState >= 2) {
-          ctx.save();
-          const centerX = (leftX + rightX) / 2;
-          ctx.translate(centerX, 0);
-          if (camFacingMode === 'user') ctx.scale(-1, 1);
-          ctx.drawImage(webcamVideo, -boundW / 2, boundY, boundW, boundH);
-          ctx.restore();
-
-          if (isFacingFront) {
-            const barH = Math.max(15, (midBot.sy - midTop.sy) * 0.24);
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
-            ctx.fillRect(boundX, midBot.sy - barH, boundW, barH + 10);
-            ctx.fillStyle = '#EF4444';
-            ctx.font = `800 ${Math.max(8, Math.round(barH * 0.48))}px -apple-system, sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('● LIVE  강단 실시간 카메라 송출 중', (leftX + rightX) / 2, midBot.sy - barH * 0.48);
-          }
-          ctx.restore();
-          return;
-        }
-
-        if (screenSource === 'webcam-sim') {
-          const gSim = ctx.createLinearGradient(boundX, boundY, boundX, boundY + boundH);
-          gSim.addColorStop(0, '#1E293B');
-          gSim.addColorStop(1, '#0F172A');
-          ctx.fillStyle = gSim;
-          ctx.fillRect(boundX, boundY, boundW, boundH);
-
-          if (isFacingFront) {
-            const cx = (leftX + rightX) / 2;
-            const cy = (midTop.sy + midBot.sy) / 2;
-            const sc = midTop.scale;
-            const safeW = Math.max(60, (rightX - leftX) * 0.88);
-
-            ctx.fillStyle = '#60A5FA';
-            ctx.beginPath();
-            ctx.arc(cx, cy + 16 * sc, 22 * sc, Math.PI, 0);
-            ctx.fill();
-            ctx.fillStyle = '#FFE2CC';
-            ctx.beginPath();
-            ctx.arc(cx, cy - 8 * sc, 13 * sc, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = '#FCA5A5';
-            ctx.font = `800 ${Math.max(8, Math.round(11 * sc))}px -apple-system, sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.fillText('● LIVE CAMERA (HTTPS 웹/폰에서 실제 카메라가 켜집니다)', cx, cy - 28 * sc, safeW);
-          }
-          ctx.restore();
-          return;
-        }
-
-        const grad = ctx.createLinearGradient(leftX, midTop.sy, rightX, midBot.sy);
-        grad.addColorStop(0, mood.screenBg1);
-        grad.addColorStop(0.5, mood.screenBg2);
-        grad.addColorStop(1, mood.screenBg1);
-        ctx.fillStyle = grad;
-        ctx.fillRect(boundX, boundY, boundW, boundH);
-
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.045)';
-        ctx.lineWidth = 1;
-        for (let i = 1; i < topProj.length - 1; i++) {
-          ctx.beginPath();
-          ctx.moveTo(topProj[i].sx, topProj[i].sy);
-          ctx.lineTo(botProj[i].sx, botProj[i].sy);
-          ctx.stroke();
-        }
-
-        for (let w = 0; w < 3; w++) {
-          ctx.beginPath();
-          const steps = 28;
-          for (let s = 0; s <= steps; s++) {
-            const u = s / steps;
-            const px = leftX + (rightX - leftX) * u;
-            const baseY = midTop.sy + (midBot.sy - midTop.sy) * (0.58 + w * 0.12);
-            const waveY = baseY + Math.sin(u * 5 + tick * 0.04 + w * 1.4) * 9 * midTop.scale;
-            if (s === 0) ctx.moveTo(px, waveY);
-            else ctx.lineTo(px, waveY);
-          }
-          ctx.strokeStyle = `rgba(255, 255, 255, ${0.14 - w * 0.03})`;
-          ctx.lineWidth = 2.2 * midTop.scale;
-          ctx.stroke();
-        }
-
-        if (isFacingFront && activeCustomSlide) {
-          const screenW = rightX - leftX;
-          const screenH = midBot.sy - midTop.sy;
-          const safeW = screenW * 0.88;
-          const cx = (leftX + rightX) / 2;
-          const topY = midTop.sy;
-          const badge = (activeCustomSlide.badge || '').trim();
-          const lines = splitSlideBodyLines(activeCustomSlide.body);
-          const accentColor = activeCustomSlide.accent || mood.screenAccent;
-
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-
-          let contentTop = topY + screenH * 0.14;
-          const contentBot = topY + screenH * 0.88;
-
-          if (badge) {
-            const badgeSize = Math.max(7, Math.min(Math.round(screenH * 0.14), Math.round(screenW * 0.042)));
-            ctx.fillStyle = accentColor;
-            ctx.font = `800 ${badgeSize}px -apple-system, sans-serif`;
-            ctx.fillText(badge, cx, topY + screenH * 0.21, safeW);
-            contentTop = topY + screenH * 0.35;
-          }
-
-          const availH = Math.max(18, contentBot - contentTop);
-          const n = lines.length;
-          const heightRatio = n === 1 ? 0.42 : n === 2 ? 0.33 : n === 3 ? 0.25 : 0.20;
-          const widthRatio = n === 1 ? 0.068 : 0.056;
-          const fontSize = Math.max(8, Math.min(Math.round(availH * heightRatio), Math.round(screenW * widthRatio)));
-          const lineStep = availH / Math.max(1, n);
-
-          ctx.shadowColor = 'rgba(0,0,0,0.78)';
-          ctx.shadowBlur = 6;
-
-          lines.forEach((line, idx) => {
-            const ly = contentTop + lineStep * (idx + 0.5);
-            ctx.fillStyle = idx === 0 ? '#FFFFFF' : 'rgba(255, 255, 255, 0.93)';
-            ctx.font = `${idx === 0 ? 800 : 700} ${fontSize}px -apple-system, sans-serif`;
-            ctx.fillText(line, cx, ly, safeW);
-          });
-
-          ctx.shadowBlur = 0;
-        }
-
-        ctx.restore();
-      }
-
-      function draw3DChibiAvatar(av, tick) {
-        const isWalking = av.waypoints.length > 0;
-        const sitOffset = isWalking ? 0 : -3.5;
-        const walkBob = isWalking ? Math.abs(Math.sin(tick * 0.25)) * 3.5 : Math.sin(tick * 0.04 + (av.isMe ? 0 : 1.4)) * 0.6;
-        const groundY = av.y || 0;
-        const baseY = groundY + 13.5 + sitOffset + walkBob;
-
-        const shadowProj = project(av.x, groundY + 0.6, av.z);
-        const bodyProj = project(av.x, baseY + 6.5, av.z);
-        const headProj = project(av.x, baseY + 24.0, av.z);
-        if (!shadowProj || !bodyProj || !headProj) return;
-
-        const s = headProj.scale * 1.22;
-        const fDirX = Math.sin(av.facingYaw);
-        const fDirZ = Math.cos(av.facingYaw);
-
-        let toCamX = cam.eye.x - av.x;
-        let toCamZ = cam.eye.z - av.z;
-        const tl = Math.hypot(toCamX, toCamZ) || 1;
-        toCamX /= tl; toCamZ /= tl;
-
-        const frontDot = fDirX * toCamX + fDirZ * toCamZ;
-        const sideDot = fDirX * cam.right.x + fDirZ * cam.right.z;
-
-        ctx.save();
-        ctx.fillStyle = 'rgba(0,0,0,0.30)';
-        ctx.beginPath();
-        ctx.ellipse(shadowProj.sx, shadowProj.sy, 13 * shadowProj.scale, 6 * shadowProj.scale, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        if (av.isMe) {
-          const micBoost = micActive ? currentMicLevel * 16 : 0;
-          ctx.strokeStyle = micActive && currentMicLevel > 0.06 ? 'rgba(52, 211, 153, 0.95)' : 'rgba(251, 191, 36, 0.95)';
-          ctx.lineWidth = Math.max(1.5, (2.4 + (micActive ? currentMicLevel * 2.5 : 0)) * shadowProj.scale);
-          ctx.beginPath();
-          ctx.ellipse(
-            shadowProj.sx,
-            shadowProj.sy,
-            (17 + micBoost + Math.sin(tick * 0.09) * 1.8) * shadowProj.scale,
-            (8 + micBoost * 0.45) * shadowProj.scale,
-            0, 0, Math.PI * 2
-          );
-          ctx.stroke();
-        }
-
-        if (isWalking) {
-          const sw = Math.sin(tick * 0.26) * 2.8 * s;
-          ctx.fillStyle = '#334155';
-          ctx.beginPath();
-          ctx.roundRect(bodyProj.sx - 5 * s, bodyProj.sy + 4.5 * s + sw, 4.2 * s, 6.5 * s, 2 * s);
-          ctx.roundRect(bodyProj.sx + 0.8 * s, bodyProj.sy + 4.5 * s - sw, 4.2 * s, 6.5 * s, 2 * s);
-          ctx.fill();
-        }
-
-        const bx = bodyProj.sx, by = bodyProj.sy;
-        const tGrad = ctx.createRadialGradient(bx - 3 * s, by - 4 * s, 2 * s, bx, by, 13 * s);
-        tGrad.addColorStop(0, av.style.outfit);
-        tGrad.addColorStop(1, av.style.outfitDark);
-        ctx.fillStyle = tGrad;
-        ctx.beginPath();
-        ctx.roundRect(bx - 9 * s, by - 6.5 * s, 18 * s, 14.5 * s, 7 * s);
-        ctx.fill();
-
-        ctx.fillStyle = '#FFFFFF';
-        ctx.beginPath();
-        ctx.ellipse(bx, by - 5.8 * s, 4.6 * s, 2 * s, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        const handsProj = project(av.x + fDirX * 8, baseY + 7, av.z + fDirZ * 8);
-        if (frontDot > -0.15 && handsProj && !isWalking) {
-          const hs = handsProj.scale * 1.22;
-          ctx.fillStyle = `rgba(253, 224, 71, ${0.24 + Math.sin(tick * 0.08) * 0.08})`;
-          ctx.beginPath();
-          ctx.arc(handsProj.sx, handsProj.sy, 6 * hs, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = av.style.skin;
-          ctx.beginPath();
-          ctx.ellipse(handsProj.sx - 1.2 * hs, handsProj.sy, 2.2 * hs, 3.5 * hs, 0.2, 0, Math.PI * 2);
-          ctx.ellipse(handsProj.sx + 1.2 * hs, handsProj.sy, 2.2 * hs, 3.5 * hs, -0.2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        const hx = headProj.sx, hy = headProj.sy;
-        const headR = 10.5 * s;
-
-        if (frontDot >= 0) {
-          ctx.fillStyle = av.style.hairShade;
-          ctx.beginPath();
-          ctx.arc(hx - sideDot * 1.4 * s, hy - 0.8 * s, headR * 1.06, 0, Math.PI * 2);
-          ctx.fill();
-
-          const sGrad = ctx.createRadialGradient(hx - 2.5 * s, hy - 2.5 * s, 1.5 * s, hx, hy, headR);
-          sGrad.addColorStop(0, '#FFF1E6');
-          sGrad.addColorStop(0.6, av.style.skin);
-          sGrad.addColorStop(1, '#E6B89C');
-          ctx.fillStyle = sGrad;
-          ctx.beginPath();
-          ctx.arc(hx, hy + 0.5 * s, headR * 0.96, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = av.style.hair;
-          ctx.beginPath();
-          ctx.arc(hx, hy - 1.5 * s, headR * 1.04, Math.PI * 1.04, Math.PI * 1.96);
-          ctx.fill();
-
-          if (av.style.hairStyle === 'bun') {
-            ctx.beginPath();
-            ctx.arc(hx - sideDot * 2 * s, hy - headR * 1.15, 4.4 * s, 0, Math.PI * 2);
-            ctx.fill();
-          }
-
-          const shiftX = sideDot * 4 * s;
-          const eyeSp = 3.6 * s * Math.max(0.35, frontDot);
-          ctx.strokeStyle = '#27272A';
-          ctx.lineWidth = Math.max(1.1, 1.4 * s);
-          ctx.lineCap = 'round';
-
-          if (isWalking) {
-            ctx.fillStyle = '#18181B';
-            ctx.beginPath();
-            ctx.arc(hx + shiftX - eyeSp, hy + 1 * s, 1.3 * s, 0, Math.PI * 2);
-            ctx.arc(hx + shiftX + eyeSp, hy + 1 * s, 1.3 * s, 0, Math.PI * 2);
-            ctx.fill();
-          } else {
-            ctx.beginPath();
-            ctx.arc(hx + shiftX - eyeSp, hy + 0.7 * s, 2 * s, 0.15 * Math.PI, 0.85 * Math.PI);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(hx + shiftX + eyeSp, hy + 0.7 * s, 2 * s, 0.15 * Math.PI, 0.85 * Math.PI);
-            ctx.stroke();
-          }
-
-          ctx.fillStyle = 'rgba(244, 114, 182, 0.4)';
-          ctx.beginPath();
-          ctx.ellipse(hx + shiftX - eyeSp * 1.4, hy + 3.4 * s, 2 * s, 1.1 * s, 0, 0, Math.PI * 2);
-          ctx.ellipse(hx + shiftX + eyeSp * 1.4, hy + 3.4 * s, 2 * s, 1.1 * s, 0, 0, Math.PI * 2);
-          ctx.fill();
-
-          if (av.isMe && micActive && currentMicLevel > 0.08) {
-            ctx.fillStyle = '#BE123C';
-            ctx.beginPath();
-            ctx.ellipse(hx + shiftX, hy + 4.2 * s, 1.8 * s, (1.0 + currentMicLevel * 2.5) * s, 0, 0, Math.PI * 2);
-            ctx.fill();
-          } else {
-            ctx.strokeStyle = '#9A3412';
-            ctx.lineWidth = Math.max(1, 1.2 * s);
-            ctx.beginPath();
-            ctx.arc(hx + shiftX, hy + 3.6 * s, 1.6 * s, 0.15 * Math.PI, 0.85 * Math.PI);
-            ctx.stroke();
-          }
-        } else {
-          ctx.fillStyle = av.style.skin;
-          ctx.beginPath();
-          ctx.arc(hx, hy + 0.7 * s, headR * 0.94, 0, Math.PI * 2);
-          ctx.fill();
-
-          const bhGrad = ctx.createRadialGradient(hx - 3 * s, hy - 4 * s, 2 * s, hx, hy, headR * 1.12);
-          bhGrad.addColorStop(0, av.style.hair);
-          bhGrad.addColorStop(1, av.style.hairShade);
-          ctx.fillStyle = bhGrad;
-          ctx.beginPath();
-          if (av.style.hairStyle === 'bob') {
-            ctx.roundRect(hx - headR * 1.04, hy - headR * 1.04, headR * 2.08, headR * 1.92, headR * 0.92);
-          } else {
-            ctx.arc(hx, hy - 0.5 * s, headR * 1.05, 0, Math.PI * 2);
-          }
-          ctx.fill();
-
-          if (av.style.hairStyle === 'bun') {
-            ctx.fillStyle = av.style.hair;
-            ctx.beginPath();
-            ctx.arc(hx, hy - headR * 1.05, 4.5 * s, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#F472B6';
-            ctx.lineWidth = Math.max(1.4, 1.8 * s);
-            ctx.beginPath();
-            ctx.arc(hx, hy - headR * 0.85, 3.5 * s, 0.1 * Math.PI, 0.9 * Math.PI);
-            ctx.stroke();
-          }
-
-          ctx.strokeStyle = 'rgba(255,255,255,0.16)';
-          ctx.lineWidth = Math.max(1.4, 2 * s);
-          ctx.beginPath();
-          ctx.arc(hx, hy - 1 * s, headR * 0.7, Math.PI * 1.2, Math.PI * 1.8);
-          ctx.stroke();
-        }
-
-        ctx.restore();
-      }
-
-      function drawAvatarOverlayUI(av, tick) {
-        const isWalking = av.waypoints.length > 0;
-        const sitOffset = isWalking ? 0 : -3.5;
-        const walkBob = isWalking ? Math.abs(Math.sin(tick * 0.25)) * 3.5 : Math.sin(tick * 0.04 + (av.isMe ? 0 : 1.4)) * 0.6;
-        const groundY = av.y || 0;
-        const baseY = groundY + 13.5 + sitOffset + walkBob;
-
-        const headProj = project(av.x, baseY + 24.0, av.z);
-        if (!headProj) return;
-
-        const s = headProj.scale * 1.22;
-        const uiS = Math.max(0.65, Math.min(1.25, s));
-        const hx = headProj.sx;
-        const hy = headProj.sy;
-        const headR = 10.5 * s;
-
-        ctx.save();
-
-        if (av.isMe && av.voiceWaves.length > 0) {
-          for (let i = av.voiceWaves.length - 1; i >= 0; i--) {
-            const vw = av.voiceWaves[i];
-            vw.r += 1.0;
-            vw.alpha -= 0.024;
-            if (vw.alpha <= 0) {
-              av.voiceWaves.splice(i, 1);
-              continue;
-            }
-            ctx.strokeStyle = `rgba(52, 211, 153, ${vw.alpha})`;
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(hx, hy, headR + vw.r * uiS, 0, Math.PI * 2);
-            ctx.stroke();
-          }
-        }
-
-        const tagY = hy - headR - 8.5 * uiS;
-        ctx.font = `700 ${Math.max(8, Math.round(10 * uiS))}px -apple-system, sans-serif`;
-        const micPrefix = av.isMe && micActive ? '🎙️ ' : (av.isMe ? '★ ' : '');
-        const label = `${micPrefix}${av.name}`;
-        const tw = ctx.measureText(label).width;
-        ctx.fillStyle = av.isMe
-          ? (micActive ? 'rgba(16, 185, 129, 0.96)' : 'rgba(245, 158, 11, 0.96)')
-          : 'rgba(15, 23, 42, 0.80)';
-        ctx.beginPath();
-        ctx.roundRect(hx - tw / 2 - 4.5 * uiS, tagY - 6.5 * uiS, tw + 9 * uiS, 13 * uiS, 6.5 * uiS);
-        ctx.fill();
-
-        ctx.fillStyle = av.isMe && !micActive ? '#0F172A' : '#FFFFFF';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(label, hx, tagY);
-
-        if (av.bubble && av.bubbleTick > 0) {
-          const by2 = tagY - 17 * uiS;
-          ctx.font = `700 ${Math.max(9, Math.round(10.5 * uiS))}px -apple-system, sans-serif`;
-          const bw = ctx.measureText(av.bubble).width + 13 * uiS;
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
-          ctx.shadowBlur = 8;
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
-          ctx.strokeStyle = 'rgba(245, 158, 11, 0.95)';
-          ctx.lineWidth = 1.4;
-          ctx.beginPath();
-          ctx.roundRect(hx - bw / 2, by2 - 8 * uiS, bw, 16 * uiS, 8 * uiS);
-          ctx.fill();
-          ctx.stroke();
-          ctx.shadowBlur = 0;
-
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.98)';
-          ctx.beginPath();
-          ctx.moveTo(hx - 3.5 * uiS, by2 + 7.5 * uiS);
-          ctx.lineTo(hx + 3.5 * uiS, by2 + 7.5 * uiS);
-          ctx.lineTo(hx, by2 + 11.5 * uiS);
-          ctx.closePath();
-          ctx.fill();
-
-          ctx.fillStyle = '#0F172A';
-          ctx.fillText(av.bubble, hx, by2);
-        }
-
-        for (let i = av.floats.length - 1; i >= 0; i--) {
-          const fl = av.floats[i];
-          fl.dy += 0.75;
-          fl.alpha -= 0.015;
-          if (fl.alpha <= 0) {
-            av.floats.splice(i, 1);
-            continue;
-          }
-          ctx.globalAlpha = fl.alpha;
-          ctx.font = `800 ${Math.max(10, Math.round(13 * uiS))}px sans-serif`;
-          ctx.fillStyle = '#FDE047';
-          ctx.shadowColor = 'rgba(0,0,0,0.6)';
-          ctx.shadowBlur = 4;
-          ctx.fillText('🙌 아멘 ✨', hx, tagY - (21 + fl.dy) * uiS);
-          ctx.shadowBlur = 0;
-          ctx.globalAlpha = 1;
-        }
-
-        ctx.restore();
-      }
-
-      function getCandlePos(c) {
-        const r = 132;
-        return { x: r * Math.sin(c.angle), y: 12, z: STAGE_Z + r * Math.cos(c.angle) };
-      }
-
-      function drawCandle(c, tick) {
-        const pos = getCandlePos(c);
-        const p = project(pos.x, pos.y, pos.z);
-        if (!p) return;
-        const s = p.scale * 1.25;
-
-        ctx.save();
-        ctx.fillStyle = 'rgba(254, 243, 199, 0.92)';
-        ctx.beginPath();
-        ctx.roundRect(p.sx - 2.6 * s, p.sy - 6.8 * s, 5.2 * s, 6.8 * s, 1.5 * s);
-        ctx.fill();
-
-        const r = (10.5 + Math.sin(tick * 0.16 + c.id) * 2.2) * s;
-        const g = ctx.createRadialGradient(p.sx, p.sy - 9.5 * s, 0.5 * s, p.sx, p.sy - 9.5 * s, r);
-        g.addColorStop(0, 'rgba(255, 251, 235, 0.98)');
-        g.addColorStop(0.35, 'rgba(251, 191, 36, 0.65)');
-        g.addColorStop(1, 'rgba(245, 158, 11, 0)');
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(p.sx, p.sy - 9.5 * s, r, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#FEF08A';
-        ctx.beginPath();
-        ctx.ellipse(p.sx + Math.sin(tick * 0.2 + c.id) * 0.7 * s, p.sy - 9.5 * s, 1.8 * s, 3.8 * s, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-
-      function updateMicVolume(tick) {
-        if (!micActive) {
-          currentMicLevel = 0;
-          return;
-        }
-        if (micAnalyser && micDataArray) {
-          micAnalyser.getByteFrequencyData(micDataArray);
-          let sum = 0;
-          for (let i = 0; i < micDataArray.length; i++) sum += micDataArray[i];
-          const avg = sum / micDataArray.length;
-          currentMicLevel = Math.min(1, avg / 65);
-        } else if (micSimMode) {
-          currentMicLevel = 0.25 + Math.abs(Math.sin(tick * 0.12)) * 0.55;
-        }
-
-        const meterBar = document.getElementById('mic-meter-bar');
-        if (meterBar) {
-          meterBar.style.width = `${Math.round(currentMicLevel * 100)}%`;
-        }
-
-        const me = avatars.find((a) => a.isMe);
-        if (me && currentMicLevel > 0.12 && tick % 8 === 0) {
-          me.voiceWaves.push({ r: 2, alpha: Math.min(0.9, currentMicLevel + 0.2) });
-        }
-      }
-
-      function render() {
-        tick++;
-        const rect = canvas.getBoundingClientRect();
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        viewW = rect.width;
-        viewH = rect.height;
-        if (canvas.width !== Math.floor(viewW * dpr) || canvas.height !== Math.floor(viewH * dpr)) {
-          canvas.width = Math.floor(viewW * dpr);
-          canvas.height = Math.floor(viewH * dpr);
-        }
-
-        updateCamera();
-        updateMicVolume(tick);
-
-        avatars.forEach((av) => {
-          if (av.waypoints.length > 0) {
-            const wp = av.waypoints[0];
-            const dx = wp.x - av.x;
-            const dz = wp.z - av.z;
-            const dy = (wp.y || 0) - (av.y || 0);
-            const d = Math.hypot(dx, dz);
-            if (d > 3.2) {
-              av.x += (dx / d) * 4.2;
-              av.z += (dz / d) * 4.2;
-              av.y = (av.y || 0) + dy * 0.16;
-              av.facingYaw = Math.atan2(dx, dz);
-            } else {
-              av.x = wp.x;
-              av.z = wp.z;
-              av.y = wp.y || 0;
-              av.waypoints.shift();
-              if (av.waypoints.length === 0) {
-                av.facingYaw = Math.atan2(0 - av.x, STAGE_Z - av.z);
-              }
-            }
-          }
-          if (av.bubbleTick > 0) av.bubbleTick--;
-          else if (!av.isMe && Math.random() < 0.002) {
-            const msgs = ['🙏 아멘!', '🙌 주님께 영광', '🕯️ 은혜 감사합니다'];
-            av.bubble = msgs[Math.floor(Math.random() * msgs.length)];
-            av.bubbleTick = 120;
-          }
-        });
-
-        const mood = MOODS[moodIdx];
-
-        ctx.save();
-        ctx.scale(dpr, dpr);
-
-        const bg = ctx.createLinearGradient(0, 0, 0, viewH);
-        bg.addColorStop(0, mood.bgTop);
-        bg.addColorStop(1, mood.bgBot);
-        ctx.fillStyle = bg;
-        ctx.fillRect(0, 0, viewW, viewH);
-
-        const drawList = [];
-        const wallLights = [];
-
-        pushQuad(
-          drawList,
-          [[-290, -2, STAGE_Z - 30], [290, -2, STAGE_Z - 30], [445, -2, 225], [-445, -2, 225]],
-          '#261D18',
-          null,
-          65,
-          true
-        );
-
-        pushArcSolid(drawList, 0, 152, -1.02, 1.02, -1.5, 0, 18, { top: mood.floorMain, outer: mood.floorAlt }, 52);
-
-        TIER_ROWS.forEach((tier, idx) => {
-          const rInner = tier.r - 26;
-          const rOuter = tier.r + 34;
-          const yBot = idx === 0 ? -1.5 : TIER_ROWS[idx - 1].elev;
-          const yTop = tier.elev;
-
-          pushArcSolid(drawList, rInner, rOuter, -0.92, 0.92, yBot, yTop, 20, {
-            top: idx % 2 === 0 ? mood.floorMain : mood.floorAlt,
-            inner: '#1E1612', outer: '#1E1612', side: '#1E1612',
-            stroke: 'rgba(255, 210, 140, 0.08)'
-          }, 48 - idx);
-
-          [[-0.49, -0.39], [-0.06, 0.06], [0.39, 0.49]].forEach(([ca0, ca1]) => {
-            pushArcSolid(drawList, rInner, rOuter, ca0, ca1, yTop, yTop + 0.45, 2, {
-              top: mood.carpet, inner: '#4C0519'
-            }, 42 - idx);
-          });
-        });
-
-        pushArcSolid(drawList, 450, 462, -0.92, 0.92, 24, 38, 20, {
-          top: '#8C5A32', inner: '#59371C', outer: '#3D2512', side: '#4A2C18', stroke: 'rgba(253, 224, 71, 0.25)'
-        }, 35);
-
-        pushArcSolid(drawList, 0, 114, -1.18, 1.18, 0, 8, 18, {
-          top: '#5C3A24', outer: '#3E2516', side: '#3E2516', stroke: 'rgba(253, 224, 71, 0.35)'
-        }, 16);
-        pushArcSolid(drawList, 0, 92, -1.12, 1.12, 8, 15, 16, {
-          top: '#784B2E', outer: '#4E2F1C', side: '#4E2F1C', stroke: 'rgba(253, 224, 71, 0.5)'
-        }, 14);
-
-        pushBox(drawList, 0, 93, STAGE_Z - 32, 580, 186, 10, {
-          top: '#181418', front: '#1E1920', back: '#120F14', left: '#181418', right: '#181418'
-        }, 28);
-
-        [-272, 272].forEach((px) => {
-          pushBox(drawList, px, 93, STAGE_Z - 26, 8, 186, 8, {
-            top: '#FDE68A', front: '#D97706', back: '#92400E', left: '#FBBF24', right: '#FBBF24'
-          }, 25);
-        });
-
-        const screenGeom = buildCurvedWideScreenGeom();
-        const scrAnchor = project(0, 98, STAGE_Z - 24);
-        if (scrAnchor) {
-          drawList.push({ kind: 'widescreen', screenGeom, depth: scrAnchor.depth + 12 });
-        }
-
-        pushBox(drawList, 232, 112, STAGE_Z - 20, 6, 54, 4, {
-          top: '#FFFFFF', front: '#FEF08A', back: '#FACC15', left: '#FDE047', right: '#FDE047'
-        }, 8);
-        pushBox(drawList, 232, 122, STAGE_Z - 20, 32, 6, 4, {
-          top: '#FFFFFF', front: '#FEF08A', back: '#FACC15', left: '#FDE047', right: '#FDE047'
-        }, 8);
-
-        pushBox(drawList, 0, 27, STAGE_Z + 52, 26, 24, 15, {
-          top: '#E2E8F0', front: 'rgba(226, 232, 240, 0.74)', back: 'rgba(148, 163, 184, 0.6)',
-          left: '#94A3B8', right: '#CBD5E1', stroke: '#FFFFFF'
-        }, 2);
-        pushBox(drawList, -64, 24, STAGE_Z + 34, 34, 17, 28, {
-          top: '#1E293B', front: '#0F172A', back: '#0F172A', left: '#0F172A', right: '#1E293B', stroke: 'rgba(255,255,255,0.22)'
-        }, 3);
-
-        pushSculptedSideWalls(drawList, mood, wallLights);
-
-        pushArcSolid(drawList, 125, 139, -0.60, 0.60, 0, 10.5, 14, {
-          top: '#6E4427', inner: '#4A2C18', outer: '#59361E', side: '#4A2C18', stroke: 'rgba(253, 224, 71, 0.35)'
-        }, 4);
-
-        candles.forEach((c) => {
-          const pos = getCandlePos(c);
-          const cp = project(pos.x, pos.y, pos.z);
-          if (cp) drawList.push({ kind: 'candle', candle: c, depth: cp.depth - 2 });
-        });
-
-        TIER_ROWS.forEach((tier) => {
-          const ySeat = tier.elev;
-          PEW_BLOCKS.forEach((blk) => {
-            pushArcSolid(drawList, tier.r - 9, tier.r + 9, blk.a0, blk.a1, ySeat + 2.5, ySeat + 9.0, 6, {
-              top: '#A47148', inner: '#7C4F2B', outer: '#6B4223', side: '#58351B'
-            }, 0);
-            pushArcSolid(drawList, tier.r + 6.5, tier.r + 11, blk.a0, blk.a1, ySeat + 9.0, ySeat + 21.0, 6, {
-              top: '#B8845A', inner: '#8D5D36', outer: '#6B4223', side: '#58351B'
-            }, 0);
-          });
-        });
-
-        clickableSeats = [];
-        const occupied = new Set(avatars.map((a) => a.seatId));
-        SEATS.forEach((s) => {
-          const sp = project(s.x, s.y + 10.0, s.z);
-          if (!sp) return;
-          const isTaken = occupied.has(s.id);
-          clickableSeats.push({ seat: s, sx: sp.sx, sy: sp.sy, isTaken });
-          if (!isTaken) drawList.push({ kind: 'seat', p: sp, depth: sp.depth - 1 });
-        });
-
-        avatars.forEach((av) => {
-          const ap = project(av.x, (av.y || 0) + 18, av.z);
-          if (ap) drawList.push({ kind: 'avatar', av, depth: ap.depth - 4 });
-        });
-
-        drawList.sort((a, b) => b.depth - a.depth);
-
-        for (const item of drawList) {
-          if (item.kind === 'quad') {
-            ctx.beginPath();
-            ctx.moveTo(item.pts[0].sx, item.pts[0].sy);
-            for (let i = 1; i < item.pts.length; i++) ctx.lineTo(item.pts[i].sx, item.pts[i].sy);
-            ctx.closePath();
-            ctx.fillStyle = item.fill;
-            ctx.fill();
-            if (item.stroke) {
-              ctx.strokeStyle = item.stroke;
-              ctx.lineWidth = 0.85;
-              ctx.stroke();
-            }
-          } else if (item.kind === 'widescreen') {
-            drawWideScreenUnified(item.screenGeom, mood, tick);
-          } else if (item.kind === 'seat') {
-            const { sx, sy, scale } = item.p;
-            const pulse = 1 + Math.sin(tick * 0.08) * 0.12;
-            ctx.save();
-            ctx.fillStyle = 'rgba(52, 211, 153, 0.30)';
-            ctx.strokeStyle = 'rgba(110, 231, 183, 0.94)';
-            ctx.lineWidth = 1.4;
-            ctx.beginPath();
-            ctx.ellipse(sx, sy, Math.max(4.5, 10.5 * scale * pulse), Math.max(2.5, 5.2 * scale * pulse), 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-            ctx.restore();
-          } else if (item.kind === 'candle') {
-            drawCandle(item.candle, tick);
-          } else if (item.kind === 'avatar') {
-            draw3DChibiAvatar(item.av, tick);
-          }
-        }
-
-        ctx.save();
-        ctx.globalCompositeOperation = 'screen';
-        wallLights.forEach((wl) => {
-          const pBot = project(wl.x, wl.yBot, wl.z);
-          const pMid = project(wl.x, wl.yMid, wl.z);
-          const pTop = project(wl.x, wl.yTop, wl.z);
-          const rgb = wl.idx % 2 === 0 ? mood.uplightA : mood.uplightB;
-          const shimmer = 0.34 + Math.sin(tick * 0.05 + wl.idx * 0.9) * 0.08;
-
-          if (pBot && pMid) {
-            const r = 46 * pBot.scale;
-            const g1 = ctx.createRadialGradient(pBot.sx, pBot.sy, 1, pBot.sx, pBot.sy, r);
-            g1.addColorStop(0, `rgba(${rgb}, ${shimmer + 0.25})`);
-            g1.addColorStop(1, `rgba(${rgb}, 0)`);
-            ctx.fillStyle = g1;
-            ctx.beginPath();
-            ctx.arc(pBot.sx, pBot.sy, r, 0, Math.PI * 2);
-            ctx.fill();
-          }
-          if (pTop && pMid) {
-            const r2 = 56 * pTop.scale;
-            const g2 = ctx.createRadialGradient(pTop.sx, pTop.sy, 1, pTop.sx, pTop.sy, r2);
-            g2.addColorStop(0, `rgba(${rgb}, ${shimmer + 0.2})`);
-            g2.addColorStop(1, `rgba(${rgb}, 0)`);
-            ctx.fillStyle = g2;
-            ctx.beginPath();
-            ctx.arc(pTop.sx, pTop.sy, r2, 0, Math.PI * 2);
-            ctx.fill();
-
-            const rMid = 38 * pMid.scale;
-            const gMid = ctx.createRadialGradient(pMid.sx, pMid.sy, 1, pMid.sx, pMid.sy, rMid);
-            gMid.addColorStop(0, `rgba(${rgb}, ${shimmer * 0.55})`);
-            gMid.addColorStop(1, `rgba(${rgb}, 0)`);
-            ctx.fillStyle = gMid;
-            ctx.beginPath();
-            ctx.arc(pMid.sx, pMid.sy, rMid, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        });
-
-        [-130, -45, 45, 130].forEach((bx, bi) => {
-          const src = project(bx, 192, STAGE_Z + 5);
-          const dstL = project(bx - 48, 12, STAGE_Z + 70);
-          const dstR = project(bx + 48, 12, STAGE_Z + 70);
-          if (src && dstL && dstR) {
-            const sway = Math.sin(tick * 0.025 + bi * 1.6) * 18 * src.scale;
-            const bGrad = ctx.createLinearGradient(src.sx, src.sy, (dstL.sx + dstR.sx) / 2 + sway, dstL.sy);
-            bGrad.addColorStop(0, `rgba(${mood.stageBeam}, 0.17)`);
-            bGrad.addColorStop(1, `rgba(${mood.stageBeam}, 0)`);
-            ctx.fillStyle = bGrad;
-            ctx.beginPath();
-            ctx.moveTo(src.sx - 6 * src.scale, src.sy);
-            ctx.lineTo(src.sx + 6 * src.scale, src.sy);
-            ctx.lineTo(dstR.sx + sway, dstR.sy);
-            ctx.lineTo(dstL.sx + sway, dstL.sy);
-            ctx.closePath();
-            ctx.fill();
-          }
-        });
-
-        const cp = project(232, 116, STAGE_Z - 20);
-        if (cp) {
-          const cr = 58 * cp.scale;
-          const cg = ctx.createRadialGradient(cp.sx, cp.sy, 2, cp.sx, cp.sy, cr);
-          cg.addColorStop(0, 'rgba(254, 240, 138, 0.75)');
-          cg.addColorStop(1, 'rgba(254, 240, 138, 0)');
-          ctx.fillStyle = cg;
-          ctx.beginPath();
-          ctx.arc(cp.sx, cp.sy, cr, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.restore();
-
-        const sortedAvatars = avatars
-          .map((av) => {
-            const p = project(av.x, (av.y || 0) + 18, av.z);
-            return { av, depth: p ? p.depth : 99999 };
-          })
-          .sort((a, b) => b.depth - a.depth);
-        for (const item of sortedAvatars) {
-          drawAvatarOverlayUI(item.av, tick);
-        }
-
-        ctx.restore();
-        requestAnimationFrame(render);
-      }
-
-      // =====================================================
-      // [기능 1] 관리자 대형 스크린 자막 직접 타이핑 & 슬라이드 관리
-      // =====================================================
-      function renderSavedSlidesList() {
-        const listEl = document.getElementById('saved-slides-list');
-        if (!listEl) return;
-        listEl.innerHTML = screenSlides.map((sl, idx) => `
-          <div class="p-2 rounded-xl bg-slate-900 border ${sl === activeCustomSlide ? 'border-amber-400' : 'border-slate-700'} flex items-center justify-between gap-2">
-            <div class="min-w-0 flex-1 cursor-pointer slide-pick-area" data-sidx="${idx}">
-              <div class="text-[11px] font-extrabold text-amber-300 truncate">${sl.badge || '(배지 없음)'}</div>
-              <div class="text-xs text-white truncate">${(sl.body || '').replace(/\n/g, ' / ')}</div>
+    <!-- 근접 상호작용 원터치 팝업 버튼 (문, 의자, 제단, 책상, 카페 등 다가갔을 때 자동 표시) -->
+    <button
+      id="proximity-btn"
+      class="hidden absolute bottom-28 sm:bottom-24 left-1/2 -translate-x-1/2 px-5 py-2.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-extrabold shadow-2xl border-2 border-white cursor-pointer z-20 animate-bounce"
+    >
+      🪑 여기에 앉기
+    </button>
+
+    <!-- 좌측 하단 가상 조이스틱 (모바일/태블릿 터치 보행용) -->
+    <div
+      id="joystick-base"
+      class="sm:opacity-75 hover:opacity-100 absolute bottom-20 left-3.5 w-24 h-24 rounded-full bg-black/45 backdrop-blur-sm border-2 border-white/25 flex items-center justify-center touch-none z-20"
+    >
+      <div id="joystick-knob" class="w-10 h-10 rounded-full bg-amber-400/90 shadow-lg border border-white pointer-events-none"></div>
+    </div>
+
+    <!-- 우측 하단 실시간 채팅창 패널 -->
+    <div class="absolute bottom-20 right-3.5 flex flex-col items-end gap-2 z-20 pointer-events-none">
+      <div id="chat-panel" class="pointer-events-auto w-72 sm:w-80 bg-slate-900/85 backdrop-blur-md border border-white/15 rounded-2xl p-2.5 shadow-2xl space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-extrabold text-emerald-300">💬 현재 공간 실시간 대화</span>
+          <span class="text-[10px] text-slate-400">말풍선이 머리 위에 뜹니다</span>
+        </div>
+        <div id="chat-messages" class="h-24 overflow-y-auto space-y-1 pr-1 text-xs">
+          <div class="text-[11px] text-slate-400">✨ WASD/조이스틱/바닥 터치로 이동하며 성도들과 인사해보세요!</div>
+        </div>
+        <form id="chat-form" class="flex gap-1.5">
+          <input
+            id="chat-input"
+            type="text"
+            maxlength="80"
+            placeholder="인사나 아멘, 기도나눔 입력..."
+            class="flex-1 px-2.5 py-1.5 rounded-xl bg-slate-950/90 border border-slate-700 text-white text-xs outline-none focus:border-amber-400"
+          />
+          <button type="submit" class="px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">전송</button>
+        </form>
+      </div>
+
+      <!-- 시점 전환(3인칭 추적 ↔ 파노라마) & 채팅 접기 & 줌 -->
+      <div class="pointer-events-auto inline-flex items-center gap-1 p-1 rounded-full bg-black/70 backdrop-blur-md border border-white/15">
+        <button id="btn-cam-mode" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-amber-300 text-[11px] sm:text-xs font-extrabold cursor-pointer">
+          🏛️ 전체 파노라마 뷰
+        </button>
+        <button id="btn-zoom-out" class="px-2 py-1 rounded-full text-white text-xs font-bold hover:bg-white/15 cursor-pointer">➖</button>
+        <button id="btn-zoom-in" class="px-2 py-1 rounded-full text-white text-xs font-bold hover:bg-white/15 cursor-pointer">➕</button>
+        <button id="btn-toggle-chat" class="px-2.5 py-1 rounded-full bg-emerald-500/30 text-emerald-200 text-[11px] sm:text-xs font-bold cursor-pointer">💬 채팅창</button>
+        <button id="btn-fullscreen" class="px-2 py-1 rounded-full text-white text-xs font-bold hover:bg-white/15 cursor-pointer">⛶</button>
+      </div>
+    </div>
+
+    <!-- 2. 최하단 7개 공간 빠른 이동(Quick-Warp) 내비게이션 바 -->
+    <div class="absolute bottom-2.5 inset-x-2.5 flex justify-center pointer-events-none z-20" style="padding-bottom: env(safe-area-inset-bottom, 0px);">
+      <div class="pointer-events-auto inline-flex items-center gap-1 p-1.5 rounded-full bg-black/75 backdrop-blur-md border border-white/15 overflow-x-auto no-scrollbar max-w-full shadow-2xl">
+        <button data-zone="garden" class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-extrabold bg-amber-400 text-slate-950 shadow cursor-pointer">
+          🌿 앞마당 정원
+        </button>
+        <button data-zone="sanctuary" class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
+          🏛️ 대성전
+        </button>
+        <button data-zone="sarangbang" class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
+          🏠 사랑방(소그룹)
+        </button>
+        <button data-zone="bible" class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
+          📖 성경통독방
+        </button>
+        <button data-zone="qt" class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
+          ✏️ 큐티방
+        </button>
+        <button data-zone="prayer" class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
+          🕯️ 기도·갤러리
+        </button>
+        <button data-zone="rooftop" class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
+          ☕ 루프탑 카페
+        </button>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- [모달 1] 모든 방 공용: 👨‍🏫 강의 칠판 · 실시간 화이트보드 · PPT · PC화면 공유 -->
+    <!-- =================================================================== -->
+    <div id="board-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
+      <div class="bg-slate-800 text-white rounded-2xl max-w-2xl w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3 max-h-[92dvh] overflow-y-auto">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-extrabold text-sky-300">👨‍🏫 공간 스마트 칠판 · 화이트보드 · PPT · 화면공유</span>
+          <button data-close="board-modal" class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
+        </div>
+
+        <div class="flex flex-wrap gap-1.5">
+          <button data-btab="wb" class="board-tab-btn px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-400 text-slate-950 cursor-pointer">✏️ 실시간 화이트보드</button>
+          <button data-btab="ppt" class="board-tab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 cursor-pointer">📊 PPT · 강의자료 공유</button>
+          <button data-btab="screen" class="board-tab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 cursor-pointer">🖥️ PC 화면 · 영상 공유</button>
+          <button data-btab="slide" class="board-tab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 cursor-pointer">✍️ 글 자막 직접 입력</button>
+        </div>
+
+        <!-- 탭 1: 실시간 화이트보드 판서 -->
+        <div id="btab-wb" class="board-tab-pane space-y-2.5">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs text-slate-300 font-bold">판서 펜:</span>
+              <button type="button" data-color="#FFFFFF" data-size="5" class="wb-color-btn w-6 h-6 rounded-full bg-white ring-2 ring-amber-400 cursor-pointer"></button>
+              <button type="button" data-color="#FDE047" data-size="5" class="wb-color-btn w-6 h-6 rounded-full bg-yellow-300 cursor-pointer"></button>
+              <button type="button" data-color="#38BDF8" data-size="5" class="wb-color-btn w-6 h-6 rounded-full bg-sky-400 cursor-pointer"></button>
+              <button type="button" data-color="#34D399" data-size="5" class="wb-color-btn w-6 h-6 rounded-full bg-emerald-400 cursor-pointer"></button>
+              <button type="button" data-color="#FB7185" data-size="7" class="wb-color-btn w-6 h-6 rounded-full bg-rose-400 cursor-pointer"></button>
+              <button type="button" data-color="#0f291e" data-size="26" class="wb-color-btn px-2 py-0.5 rounded bg-slate-700 text-[11px] font-bold cursor-pointer">지우개</button>
             </div>
-            <div class="flex items-center gap-1 shrink-0">
-              <button data-sidx="${idx}" class="slide-send-btn px-2.5 py-1 rounded-lg bg-amber-400/20 hover:bg-amber-400/40 text-amber-300 text-xs font-bold cursor-pointer">송출</button>
-              ${screenSlides.length > 1 ? `<button data-sidx="${idx}" class="slide-del-btn px-2 py-1 rounded-lg bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white text-xs cursor-pointer">✕</button>` : ''}
+            <button id="btn-wb-clear" class="px-2.5 py-1 rounded-lg bg-rose-600/80 text-white text-xs font-bold cursor-pointer">🗑️ 전체 지우기</button>
+          </div>
+
+          <div class="rounded-xl overflow-hidden border-2 border-amber-500/50 bg-[#0f291e] aspect-video">
+            <canvas id="wbCanvas" width="960" height="540" class="w-full h-full touch-none cursor-crosshair"></canvas>
+          </div>
+
+          <div class="flex gap-2">
+            <input id="wb-text-input" type="text" placeholder="칠판에 깔끔하게 찍을 텍스트 입력..." class="flex-1 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white outline-none" />
+            <button id="btn-wb-stamp" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-xs font-bold cursor-pointer">🔤 글씨 찍기</button>
+            <button id="btn-wb-apply" class="px-3.5 py-1.5 rounded-xl bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">3D 칠판에 고정</button>
+          </div>
+        </div>
+
+        <!-- 탭 2: PPT 슬라이드 이미지 / 구글슬라이드·Canva 링크 공유 -->
+        <div id="btab-ppt" class="hidden board-tab-pane space-y-3">
+          <div class="p-3 rounded-xl bg-slate-900 border border-slate-700 space-y-2.5">
+            <div class="text-xs font-extrabold text-amber-300">방법 1. 📑 PPT 슬라이드 이미지(JPG/PNG 여러 장) 올려서 넘기며 강의하기</div>
+            <p class="text-[11px] text-slate-400 m-0">파워포인트에서 [다른 이름으로 저장 ➔ JPG/PNG] 한 이미지들을 한꺼번에 선택하면 3D 칠판에 선명하게 뜨며, 페이지를 넘길 때마다 성도들 화면도 함께 넘어갑니다.</p>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <label class="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer">
+                📂 슬라이드 이미지 여러 장 선택
+                <input id="ppt-files-input" type="file" accept="image/*" multiple class="hidden" />
+              </label>
+              <div class="inline-flex items-center gap-1.5">
+                <button id="btn-ppt-prev" class="px-3 py-1.5 rounded-lg bg-slate-700 text-xs font-bold cursor-pointer">◀ 이전 장</button>
+                <span id="ppt-page-indicator" class="text-xs text-slate-300 font-bold px-2">업로드된 슬라이드 없음</span>
+                <button id="btn-ppt-next" class="px-3 py-1.5 rounded-lg bg-slate-700 text-xs font-bold cursor-pointer">다음 장 ▶</button>
+              </div>
             </div>
           </div>
-        `).join('');
 
-        const activateSlideIdx = (idx) => {
-          const sl = screenSlides[idx];
-          if (!sl) return;
-          stopWebcamIfRunning();
-          ytIframe.src = '';
-          ytScreenBox.classList.add('hidden');
-          screenSource = 'slides';
-          screenModeIdx = idx;
-          activeCustomSlide = sl;
-          document.getElementById('cap-badge-input').value = sl.badge || '';
-          document.getElementById('cap-body-input').value = sl.body || '';
-          updateSlideCycleBtnLabel();
-          renderSavedSlidesList();
-        };
-
-        listEl.querySelectorAll('.slide-send-btn, .slide-pick-area').forEach((el) => {
-          el.addEventListener('click', () => {
-            activateSlideIdx(Number(el.getAttribute('data-sidx')));
-            notifyStatus('🖥️ 선택한 슬라이드가 대형 스크린에 송출되었습니다');
-          });
-        });
-
-        listEl.querySelectorAll('.slide-del-btn').forEach((el) => {
-          el.addEventListener('click', () => {
-            const idx = Number(el.getAttribute('data-sidx'));
-            if (screenSlides.length <= 1) return;
-            screenSlides.splice(idx, 1);
-            screenModeIdx = Math.min(screenModeIdx, screenSlides.length - 1);
-            activeCustomSlide = screenSlides[screenModeIdx];
-            persistSlides();
-            updateSlideCycleBtnLabel();
-            renderSavedSlidesList();
-          });
-        });
-      }
-
-      function openCaptionModal() {
-        if (activeCustomSlide) {
-          document.getElementById('cap-badge-input').value = activeCustomSlide.badge || '';
-          document.getElementById('cap-body-input').value = activeCustomSlide.body || '';
-        }
-        renderSavedSlidesList();
-        document.getElementById('caption-modal').classList.remove('hidden');
-      }
-
-      document.getElementById('btn-open-caption').addEventListener('click', openCaptionModal);
-      document.getElementById('btn-studio-caption').addEventListener('click', openCaptionModal);
-      document.getElementById('btn-close-caption').addEventListener('click', () => {
-        document.getElementById('caption-modal').classList.add('hidden');
-      });
-
-      document.querySelectorAll('.cap-accent-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          selectedCapAccent = btn.getAttribute('data-accent') || '#FDE047';
-          document.querySelectorAll('.cap-accent-btn').forEach((b) => {
-            b.classList.remove('ring-2', 'ring-white');
-            b.classList.add('opacity-70');
-          });
-          btn.classList.add('ring-2', 'ring-white');
-          btn.classList.remove('opacity-70');
-        });
-      });
-
-      document.getElementById('btn-apply-caption').addEventListener('click', () => {
-        const badge = document.getElementById('cap-badge-input').value.trim();
-        const body = document.getElementById('cap-body-input').value.trim();
-        if (!body && !badge) return;
-
-        stopWebcamIfRunning();
-        ytIframe.src = '';
-        ytScreenBox.classList.add('hidden');
-        screenSource = 'slides';
-
-        activeCustomSlide = { badge, body: body || badge, accent: selectedCapAccent };
-        screenSlides[screenModeIdx] = activeCustomSlide;
-        persistSlides();
-        updateSlideCycleBtnLabel();
-
-        if (document.getElementById('cap-focus-cam').checked) {
-          cam.tYaw = 0.0;
-          cam.tPitch = 0.16;
-          cam.tDist = 520;
-          cam.tTarget = { x: 0, y: 76, z: -155 };
-        }
-
-        document.getElementById('caption-modal').classList.add('hidden');
-        notifyStatus('✍️ 입력하신 문구가 대형 스크린에 반영되었습니다!');
-      });
-
-      document.getElementById('btn-save-slide').addEventListener('click', () => {
-        const badge = document.getElementById('cap-badge-input').value.trim();
-        const body = document.getElementById('cap-body-input').value.trim();
-        if (!body && !badge) return;
-
-        const newSlide = { badge, body: body || badge, accent: selectedCapAccent };
-        screenSlides.unshift(newSlide);
-        screenModeIdx = 0;
-        activeCustomSlide = newSlide;
-        persistSlides();
-        updateSlideCycleBtnLabel();
-        renderSavedSlidesList();
-        notifyStatus('➕ 새 슬라이드가 목록에 저장되었습니다!');
-      });
-
-      document.getElementById('btn-screen-mode').addEventListener('click', () => {
-        stopWebcamIfRunning();
-        ytIframe.src = '';
-        ytScreenBox.classList.add('hidden');
-        screenSource = 'slides';
-        screenModeIdx = (screenModeIdx + 1) % screenSlides.length;
-        activeCustomSlide = screenSlides[screenModeIdx];
-        updateSlideCycleBtnLabel();
-      });
-
-      // =====================================================
-      // [기능 2] 기도음악(BGM): 유튜브 음악 링크 / 내 오디오 파일 / URL / 기본 패드 반주
-      // =====================================================
-      let bgmType = 'none';
-      let synthAudioCtx = null;
-      let synthInterval = null;
-      let currentBgmBlobUrl = null;
-
-      function extractYoutubeId(url) {
-        if (!url) return '';
-        const m = url.match(/(?:v=|youtu\.be\/|embed\/|live\/|shorts\/)([a-zA-Z0-9_-]{11})/);
-        return m ? m[1] : url.trim();
-      }
-
-      function getBgmVolumeRatio() {
-        const el = document.getElementById('bgm-volume');
-        return el ? Number(el.value) / 100 : 0.65;
-      }
-
-      function stopAllBgm() {
-        bgmType = 'none';
-        if (synthInterval) {
-          clearInterval(synthInterval);
-          synthInterval = null;
-        }
-        customBgmAudio.pause();
-        customBgmAudio.src = '';
-        bgmYtIframe.src = '';
-
-        document.getElementById('bgm-player-bar').classList.add('hidden');
-        document.getElementById('bgm-yt-mini-wrap').classList.add('hidden');
-        document.getElementById('btn-open-bgm').textContent = '🎵 기도음악';
-      }
-
-      function showBgmBar(label, isYoutube) {
-        document.getElementById('bgm-now-label').textContent = label;
-        document.getElementById('bgm-player-bar').classList.remove('hidden');
-        document.getElementById('bgm-yt-mini-wrap').classList.toggle('hidden', !isYoutube);
-        document.getElementById('bgm-vol-wrap').classList.toggle('hidden', isYoutube);
-        document.getElementById('btn-open-bgm').textContent = '🎵 음악 ON';
-      }
-
-      function playWarmChord(freqs, forcePlay = false) {
-        if (bgmType !== 'synth' && !forcePlay) return;
-        try {
-          if (!synthAudioCtx) synthAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          if (synthAudioCtx.state === 'suspended') synthAudioCtx.resume();
-          const now = synthAudioCtx.currentTime;
-          const vol = Math.max(0.005, getBgmVolumeRatio() * 0.045);
-          freqs.forEach((f, idx) => {
-            const osc = synthAudioCtx.createOscillator();
-            const gain = synthAudioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(f, now + idx * 0.08);
-            gain.gain.setValueAtTime(0.0001, now + idx * 0.08);
-            gain.gain.linearRampToValueAtTime(vol, now + idx * 0.08 + 0.45);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.08 + 3.3);
-            osc.connect(gain);
-            gain.connect(synthAudioCtx.destination);
-            osc.start(now + idx * 0.08);
-            osc.stop(now + idx * 0.08 + 3.4);
-          });
-        } catch {}
-      }
-
-      function openBgmModal() {
-        document.getElementById('bgm-modal').classList.remove('hidden');
-      }
-
-      document.getElementById('btn-open-bgm').addEventListener('click', openBgmModal);
-      document.getElementById('btn-studio-bgm').addEventListener('click', openBgmModal);
-      document.getElementById('btn-change-bgm-bar').addEventListener('click', openBgmModal);
-      document.getElementById('btn-close-bgm').addEventListener('click', () => {
-        document.getElementById('bgm-modal').classList.add('hidden');
-      });
-
-      document.getElementById('btn-start-yt-bgm').addEventListener('click', () => {
-        const raw = document.getElementById('bgm-yt-input').value.trim();
-        const vid = extractYoutubeId(raw);
-        if (!vid) return;
-
-        stopAllBgm();
-        bgmType = 'youtube';
-        try { localStorage.setItem('somy_chapel_bgm_yt', raw); } catch {}
-        bgmYtIframe.src = `https://www.youtube.com/embed/${vid}?autoplay=1&loop=1&playlist=${vid}&playsinline=1&rel=0`;
-        showBgmBar('🎵 유튜브 기도음악 재생 중', true);
-        document.getElementById('bgm-modal').classList.add('hidden');
-        notifyStatus('🎵 유튜브 기도음악이 연결되었습니다! (소리가 안 나면 ▶ 클릭)');
-      });
-
-      document.getElementById('bgm-file-input').addEventListener('change', async (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
-
-        stopAllBgm();
-        if (currentBgmBlobUrl) URL.revokeObjectURL(currentBgmBlobUrl);
-        currentBgmBlobUrl = URL.createObjectURL(file);
-
-        bgmType = 'audio';
-        customBgmAudio.src = currentBgmBlobUrl;
-        customBgmAudio.volume = getBgmVolumeRatio();
-        document.getElementById('bgm-file-name').textContent = file.name;
-        showBgmBar(`🎵 내 기도음악: ${file.name}`, false);
-        document.getElementById('bgm-modal').classList.add('hidden');
-
-        try {
-          await customBgmAudio.play();
-          notifyStatus(`🎵 '${file.name}' 기도음악이 재생됩니다`);
-        } catch {
-          notifyStatus('⚠️ 오디오 재생을 위해 화면을 한 번 터치해주세요');
-        }
-      });
-
-      document.getElementById('btn-start-url-bgm').addEventListener('click', async () => {
-        const url = document.getElementById('bgm-audio-url-input').value.trim();
-        if (!url) return;
-
-        stopAllBgm();
-        bgmType = 'audio';
-        customBgmAudio.src = url;
-        customBgmAudio.volume = getBgmVolumeRatio();
-        showBgmBar('🎵 외부 오디오 링크 재생 중', false);
-        document.getElementById('bgm-modal').classList.add('hidden');
-
-        try {
-          await customBgmAudio.play();
-          notifyStatus('🎵 오디오 링크에서 기도음악이 재생됩니다');
-        } catch {
-          notifyStatus('⚠️ 유효한 오디오(.mp3) 주소인지 확인해주세요');
-        }
-      });
-
-      document.getElementById('btn-start-synth-bgm').addEventListener('click', () => {
-        stopAllBgm();
-        bgmType = 'synth';
-        const chords = [
-          [261.63, 329.63, 392.00, 523.25],
-          [220.00, 261.63, 329.63, 440.00],
-          [174.61, 220.00, 261.63, 349.23],
-          [196.00, 246.94, 293.66, 392.00]
-        ];
-        let idx = 0;
-        playWarmChord(chords[0]);
-        synthInterval = setInterval(() => {
-          idx = (idx + 1) % chords.length;
-          playWarmChord(chords[idx]);
-        }, 3400);
-
-        showBgmBar('🎹 기본 은혜 패드 반주 재생 중', false);
-        document.getElementById('bgm-modal').classList.add('hidden');
-        notifyStatus('🎹 잔잔한 기본 기도반주가 흐릅니다');
-      });
-
-      document.getElementById('btn-stop-all-bgm').addEventListener('click', () => {
-        stopAllBgm();
-        document.getElementById('bgm-modal').classList.add('hidden');
-        notifyStatus('🔇 기도음악이 정지되었습니다');
-      });
-
-      document.getElementById('btn-stop-bgm-bar').addEventListener('click', () => {
-        stopAllBgm();
-        notifyStatus('🔇 기도음악이 정지되었습니다');
-      });
-
-      document.getElementById('bgm-volume').addEventListener('input', () => {
-        customBgmAudio.volume = getBgmVolumeRatio();
-      });
-
-      try {
-        const savedYtBgm = localStorage.getItem('somy_chapel_bgm_yt');
-        if (savedYtBgm) document.getElementById('bgm-yt-input').value = savedYtBgm;
-      } catch {}
-
-      // =====================================================
-      // [기능 3] 마이크 · 모바일 전/후면 카메라 강단 송출 · 유튜브 스크린 영상
-      // =====================================================
-      document.getElementById('btn-mic').addEventListener('click', async () => {
-        const labelEl = document.getElementById('mic-label');
-        const meterWrap = document.getElementById('mic-meter-wrap');
-        const me = avatars.find((a) => a.isMe);
-
-        if (micActive) {
-          micActive = false;
-          micSimMode = false;
-          if (micStream) {
-            micStream.getTracks().forEach((t) => t.stop());
-            micStream = null;
-          }
-          labelEl.textContent = '🎙️ 마이크';
-          meterWrap.classList.add('hidden');
-          notifyStatus('🔇 마이크가 꺼졌습니다');
-          return;
-        }
-
-        try {
-          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            throw new Error('No mediaDevices');
-          }
-          micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          micAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          if (micAudioCtx.state === 'suspended') await micAudioCtx.resume();
-          const source = micAudioCtx.createMediaStreamSource(micStream);
-          micAnalyser = micAudioCtx.createAnalyser();
-          micAnalyser.fftSize = 64;
-          source.connect(micAnalyser);
-          micDataArray = new Uint8Array(micAnalyser.frequencyBinCount);
-
-          micActive = true;
-          micSimMode = false;
-          labelEl.textContent = '🎙️ ON';
-          meterWrap.classList.remove('hidden');
-          if (me) {
-            me.bubble = '🎙️ 마이크로 기도/찬양 중...';
-            me.bubbleTick = 180;
-          }
-          notifyStatus('🎙️ 말씀하시면 내 아바타에 음성 파동이 퍼집니다!');
-        } catch {
-          micActive = true;
-          micSimMode = true;
-          labelEl.textContent = '🎙️ 시뮬레이션';
-          meterWrap.classList.remove('hidden');
-          if (me) {
-            me.bubble = '🎙️ 통성기도 음성 파동 테스트 중!';
-            me.bubbleTick = 200;
-          }
-          notifyStatus('🎙️ 음성 파동 시뮬레이션 모드 (HTTPS 웹/폰에서 실제 마이크 연결)');
-        }
-      });
-
-      function stopWebcamIfRunning() {
-        if (webcamStream) {
-          webcamStream.getTracks().forEach((t) => t.stop());
-          webcamStream = null;
-        }
-        webcamVideo.srcObject = null;
-        document.getElementById('btn-webcam').textContent = '📹 카메라 송출';
-        document.getElementById('btn-flip-cam').classList.add('hidden');
-      }
-
-      async function startWebcamStream() {
-        if (webcamStream) {
-          webcamStream.getTracks().forEach((t) => t.stop());
-          webcamStream = null;
-        }
-        webcamStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: camFacingMode, width: { ideal: 640 }, height: { ideal: 360 } },
-          audio: false
-        });
-        webcamVideo.srcObject = webcamStream;
-        await webcamVideo.play();
-      }
-
-      document.getElementById('btn-webcam').addEventListener('click', async (e) => {
-        const btn = e.currentTarget;
-        if (screenSource === 'webcam' || screenSource === 'webcam-sim') {
-          stopWebcamIfRunning();
-          screenSource = 'slides';
-          notifyStatus('🖥️ 기본 자막 스크린으로 전환되었습니다');
-          return;
-        }
-
-        ytIframe.src = '';
-        ytScreenBox.classList.add('hidden');
-
-        cam.tYaw = 0.0;
-        cam.tPitch = 0.16;
-        cam.tDist = 520;
-        cam.tTarget = { x: 0, y: 76, z: -155 };
-
-        try {
-          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            throw new Error('No camera API');
-          }
-          await startWebcamStream();
-          screenSource = 'webcam';
-          btn.textContent = '⏹️ 카메라 중지';
-          document.getElementById('btn-flip-cam').classList.remove('hidden');
-          notifyStatus('📹 내 카메라 화면이 대형 스크린에 실시간 송출 중입니다!');
-        } catch {
-          screenSource = 'webcam-sim';
-          btn.textContent = '⏹️ 카메라 중지';
-          notifyStatus('📹 카메라 미리보기 모드 (HTTPS 웹/폰에서 실제 얼굴이 송출됩니다)');
-        }
-      });
-
-      document.getElementById('btn-flip-cam').addEventListener('click', async () => {
-        camFacingMode = camFacingMode === 'user' ? 'environment' : 'user';
-        try {
-          await startWebcamStream();
-          notifyStatus(camFacingMode === 'user' ? '🤳 전면 카메라로 전환되었습니다' : '📷 후면 카메라로 전환되었습니다');
-        } catch {
-          notifyStatus('⚠️ 카메라 전환을 지원하지 않는 기기입니다');
-        }
-      });
-
-      document.getElementById('btn-yt-open').addEventListener('click', () => {
-        document.getElementById('yt-modal').classList.remove('hidden');
-      });
-
-      document.getElementById('btn-cancel-yt').addEventListener('click', () => {
-        document.getElementById('yt-modal').classList.add('hidden');
-      });
-
-      document.getElementById('btn-Apply-yt').addEventListener('click', () => {
-        const raw = document.getElementById('yt-url-input').value.trim();
-        const vid = extractYoutubeId(raw);
-        if (!vid) return;
-
-        stopWebcamIfRunning();
-        document.getElementById('yt-modal').classList.add('hidden');
-
-        cam.tYaw = 0.0;
-        cam.tPitch = 0.16;
-        cam.tDist = 510;
-        cam.tTarget = { x: 0, y: 76, z: -155 };
-
-        ytIframe.src = `https://www.youtube.com/embed/${vid}?autoplay=1&playsinline=1&rel=0`;
-        screenSource = 'youtube';
-        notifyStatus('▶️ 대성전 와이드 스크린에서 유튜브 영상이 송출됩니다');
-      });
-
-      document.getElementById('btn-close-yt').addEventListener('click', () => {
-        ytIframe.src = '';
-        ytScreenBox.classList.add('hidden');
-        screenSource = 'slides';
-      });
-
-      // =====================================================
-      // [기능 4] 스마트폰 & 웹 열기 (QR코드 / 링크 복사 / 네이티브 공유 / 전체화면)
-      // =====================================================
-      function getShareableUrl() {
-        const href = window.location.href || '';
-        if (href.startsWith('http://') || href.startsWith('https://')) {
-          return href;
-        }
-        return 'https://somy-qt.vercel.app/chapel';
-      }
-
-      document.getElementById('btn-open-share').addEventListener('click', () => {
-        const url = getShareableUrl();
-        const input = document.getElementById('share-url-input');
-        const qr = document.getElementById('share-qr-img');
-        input.value = url;
-        qr.style.display = 'block';
-        qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(url)}`;
-        document.getElementById('share-modal').classList.remove('hidden');
-      });
-
-      document.getElementById('btn-close-share').addEventListener('click', () => {
-        document.getElementById('share-modal').classList.add('hidden');
-      });
-
-      document.getElementById('btn-copy-url').addEventListener('click', async () => {
-        const url = document.getElementById('share-url-input').value;
-        try {
-          await navigator.clipboard.writeText(url);
-          notifyStatus('✅ 예배당 웹 주소가 복사되었습니다! 카톡/문자에 붙여넣으세요');
-        } catch {
-          document.getElementById('share-url-input').select();
-          document.execCommand('copy');
-          notifyStatus('✅ 예배당 웹 주소가 복사되었습니다!');
-        }
-      });
-
-      document.getElementById('btn-native-share').addEventListener('click', async () => {
-        const url = document.getElementById('share-url-input').value;
-        if (navigator.share) {
-          try {
-            await navigator.share({
-              title: '소미 3D 온라인 대성전',
-              text: '스마트폰과 웹에서 함께 예배드리는 3D 온라인 대성전에 입장해보세요!',
-              url
-            });
-          } catch {}
-        } else {
-          try {
-            await navigator.clipboard.writeText(url);
-            notifyStatus('✅ 링크가 복사되었습니다! 카카오톡에 붙여넣어 공유하세요');
-          } catch {}
-        }
-      });
-
-      let isPseudoFullscreen = false;
-      document.getElementById('btn-fullscreen').addEventListener('click', async () => {
-        const btn = document.getElementById('btn-fullscreen');
-        if (document.fullscreenElement) {
-          await document.exitFullscreen().catch(() => {});
-          btn.textContent = '⛶ 전체화면';
-          return;
-        }
-        if (!isPseudoFullscreen && viewportBox.requestFullscreen) {
-          try {
-            await viewportBox.requestFullscreen();
-            btn.textContent = '✕ 축소';
-            return;
-          } catch {}
-        }
-        // iOS Safari 등 requestFullscreen 미지원 환경용 CSS 전체화면 토글
-        isPseudoFullscreen = !isPseudoFullscreen;
-        viewportBox.classList.toggle('chapel-fullscreen', isPseudoFullscreen);
-        btn.textContent = isPseudoFullscreen ? '✕ 축소' : '⛶ 전체화면';
-      });
-
-      document.addEventListener('fullscreenchange', () => {
-        const btn = document.getElementById('btn-fullscreen');
-        if (!document.fullscreenElement && !isPseudoFullscreen) {
-          btn.textContent = '⛶ 전체화면';
-        }
-      });
-
-      // =====================================================
-      // [기능 5] 모바일 멀티터치(한 손가락 회전 + 두 손가락 핀치 줌) & 좌석 터치 착석
-      // =====================================================
-      const activePointers = new Map();
-      let moved = false;
-      let lastPinchDist = 0;
-
-      canvas.addEventListener('pointerdown', (e) => {
-        activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-        if (activePointers.size === 1) {
-          moved = false;
-        } else if (activePointers.size === 2) {
-          moved = true;
-          const pts = Array.from(activePointers.values());
-          lastPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-        }
-        try { canvas.setPointerCapture(e.pointerId); } catch {}
-      });
-
-      canvas.addEventListener('pointermove', (e) => {
-        if (!activePointers.has(e.pointerId)) return;
-        const prev = activePointers.get(e.pointerId);
-        const cur = { x: e.clientX, y: e.clientY };
-        activePointers.set(e.pointerId, cur);
-
-        if (activePointers.size === 1) {
-          const dx = cur.x - prev.x;
-          const dy = cur.y - prev.y;
-          if (Math.hypot(dx, dy) > 4) moved = true;
-          cam.tYaw -= dx * 0.0068;
-          cam.tPitch = Math.max(0.10, Math.min(0.86, cam.tPitch + dy * 0.0052));
-        } else if (activePointers.size >= 2) {
-          moved = true;
-          const pts = Array.from(activePointers.values());
-          const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-          if (lastPinchDist > 0) {
-            const delta = lastPinchDist - dist;
-            cam.tDist = Math.max(170, Math.min(1250, cam.tDist + delta * 1.8));
-          }
-          lastPinchDist = dist;
-        }
-      });
-
-      function handlePointerEnd(e) {
-        const wasSingleTap = activePointers.size === 1 && !moved;
-        activePointers.delete(e.pointerId);
-        if (activePointers.size < 2) lastPinchDist = 0;
-
-        if (wasSingleTap) {
-          const rect = canvas.getBoundingClientRect();
-          const cx = e.clientX - rect.left;
-          const cy = e.clientY - rect.top;
-
-          const hitRadius = e.pointerType === 'touch' ? 34 : 26;
-          let best = null, bestDist = hitRadius;
-          for (const cs of clickableSeats) {
-            if (cs.isTaken) continue;
-            const d = Math.hypot(cx - cs.sx, cy - cs.sy);
-            if (d < bestDist) {
-              bestDist = d;
-              best = cs.seat;
-            }
-          }
-
-          if (best) {
-            const me = avatars.find((a) => a.isMe);
-            if (me) {
-              me.seatId = best.id;
-              const aisles = [-0.44, 0.0, 0.44];
-              const aisleAngle = aisles.reduce((prev, cur) =>
-                Math.abs(cur - best.angle) < Math.abs(prev - best.angle) ? cur : prev
-              );
-              const curR = Math.hypot(me.x, me.z - STAGE_Z);
-              const destR = Math.hypot(best.x, best.z - STAGE_Z);
-              me.waypoints = [
-                { x: curR * Math.sin(aisleAngle),  y: me.y,   z: STAGE_Z + curR * Math.cos(aisleAngle) },
-                { x: destR * Math.sin(aisleAngle), y: best.y, z: STAGE_Z + destR * Math.cos(aisleAngle) },
-                { x: best.x, y: best.y, z: best.z }
-              ];
-              me.bubble = `🪑 ${best.label} 착석`;
-              me.bubbleTick = 140;
-              notifyStatus(`✅ ${best.label}로 이동해 앉습니다`);
-            }
-          }
-        }
-      }
-
-      canvas.addEventListener('pointerup', handlePointerEnd);
-      canvas.addEventListener('pointercancel', (e) => {
-        activePointers.delete(e.pointerId);
-        lastPinchDist = 0;
-      });
-
-      canvas.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        cam.tDist = Math.max(170, Math.min(1250, cam.tDist + e.deltaY * 0.55));
-      }, { passive: false });
-
-      document.getElementById('btn-zoom-out').addEventListener('click', () => {
-        cam.tDist = Math.min(1250, cam.tDist + 130);
-      });
-
-      document.getElementById('btn-zoom-in').addEventListener('click', () => {
-        cam.tDist = Math.max(170, cam.tDist - 130);
-      });
-
-      function setActivePreset(btn) {
-        document.querySelectorAll('.cam-preset').forEach((b) => {
-          b.className = 'cam-preset shrink-0 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold text-white/90 hover:bg-white/10 cursor-pointer transition';
-        });
-        btn.className = 'cam-preset shrink-0 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-amber-400 text-slate-950 cursor-pointer transition';
-      }
-
-      document.querySelectorAll('.cam-preset').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          setActivePreset(btn);
-          const mode = btn.getAttribute('data-cam');
-          const me = avatars.find((a) => a.isMe);
-          if (mode === 'overview') {
-            cam.tYaw = 0.0;
-            cam.tPitch = 0.36;
-            cam.tDist = 760;
-            cam.tTarget = { x: 0, y: 46, z: -45 };
-          } else if (mode === 'panorama') {
-            cam.tYaw = 0.44;
-            cam.tPitch = 0.40;
-            cam.tDist = 780;
-            cam.tTarget = { x: 0, y: 44, z: -45 };
-          } else if (mode === 'center') {
-            cam.tYaw = 0.0;
-            cam.tPitch = 0.16;
-            cam.tDist = 520;
-            cam.tTarget = { x: 0, y: 76, z: -155 };
-          } else if (mode === 'walls') {
-            cam.tYaw = -0.56;
-            cam.tPitch = 0.27;
-            cam.tDist = 690;
-            cam.tTarget = { x: 20, y: 66, z: -55 };
-          } else if (mode === 'myface') {
-            if (me) {
-              cam.tYaw = me.facingYaw + 0.28;
-              cam.tPitch = 0.24;
-              cam.tDist = 210;
-              cam.tTarget = { x: me.x, y: (me.y || 0) + 24, z: me.z };
-            }
-          }
-        });
-      });
-
-      document.getElementById('btn-mood').addEventListener('click', (e) => {
-        moodIdx = (moodIdx + 1) % MOODS.length;
-        e.currentTarget.textContent = MOODS[moodIdx].label;
-      });
-
-      document.getElementById('btn-avatar-custom').addEventListener('click', () => {
-        myStyleIdx = (myStyleIdx + 1) % STYLES.length;
-        const me = avatars.find((a) => a.isMe);
-        if (me) {
-          me.style = STYLES[myStyleIdx];
-          me.bubble = '✨ 새 스타일로 변경했어요!';
-          me.bubbleTick = 110;
-        }
-      });
-
-      document.getElementById('btn-draw-word').addEventListener('click', () => {
-        const pick = GRACE_WORDS[Math.floor(Math.random() * GRACE_WORDS.length)];
-        document.getElementById('word-text').textContent = `"${pick.text}"`;
-        document.getElementById('word-ref').textContent = `— ${pick.ref}`;
-        document.getElementById('word-modal').classList.remove('hidden');
-      });
-
-      document.getElementById('btn-close-word').addEventListener('click', () => {
-        document.getElementById('word-modal').classList.add('hidden');
-        sendAmen('');
-      });
-
-      function sendAmen(targetName) {
-        const me = avatars.find((a) => a.isMe);
-        if (me) {
-          me.bubble = targetName ? `🙌 ${targetName}님 기도에 아멘!` : '🙌 할렐루야 아멘!';
-          me.bubbleTick = 140;
-          me.floats.push({ dy: 0, alpha: 1 });
-        }
-        if (bgmType === 'synth') playWarmChord([523.25, 659.25, 783.99], true);
-      }
-
-      document.getElementById('btn-send-amen').addEventListener('click', () => sendAmen(''));
-
-      function renderCandlesUI() {
-        document.getElementById('candle-counter').textContent = `${candles.length}개 점등`;
-        const box = document.getElementById('prayer-cards');
-        box.innerHTML = candles.map((c) => `
-          <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-between gap-2">
-            <div class="min-w-0 flex-1">
-              <div class="text-xs font-extrabold text-white truncate">🕯️ ${c.name}</div>
-              <div class="text-xs text-slate-400 truncate mt-0.5">${c.text}</div>
+          <div class="p-3 rounded-xl bg-slate-900 border border-slate-700 space-y-2">
+            <div class="text-xs font-extrabold text-sky-300">방법 2. 🔗 구글 슬라이드 / 미리캔버스 / Canva / OneDrive PPT 웹 게시 링크</div>
+            <div class="flex gap-2">
+              <input id="ppt-embed-input" type="text" placeholder="https://docs.google.com/presentation/d/.../embed" class="flex-1 px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+              <button id="btn-apply-embed" class="shrink-0 px-3.5 py-2 rounded-xl bg-sky-500 text-slate-950 text-xs font-extrabold cursor-pointer">링크 공유</button>
             </div>
-            <button data-cid="${c.id}" class="amen-btn shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-extrabold bg-amber-500/20 text-amber-400 border border-amber-500/30 cursor-pointer hover:bg-amber-500/30">
-              🙏 ${c.amens}
+          </div>
+        </div>
+
+        <!-- 탭 3: 내 PC 화면(실제 PPT 창) 실시간 공유 & 유튜브/카메라 -->
+        <div id="btab-screen" class="hidden board-tab-pane space-y-3">
+          <div class="p-3.5 rounded-xl bg-slate-900 border border-sky-500/40 space-y-2">
+            <div class="text-xs font-extrabold text-sky-300">🖥️ 내 PC에 띄운 파워포인트(PPT)·한글·PDF 화면 그대로 실시간 공유</div>
+            <p class="text-[11px] text-slate-400 m-0">컴퓨터에서 실제 PPT 프로그램을 띄워놓고 아래 버튼을 누르면, 같은 방 성도들에게 내 화면이 실시간 중계됩니다.</p>
+            <button id="btn-start-screenshare" class="w-full py-2.5 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold cursor-pointer">
+              🖥️ 내 PC 화면(PPT·문서) 실시간 공유 시작
             </button>
           </div>
-        `).join('');
 
-        box.querySelectorAll('.amen-btn').forEach((b) => {
-          b.addEventListener('click', () => {
-            const id = Number(b.getAttribute('data-cid'));
-            const item = candles.find((x) => x.id === id);
-            if (item) {
-              item.amens++;
-              sendAmen(item.name);
-              renderCandlesUI();
-            }
-          });
-        });
-      }
+          <div class="p-3 rounded-xl bg-slate-900 border border-slate-700 space-y-2">
+            <div class="text-xs font-extrabold text-rose-300">▶️ 유튜브 강의/예배 영상 또는 내 카메라 송출</div>
+            <div class="flex gap-2">
+              <input id="board-yt-input" type="text" value="https://www.youtube.com/watch?v=M7lc1UVf-VE" placeholder="유튜브 영상 주소..." class="flex-1 px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+              <button id="btn-apply-yt-board" class="shrink-0 px-3 py-2 rounded-xl bg-rose-600 text-white text-xs font-extrabold cursor-pointer">유튜브 송출</button>
+            </div>
+            <button id="btn-webcam-board" class="w-full py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold cursor-pointer">
+              📹 내 카메라 칠판 송출
+            </button>
+          </div>
+        </div>
 
-      document.getElementById('btn-light-candle').addEventListener('click', () => {
-        const authorEl = document.getElementById('prayer-author');
-        const inputEl = document.getElementById('prayer-input');
-        const name = authorEl.value.trim() || '익명 성도';
-        const text = inputEl.value.trim();
-        if (!text) {
-          inputEl.focus();
-          return;
-        }
-        const angle = (Math.random() - 0.5) * 1.12;
-        candles.unshift({ id: Date.now(), name, text, amens: 1, angle });
-        const me = avatars.find((a) => a.isMe);
-        if (me) {
-          me.name = name;
-          me.bubble = `🕯️ ${text.slice(0, 15)}${text.length > 15 ? '...' : ''}`;
-          me.bubbleTick = 180;
-        }
-        inputEl.value = '';
-        renderCandlesUI();
-        sendAmen(name);
-      });
+        <!-- 탭 4: 글 자막 슬라이드 직접 타이핑 -->
+        <div id="btab-slide" class="hidden board-tab-pane space-y-2.5">
+          <input id="slide-badge-input" type="text" placeholder="상단 배지 / 강의 제목 (예: 1교구 사랑방 나눔 주제)" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white outline-none" />
+          <textarea id="slide-body-input" rows="4" placeholder="칠판에 띄울 성경 본문, 강의 핵심 요약, 기도제목을 여러 줄로 입력하세요." class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white outline-none resize-none"></textarea>
+          <button id="btn-apply-slide-text" class="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer">
+            🖥️ 3D 칠판/와이드스크린에 글 올리기
+          </button>
+        </div>
+      </div>
+    </div>
 
-      updateSlideCycleBtnLabel();
-      renderCandlesUI();
-      requestAnimationFrame(render);
-    })();
-  </script>
+    <!-- =================================================================== -->
+    <!-- [모달 2] 🏠 사랑방 (그룹별 소그룹실 목록 선택 & 새 사랑방 개설) -->
+    <!-- =================================================================== -->
+    <div id="sarang-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
+      <div class="bg-slate-800 text-white rounded-2xl max-w-lg w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3.5 max-h-[92dvh] overflow-y-auto">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-extrabold text-orange-300">🏠 그룹별 사랑방(소그룹실) 선택 및 개설</span>
+          <button data-close="sarang-modal" class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
+        </div>
+        <p class="text-xs text-slate-300 m-0">각 사랑방은 <b>독립된 3D 공간, 전용 채팅, 전용 화이트보드/PPT 칠판</b>을 가집니다.</p>
+
+        <div id="sarang-list-box" class="space-y-2 max-h-52 overflow-y-auto pr-1"></div>
+
+        <div class="p-3 rounded-xl bg-slate-900 border border-slate-700 space-y-2">
+          <div class="text-xs font-extrabold text-amber-300">➕ 우리 순/셀/부서 새 사랑방 만들기</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <input id="sarang-name-input" type="text" placeholder="방 이름 (예: 2교구 사랑순)" class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+            <input id="sarang-leader-input" type="text" placeholder="순장/인도자 성함" class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+          </div>
+          <input id="sarang-topic-input" type="text" placeholder="오늘 모임 나눔 주제 / 환영 인사" class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+          <button id="btn-create-sarang" class="w-full py-2 rounded-xl bg-orange-400 hover:bg-orange-300 text-slate-950 text-xs font-extrabold cursor-pointer">
+            🏠 새 사랑방 개설 후 바로 입장하기
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- [모달 3] 📖 성경통독방 — 개역개정 성경 66권 열람 & 통독 공유 -->
+    <!-- =================================================================== -->
+    <div id="bible-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
+      <div class="bg-slate-800 text-white rounded-2xl max-w-xl w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3 max-h-[92dvh] overflow-y-auto">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-extrabold text-emerald-300">📖 성경통독방 — 개역개정 성경 66권 열람</span>
+          <button data-close="bible-modal" class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <select id="bible-book-select" class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white outline-none"></select>
+          <input id="bible-chap-input" type="text" value="23" placeholder="장 (예: 23 또는 23:1-6)" class="w-28 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white outline-none" />
+          <button id="btn-fetch-bible" class="px-4 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-extrabold cursor-pointer">
+            성경 펼치기
+          </button>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-[#FDFBF7] text-slate-800 border border-amber-200 max-h-64 overflow-y-auto space-y-2">
+          <div id="bible-passage-title" class="text-sm font-extrabold text-amber-900">📖 시편 23장 (개역개정)</div>
+          <div id="bible-passage-box" class="text-xs sm:text-sm leading-relaxed whitespace-pre-line font-medium">1. 여호와는 나의 목자시니 내게 부족함이 없으리로다
+2. 그가 나를 푸른 풀밭에 누이시며 쉴 만한 물 가로 인도하시는도다
+3. 내 영혼을 소생시키시고 자기 이름을 위하여 의의 길로 인도하시는도다</div>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button id="btn-send-bible-board" class="flex-1 py-2 rounded-xl bg-sky-500 text-slate-950 text-xs font-extrabold cursor-pointer">
+            🖥️ 이 본문을 방 칠판에 띄우기
+          </button>
+          <button id="btn-complete-bible" class="flex-1 py-2 rounded-xl bg-emerald-500 text-slate-950 text-xs font-extrabold cursor-pointer">
+            ✅ 통독 완료 인사 나누기
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- [모달 4] ✏️ 큐티방 — 관리자 큐티 기초반 강의안 & 오늘의 큐티 & 실시간 나눔 -->
+    <!-- =================================================================== -->
+    <div id="qt-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
+      <div class="bg-slate-800 text-white rounded-2xl max-w-2xl w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3 max-h-[92dvh] overflow-y-auto">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-extrabold text-amber-300">✏️ 큐티 아카데미 & 실시간 큐티 나눔방</span>
+          <button data-close="qt-modal" class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
+        </div>
+
+        <div class="flex flex-wrap gap-1.5">
+          <button data-qtab="lectures" class="qt-tab-btn px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-400 text-slate-950 cursor-pointer">📘 큐티 기초반 강의안</button>
+          <button data-qtab="today" class="qt-tab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 cursor-pointer">🌅 오늘의 소미 큐티</button>
+          <button data-qtab="share" class="qt-tab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 cursor-pointer">🙏 큐티 서로 나누기</button>
+        </div>
+
+        <!-- 서브탭 1: 관리자 큐티 기초반 강의안 -->
+        <div id="qtab-lectures" class="qt-tab-pane space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+            <div id="qt-lecture-list" class="sm:col-span-4 space-y-1.5 max-h-60 overflow-y-auto"></div>
+            <div class="sm:col-span-8 p-3.5 rounded-2xl bg-[#FDFBF7] text-slate-800 space-y-2 max-h-60 overflow-y-auto">
+              <div id="qt-lec-detail-title" class="text-sm font-extrabold text-amber-900"></div>
+              <div id="qt-lec-detail-body" class="text-xs leading-relaxed whitespace-pre-line"></div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap justify-between gap-2">
+            <button id="btn-project-qt-lec" class="px-3.5 py-2 rounded-xl bg-sky-400 text-slate-950 text-xs font-extrabold cursor-pointer">
+              🖥️ 이 강의안 요약을 3D 칠판에 띄우기
+            </button>
+            <button id="btn-toggle-lec-editor" class="px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-xs font-bold cursor-pointer">
+              ✍️ 관리자 새 강의안 등록
+            </button>
+          </div>
+
+          <div id="qt-lec-editor" class="hidden p-3 rounded-xl bg-slate-900 border border-amber-400/40 space-y-2">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <input id="lec-week-input" type="text" placeholder="주차 (예: 4주차 심화)" class="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+              <input id="lec-title-input" type="text" placeholder="강의 제목 입력" class="sm:col-span-2 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+            </div>
+            <textarea id="lec-content-input" rows="4" placeholder="성도들이 읽고 배울 큐티 강의안 내용을 작성하세요..." class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none resize-none"></textarea>
+            <button id="btn-save-qt-lec" class="w-full py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">📘 강의안 저장 및 게시</button>
+          </div>
+        </div>
+
+        <!-- 서브탭 2: 오늘의 소미 큐티 -->
+        <div id="qtab-today" class="hidden qt-tab-pane">
+          <div id="today-qt-box" class="p-3.5 rounded-2xl bg-slate-900 border border-slate-700 max-h-64 overflow-y-auto text-xs text-slate-200">
+            불러오는 중...
+          </div>
+        </div>
+
+        <!-- 서브탭 3: 실시간 큐티 나눔 보드 -->
+        <div id="qtab-share" class="hidden qt-tab-pane space-y-2.5">
+          <div class="p-3 rounded-xl bg-slate-900 border border-slate-700 space-y-2">
+            <input id="qt-share-passage" type="text" placeholder="묵상 본문 (예: 시편 27:1)" class="w-full px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+            <textarea id="qt-share-input" rows="2" placeholder="깨달은 말씀과 오늘 나의 적용(순종)을 성도들과 나누어 주세요!" class="w-full px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none resize-none"></textarea>
+            <button id="btn-submit-qt-share" class="w-full py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">🙏 큐티 나눔 올리기</button>
+          </div>
+          <div id="qt-shares-list" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- [모달 5] 🕯️ 기도 등불 봉헌 & 중보기도 -->
+    <div id="candle-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
+      <div class="bg-slate-800 text-white rounded-2xl max-w-md w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3 max-h-[90dvh] overflow-y-auto">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-extrabold text-amber-300">🕯️ 강단 앞 기도 등불 밝히기</span>
+          <button data-close="candle-modal" class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
+        </div>
+        <div class="flex gap-2">
+          <input id="candle-text-input" type="text" placeholder="간절한 기도 제목을 적어주세요..." class="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white outline-none" />
+          <button id="btn-add-candle" class="shrink-0 px-3.5 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">🕯️ 점등</button>
+        </div>
+        <div id="candles-list-box" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
+      </div>
+    </div>
+
+    <!-- [모달 6] 🎵 배경 기도음악 설정 -->
+    <div id="bgm-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
+      <div class="bg-slate-800 text-white rounded-2xl max-w-md w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-extrabold text-indigo-300">🎵 배경 기도음악 설정</span>
+          <button data-close="bgm-modal" class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900 space-y-2">
+          <div class="text-xs font-bold text-rose-300">1. 🔗 유튜브 기도음악 / 찬양 연주 링크</div>
+          <div class="flex gap-2">
+            <input id="bgm-yt-input" type="text" value="https://www.youtube.com/watch?v=jfKfPfyJRdk" class="flex-1 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+            <button id="btn-start-yt-bgm" class="px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-extrabold cursor-pointer">재생</button>
+          </div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900 space-y-2">
+          <div class="text-xs font-bold text-emerald-300">2. 📂 내 폰/PC 기도음악 파일(MP3·M4A)</div>
+          <label class="block text-center py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-extrabold cursor-pointer">
+            음악 파일 불러오기
+            <input id="bgm-file-input" type="file" accept="audio/*" class="hidden" />
+          </label>
+        </div>
+        <div class="flex gap-2">
+          <button id="btn-start-synth-bgm" class="flex-1 py-2 rounded-xl bg-indigo-600 text-xs font-extrabold cursor-pointer">🎹 기본 은혜 패드 반주</button>
+          <button id="btn-stop-bgm" class="px-3.5 py-2 rounded-xl bg-slate-700 text-xs font-bold cursor-pointer">⏹️ 끄기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- [모달 7] 😊 내 이름 / 3D 캐릭터 변경 & NPC 표시 설정 -->
+    <div id="profile-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
+      <div class="bg-slate-800 text-white rounded-2xl max-w-sm w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-extrabold text-amber-300">😊 내 이름 & 3D 아바타 설정</span>
+          <button data-close="profile-modal" class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 font-bold mb-1">이름 / 직분</label>
+          <input id="profile-name-input" type="text" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 font-bold mb-1">3D 아바타 선택</label>
+          <div id="avatar-preset-grid" class="grid grid-cols-2 gap-2"></div>
+        </div>
+        <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer pt-1">
+          <input id="npc-toggle-chk" type="checkbox" checked class="accent-amber-400" />
+          <span>예시 방문자(NPC 성도) 함께 표시하기</span>
+        </label>
+        <button id="btn-save-profile" class="w-full py-2.5 rounded-xl bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">적용하기</button>
+      </div>
+    </div>
+
+    <!-- [모달 8] 🖼️ 성화·말씀 갤러리 해설 -->
+    <div id="art-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-40">
+      <div class="bg-[#FDFBF7] text-slate-800 rounded-2xl max-w-sm w-full p-5 border border-amber-300 shadow-2xl space-y-3 text-center">
+        <div id="art-modal-title" class="text-sm font-extrabold text-amber-900"></div>
+        <div id="art-modal-desc" class="text-xs leading-relaxed font-medium text-slate-700 break-keep"></div>
+        <button data-close="art-modal" class="w-full py-2 rounded-xl bg-amber-600 text-white text-xs font-extrabold cursor-pointer">묵상하며 닫기 🙏</button>
+      </div>
+    </div>
+
+    <!-- [모달 9] 📱 친구 초대 & 스마트폰 QR 열기 -->
+    <div id="share-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-40">
+      <div class="bg-slate-800 text-white rounded-2xl max-w-sm w-full p-5 border border-slate-600 shadow-2xl space-y-3 text-center">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-extrabold text-emerald-300">📱 성도 초대 & 스마트폰 접속</span>
+          <button data-close="share-modal" class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
+        </div>
+        <div class="bg-white rounded-2xl p-3 inline-block mx-auto">
+          <img id="share-qr-img" alt="QR" class="w-36 h-36 object-contain" onerror="this.style.display='none'" />
+        </div>
+        <p class="text-xs text-slate-300 m-0">같은 링크로 접속한 성도들은 3D 공간에서 실시간으로 만나 걸어 다니고 대화할 수 있습니다!</p>
+        <div class="flex gap-1.5">
+          <input id="share-url-input" type="text" readonly class="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-emerald-300 font-bold outline-none" />
+          <button id="btn-copy-share" class="px-3 py-2 rounded-xl bg-emerald-400 text-slate-950 text-xs font-extrabold cursor-pointer">복사</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/chapel-engine.js"></script>
+  <script src="/chapel-app.js"></script>
 </body>
 </html>

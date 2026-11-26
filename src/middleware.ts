@@ -29,7 +29,11 @@ export function middleware(request: NextRequest) {
             'sw-v10.js',
             'favicon.ico',
         ];
-        if (pathParts.length === 1 && !excluded.includes(seg) && !seg.endsWith('.html')) {
+        if (
+            pathParts.length === 1 &&
+            !excluded.includes(seg) &&
+            !/\.(?:html|js|mjs|css|json|png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|mp3|wav)$/i.test(seg)
+        ) {
             churchId = pathParts[0];
             
             // ✅ [핵심 수정] Next.js 서버리스 환경에서는 /[church_id] 폴더가 없으므로 404 에러가 발생합니다.
