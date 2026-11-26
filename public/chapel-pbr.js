@@ -1504,6 +1504,147 @@
       this.cache[ck] = tex;
       return tex;
     }
+
+    // 실제 DSLR 고해상도 자연 사진(/seasons/*.jpg) 기반 360도 무이음매(Seamless) 파노라마 백드롭 재질
+    rooftopRealPhotoPanorama(theme = 'autumn') {
+      const ck = `real_photo_pano_${theme}`;
+      if (this.cache[ck]) return this.cache[ck];
+
+      const skyTopFallbacks = {
+        spring: '#2c7be5',
+        summer: '#1d70b8',
+        autumn: '#d8cfc4',
+        winter: '#cbd5e1',
+        rain: '#aeb9c4',
+        night: '#060d1f'
+      };
+      const bottomFallbacks = {
+        spring: '#1e5b68',
+        summer: '#0b4a6f',
+        autumn: '#1f3b4d',
+        winter: '#1e293b',
+        rain: '#334155',
+        night: '#040914'
+      };
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 4096;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
+
+      // 사진 로드 전 0.2초 동안의 자연스러운 대기 그라데이션
+      const initGrad = ctx.createLinearGradient(0, 0, 0, 1024);
+      initGrad.addColorStop(0, skyTopFallbacks[theme] || '#94a3b8');
+      initGrad.addColorStop(1, bottomFallbacks[theme] || '#1e293b');
+      ctx.fillStyle = initGrad;
+      ctx.fillRect(0, 0, 4096, 1024);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      if (THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
+
+      // toneMapping: false + fog: false 설정으로 실제 사진의 원본 색감·선명도·명암을 왜곡 없이 100% 그대로 출력!
+      const mat = new THREE.MeshBasicMaterial({
+        map: tex,
+        side: THREE.DoubleSide,
+        fog: false,
+        toneMapping: false
+      });
+
+      const skyCapMat = new THREE.MeshBasicMaterial({
+        color: skyTopFallbacks[theme] || '#94a3b8',
+        side: THREE.BackSide,
+        fog: false,
+        toneMapping: false
+      });
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const W = canvas.width;
+        const H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        // 정면(중앙 50% = 180도 파노라마 시야)에 원본 고해상도 실사 사진 배치 + 후면 좌우에 미러링 연결하여 360도 이음매 완벽 제거
+        const segW = W / 2; // 2048px
+        // 중앙 메인 사진 (x = 1024 .. 3072 -> 정면 북쪽 -Z 바다·산맥 정중앙 매핑)
+        ctx.drawImage(img, 1024, 0, segW, H);
+
+        // 좌측 미러 연장 (x = 0 .. 1024)
+        ctx.save();
+        ctx.translate(1024, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(img, 0, 0, img.width * 0.5, img.height, 0, 0, 1024, H);
+        ctx.restore();
+
+        // 우측 미러 연장 (x = 3072 .. 4096)
+        ctx.save();
+        ctx.translate(W, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(img, img.width * 0.5, 0, img.width * 0.5, img.height, 0, 0, 1024, H);
+        ctx.restore();
+
+        // 사진 최상단 실제 픽셀 색상을 추출하여 상부 하늘 돔과 경계선 없이 부드럽게 페더링
+        const sample = ctx.getImageData(2048, 8, 1, 1).data;
+        const topCss = `rgb(${sample[0]}, ${sample[1]}, ${sample[2]})`;
+        skyCapMat.color.setStyle(topCss);
+
+        const topFade = ctx.createLinearGradient(0, 0, 0, 96);
+        topFade.addColorStop(0, topCss);
+        topFade.addColorStop(1, `rgba(${sample[0]}, ${sample[1]}, ${sample[2]}, 0)`);
+        ctx.fillStyle = topFade;
+        ctx.fillRect(0, 0, W, 96);
+
+        tex.needsUpdate = true;
+      };
+      img.src = `/seasons/${theme}.jpg?v=6`;
+
+      const bundle = { panoMat: mat, skyCapMat };
+      this.cache[ck] = bundle;
+      return bundle;
+    }
+
+    // 겨울 실사 서리·박설이 내려앉은 우드 데크 PBR 재질 (만화 같은 동그란 눈뭉치 대신 실제 눈 덮인 나무 데크 질감!)
+    frostedWoodDeckMaterial() {
+      if (this.cache.frosted_wood_deck) return this.cache.frosted_wood_deck;
+      const map = makeCanvasTex(512, 512, (ctx, w, h) => {
+        const img = ctx.createImageData(w, h);
+        const d = img.data;
+        const planks = 8;
+        const pw = w / planks;
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const pIdx = Math.floor(x / pw);
+            const isGap = (x % Math.floor(pw) < 2);
+            const snowNoise = fbm(x * 0.035, y * 0.035, 4);
+            const fineFrost = fbm(x * 0.14 + 9, y * 0.14, 3);
+            // 나무 판재 틈새와 가장자리에 하얀 눈이 자연스럽게 쌓여 있는 실사 질감
+            const snowMix = isGap ? 0.92 : Math.max(0.18, Math.min(0.95, (snowNoise - 0.24) * 1.45 + fineFrost * 0.22));
+            const wr = 128, wg = 104, wb = 82;
+            const sr = 238, sg = 243, sb = 249;
+            const idx = (y * w + x) * 4;
+            d[idx] = Math.round(wr * (1 - snowMix) + sr * snowMix);
+            d[idx + 1] = Math.round(wg * (1 - snowMix) + sg * snowMix);
+            d[idx + 2] = Math.round(wb * (1 - snowMix) + sb * snowMix);
+            d[idx + 3] = 255;
+          }
+        }
+        ctx.putImageData(img, 0, 0);
+      }, 8, 8);
+
+      const mat = new THREE.MeshStandardMaterial({
+        map,
+        roughness: 0.58,
+        metalness: 0.04,
+        envMap: this.envMap,
+        envMapIntensity: 0.45
+      });
+      this.cache.frosted_wood_deck = mat;
+      return mat;
+    }
   }
 
   window.ArchitecturalPBR = ArchitecturalPBR;

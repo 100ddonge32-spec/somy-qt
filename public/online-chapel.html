@@ -71,6 +71,8 @@
     }
     .holy-bible-pages {
       position: relative;
+      display: flex;
+      flex-direction: column;
       background: #faf5ea;
       border-radius: 11px;
       box-shadow:
@@ -561,27 +563,27 @@
               <div class="holy-bible-gutter"></div>
 
               <!-- 성경 상단 러닝 헤더 -->
-              <div class="flex items-center justify-between px-4 sm:px-6 py-2 border-b border-[#e2d6be] bg-[#f4ede0] text-[#5c3d24]">
+              <div class="relative z-10 shrink-0 flex items-center justify-between px-4 sm:px-6 py-2 border-b border-[#e2d6be] bg-[#f4ede0] text-[#5c3d24]">
                 <span id="bible-running-header-left" class="text-xs font-extrabold tracking-wider">성경전서 개역개정판</span>
-                <span id="bible-passage-title" class="text-xs sm:text-sm font-extrabold text-[#7c2d12]">시편 제 23 편</span>
+                <span id="bible-passage-title" class="text-xs sm:text-sm font-extrabold text-[#7c2d12]">창세기 제 1 장</span>
                 <span id="bible-page-indicator" class="text-[11px] font-bold text-[#785c42]">1 / 1 쪽</span>
               </div>
 
-              <!-- PC 양면 2단 / 모바일 단면 1단 본문 영역 -->
-              <div id="bible-spread-grid" class="grid grid-cols-1 md:grid-cols-2 min-h-[290px] sm:min-h-[340px] max-h-[46dvh] md:max-h-[48dvh]">
+              <!-- PC 양면 2단 / 모바일 단면 1단 본문 영역 (하단 네비게이션 바와 절대 겹치지 않도록 고정 행 + min-h-0 격리) -->
+              <div id="bible-spread-grid" class="grid grid-cols-1 md:grid-cols-2 md:grid-rows-1 h-[43dvh] sm:h-[46dvh] min-h-[270px] max-h-[430px] overflow-hidden">
                 <!-- 왼쪽 면 (모바일에서는 전체 면) -->
-                <div id="bible-left-page" class="bible-page-sheet p-4 sm:p-6 overflow-y-auto space-y-2 border-b md:border-b-0 md:border-r border-[#e8dec9]"></div>
+                <div id="bible-left-page" class="bible-page-sheet min-h-0 h-full p-4 sm:px-6 sm:py-4 pb-5 overflow-y-auto space-y-1.5 border-b md:border-b-0 md:border-r border-[#e8dec9]"></div>
                 <!-- 오른쪽 면 (PC/태블릿 전용 양면 펼침 우측 페이지) -->
-                <div id="bible-right-page" class="hidden md:block bible-page-sheet p-4 sm:p-6 overflow-y-auto space-y-2"></div>
+                <div id="bible-right-page" class="hidden md:block bible-page-sheet min-h-0 h-full p-4 sm:px-6 sm:py-4 pb-5 overflow-y-auto space-y-1.5"></div>
               </div>
 
-              <!-- 성경 하단 책장 넘기기 바 -->
-              <div class="flex items-center justify-between px-3 sm:px-6 py-2 border-t border-[#e2d6be] bg-[#f4ede0] text-[#4a321f]">
-                <button id="btn-bible-page-prev" class="px-3.5 py-1.5 rounded-lg bg-[#e5d8c0] hover:bg-[#dac8a8] text-xs font-extrabold cursor-pointer shadow-sm">
+              <!-- 성경 하단 책장 넘기기 바 (불투명 용지 하단 바로 구절 겹침 원천 차단) -->
+              <div class="relative z-10 shrink-0 flex items-center justify-between px-3 sm:px-6 py-2 border-t border-[#dccfb4] bg-[#efe6d4] text-[#4a321f]">
+                <button id="btn-bible-page-prev" class="px-3.5 py-1.5 rounded-lg bg-[#e2d3b7] hover:bg-[#d6c3a1] text-xs font-extrabold cursor-pointer shadow-sm">
                   ◀ 이전 책장 넘기기
                 </button>
                 <span class="text-[11px] text-[#785c42] font-semibold hidden sm:inline">💡 절을 터치하면 그 절부터 음성 낭독이 시작됩니다</span>
-                <button id="btn-bible-page-next" class="px-3.5 py-1.5 rounded-lg bg-[#e5d8c0] hover:bg-[#dac8a8] text-xs font-extrabold cursor-pointer shadow-sm">
+                <button id="btn-bible-page-next" class="px-3.5 py-1.5 rounded-lg bg-[#e2d3b7] hover:bg-[#d6c3a1] text-xs font-extrabold cursor-pointer shadow-sm">
                   다음 책장 넘기기 ▶
                 </button>
               </div>
@@ -877,8 +879,8 @@
 
   </div>
 
-  <script src="/chapel-pbr.js?v=5"></script>
-  <script src="/chapel-engine.js?v=5"></script>
-  <script src="/chapel-app.js?v=5"></script>
+  <script src="/chapel-pbr.js?v=6"></script>
+  <script src="/chapel-engine.js?v=6"></script>
+  <script src="/chapel-app.js?v=6"></script>
 </body>
 </html>

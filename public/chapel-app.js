@@ -1862,16 +1862,49 @@
     return window.innerWidth >= 768;
   }
 
-  function getVersesPerSheet() {
-    if (bibleFontPx >= 20) return 5;
-    if (bibleFontPx >= 18) return 6;
-    return 8;
+  // 글자 수·줄 수 기반 스마트 페이지 분할기 ➔ 긴 절이 섞여 있어도 페이지 하단 버튼에 절대 가리지 않고 한 면에 딱 맞게 분할!
+  function buildBibleSpreads() {
+    const twoPage = isTwoPageDesktop();
+    // 한 면(시트)당 가로 글자 수 및 최대 허용 시각적 줄 수 계산
+    const charsPerLine = twoPage
+      ? Math.max(14, Math.floor(370 / bibleFontPx))
+      : Math.max(15, Math.floor(Math.min(window.innerWidth - 56, 520) / bibleFontPx));
+    const maxLinesPerSheet = bibleFontPx >= 22 ? 6.2 : bibleFontPx >= 20 ? 7.2 : bibleFontPx >= 18 ? 8.4 : 9.8;
+
+    const sheets = [];
+    let curSheet = [];
+    // 첫 번째 시트 상단에는 장 제목 배너(약 2.4줄 높이)가 들어가므로 여유 공간 선반영
+    let usedLines = 2.4;
+
+    parsedVerses.forEach((v, idx) => {
+      const estLines = Math.max(1, Math.ceil((String(v.text || '').length + 3) / charsPerLine)) + 0.42;
+      if (curSheet.length > 0 && usedLines + estLines > maxLinesPerSheet) {
+        sheets.push(curSheet);
+        curSheet = [];
+        usedLines = 0;
+      }
+      curSheet.push({ verse: v, globalIdx: idx });
+      usedLines += estLines;
+    });
+    if (curSheet.length > 0 || sheets.length === 0) {
+      sheets.push(curSheet);
+    }
+
+    if (!twoPage) {
+      return sheets.map((s) => ({ left: s, right: [] }));
+    }
+    const spreads = [];
+    for (let i = 0; i < sheets.length; i += 2) {
+      spreads.push({
+        left: sheets[i] || [],
+        right: sheets[i + 1] || []
+      });
+    }
+    return spreads;
   }
 
   function getTotalSpreads() {
-    const perSheet = getVersesPerSheet();
-    const perSpread = isTwoPageDesktop() ? perSheet * 2 : perSheet;
-    return Math.max(1, Math.ceil(parsedVerses.length / perSpread));
+    return buildBibleSpreads().length;
   }
 
   function triggerFlipAnimation(dir) {
@@ -1886,7 +1919,7 @@
   function renderVerseHtml(v, globalIdx) {
     const isReading = ttsPlaying && ttsVerseIdx === globalIdx;
     return `
-      <div data-vidx="${globalIdx}" class="bible-verse-item ${isReading ? 'verse-reading-active' : ''}" style="font-size:${bibleFontPx}px; line-height:1.92;">
+      <div data-vidx="${globalIdx}" class="bible-verse-item ${isReading ? 'verse-reading-active' : ''}" style="font-size:${bibleFontPx}px; line-height:1.85;">
         <span class="font-extrabold text-[#991b1b] mr-1.5" style="font-size:${Math.max(12, bibleFontPx - 2)}px;">${v.num}</span><span>${v.text}</span>
       </div>
     `;
@@ -1910,13 +1943,10 @@
     }
 
     const twoPage = isTwoPageDesktop();
-    const perSheet = getVersesPerSheet();
-    const perSpread = twoPage ? perSheet * 2 : perSheet;
-    const totalSpreads = Math.max(1, Math.ceil(parsedVerses.length / perSpread));
+    const spreads = buildBibleSpreads();
+    const totalSpreads = spreads.length;
     bibleSpreadIdx = Math.max(0, Math.min(totalSpreads - 1, bibleSpreadIdx));
-
-    const startIdx = bibleSpreadIdx * perSpread;
-    const leftSlice = parsedVerses.slice(startIdx, startIdx + perSheet);
+    const currentSpread = spreads[bibleSpreadIdx] || { left: [], right: [] };
 
     const chapterBanner = bibleSpreadIdx === 0
       ? `<div class="pb-2 mb-2 border-b-2 border-[#d4b88c] text-center">
@@ -1925,17 +1955,18 @@
          </div>`
       : '';
 
-    leftEl.innerHTML = chapterBanner + leftSlice.map((v, i) => renderVerseHtml(v, startIdx + i)).join('');
+    leftEl.innerHTML = chapterBanner + currentSpread.left.map((item) => renderVerseHtml(item.verse, item.globalIdx)).join('');
+    leftEl.scrollTop = 0;
 
     if (twoPage) {
-      const rightSlice = parsedVerses.slice(startIdx + perSheet, startIdx + perSpread);
-      rightEl.innerHTML = rightSlice.length
-        ? rightSlice.map((v, i) => renderVerseHtml(v, startIdx + perSheet + i)).join('')
+      rightEl.innerHTML = currentSpread.right.length
+        ? currentSpread.right.map((item) => renderVerseHtml(item.verse, item.globalIdx)).join('')
         : `<div class="h-full flex flex-col items-center justify-center text-center text-[#8c7355] py-10 space-y-2">
              <div class="text-lg">✦</div>
              <div class="text-xs font-bold">${currentBibleBook} ${currentBibleChap}${u}의 마지막 면입니다</div>
              <div class="text-[11px]">[다음 책장 넘기기 ▶]를 누르면 다음 장으로 이어집니다</div>
            </div>`;
+      rightEl.scrollTop = 0;
       pageInd.textContent = `${bibleSpreadIdx * 2 + 1}–${bibleSpreadIdx * 2 + 2} / ${totalSpreads * 2} 쪽`;
     } else {
       rightEl.innerHTML = '';
@@ -2165,9 +2196,16 @@
   }
 
   function ensureVerseVisibleOnSpread(vIdx) {
-    const perSheet = getVersesPerSheet();
-    const perSpread = isTwoPageDesktop() ? perSheet * 2 : perSheet;
-    const targetSpread = Math.floor(vIdx / perSpread);
+    const spreads = buildBibleSpreads();
+    let targetSpread = 0;
+    for (let s = 0; s < spreads.length; s++) {
+      const inLeft = spreads[s].left.some((it) => it.globalIdx === vIdx);
+      const inRight = spreads[s].right.some((it) => it.globalIdx === vIdx);
+      if (inLeft || inRight) {
+        targetSpread = s;
+        break;
+      }
+    }
     if (targetSpread !== bibleSpreadIdx) {
       const dir = targetSpread > bibleSpreadIdx ? 1 : -1;
       bibleSpreadIdx = targetSpread;
