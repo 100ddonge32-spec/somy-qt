@@ -115,28 +115,31 @@
       const ck = `wallwash_${key}_${fromLeft}`;
       if (this.cache[ck]) return this.cache[ck];
 
-      const base = key === 'white' ? [244, 242, 237] : [224, 204, 174];
-      const shade = key === 'white' ? [214, 210, 202] : [182, 158, 126];
+      const base = key === 'white' ? [232, 229, 222] : [208, 184, 150];
+      const shade = key === 'white' ? [196, 191, 182] : [158, 132, 98];
 
       const map = makeCanvasTex(512, 512, (ctx, w, h) => {
         // 기본 따뜻한 패브릭/우드 흡음보드 결 + 좌측(또는 우측) 수직 간접조명 GI 그라데이션 + 상단 천장 간접광
         const hGrad = ctx.createLinearGradient(fromLeft ? 0 : w, 0, fromLeft ? w : 0, 0);
-        hGrad.addColorStop(0.0, `rgb(255, 250, 236)`);
-        hGrad.addColorStop(0.16, `rgb(${Math.min(255, base[0] + 18)}, ${Math.min(255, base[1] + 16)}, ${Math.min(255, base[2] + 14)})`);
-        hGrad.addColorStop(0.55, `rgb(${base[0]}, ${base[1]}, ${base[2]})`);
+        hGrad.addColorStop(0.0, `rgb(255, 246, 222)`);
+        hGrad.addColorStop(0.18, `rgb(${Math.min(255, base[0] + 16)}, ${Math.min(255, base[1] + 14)}, ${Math.min(255, base[2] + 10)})`);
+        hGrad.addColorStop(0.58, `rgb(${base[0]}, ${base[1]}, ${base[2]})`);
         hGrad.addColorStop(1.0, `rgb(${shade[0]}, ${shade[1]}, ${shade[2]})`);
         ctx.fillStyle = hGrad;
         ctx.fillRect(0, 0, w, h);
 
-        // 상단 천장 코브 빛 번짐
-        const vGrad = ctx.createLinearGradient(0, 0, 0, h * 0.35);
-        vGrad.addColorStop(0, 'rgba(255, 249, 230, 0.38)');
-        vGrad.addColorStop(1, 'rgba(255, 249, 230, 0.0)');
+        // 상단 천장 코브 빛 번짐 & 하단 걸레받이 음영(AO)
+        const vGrad = ctx.createLinearGradient(0, 0, 0, h);
+        vGrad.addColorStop(0.0, 'rgba(255, 246, 218, 0.36)');
+        vGrad.addColorStop(0.22, 'rgba(255, 246, 218, 0.0)');
+        vGrad.addColorStop(0.88, 'rgba(0, 0, 0, 0.0)');
+        vGrad.addColorStop(0.97, 'rgba(30, 24, 18, 0.18)');
+        vGrad.addColorStop(1.0, 'rgba(40, 32, 24, 0.55)');
         ctx.fillStyle = vGrad;
-        ctx.fillRect(0, 0, w, h * 0.35);
+        ctx.fillRect(0, 0, w, h);
 
-        // 미세한 건축용 흡음 패널 줄눈(CAD 줄눈 디테일)
-        ctx.strokeStyle = 'rgba(90, 72, 52, 0.10)';
+        // 선명한 건축용 패널 줄눈(CAD 줄눈 디테일)
+        ctx.strokeStyle = 'rgba(70, 55, 38, 0.18)';
         ctx.lineWidth = 2;
         for (let y = 128; y < h; y += 128) {
           ctx.beginPath();
@@ -144,18 +147,25 @@
           ctx.lineTo(w, y);
           ctx.stroke();
         }
+        for (let x = 128; x < w; x += 128) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, h);
+          ctx.stroke();
+        }
       }, 1, 1);
 
-      // 자체 발광 GI 맵으로 어두운 그림자 없이 Enscape/V-Ray 렌더처럼 은은하게 빛남
+      // FrontSide 전용: 실내에서는 선명하게 보이고, 카메라가 벽 뒤로 빠져나갈 때는 자동으로 투명 투과됨!
       const mat = new THREE.MeshStandardMaterial({
         map,
-        emissive: new THREE.Color(0xfff3d6),
+        emissive: new THREE.Color(0xffe8b8),
         emissiveMap: map,
-        emissiveIntensity: 0.28,
-        roughness: 0.62,
+        emissiveIntensity: 0.08,
+        roughness: 0.65,
         metalness: 0.02,
         envMap: this.envMap,
-        envMapIntensity: 0.4
+        envMapIntensity: 0.25,
+        side: THREE.FrontSide
       });
       this.cache[ck] = mat;
       return mat;
@@ -180,12 +190,13 @@
 
       const mat = new THREE.MeshStandardMaterial({
         map,
-        emissive: new THREE.Color(0xfff5e0),
-        emissiveIntensity: 0.24,
-        roughness: 0.48,
+        emissive: new THREE.Color(0xffecc4),
+        emissiveIntensity: 0.10,
+        roughness: 0.52,
         metalness: 0.03,
         envMap: this.envMap,
-        envMapIntensity: 0.5
+        envMapIntensity: 0.3,
+        side: THREE.FrontSide
       });
       this.cache[ck] = mat;
       return mat;
