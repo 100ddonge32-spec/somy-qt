@@ -456,15 +456,79 @@
       rec.neckAnchor.remove(rec.neckAnchor.children[0]);
     }
 
-    if (cfg.accessory === 'horn_glasses' || cfg.accessory === 'wire_glasses') {
-      const isHorn = cfg.accessory === 'horn_glasses';
+    if (cfg.accessory === 'horn_glasses') {
+      // 1) 🕶️ 와이드 순정만화 뿔테 안경 (가로 폭 대폭 확장: 얼굴선과 광대뼈를 시원하게 감싸는 정통 오버사이즈 핏)
       const frameMat = new THREE.MeshStandardMaterial({
-        color: isHorn ? 0x111318 : 0xd4af37,
-        roughness: isHorn ? 0.22 : 0.18,
-        metalness: isHorn ? 0.12 : 0.85
+        color: 0x111318,
+        roughness: 0.22,
+        metalness: 0.12
       });
       const lensMat = new THREE.MeshBasicMaterial({
         color: 0xe0f2fe,
+        transparent: true,
+        opacity: 0.16,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+      const glareMat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.45,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+
+      const gRoot = new THREE.Group();
+      gRoot.position.copy(rec.eyeBridgeLocal);
+      gRoot.rotation.set(0, Math.PI, 0);
+
+      const span = rec.eyeHalfSpan || 0.032;
+      // 가로 폭을 대폭 넓힌 와이드 오버사이즈 뿔테 규격 (fw: span * 2.18, 상하 fh: span * 1.42)
+      const fw = span * 2.18;
+      const fh = span * 1.42;
+      const th = 0.0058;
+
+      [-1, 1].forEach((side) => {
+        const rim = new THREE.Group();
+        rim.position.set(side * span * 1.28, -0.002, 0);
+        rim.rotation.z = side * -0.025;
+
+        const topB = new THREE.Mesh(new THREE.BoxGeometry(fw + th * 1.2, th * 1.45, th * 1.1), frameMat);
+        topB.position.y = fh * 0.5;
+        const botB = new THREE.Mesh(new THREE.BoxGeometry(fw * 0.96, th * 0.95, th * 0.9), frameMat);
+        botB.position.y = -fh * 0.5;
+        const outB = new THREE.Mesh(new THREE.BoxGeometry(th, fh, th), frameMat);
+        outB.position.x = side * fw * 0.48;
+        const inB = new THREE.Mesh(new THREE.BoxGeometry(th * 0.85, fh * 0.92, th * 0.9), frameMat);
+        inB.position.x = -side * fw * 0.46;
+
+        const lens = new THREE.Mesh(new THREE.PlaneGeometry(fw * 0.90, fh * 0.90), lensMat);
+        const glare = new THREE.Mesh(new THREE.PlaneGeometry(fw * 0.18, fh * 0.78), glareMat);
+        glare.position.set(-fw * 0.16, 0, 0.001);
+        glare.rotation.z = -0.38;
+
+        const temple = new THREE.Mesh(new THREE.BoxGeometry(th * 0.75, th * 0.85, 0.12), frameMat);
+        temple.position.set(side * fw * 0.50, fh * 0.22, -0.060);
+
+        rim.add(topB, botB, outB, inB, lens, glare, temple);
+        gRoot.add(rim);
+      });
+
+      const bridge = new THREE.Mesh(new THREE.BoxGeometry(span * 0.54, th * 1.1, th), frameMat);
+      bridge.position.set(0, fh * 0.26, 0.001);
+      gRoot.add(bridge);
+      rec.accessoryAnchor.add(gRoot);
+    }
+
+    if (cfg.accessory === 'wire_glasses') {
+      // 2) 👓 동그랗고 가로폭이 넓은 클래식 지적 금테안경 (Round Wide Gold Wire Frames)
+      const goldMat = new THREE.MeshStandardMaterial({
+        color: 0xeab308,
+        roughness: 0.16,
+        metalness: 0.92
+      });
+      const lensMat = new THREE.MeshBasicMaterial({
+        color: 0xf0f9ff,
         transparent: true,
         opacity: 0.15,
         depthWrite: false,
@@ -483,40 +547,35 @@
       gRoot.rotation.set(0, Math.PI, 0);
 
       const span = rec.eyeHalfSpan || 0.032;
-      // 순정만화 남주 비율에 맞춘 큼직하고 스타일리시한 와이드 뿔테/금테 규격 (+30% 와이드 & 상하 확장)
-      const fw = span * 1.82;
-      const fh = span * 1.34;
-      const th = isHorn ? 0.0058 : 0.0028;
+      // 큼직하고 둥근 렌즈 반경 (안구 전체를 시원하게 덮는 와이드 라운드 림)
+      const radius = span * 1.05;
+      const wireTh = 0.0022;
 
       [-1, 1].forEach((side) => {
         const rim = new THREE.Group();
-        rim.position.set(side * span * 1.15, -0.002, 0);
-        rim.rotation.z = side * -0.03;
+        rim.position.set(side * span * 1.26, -0.002, 0);
 
-        const topB = new THREE.Mesh(new THREE.BoxGeometry(fw + th * 1.2, th * 1.45, th * 1.1), frameMat);
-        topB.position.y = fh * 0.5;
-        const botB = new THREE.Mesh(new THREE.BoxGeometry(fw * 0.96, th * (isHorn ? 0.95 : 0.60), th * 0.9), frameMat);
-        botB.position.y = -fh * 0.5;
-        const outB = new THREE.Mesh(new THREE.BoxGeometry(th, fh, th), frameMat);
-        outB.position.x = side * fw * 0.48;
-        const inB = new THREE.Mesh(new THREE.BoxGeometry(th * 0.85, fh * 0.92, th * 0.9), frameMat);
-        inB.position.x = -side * fw * 0.46;
+        // 원형 금테 림 (TorusGeometry)
+        const roundRim = new THREE.Mesh(new THREE.TorusGeometry(radius, wireTh, 10, 36), goldMat);
+        const roundLens = new THREE.Mesh(new THREE.CircleGeometry(radius * 0.97, 32), lensMat);
+        const glare = new THREE.Mesh(new THREE.PlaneGeometry(radius * 0.35, radius * 1.25), glareMat);
+        glare.position.set(-radius * 0.28, 0, 0.001);
+        glare.rotation.z = -0.36;
 
-        const lens = new THREE.Mesh(new THREE.PlaneGeometry(fw * 0.90, fh * 0.90), lensMat);
-        const glare = new THREE.Mesh(new THREE.PlaneGeometry(fw * 0.18, fh * 0.78), glareMat);
-        glare.position.set(-fw * 0.16, 0, 0.001);
-        glare.rotation.z = -0.38;
+        const temple = new THREE.Mesh(new THREE.CylinderGeometry(wireTh * 0.9, wireTh * 0.9, 0.12, 8), goldMat);
+        temple.rotation.x = Math.PI / 2;
+        temple.position.set(side * radius * 0.98, radius * 0.22, -0.060);
 
-        const temple = new THREE.Mesh(new THREE.BoxGeometry(th * 0.75, th * 0.85, 0.11), frameMat);
-        temple.position.set(side * fw * 0.50, fh * 0.22, -0.055);
-
-        rim.add(topB, botB, outB, inB, lens, glare, temple);
+        rim.add(roundRim, roundLens, glare, temple);
         gRoot.add(rim);
       });
 
-      const bridge = new THREE.Mesh(new THREE.BoxGeometry(span * 0.52, th * 1.1, th), frameMat);
-      bridge.position.set(0, fh * 0.26, 0.001);
+      // 아치형 금테 코 브릿지
+      const bridge = new THREE.Mesh(new THREE.TorusGeometry(span * 0.32, wireTh, 8, 18, Math.PI), goldMat);
+      bridge.rotation.z = Math.PI;
+      bridge.position.set(0, radius * 0.35, 0.001);
       gRoot.add(bridge);
+
       rec.accessoryAnchor.add(gRoot);
     }
 
