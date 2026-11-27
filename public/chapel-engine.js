@@ -1199,6 +1199,9 @@
         return this.avatars.get(id);
       }
 
+      const presetId = info.presetId || 'webtoon_boy';
+      const resolvedCfg = resolveAvatarConfig(presetId, info.avatarConfig);
+
       const root = new THREE.Group();
       const bodyPivot = new THREE.Group();
       root.add(bodyPivot);
@@ -1285,9 +1288,6 @@
       placeholderGroup.add(aura);
 
       bodyPivot.add(placeholderGroup);
-
-      const presetId = info.presetId || 'webtoon_boy';
-      const resolvedCfg = resolveAvatarConfig(presetId, info.avatarConfig);
 
       const labelEl = document.createElement('div');
       labelEl.className = 'pointer-events-none absolute -translate-x-1/2 -translate-y-full flex flex-col items-center gap-1 z-10';
