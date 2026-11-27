@@ -133,15 +133,15 @@
   const SAMPLE_NPCS = {
     garden: [
       { id: 'npc_g1', name: '김은혜 권사', presetId: 'kwonsa_grace', x: -8.5, z: 13, rotY: Math.PI / 2, pose: 'sit', isNpc: true, bubble: '🌿 정원 공기가 참 평안하네요' },
-      { id: 'npc_g2', name: '박소망 청년', presetId: 'trench_chic', x: -12.5, z: -5.5, rotY: 0.3, pose: 'stand', drink: 'coffee', isNpc: true, bubble: '☕ 대성전 들어가기 전 커피 한 잔!' }
+      { id: 'npc_g2', name: '박소망 청년', presetId: 'dandy_suit', x: -12.5, z: -5.5, rotY: 0.3, pose: 'stand', drink: 'coffee', isNpc: true, bubble: '☕ 대성전 들어가기 전 커피 한 잔!' }
     ],
     sanctuary: [
       { id: 'npc_s1', name: '한충성 장로', presetId: 'elder_suit', x: -2.96, z: -4.16, rotY: Math.PI, pose: 'sit', isNpc: true, bubble: '🙏 주님 홀로 영광 받으소서' },
       { id: 'npc_s2', name: '이믿음 집사', presetId: 'tweed_bob', x: 2.96, z: -4.16, rotY: Math.PI, pose: 'sit', isNpc: true },
-      { id: 'npc_s3', name: '정온유 성도', presetId: 'lovely_wave', avatarConfig: { bodyStyle: 'model', gender: 'female', skinTone: 'porcelain', faceStyle: 'gentle', expression: 'pray', hairStyle: 'long_wave', hairColor: 'espresso', outfitStyle: 'onepiece', outfitColor: '#f8fafc', bottomColor: '#e7e5e4', accessory: 'necklace' }, x: 0, z: -13.6, rotY: Math.PI, pose: 'kneel', isNpc: true, bubble: '🕯️ 간절히 무릎으로 기도합니다' }
+      { id: 'npc_s3', name: '정온유 성도', presetId: 'lovely_wave', avatarConfig: { vrmModel: 'sample_a', bodyStyle: 'model', skinTone: 'porcelain', eyeColor: 'original', expression: 'pray', hairColor: 'espresso', outfitColor: '#f1f5f9', bottomColor: '#e7e5e4', accessory: 'necklace' }, x: 0, z: -13.6, rotY: Math.PI, pose: 'kneel', isNpc: true, bubble: '🕯️ 간절히 무릎으로 기도합니다' }
     ],
     sarangbang: [
-      { id: 'npc_r1', name: '윤평강 순장', presetId: 'dandy_suit', avatarConfig: { bodyStyle: 'model', gender: 'male', skinTone: 'warm', faceStyle: 'gentle', expression: 'joy', hairStyle: 'dandy', hairColor: 'chestnut', outfitStyle: 'knit_slacks', outfitColor: '#047857', bottomColor: '#1e293b', accessory: 'wire_glasses' }, x: -3.6, z: 4.1, rotY: 2.3, pose: 'sit', drink: 'coffee', isNpc: true, bubble: '🏠 사랑방에 오신 것을 환영해요!' }
+      { id: 'npc_r1', name: '윤평강 순장', presetId: 'trench_chic', x: -3.6, z: 4.1, rotY: 2.3, pose: 'sit', drink: 'coffee', isNpc: true, bubble: '🏠 사랑방에 오신 것을 환영해요!' }
     ],
     bible: [
       { id: 'npc_b1', name: '강기쁨 청년', presetId: 'lovely_wave', x: -7.2, z: -3.95, rotY: Math.PI, pose: 'sit', isNpc: true, bubble: '📖 연대기순 음성통독 중! 예스통독 🙌' }
@@ -150,10 +150,10 @@
       { id: 'npc_q1', name: '송찬양 간사', presetId: 'tweed_bob', x: -6.4, z: -3.75, rotY: Math.PI, pose: 'sit', isNpc: true, bubble: '🌅 오늘의 소미 큐티 말씀 함께 묵상해요!' }
     ],
     prayer: [
-      { id: 'npc_p1', name: '오감사 권사', presetId: 'kwonsa_grace', avatarConfig: { bodyStyle: 'model', gender: 'female', skinTone: 'warm', faceStyle: 'gentle', expression: 'pray', hairStyle: 'low_bun', hairColor: 'espresso', outfitStyle: 'jacket_skirt', outfitColor: '#6d28d9', bottomColor: '#1e1b4b', accessory: 'necklace' }, x: -2, z: -11.2, rotY: Math.PI, pose: 'kneel', isNpc: true }
+      { id: 'npc_p1', name: '오감사 권사', presetId: 'kwonsa_grace', avatarConfig: { vrmModel: 'shino', bodyStyle: 'model', skinTone: 'warm', eyeColor: 'original', expression: 'pray', hairColor: 'espresso', outfitColor: '#6d28d9', bottomColor: '#1e1b4b', accessory: 'necklace' }, x: -2, z: -11.2, rotY: Math.PI, pose: 'kneel', isNpc: true }
     ],
     rooftop: [
-      { id: 'npc_t1', name: '류화평 청년', presetId: 'trench_chic', x: -6.2, z: -17.6, rotY: Math.PI, pose: 'sit', drink: 'coffee', isNpc: true, bubble: '🏞️ 산과 바다 사계절 풍경이 정말 아름답네요!' }
+      { id: 'npc_t1', name: '류화평 청년', presetId: 'webtoon_boy', x: -6.2, z: -17.6, rotY: Math.PI, pose: 'sit', drink: 'coffee', isNpc: true, bubble: '🏞️ 산과 바다 사계절 풍경이 정말 아름답네요!' }
     ]
   };
 
@@ -201,8 +201,8 @@
   let myDrink = '';
   try {
     myName = localStorage.getItem('somy_world_name') || myName;
-    myPresetId = localStorage.getItem('somy_world_preset_v3') || 'webtoon_boy';
-    const savedCfg = localStorage.getItem('somy_world_avatar_v3');
+    myPresetId = localStorage.getItem('somy_world_preset_v4') || 'webtoon_boy';
+    const savedCfg = localStorage.getItem('somy_world_avatar_v4');
     if (savedCfg) myAvatarConfig = JSON.parse(savedCfg);
   } catch {}
   if (somyUserName) {
@@ -3452,25 +3452,28 @@
     if (!previewRenderer) {
       const THREE = window.THREE;
       previewScene = new THREE.Scene();
-      previewCamera = new THREE.PerspectiveCamera(36, 1, 0.1, 20);
+      previewCamera = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
       previewRenderer = new THREE.WebGLRenderer({ canvas: pCanvas, antialias: true, alpha: true });
       previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      if (THREE.sRGBEncoding) previewRenderer.outputEncoding = THREE.sRGBEncoding;
+      if ('outputColorSpace' in previewRenderer && THREE.SRGBColorSpace) {
+        previewRenderer.outputColorSpace = THREE.SRGBColorSpace;
+      } else if (THREE.sRGBEncoding) {
+        previewRenderer.outputEncoding = THREE.sRGBEncoding;
+      }
 
-      const hemi = new THREE.HemisphereLight(0xfffbeb, 0x334155, 1.05);
-      const keyLight = new THREE.DirectionalLight(0xfff7ed, 1.15);
-      keyLight.position.set(2.2, 3.2, 3.5);
-      const rimLight = new THREE.DirectionalLight(0xfde68a, 0.55);
-      rimLight.position.set(-2.4, 2.5, -2.2);
-      previewScene.add(hemi, keyLight, rimLight);
+      // VRoid MToon 셰이더 최적 조명 밸런스 (하얗게 날아가는 과노출 원천 방지!)
+      const amb = new THREE.AmbientLight(0xffffff, 0.36);
+      const keyLight = new THREE.DirectionalLight(0xfffaf2, 0.72);
+      keyLight.position.set(1.2, 1.8, 2.4);
+      previewScene.add(amb, keyLight);
 
       const pedestal = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.55, 0.62, 0.08, 32),
+        new THREE.CylinderGeometry(0.50, 0.56, 0.06, 32),
         new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.35, roughness: 0.4 })
       );
-      pedestal.position.y = -0.04;
+      pedestal.position.y = -0.03;
       const goldRim = new THREE.Mesh(
-        new THREE.TorusGeometry(0.56, 0.015, 10, 36),
+        new THREE.TorusGeometry(0.51, 0.012, 10, 36),
         new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.75, roughness: 0.25 })
       );
       goldRim.rotation.x = Math.PI * 0.5;
@@ -3503,44 +3506,82 @@
     previewRenderer.setSize(w, h, false);
   }
 
-  let previewBuiltRef = null;
-  function rebuildPreviewAvatarMesh() {
+  let previewVrmRec = null;
+  let previewLoadedModelKey = '';
+  let previewLoadSeq = 0;
+
+  async function refreshStudioPreviewVrm(forceModelReload = false) {
     ensureAvatarPreviewStudio();
     if (!previewAvatarPivot) return;
-    while (previewAvatarPivot.children.length > 0) {
-      previewAvatarPivot.remove(previewAvatarPivot.children[0]);
+    const targetModel = (draftAvatarCfg && draftAvatarCfg.vrmModel) || 'fumiriya';
+
+    if (!forceModelReload && previewVrmRec && previewLoadedModelKey === targetModel) {
+      world3d.applyStyleToStudioVrm(previewVrmRec, tempPreset, draftAvatarCfg);
+      return;
     }
-    previewBuiltRef = world3d.buildPreviewRig(tempPreset, draftAvatarCfg);
-    previewAvatarPivot.add(previewBuiltRef.rigGroup);
+
+    const seq = ++previewLoadSeq;
+    const badge = document.getElementById('vrm-loading-badge');
+    if (badge) badge.classList.remove('hidden');
+
+    try {
+      const rec = await world3d.loadVrmRecordForStudio(tempPreset, draftAvatarCfg);
+      if (seq !== previewLoadSeq) return;
+      while (previewAvatarPivot.children.length > 0) {
+        previewAvatarPivot.remove(previewAvatarPivot.children[0]);
+      }
+      previewVrmRec = rec;
+      previewLoadedModelKey = targetModel;
+      previewAvatarPivot.add(rec.wrapper);
+    } catch (e) {
+      console.warn('Studio VRM load error:', e);
+    } finally {
+      if (seq === previewLoadSeq && badge) badge.classList.add('hidden');
+    }
   }
 
   function updatePreviewCameraFraming() {
     if (!previewCamera) return;
     const isCute = draftAvatarCfg && draftAvatarCfg.bodyStyle === 'cute';
+    // VRM 실제 눈·가슴 높이에 맞춘 포트레이트 클로즈업 & 전신 구도
+    let headWorldY = isCute ? 1.40 : 1.62;
+    if (previewVrmRec && previewVrmRec.headRaw) {
+      const hw = new window.THREE.Vector3();
+      previewVrmRec.headRaw.getWorldPosition(hw);
+      if (hw.y > 0.5) headWorldY = hw.y + 0.05;
+    }
+
     if (previewZoomClose) {
-      const faceY = isCute ? 1.55 : 1.77;
-      previewCamera.position.set(0, faceY + 0.02, isCute ? 1.18 : 0.94);
-      previewCamera.lookAt(0, faceY - 0.02, 0);
+      previewCamera.position.set(0, headWorldY + 0.02, isCute ? 1.05 : 0.92);
+      previewCamera.lookAt(0, headWorldY - 0.03, 0);
     } else {
-      previewCamera.position.set(0, isCute ? 1.00 : 1.10, isCute ? 3.10 : 3.30);
-      previewCamera.lookAt(0, isCute ? 0.92 : 1.04, 0);
+      previewCamera.position.set(0, isCute ? 0.85 : 0.98, isCute ? 2.85 : 3.25);
+      previewCamera.lookAt(0, isCute ? 0.80 : 0.94, 0);
     }
   }
 
+  let previewLastTime = performance.now();
   function startAvatarPreviewLoop() {
     if (previewAnimId) cancelAnimationFrame(previewAnimId);
+    previewLastTime = performance.now();
     const tick = () => {
       const modal = document.getElementById('profile-modal');
       if (!modal || modal.classList.contains('hidden')) {
         previewAnimId = null;
         return;
       }
+      const now = performance.now();
+      const dt = Math.min(0.05, (now - previewLastTime) * 0.001);
+      previewLastTime = now;
+
       if (previewRenderer && previewScene && previewCamera && previewAvatarPivot) {
-        if (!previewDragging) previewRotY += 0.006;
-        previewAvatarPivot.rotation.y = Math.sin(previewRotY) * 0.44;
-        if (previewBuiltRef && previewBuiltRef.faceDecalMat) {
-          const bt = (performance.now() * 0.001) % 3.8;
-          previewBuiltRef.faceDecalMat.map = bt > 3.66 ? previewBuiltRef.blinkFaceTex : previewBuiltRef.openFaceTex;
+        if (!previewDragging) {
+          previewAvatarPivot.rotation.y = Math.sin(now * 0.0008) * 0.28;
+        } else {
+          previewAvatarPivot.rotation.y = previewRotY;
+        }
+        if (previewVrmRec) {
+          world3d.animateStudioVrm(previewVrmRec, tempPreset, draftAvatarCfg, dt, now * 0.001);
         }
         updatePreviewCameraFraming();
         previewRenderer.render(previewScene, previewCamera);
@@ -3562,7 +3603,7 @@
       const key = b.getAttribute('data-avkey');
       const val = b.getAttribute('data-avval');
       const isActive = draftAvatarCfg && String(draftAvatarCfg[key]) === String(val);
-      const isColorSwatch = key === 'outfitColor' || key === 'bottomColor';
+      const isColorSwatch = (key === 'outfitColor' || key === 'bottomColor') && val !== 'original';
       if (isColorSwatch) {
         b.classList.toggle('ring-2', isActive);
         b.classList.toggle('ring-amber-300', isActive);
@@ -3599,9 +3640,27 @@
       tempPreset = b.getAttribute('data-pid');
       draftAvatarCfg = world3d.resolveAvatarConfig(tempPreset, null);
       syncAvatarStudioUiHighlights();
-      rebuildPreviewAvatarMesh();
+      refreshStudioPreviewVrm(false);
     });
   });
+
+  const customVrmInput = document.getElementById('custom-vrm-input');
+  if (customVrmInput) {
+    customVrmInput.addEventListener('change', async (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      try {
+        const buf = await f.arrayBuffer();
+        world3d.setCustomUserVrmBuffer(buf);
+        draftAvatarCfg = { ...draftAvatarCfg, vrmModel: 'custom', hairColor: 'original', eyeColor: 'original', outfitColor: 'original', bottomColor: 'original' };
+        syncAvatarStudioUiHighlights();
+        await refreshStudioPreviewVrm(true);
+        toast(`✨ '${f.name}' 순정만화 VRM 모델을 불러왔습니다!`);
+      } catch {
+        toast('⚠️ 유효한 .vrm 캐릭터 파일을 선택해 주세요');
+      }
+    });
+  }
 
   document.querySelectorAll('.av-studio-tab').forEach((tabBtn) => {
     tabBtn.addEventListener('click', () => {
@@ -3631,16 +3690,8 @@
       const val = optBtn.getAttribute('data-avval');
       if (!key || !val) return;
       draftAvatarCfg = { ...draftAvatarCfg, [key]: val };
-      // 성별 전환 시 어색하지 않도록 기본 의상·헤어 자연 보정 (원하면 다시 선택 가능)
-      if (key === 'gender') {
-        if (val === 'female' && (draftAvatarCfg.hairStyle === 'pomade' || draftAvatarCfg.hairStyle === 'dandy' || draftAvatarCfg.hairStyle === 'shaggy_bang')) {
-          draftAvatarCfg.hairStyle = 'long_wave';
-        } else if (val === 'male' && (draftAvatarCfg.hairStyle === 'long_wave' || draftAvatarCfg.hairStyle === 'low_bun' || draftAvatarCfg.hairStyle === 'ponytail')) {
-          draftAvatarCfg.hairStyle = 'shaggy_bang';
-        }
-      }
       syncAvatarStudioUiHighlights();
-      rebuildPreviewAvatarMesh();
+      refreshStudioPreviewVrm(false);
     });
   });
 
@@ -3649,7 +3700,7 @@
       const expr = chip.getAttribute('data-qexpr') || 'smile';
       draftAvatarCfg = { ...draftAvatarCfg, expression: expr };
       syncAvatarStudioUiHighlights();
-      rebuildPreviewAvatarMesh();
+      refreshStudioPreviewVrm(false);
     });
   });
 
@@ -3660,23 +3711,19 @@
 
   document.getElementById('btn-random-avatar').addEventListener('click', () => {
     const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-    const g = pick(['male', 'female']);
     draftAvatarCfg = {
+      vrmModel: pick(['fumiriya', 'sample_c', 'sample_b', 'sample_a', 'shino', 'vita']),
       bodyStyle: pick(['model', 'model', 'model', 'cute']),
-      gender: g,
-      skinTone: pick(['porcelain', 'porcelain', 'warm', 'natural']),
-      faceStyle: pick(['gentle', 'chic', 'lovely', 'dignified']),
-      eyeColor: pick(['amber', 'sapphire', 'emerald', 'amethyst', 'rose', 'obsidian']),
+      skinTone: pick(['porcelain', 'porcelain', 'warm']),
+      eyeColor: pick(['original', 'amber', 'sapphire', 'emerald', 'amethyst', 'rose']),
       expression: pick(['smile', 'joy', 'grace', 'wink']),
-      hairStyle: g === 'female' ? pick(['long_wave', 'bob_c', 'low_bun', 'ponytail', 'beret_wave']) : pick(['shaggy_bang', 'dandy', 'pomade']),
-      hairColor: pick(['black', 'espresso', 'chestnut', 'ash_brown', 'burgundy']),
-      outfitStyle: g === 'female' ? pick(['onepiece', 'jacket_skirt', 'webtoon_layered', 'knit_slacks', 'trench']) : pick(['webtoon_layered', 'suit', 'trench', 'knit_slacks']),
-      outfitColor: pick(['#181920', '#1e3a8a', '#f8fafc', '#b48352', '#be185d', '#881337', '#047857', '#6d28d9']),
-      bottomColor: pick(['#1e293b', '#18181b', '#e7e5e4', '#44403c', '#1e1b4b']),
-      accessory: pick(['horn_glasses', 'wire_glasses', 'earcuff', 'necklace', 'crossbag', 'none'])
+      hairColor: pick(['original', 'black', 'espresso', 'chestnut', 'ash_brown', 'burgundy', 'silver']),
+      outfitColor: pick(['original', 'original', '#1c1e29', '#1e3a8a', '#f1f5f9', '#b48352', '#be185d', '#881337', '#047857']),
+      bottomColor: pick(['original', '#1e293b', '#18181b', '#e7e5e4']),
+      accessory: pick(['horn_glasses', 'wire_glasses', 'earcuff', 'necklace', 'none', 'none'])
     };
     syncAvatarStudioUiHighlights();
-    rebuildPreviewAvatarMesh();
+    refreshStudioPreviewVrm(false);
   });
 
   document.getElementById('btn-open-profile').addEventListener('click', () => {
@@ -3689,7 +3736,7 @@
     openModal('profile-modal');
     setTimeout(() => {
       syncAvatarStudioUiHighlights();
-      rebuildPreviewAvatarMesh();
+      refreshStudioPreviewVrm(false);
       startAvatarPreviewLoop();
     }, 30);
   });
@@ -3701,25 +3748,28 @@
     myAvatarConfig = world3d.resolveAvatarConfig(myPresetId, draftAvatarCfg);
     try {
       localStorage.setItem('somy_world_name', myName);
-      localStorage.setItem('somy_world_preset_v3', myPresetId);
-      localStorage.setItem('somy_world_avatar_v3', JSON.stringify(myAvatarConfig));
+      localStorage.setItem('somy_world_preset_v4', myPresetId);
+      if (myAvatarConfig.vrmModel !== 'custom') {
+        localStorage.setItem('somy_world_avatar_v4', JSON.stringify(myAvatarConfig));
+      }
     } catch {}
     document.getElementById('my-name-badge').textContent = myName;
     updateMyExprBadge();
     world3d.updateAvatarInfo('me', {
       name: myName,
       presetId: myPresetId,
-      avatarConfig: myAvatarConfig
+      avatarConfig: myAvatarConfig,
+      forceReloadVrm: myAvatarConfig.vrmModel === 'custom'
     });
     syncMyPresence();
     broadcastEvent('avatar_style', {
       clientId: myClientId,
       name: myName,
       presetId: myPresetId,
-      avatarConfig: myAvatarConfig
+      avatarConfig: myAvatarConfig.vrmModel === 'custom' ? { ...myAvatarConfig, vrmModel: 'fumiriya' } : myAvatarConfig
     });
     closeModal('profile-modal');
-    toast(`✨ '${myName}' 나만의 아바타 스타일이 적용되었습니다!`);
+    toast(`✨ '${myName}' 순정만화 3D 아바타 스타일이 적용되었습니다!`);
   });
 
   document.getElementById('npc-toggle-chk').addEventListener('change', (e) => {

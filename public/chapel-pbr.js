@@ -44,7 +44,10 @@
     tex.wrapT = THREE.RepeatWrapping;
     tex.repeat.set(repeatX, repeatY);
     tex.anisotropy = 8;
-    if (isSrgb && THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
+    if (isSrgb) {
+      if ('colorSpace' in tex && THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+      else if (THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
+    }
     return tex;
   }
 
@@ -80,7 +83,8 @@
 
       const tex = new THREE.CanvasTexture(c);
       tex.mapping = THREE.EquirectangularReflectionMapping;
-      if (THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
+      if ('colorSpace' in tex && THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+      else if (THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
       return tex;
     }
 

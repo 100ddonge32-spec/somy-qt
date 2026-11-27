@@ -7,1383 +7,683 @@
   if (!THREE) return;
 
   // =========================================================================
-  // 🎨 정통 3D 순정만화 · 로맨스 웹툰 카툰 렌더링(Cel-Shading + Manga Outline) 캐릭터 엔진
+  // 🎨 정통 Pixiv VRoid (.vrm) 3D 순정만화 캐릭터 로더 · MToon 염색 · 휴머노이드 모션 엔진
   // =========================================================================
+  const VRM_BASE_CDN = 'https://raw.githubusercontent.com/madjin/vrm-samples/master';
+
+  const VRM_MODEL_URLS = {
+    fumiriya: `${VRM_BASE_CDN}/vroid/beta/Sakurada_Fumiriya.vrm`,
+    sample_c: `${VRM_BASE_CDN}/vroid/stable/AvatarSample_C.vrm`,
+    sample_b: `${VRM_BASE_CDN}/vroid/stable/AvatarSample_B.vrm`,
+    sample_a: `${VRM_BASE_CDN}/vroid/stable/AvatarSample_A.vrm`,
+    shino:    `${VRM_BASE_CDN}/vroid/beta/Sendagaya_Shino.vrm`,
+    vita:     `${VRM_BASE_CDN}/vroid/beta/Vita.vrm`
+  };
+
   const AVATAR_PRESETS = [
     {
       id: 'webtoon_boy',
       label: '✨ 순정만화 안경남주 (추천)',
-      config: { bodyStyle: 'model', gender: 'male', skinTone: 'porcelain', faceStyle: 'gentle', eyeColor: 'amber', expression: 'smile', hairStyle: 'shaggy_bang', hairColor: 'black', outfitStyle: 'webtoon_layered', outfitColor: '#181920', bottomColor: '#1e293b', accessory: 'horn_glasses' }
+      config: { vrmModel: 'fumiriya', bodyStyle: 'model', skinTone: 'porcelain', eyeColor: 'amber', expression: 'smile', hairColor: 'black', outfitColor: '#1c1e29', bottomColor: '#1e293b', accessory: 'horn_glasses' }
     },
     {
       id: 'lovely_wave',
-      label: '🌸 순정만화 여주 (롱웨이브)',
-      config: { bodyStyle: 'model', gender: 'female', skinTone: 'porcelain', faceStyle: 'lovely', eyeColor: 'amber', expression: 'smile', hairStyle: 'long_wave', hairColor: 'chestnut', outfitStyle: 'onepiece', outfitColor: '#be185d', bottomColor: '#fdf2f8', accessory: 'necklace' }
+      label: '🌸 순정만화 여주 (롱헤어)',
+      config: { vrmModel: 'sample_a', bodyStyle: 'model', skinTone: 'porcelain', eyeColor: 'original', expression: 'smile', hairColor: 'original', outfitColor: 'original', bottomColor: 'original', accessory: 'necklace' }
     },
     {
       id: 'dandy_suit',
-      label: '👔 댄디 수트 남주 (형제)',
-      config: { bodyStyle: 'model', gender: 'male', skinTone: 'warm', faceStyle: 'chic', eyeColor: 'sapphire', expression: 'smile', hairStyle: 'dandy', hairColor: 'espresso', outfitStyle: 'suit', outfitColor: '#1e3a8a', bottomColor: '#18181b', accessory: 'earcuff' }
+      label: '👔 댄디 미소년 (형제)',
+      config: { vrmModel: 'sample_c', bodyStyle: 'model', skinTone: 'porcelain', eyeColor: 'original', expression: 'smile', hairColor: 'original', outfitColor: 'original', bottomColor: 'original', accessory: 'none' }
     },
     {
       id: 'tweed_bob',
-      label: '💎 청순 단발 여주 (셋업)',
-      config: { bodyStyle: 'model', gender: 'female', skinTone: 'porcelain', faceStyle: 'chic', eyeColor: 'amethyst', expression: 'smile', hairStyle: 'bob_c', hairColor: 'black', outfitStyle: 'jacket_skirt', outfitColor: '#f8fafc', bottomColor: '#1e293b', accessory: 'crossbag' }
+      label: '💎 시스루 단발 여주 (자켓)',
+      config: { vrmModel: 'sample_b', bodyStyle: 'model', skinTone: 'porcelain', eyeColor: 'original', expression: 'smile', hairColor: 'original', outfitColor: 'original', bottomColor: 'original', accessory: 'earcuff' }
     },
     {
       id: 'trench_chic',
-      label: '🧥 감성 트렌치코트 (청년)',
-      config: { bodyStyle: 'model', gender: 'male', skinTone: 'warm', faceStyle: 'gentle', eyeColor: 'emerald', expression: 'grace', hairStyle: 'short_layered', hairColor: 'ash_brown', outfitStyle: 'trench', outfitColor: '#b48352', bottomColor: '#1f2937', accessory: 'wire_glasses' }
+      label: '🧥 지적인 금테안경 남주',
+      config: { vrmModel: 'fumiriya', bodyStyle: 'model', skinTone: 'warm', eyeColor: 'emerald', expression: 'smile', hairColor: 'original', outfitColor: 'original', bottomColor: 'original', accessory: 'wire_glasses' }
     },
     {
       id: 'elder_suit',
-      label: '🎩 지적인 품격 정장 (장로·집사)',
-      config: { bodyStyle: 'model', gender: 'male', skinTone: 'natural', faceStyle: 'dignified', eyeColor: 'obsidian', expression: 'smile', hairStyle: 'pomade', hairColor: 'silver', outfitStyle: 'suit', outfitColor: '#27272a', bottomColor: '#18181b', accessory: 'wire_glasses' }
+      label: '🎩 품격 실버정장 (장로·집사)',
+      config: { vrmModel: 'sample_c', bodyStyle: 'model', skinTone: 'warm', eyeColor: 'original', expression: 'smile', hairColor: 'silver', outfitColor: '#1e293b', bottomColor: '#18181b', accessory: 'wire_glasses' }
     },
     {
       id: 'kwonsa_grace',
-      label: '🌺 우아한 올림머리 (권사·집사)',
-      config: { bodyStyle: 'model', gender: 'female', skinTone: 'warm', faceStyle: 'gentle', eyeColor: 'amber', expression: 'smile', hairStyle: 'low_bun', hairColor: 'espresso', outfitStyle: 'jacket_skirt', outfitColor: '#6d28d9', bottomColor: '#1e1b4b', accessory: 'necklace' }
+      label: '🌺 우아한 장발 자매 (시노)',
+      config: { vrmModel: 'shino', bodyStyle: 'model', skinTone: 'porcelain', eyeColor: 'amber', expression: 'smile', hairColor: 'espresso', outfitColor: '#6d28d9', bottomColor: '#1e1b4b', accessory: 'necklace' }
     },
     {
       id: 'cute_somy',
-      label: '🧸 귀여운 SD 만화 캐릭터',
-      config: { bodyStyle: 'cute', gender: 'female', skinTone: 'porcelain', faceStyle: 'lovely', eyeColor: 'rose', expression: 'joy', hairStyle: 'ponytail', hairColor: 'chestnut', outfitStyle: 'webtoon_layered', outfitColor: '#be185d', bottomColor: '#1e293b', accessory: 'horn_glasses' }
+      label: '🧸 귀여운 보브소녀 (비타)',
+      config: { vrmModel: 'vita', bodyStyle: 'cute', skinTone: 'porcelain', eyeColor: 'rose', expression: 'joy', hairColor: 'original', outfitColor: 'original', bottomColor: 'original', accessory: 'horn_glasses' }
     },
-    // 하위 호환 프리셋 매핑
+    // 하위 호환 ID 매핑
     {
       id: 'choir_gown',
-      label: '🎵 은혜 성가대 가운',
-      config: { bodyStyle: 'model', gender: 'female', skinTone: 'porcelain', faceStyle: 'lovely', eyeColor: 'sapphire', expression: 'grace', hairStyle: 'ponytail', hairColor: 'ash_brown', outfitStyle: 'choir', outfitColor: '#f8fafc', bottomColor: '#1e293b', accessory: 'none' }
+      label: '🎵 은혜 성가대 스타일',
+      config: { vrmModel: 'sample_a', bodyStyle: 'model', skinTone: 'porcelain', eyeColor: 'sapphire', expression: 'grace', hairColor: 'ash_brown', outfitColor: '#f1f5f9', bottomColor: '#1e293b', accessory: 'necklace' }
     },
     {
       id: 'david',
       label: '다윗 (형제)',
-      config: { bodyStyle: 'model', gender: 'male', skinTone: 'porcelain', faceStyle: 'gentle', eyeColor: 'amber', expression: 'smile', hairStyle: 'shaggy_bang', hairColor: 'black', outfitStyle: 'webtoon_layered', outfitColor: '#181920', bottomColor: '#1e293b', accessory: 'horn_glasses' }
+      config: { vrmModel: 'sample_c', bodyStyle: 'model', skinTone: 'porcelain', eyeColor: 'original', expression: 'smile', hairColor: 'black', outfitColor: '#1e3a8a', bottomColor: '#18181b', accessory: 'none' }
     },
     {
       id: 'miriam',
       label: '미리암 (자매)',
-      config: { bodyStyle: 'model', gender: 'female', skinTone: 'porcelain', faceStyle: 'lovely', eyeColor: 'amber', expression: 'smile', hairStyle: 'long_wave', hairColor: 'chestnut', outfitStyle: 'onepiece', outfitColor: '#db2777', bottomColor: '#334155', accessory: 'necklace' }
+      config: { vrmModel: 'sample_a', bodyStyle: 'model', skinTone: 'porcelain', eyeColor: 'original', expression: 'smile', hairColor: 'chestnut', outfitColor: '#be185d', bottomColor: 'original', accessory: 'necklace' }
     },
     {
       id: 'joseph',
       label: '요셉 (청년)',
-      config: { bodyStyle: 'model', gender: 'male', skinTone: 'warm', faceStyle: 'chic', eyeColor: 'emerald', expression: 'smile', hairStyle: 'short_layered', hairColor: 'black', outfitStyle: 'trench', outfitColor: '#047857', bottomColor: '#1f2937', accessory: 'horn_glasses' }
+      config: { vrmModel: 'fumiriya', bodyStyle: 'model', skinTone: 'porcelain', eyeColor: 'emerald', expression: 'smile', hairColor: 'black', outfitColor: '#047857', bottomColor: '#1e293b', accessory: 'horn_glasses' }
     },
     {
       id: 'lydia',
       label: '루디아 (집사)',
-      config: { bodyStyle: 'model', gender: 'female', skinTone: 'warm', faceStyle: 'gentle', eyeColor: 'amber', expression: 'smile', hairStyle: 'low_bun', hairColor: 'espresso', outfitStyle: 'jacket_skirt', outfitColor: '#6d28d9', bottomColor: '#1e1b4b', accessory: 'necklace' }
+      config: { vrmModel: 'shino', bodyStyle: 'model', skinTone: 'warm', eyeColor: 'original', expression: 'smile', hairColor: 'espresso', outfitColor: '#6d28d9', bottomColor: '#1e1b4b', accessory: 'necklace' }
     },
     {
       id: 'somy',
       label: '소미 (인도자)',
-      config: { bodyStyle: 'model', gender: 'female', skinTone: 'porcelain', faceStyle: 'lovely', eyeColor: 'rose', expression: 'joy', hairStyle: 'bob_c', hairColor: 'ash_brown', outfitStyle: 'knit_slacks', outfitColor: '#d97706', bottomColor: '#1e293b', accessory: 'crossbag' }
+      config: { vrmModel: 'vita', bodyStyle: 'model', skinTone: 'porcelain', eyeColor: 'amber', expression: 'joy', hairColor: 'original', outfitColor: 'original', bottomColor: 'original', accessory: 'none' }
     }
   ];
 
-  const SKIN_TONE_HEX = {
-    porcelain: '#fff0e6',
-    warm: '#ffe3cf',
-    natural: '#f4ccb0',
-    tan: '#dfa884'
+  const HAIR_DYE_HEX = {
+    black:     '#1d1f2b',
+    espresso:  '#3d261e',
+    chestnut:  '#7c4b30',
+    ash_brown: '#bba082',
+    burgundy:  '#852440',
+    silver:    '#d1d8e4'
   };
 
-  const HAIR_COLOR_HEX = {
-    black: '#171821',
-    espresso: '#2e1f1c',
-    chestnut: '#5a3828',
-    ash_brown: '#7e6250',
-    burgundy: '#521d2d',
-    silver: '#aeb6c4'
+  const EYE_DYE_HEX = {
+    amber:    '#f59e0b',
+    sapphire: '#38bdf8',
+    emerald:  '#34d399',
+    amethyst: '#c084fc',
+    rose:     '#fb7185'
   };
 
-  // 순정만화 투톤 보석 눈동자 팔레트 (상단 딥 섀도우 + 하단 발광 그라데이션)
-  const EYE_IRIS_PALETTE = {
-    amber:    { top: '#1c1924', mid: '#5c4028', glow: '#fbbf24', rim: '#fde68a' },
-    obsidian: { top: '#111118', mid: '#2d2b38', glow: '#71717a', rim: '#d4d4d8' },
-    sapphire: { top: '#131c36', mid: '#1d4ed8', glow: '#38bdf8', rim: '#bae6fd' },
-    emerald:  { top: '#0f2922', mid: '#047857', glow: '#34d399', rim: '#a7f3d0' },
-    amethyst: { top: '#211438', mid: '#6d28d9', glow: '#c084fc', rim: '#e9d5ff' },
-    rose:     { top: '#2b1321', mid: '#9d174d', glow: '#fb7185', rim: '#fecdd3' }
+  const SKIN_MULT_HEX = {
+    porcelain: '#ffffff',
+    warm:      '#fff3e6',
+    natural:   '#f5dec9',
+    tan:       '#e2b896'
   };
 
   function resolveAvatarConfig(presetId, rawCfg) {
     const found = AVATAR_PRESETS.find((p) => p.id === presetId) || AVATAR_PRESETS[0];
     const base = found.config;
     const cfg = rawCfg && typeof rawCfg === 'object' ? rawCfg : {};
-    const gender = cfg.gender || base.gender || 'male';
+    const validModel = VRM_MODEL_URLS[cfg.vrmModel] || cfg.vrmModel === 'custom'
+      ? cfg.vrmModel
+      : (base.vrmModel || 'fumiriya');
+
     return {
+      vrmModel: validModel,
       bodyStyle: cfg.bodyStyle === 'cute' ? 'cute' : (base.bodyStyle || 'model'),
-      gender,
-      skinTone: SKIN_TONE_HEX[cfg.skinTone] ? cfg.skinTone : (base.skinTone || 'porcelain'),
-      faceStyle: cfg.faceStyle || base.faceStyle || 'gentle',
-      eyeColor: EYE_IRIS_PALETTE[cfg.eyeColor] ? cfg.eyeColor : (base.eyeColor || 'amber'),
+      skinTone: SKIN_MULT_HEX[cfg.skinTone] ? cfg.skinTone : (base.skinTone || 'porcelain'),
+      eyeColor: (cfg.eyeColor === 'original' || EYE_DYE_HEX[cfg.eyeColor]) ? cfg.eyeColor : (base.eyeColor || 'original'),
       expression: cfg.expression || base.expression || 'smile',
-      hairStyle: cfg.hairStyle || base.hairStyle || (gender === 'female' ? 'long_wave' : 'shaggy_bang'),
-      hairColor: HAIR_COLOR_HEX[cfg.hairColor] ? cfg.hairColor : (base.hairColor || 'black'),
-      outfitStyle: cfg.outfitStyle || base.outfitStyle || (gender === 'female' ? 'onepiece' : 'webtoon_layered'),
-      outfitColor: cfg.outfitColor || base.outfitColor || '#181920',
-      bottomColor: cfg.bottomColor || base.bottomColor || '#1e293b',
+      hairColor: (cfg.hairColor === 'original' || HAIR_DYE_HEX[cfg.hairColor]) ? cfg.hairColor : (base.hairColor || 'original'),
+      outfitColor: cfg.outfitColor || base.outfitColor || 'original',
+      bottomColor: cfg.bottomColor || base.bottomColor || 'original',
       accessory: cfg.accessory || base.accessory || 'none'
     };
   }
 
-  function avatarConfigSignature(presetId, rawCfg) {
-    return JSON.stringify(resolveAvatarConfig(presetId, rawCfg));
-  }
-
-  // -------------------------------------------------------------------------
-  // 1. 카툰 셀 셰이딩(Cel-Shading) 그라데이션 램프 & 만화 펜선 외곽선(Inverted Hull Outline)
-  // -------------------------------------------------------------------------
-  const toonRampCache = new Map();
-  function getAnimeToonRamp(kind) {
-    if (toonRampCache.has(kind)) return toonRampCache.get(kind);
-    const c = document.createElement('canvas');
-    c.width = 64;
-    c.height = 1;
-    const g = c.getContext('2d');
-    if (kind === 'skin') {
-      // 피부 전용: 붉은 복숭아빛 부드러운 2.5단 셀 명암 (얼굴이 칙칙해지지 않음!)
-      g.fillStyle = '#dec4be';
-      g.fillRect(0, 0, 18, 1);
-      g.fillStyle = '#f5e9e5';
-      g.fillRect(18, 0, 16, 1);
-      g.fillStyle = '#ffffff';
-      g.fillRect(34, 0, 30, 1);
-    } else if (kind === 'hair') {
-      // 머리카락 전용: 선명한 만화 셀 음영
-      g.fillStyle = '#9aa1b2';
-      g.fillRect(0, 0, 22, 1);
-      g.fillStyle = '#d8dde8';
-      g.fillRect(22, 0, 18, 1);
-      g.fillStyle = '#ffffff';
-      g.fillRect(40, 0, 24, 1);
-    } else {
-      // 의상 전용: 깔끔한 웹툰 옷주름 명암
-      g.fillStyle = '#a3aab8';
-      g.fillRect(0, 0, 20, 1);
-      g.fillStyle = '#dfe4ec';
-      g.fillRect(20, 0, 18, 1);
-      g.fillStyle = '#ffffff';
-      g.fillRect(38, 0, 26, 1);
-    }
-    const tex = new THREE.CanvasTexture(c);
-    tex.minFilter = THREE.NearestFilter;
-    tex.magFilter = THREE.NearestFilter;
-    tex.generateMipmaps = false;
-    toonRampCache.set(kind, tex);
+  function applySrgbColorSpace(tex) {
+    if (!tex) return tex;
+    if ('colorSpace' in tex && THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+    else if (THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
     return tex;
   }
 
-  function makeToonMat(colorHex, kind = 'cloth', extra = {}) {
-    return new THREE.MeshToonMaterial({
-      color: colorHex,
-      gradientMap: getAnimeToonRamp(kind),
-      ...extra
-    });
+  // -------------------------------------------------------------------------
+  // VRoid 원본 작화 결감(머리카락 한 올·하이라이트·옷주름·단추)을 100% 보존하는 명도 기반 염색기
+  // -------------------------------------------------------------------------
+  const dyedTexCache = new Map();
+  function createLuminanceDyedTexture(origTex, targetHex, strength = 0.92) {
+    if (!origTex || !origTex.image) return origTex;
+    const key = `${origTex.uuid}|${targetHex}|${strength}`;
+    if (dyedTexCache.has(key)) return dyedTexCache.get(key);
+
+    try {
+      const img = origTex.image;
+      const w = Math.min(512, img.width || 256);
+      const h = Math.min(512, img.height || 256);
+      const c = document.createElement('canvas');
+      c.width = w;
+      c.height = h;
+      const g = c.getContext('2d');
+      g.drawImage(img, 0, 0, w, h);
+
+      const imData = g.getImageData(0, 0, w, h);
+      const d = imData.data;
+      const tc = new THREE.Color(targetHex);
+      const tr = tc.r * 255;
+      const tg = tc.g * 255;
+      const tb = tc.b * 255;
+
+      // 원본 텍스처 평균 명도를 계산하여 검은 머리도 밝은 실버/금발로, 밝은 머리도 칠흑 블랙으로 자연스럽게 염색!
+      let lumSum = 0;
+      let lumCnt = 0;
+      for (let i = 0; i < d.length; i += 16) {
+        if (d[i + 3] > 40) {
+          lumSum += (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
+          lumCnt++;
+        }
+      }
+      const avgLum = Math.max(0.18, Math.min(0.85, lumCnt ? lumSum / lumCnt : 0.5));
+
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] === 0) continue;
+        const r = d[i], gg = d[i + 1], b = d[i + 2];
+        const lum = (0.299 * r + 0.587 * gg + 0.114 * b) / 255;
+        // 원본 명암 대비(결감·엔젤링 하이라이트) 유지 비율
+        const rel = Math.max(0.22, Math.min(1.65, lum / avgLum));
+        const specBoost = lum > 0.84 ? (lum - 0.84) * 260 : 0;
+
+        const nr = Math.min(255, tr * rel + specBoost);
+        const ng = Math.min(255, tg * rel + specBoost);
+        const nb = Math.min(255, tb * rel + specBoost);
+
+        d[i]     = r * (1 - strength) + nr * strength;
+        d[i + 1] = gg * (1 - strength) + ng * strength;
+        d[i + 2] = b * (1 - strength) + nb * strength;
+      }
+      g.putImageData(imData, 0, 0);
+
+      const newTex = new THREE.CanvasTexture(c);
+      newTex.flipY = origTex.flipY;
+      newTex.wrapS = origTex.wrapS;
+      newTex.wrapT = origTex.wrapT;
+      applySrgbColorSpace(newTex);
+      dyedTexCache.set(key, newTex);
+      return newTex;
+    } catch {
+      return origTex;
+    }
   }
 
-  const outlineMatCache = new Map();
-  function getOutlineMat(hexColor) {
-    if (!outlineMatCache.has(hexColor)) {
-      outlineMatCache.set(
-        hexColor,
-        new THREE.MeshBasicMaterial({
-          color: hexColor,
-          side: THREE.BackSide
+  // -------------------------------------------------------------------------
+  // VRM 바이너리 네트워크 중복 다운로드 방지 캐시 & 파서
+  // -------------------------------------------------------------------------
+  const vrmArrayBufferCache = new Map();
+  let customUserVrmBuffer = null;
+
+  function fetchVrmBufferCached(modelKey) {
+    if (modelKey === 'custom' && customUserVrmBuffer) {
+      return Promise.resolve(customUserVrmBuffer);
+    }
+    const url = VRM_MODEL_URLS[modelKey] || VRM_MODEL_URLS.fumiriya;
+    if (!vrmArrayBufferCache.has(url)) {
+      const p = fetch(url, { mode: 'cors' })
+        .then((res) => {
+          if (!res.ok) throw new Error('VRM HTTP ' + res.status);
+          return res.arrayBuffer();
         })
-      );
-    }
-    return outlineMatCache.get(hexColor);
-  }
-
-  // 법선 벡터 방향으로 정점을 밀어 균일한 만화 펜선(Outline)을 입히는 헬퍼
-  function attachMangaOutline(mesh, offsetDist = 0.0045, outlineHex = 0x1a151c) {
-    if (!mesh || !mesh.geometry) return mesh;
-    const og = mesh.geometry.clone();
-    og.computeVertexNormals();
-    const pos = og.attributes.position;
-    const nrm = og.attributes.normal;
-    if (pos && nrm) {
-      for (let i = 0; i < pos.count; i++) {
-        pos.setXYZ(
-          i,
-          pos.getX(i) + nrm.getX(i) * offsetDist,
-          pos.getY(i) + nrm.getY(i) * offsetDist,
-          pos.getZ(i) + nrm.getZ(i) * offsetDist
-        );
-      }
-      pos.needsUpdate = true;
-    }
-    const outlineMesh = new THREE.Mesh(og, getOutlineMat(outlineHex));
-    mesh.add(outlineMesh);
-    return mesh;
-  }
-
-  // -------------------------------------------------------------------------
-  // 2. 날렵한 V라인 순정만화 3D 헤드 & 무왜곡 정면 투영 데칼 지오메트리
-  // -------------------------------------------------------------------------
-  const animeHeadGeoCache = new Map();
-  function getAnimeVLineHeadGeometries(R, isFemale, isCute) {
-    const key = `${R.toFixed(4)}_${isFemale ? 'F' : 'M'}_${isCute ? 'C' : 'M'}`;
-    if (animeHeadGeoCache.has(key)) return animeHeadGeoCache.get(key);
-
-    const headGeo = new THREE.SphereGeometry(R, 40, 32);
-    const pos = headGeo.attributes.position;
-
-    for (let i = 0; i < pos.count; i++) {
-      let x = pos.getX(i);
-      let y = pos.getY(i);
-      let z = pos.getZ(i);
-
-      const nx = x / R;
-      const ny = y / R;
-      const nz = z / R;
-
-      // 상단 두상은 자연스럽고, 눈 아래부터 턱끝까지 날렵한 순정만화 V라인으로 조형!
-      let widthFactor = isFemale ? 0.88 : 0.91;
-      if (isCute) widthFactor = 0.96;
-
-      if (ny < 0.12) {
-        const t = Math.min(1, Math.max(0, (0.12 - ny) / 1.12));
-        const vSharpness = isCute ? 0.46 : (isFemale ? 0.72 : 0.68);
-        // 볼선에서 턱끝으로 샤프하게 좁아지는 V라인 곡선
-        const jawCurve = 1.0 - vSharpness * Math.pow(t, 1.48);
-        widthFactor *= jawCurve;
-
-        // 뒤통수 아래쪽도 목선으로 매끄럽게 수렴
-        if (nz < 0) {
-          z *= 1.0 - 0.36 * Math.pow(t, 1.2);
-        }
-      }
-
-      x *= widthFactor;
-      y *= isCute ? 1.02 : 1.10;
-
-      // 정면 안면 평탄화(3/4 얼짱 각도에서 눈이 볼록 렌즈처럼 왜곡되지 않도록 VRoid식 평면 곡률 적용)
-      if (nz > 0) {
-        const frontFlatten = 0.84 + 0.06 * Math.cos(Math.min(Math.PI * 0.5, Math.abs(ny) * 1.3));
-        z *= frontFlatten;
-
-        // 날렵하게 앞으로 살짝 뻗는 순정만화 턱끝 라인
-        if (ny < -0.25) {
-          const chinT = Math.min(1, (-0.25 - ny) / 0.75);
-          z += R * (isCute ? 0.05 : 0.095) * Math.pow(chinT, 1.35) * Math.max(0, 1 - Math.abs(nx) * 1.4);
-        }
-
-        // 오똑하고 섬세한 순정만화 콧날 포인트
-        const noseDx = Math.abs(nx) / 0.15;
-        const noseDy = (ny + 0.13) / 0.16;
-        const noseDist = Math.hypot(noseDx, noseDy);
-        if (noseDist < 1.0) {
-          const nosePeak = Math.pow(Math.cos(noseDist * Math.PI * 0.5), 1.8);
-          z += R * (isCute ? 0.055 : 0.088) * nosePeak;
-        }
-      } else {
-        z *= 0.92;
-      }
-
-      pos.setXYZ(i, x, y, z);
-    }
-    headGeo.computeVertexNormals();
-
-    // 정면 얼굴 작화용 무왜곡 직교 투영(Planar Projection) 데칼 메쉬 생성
-    const faceGeo = headGeo.clone();
-    const fPos = faceGeo.attributes.position;
-    const fNrm = faceGeo.attributes.normal;
-    const uvs = new Float32Array(fPos.count * 2);
-
-    const spanX = R * (isCute ? 1.72 : 1.56);
-    const spanY = R * (isCute ? 1.88 : 2.02);
-
-    for (let i = 0; i < fPos.count; i++) {
-      const px = fPos.getX(i);
-      const py = fPos.getY(i);
-      const pz = fPos.getZ(i);
-      const push = pz > 0 ? R * 0.008 : -R * 0.01;
-      fPos.setXYZ(
-        i,
-        px + fNrm.getX(i) * push,
-        py + fNrm.getY(i) * push,
-        pz + (pz > 0 ? R * 0.009 : -R * 0.02)
-      );
-      // 뒷면에는 텍스처가 비치지 않도록 UV 바깥(0,0 투명 영역)으로 매핑
-      if (pz > R * 0.16) {
-        uvs[i * 2] = Math.max(0.01, Math.min(0.99, 0.5 + px / spanX));
-        uvs[i * 2 + 1] = Math.max(0.01, Math.min(0.99, 0.50 + py / spanY));
-      } else {
-        uvs[i * 2] = 0.0;
-        uvs[i * 2 + 1] = 0.0;
-      }
-    }
-    faceGeo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-
-    const bundle = { headGeo, faceGeo };
-    animeHeadGeoCache.set(key, bundle);
-    return bundle;
-  }
-
-  // -------------------------------------------------------------------------
-  // 3. 한 올씩 끝이 뾰족하게 빠지는 3D 순정만화 머리카락 다발(Hair Strand) 생성기
-  // -------------------------------------------------------------------------
-  function createHairStrandGeometry(width, length, thickness, curveZ, sweepX = 0, archY = 0) {
-    const segs = 7;
-    const positions = [];
-    const indices = [];
-
-    // 각 단면은 4개 정점(전면 능선, 좌측 엣지, 우측 엣지, 후면)으로 구성된 샤프한 만화 헤어 프리즘!
-    for (let s = 0; s <= segs; s++) {
-      const t = s / segs;
-      // 뿌리는 도톰하고 끝부분(t->1)은 바늘처럼 날렵하게 0으로 수렴!
-      const taper = s === segs ? 0.0 : Math.sin(Math.min(1, t * 2.4) * Math.PI * 0.5) * Math.pow(1 - t, 0.78);
-      const w = width * 0.5 * taper;
-      const th = thickness * taper;
-
-      const cx = sweepX * Math.pow(t, 1.45);
-      const cy = -length * t + archY * Math.sin(t * Math.PI);
-      const cz = curveZ * Math.sin(t * Math.PI * 0.72);
-
-      // 0: 전면 중앙 능선(셀 셰이딩 하이라이트 각 살림), 1: 우측, 2: 후면, 3: 좌측
-      positions.push(cx, cy, cz + th * 0.75);
-      positions.push(cx + w, cy, cz);
-      positions.push(cx, cy, cz - th * 0.45);
-      positions.push(cx - w, cy, cz);
-    }
-
-    for (let s = 0; s < segs; s++) {
-      const b = s * 4;
-      const n = (s + 1) * 4;
-      for (let k = 0; k < 4; k++) {
-        const k2 = (k + 1) % 4;
-        indices.push(b + k, n + k, n + k2);
-        indices.push(b + k, n + k2, b + k2);
-      }
-    }
-
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geo.setIndex(indices);
-    geo.computeVertexNormals();
-    return geo;
-  }
-
-  // 순정만화 엔젤링(Angel-Ring 머릿결 윤기 하이라이트) 텍스처
-  let angelRingTex = null;
-  function getAngelRingTexture() {
-    if (angelRingTex) return angelRingTex;
-    const c = document.createElement('canvas');
-    c.width = 256;
-    c.height = 64;
-    const g = c.getContext('2d');
-    g.clearRect(0, 0, 256, 64);
-    g.fillStyle = 'rgba(255, 255, 255, 0.26)';
-    // 지그재그 만화풍 머릿결 광택 패턴
-    const pts = [
-      [24, 34], [46, 18], [62, 38], [88, 16], [112, 38],
-      [142, 16], [166, 38], [194, 18], [216, 36], [234, 24]
-    ];
-    g.beginPath();
-    g.moveTo(20, 44);
-    pts.forEach(([x, y]) => g.lineTo(x, y));
-    for (let i = pts.length - 1; i >= 0; i--) {
-      g.lineTo(pts[i][0], pts[i][1] + 10);
-    }
-    g.closePath();
-    g.fill();
-    angelRingTex = new THREE.CanvasTexture(c);
-    if (THREE.sRGBEncoding) angelRingTex.encoding = THREE.sRGBEncoding;
-    return angelRingTex;
-  }
-
-  // -------------------------------------------------------------------------
-  // 4. 1024x1024 초고해상도 순정만화 · 로맨스 웹툰 얼굴 작화 렌더러
-  // -------------------------------------------------------------------------
-  const faceTextureCache = new Map();
-  function createStylizedFaceTexture(cfg, isBlinking = false) {
-    const key = `v3|${cfg.gender}|${cfg.skinTone}|${cfg.faceStyle}|${cfg.eyeColor}|${cfg.expression}|${cfg.hairColor}|${isBlinking ? 1 : 0}`;
-    if (faceTextureCache.has(key)) return faceTextureCache.get(key);
-
-    const c = document.createElement('canvas');
-    c.width = 1024;
-    c.height = 1024;
-    const g = c.getContext('2d');
-    g.clearRect(0, 0, 1024, 1024);
-
-    // 외곽 경계 4px는 완전 투명 유지 (후면 UV 클램핑 보호)
-    const isFemale = cfg.gender === 'female';
-    const browColor = HAIR_COLOR_HEX[cfg.hairColor] || '#1e1b24';
-    const irisPal = EYE_IRIS_PALETTE[cfg.eyeColor] || EYE_IRIS_PALETTE.amber;
-
-    const eyeY = 502;
-    const leftX = 338;
-    const rightX = 686;
-
-    // 1) 순정만화 수채화 볼터치 + 사선 홍조 (///)
-    const blushAlpha = cfg.faceStyle === 'lovely' || cfg.expression === 'joy' || cfg.expression === 'grace'
-      ? 0.30
-      : (isFemale ? 0.20 : 0.13);
-    [leftX - 38, rightX + 38].forEach((bx) => {
-      const grad = g.createRadialGradient(bx, eyeY + 108, 10, bx, eyeY + 108, 92);
-      grad.addColorStop(0, `rgba(251, 113, 133, ${blushAlpha})`);
-      grad.addColorStop(1, 'rgba(251, 113, 133, 0)');
-      g.fillStyle = grad;
-      g.beginPath();
-      g.arc(bx, eyeY + 108, 92, 0, Math.PI * 2);
-      g.fill();
-
-      // 순정만화 특유의 섬세한 사선 홍조 터치
-      if (cfg.faceStyle === 'lovely' || cfg.expression === 'joy' || cfg.expression === 'wink') {
-        g.strokeStyle = 'rgba(225, 85, 110, 0.32)';
-        g.lineWidth = 3.5;
-        g.lineCap = 'round';
-        for (let s = -1; s <= 1; s++) {
-          g.beginPath();
-          g.moveTo(bx + s * 18 + 6, eyeY + 96);
-          g.lineTo(bx + s * 18 - 6, eyeY + 116);
-          g.stroke();
-        }
-      }
-    });
-
-    // 2) 가늘고 섬세한 순정만화 펜선 눈썹 (시스루 앞머리 사이로 비치는 효과)
-    g.strokeStyle = browColor;
-    g.lineCap = 'round';
-    g.lineWidth = isFemale ? 7.5 : 9.5;
-    const browLift = cfg.expression === 'joy' || cfg.expression === 'grace' ? -16 : 0;
-
-    const drawAnimeBrow = (cx, dir) => {
-      g.beginPath();
-      if (cfg.faceStyle === 'chic') {
-        g.moveTo(cx - dir * 82, eyeY - 102 + browLift);
-        g.quadraticCurveTo(cx + dir * 10, eyeY - 132 + browLift, cx + dir * 88, eyeY - 114 + browLift);
-      } else if (cfg.faceStyle === 'lovely') {
-        // 순정만화 청순 아치형 눈썹
-        g.moveTo(cx - dir * 78, eyeY - 110 + browLift);
-        g.quadraticCurveTo(cx, eyeY - 126 + browLift, cx + dir * 80, eyeY - 102 + browLift);
-      } else {
-        // 다정하고 부드러운 호형 눈썹 (레퍼런스 남주 스타일!)
-        g.moveTo(cx - dir * 84, eyeY - 104 + browLift);
-        g.quadraticCurveTo(cx, eyeY - 128 + browLift, cx + dir * 84, eyeY - 104 + browLift);
-      }
-      g.stroke();
-    };
-    drawAnimeBrow(leftX, -1);
-    drawAnimeBrow(rightX, 1);
-
-    // 3) 순정만화 투톤 보석 눈동자 & 날렵한 속눈썹 작화
-    const drawShoujoOpenEye = (cx, isLeft) => {
-      const outerDir = isLeft ? -1 : 1;
-      const rx = isFemale ? 86 : 80;
-      const ry = cfg.faceStyle === 'chic' ? 48 : (cfg.faceStyle === 'lovely' ? 62 : 54);
-      const tilt = cfg.faceStyle === 'chic' ? outerDir * -0.07 : (cfg.faceStyle === 'gentle' ? outerDir * 0.03 : 0);
-
-      g.save();
-      g.translate(cx, eyeY);
-      g.rotate(tilt);
-
-      // (a) 쌍꺼풀 가느다란 펜선 (레퍼런스 일러스트 디테일!)
-      g.strokeStyle = 'rgba(72, 46, 44, 0.62)';
-      g.lineWidth = 4.2;
-      g.beginPath();
-      g.moveTo(-rx * 0.78, -ry * 0.92);
-      g.quadraticCurveTo(0, -ry * 1.48, rx * 0.84, -ry * 0.86);
-      g.stroke();
-
-      // (b) 아몬드형 흰자위(공막) 클리핑 영역 + 상단 속눈썹 그림자
-      g.save();
-      g.beginPath();
-      g.moveTo(-rx, 4);
-      g.bezierCurveTo(-rx * 0.58, -ry * 1.24, rx * 0.58, -ry * 1.24, rx, 4);
-      g.bezierCurveTo(rx * 0.55, ry * 1.12, -rx * 0.55, ry * 1.12, -rx, 4);
-      g.closePath();
-      g.fillStyle = '#fdfcfb';
-      g.fill();
-      g.clip();
-
-      // 흰자위 상단 연보라/블루그레이 만화 셀 그림자
-      const scleraShadow = g.createLinearGradient(0, -ry, 0, 0);
-      scleraShadow.addColorStop(0, 'rgba(148, 152, 178, 0.45)');
-      scleraShadow.addColorStop(1, 'rgba(148, 152, 178, 0)');
-      g.fillStyle = scleraShadow;
-      g.fillRect(-rx, -ry * 1.3, rx * 2, ry * 1.3);
-
-      // (c) 순정만화 투톤 보석 홍채 (위쪽은 딥 차콜블랙 ➔ 아래쪽은 영롱한 호박빛/보석빛 발광!)
-      const irisRx = rx * 0.64;
-      const irisRy = ry * 1.02;
-      const irisGrad = g.createLinearGradient(0, -irisRy, 0, irisRy);
-      irisGrad.addColorStop(0.0, irisPal.top);
-      irisGrad.addColorStop(0.46, irisPal.top);
-      irisGrad.addColorStop(0.66, irisPal.mid);
-      irisGrad.addColorStop(0.92, irisPal.glow);
-      irisGrad.addColorStop(1.0, irisPal.rim);
-
-      g.fillStyle = irisGrad;
-      g.beginPath();
-      g.ellipse(0, 3, irisRx, irisRy, 0, 0, Math.PI * 2);
-      g.fill();
-
-      // 홍채 테두리 또렷한 링
-      g.strokeStyle = irisPal.top;
-      g.lineWidth = 5.5;
-      g.stroke();
-
-      // 하단 반달 발광 아크 (보내주신 레퍼런스 눈동자의 황금빛 반달 포인트!)
-      g.fillStyle = irisPal.rim;
-      g.globalAlpha = 0.65;
-      g.beginPath();
-      g.arc(0, irisRy * 0.24, irisRx * 0.68, Math.PI * 0.14, Math.PI * 0.86);
-      g.fill();
-      g.globalAlpha = 1.0;
-
-      // 중심 동공
-      g.fillStyle = '#0d0c14';
-      g.beginPath();
-      g.ellipse(0, 2, irisRx * 0.34, irisRy * 0.38, 0, 0, Math.PI * 2);
-      g.fill();
-
-      // (d) 만화 캐치라이트 하이라이트 (경계선을 가로지르는 선명한 화이트 광원!)
-      const sp = cfg.expression === 'grace' ? 1.35 : 1.0;
-      g.fillStyle = '#ffffff';
-      g.beginPath();
-      g.ellipse(-irisRx * 0.36, -irisRy * 0.24, 14 * sp, 10 * sp, -0.25, 0, Math.PI * 2);
-      g.fill();
-
-      g.beginPath();
-      g.arc(irisRx * 0.38, irisRy * 0.22, 6.2 * sp, 0, Math.PI * 2);
-      g.fill();
-
-      if (cfg.expression === 'grace') {
-        // 별빛 반짝임 십자 하이라이트
-        g.strokeStyle = '#ffffff';
-        g.lineWidth = 3.2;
-        g.beginPath();
-        g.moveTo(-irisRx * 0.36 - 22, -irisRy * 0.24);
-        g.lineTo(-irisRx * 0.36 + 22, -irisRy * 0.24);
-        g.moveTo(-irisRx * 0.36, -irisRy * 0.24 - 22);
-        g.lineTo(-irisRx * 0.36, -irisRy * 0.24 + 22);
-        g.stroke();
-      }
-      g.restore();
-
-      // (e) 진하고 날렵한 윗 아이라인 & 속눈썹 엣지
-      g.fillStyle = '#141118';
-      g.beginPath();
-      g.moveTo(-rx - 4, 8);
-      g.bezierCurveTo(-rx * 0.58, -ry * 1.38, rx * 0.58, -ry * 1.38, rx + 6, 6);
-      g.lineTo(rx + outerDir * (isFemale ? 20 : 12), isFemale ? -14 : -4);
-      g.bezierCurveTo(rx * 0.56, -ry * 1.08, -rx * 0.56, -ry * 1.08, -rx - 4, 8);
-      g.closePath();
-      g.fill();
-
-      // 언더 속눈썹 섬세한 라인
-      g.strokeStyle = 'rgba(42, 30, 34, 0.55)';
-      g.lineWidth = 3.6;
-      g.beginPath();
-      g.moveTo(-rx * 0.55, ry * 0.88);
-      g.quadraticCurveTo(0, ry * 1.08, rx * 0.62, ry * 0.84);
-      g.stroke();
-
-      // 애교살 얇은 음영선
-      if (cfg.faceStyle === 'lovely' || cfg.faceStyle === 'gentle') {
-        g.strokeStyle = 'rgba(175, 118, 108, 0.28)';
-        g.lineWidth = 3.0;
-        g.beginPath();
-        g.moveTo(-rx * 0.45, ry * 1.24);
-        g.quadraticCurveTo(0, ry * 1.40, rx * 0.45, ry * 1.24);
-        g.stroke();
-      }
-
-      g.restore();
-    };
-
-    const drawAnimeClosedEye = (cx, isLeft, smileArc) => {
-      const outerDir = isLeft ? -1 : 1;
-      g.save();
-      g.translate(cx, eyeY);
-      g.strokeStyle = '#18131c';
-      g.lineWidth = 10.5;
-      g.lineCap = 'round';
-      g.beginPath();
-      if (smileArc) {
-        g.moveTo(-74, 14);
-        g.quadraticCurveTo(0, -48, 74, 14);
-      } else {
-        g.moveTo(-74, -8);
-        g.quadraticCurveTo(0, 38, 74, -8);
-      }
-      g.stroke();
-
-      // 감은 눈 끝 속눈썹 포인트
-      g.lineWidth = 5.5;
-      g.beginPath();
-      g.moveTo(outerDir * 66, smileArc ? 8 : -4);
-      g.lineTo(outerDir * 86, smileArc ? 2 : -14);
-      g.stroke();
-      g.restore();
-    };
-
-    if (isBlinking || cfg.expression === 'pray') {
-      drawAnimeClosedEye(leftX, true, false);
-      drawAnimeClosedEye(rightX, false, false);
-    } else if (cfg.expression === 'joy') {
-      drawAnimeClosedEye(leftX, true, true);
-      drawAnimeClosedEye(rightX, false, true);
-    } else if (cfg.expression === 'wink') {
-      drawShoujoOpenEye(leftX, true);
-      drawAnimeClosedEye(rightX, false, true);
-    } else {
-      drawShoujoOpenEye(leftX, true);
-      drawShoujoOpenEye(rightX, false);
-    }
-
-    // 4) 순정만화 미니멀 콧날 펜선 + 작은 삼각 음영 (레퍼런스 그림체 핵심!)
-    g.fillStyle = 'rgba(168, 112, 98, 0.34)';
-    g.beginPath();
-    g.moveTo(512, 598);
-    g.lineTo(525, 622);
-    g.lineTo(510, 625);
-    g.closePath();
-    g.fill();
-
-    g.strokeStyle = 'rgba(84, 52, 48, 0.65)';
-    g.lineWidth = 4.2;
-    g.lineCap = 'round';
-    g.beginPath();
-    g.moveTo(509, 604);
-    g.lineTo(505, 623);
-    g.stroke();
-
-    // 5) 순정만화 입매 (레퍼런스 사진처럼 양 끝 입꼬리가 살짝 올라간 매력적인 펜선 미소!)
-    const mouthY = 718;
-    if (cfg.expression === 'joy') {
-      // 환하게 웃는 순정만화 열린 미소
-      g.fillStyle = '#d95d6e';
-      g.beginPath();
-      g.moveTo(446, mouthY - 8);
-      g.quadraticCurveTo(512, mouthY + 2, 578, mouthY - 8);
-      g.quadraticCurveTo(512, mouthY + 68, 446, mouthY - 8);
-      g.closePath();
-      g.fill();
-
-      g.fillStyle = '#ffffff';
-      g.beginPath();
-      g.moveTo(458, mouthY - 5);
-      g.quadraticCurveTo(512, mouthY + 4, 566, mouthY - 5);
-      g.quadraticCurveTo(512, mouthY + 18, 458, mouthY - 5);
-      g.fill();
-
-      g.strokeStyle = '#3b1d24';
-      g.lineWidth = 5.5;
-      g.beginPath();
-      g.moveTo(442, mouthY - 10);
-      g.quadraticCurveTo(512, mouthY + 2, 582, mouthY - 10);
-      g.stroke();
-    } else if (cfg.expression === 'pray' || cfg.expression === 'calm') {
-      if (isFemale) {
-        g.fillStyle = 'rgba(236, 112, 134, 0.42)';
-        g.beginPath();
-        g.ellipse(512, mouthY + 3, 34, 11, 0, 0, Math.PI * 2);
-        g.fill();
-      }
-      g.strokeStyle = '#4a282c';
-      g.lineWidth = 5.2;
-      g.beginPath();
-      g.moveTo(466, mouthY + 2);
-      g.quadraticCurveTo(512, mouthY + 8, 558, mouthY + 2);
-      g.stroke();
-    } else {
-      // 레퍼런스 남주·여주 시그니처: 양 입꼬리 쏙 올라간 다정한 순정만화 미소!
-      if (isFemale) {
-        const lipGrad = g.createRadialGradient(512, mouthY + 4, 4, 512, mouthY + 4, 42);
-        lipGrad.addColorStop(0, 'rgba(244, 114, 140, 0.52)');
-        lipGrad.addColorStop(1, 'rgba(244, 114, 140, 0)');
-        g.fillStyle = lipGrad;
-        g.beginPath();
-        g.ellipse(512, mouthY + 4, 44, 16, 0, 0, Math.PI * 2);
-        g.fill();
-      }
-
-      g.strokeStyle = '#452428';
-      g.lineWidth = 5.8;
-      g.lineCap = 'round';
-      g.beginPath();
-      g.moveTo(436, mouthY - 6);
-      g.bezierCurveTo(468, mouthY + 16, 556, mouthY + 16, 588, mouthY - 6);
-      g.stroke();
-
-      // 양 끝 귀여운 입꼬리 터치
-      g.fillStyle = 'rgba(136, 62, 68, 0.55)';
-      g.beginPath();
-      g.arc(435, mouthY - 7, 5.2, 0, Math.PI * 2);
-      g.arc(589, mouthY - 7, 5.2, 0, Math.PI * 2);
-      g.fill();
-
-      // 아랫입술 밑 살짝 찍힌 만화 음영선
-      g.strokeStyle = 'rgba(165, 108, 98, 0.38)';
-      g.lineWidth = 3.8;
-      g.beginPath();
-      g.moveTo(496, mouthY + 24);
-      g.quadraticCurveTo(512, mouthY + 28, 528, mouthY + 24);
-      g.stroke();
-    }
-
-    const tex = new THREE.CanvasTexture(c);
-    tex.minFilter = THREE.LinearFilter;
-    if (THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
-    faceTextureCache.set(key, tex);
-    return tex;
-  }
-
-  // -------------------------------------------------------------------------
-  // 5. 순정만화 웰링턴/하프림 안경 & 반투명 렌즈 사선 빛반사 + 이어커프 생성기
-  // -------------------------------------------------------------------------
-  function addAnimeGlassesToHead(headGroup, R, isHorn, isCute) {
-    const frameHex = isHorn ? 0x181924 : 0xd4af37;
-    const frameMat = new THREE.MeshStandardMaterial({
-      color: frameHex,
-      roughness: isHorn ? 0.28 : 0.22,
-      metalness: isHorn ? 0.15 : 0.78
-    });
-    const lensMat = new THREE.MeshBasicMaterial({
-      color: 0xe0f2fe,
-      transparent: true,
-      opacity: 0.16,
-      depthWrite: false
-    });
-    const glareMat = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.42,
-      depthWrite: false
-    });
-
-    const gGroup = new THREE.Group();
-    const gZ = R * (isCute ? 0.90 : 0.89);
-    const gY = R * 0.01;
-    const eyeOffX = R * (isCute ? 0.34 : 0.32);
-    const fw = R * (isCute ? 0.50 : 0.48);
-    const fh = R * (isCute ? 0.32 : 0.30);
-    const thick = isHorn ? R * 0.042 : R * 0.022;
-
-    [-1, 1].forEach((side) => {
-      const fBox = new THREE.Group();
-      fBox.position.set(side * eyeOffX, gY, gZ);
-      fBox.rotation.z = side * -0.04; // 순정만화 특유의 세련된 안경테 각도!
-
-      // 상단 브로우 바 (조금 더 도톰하고 날렵하게)
-      const topBar = new THREE.Mesh(new THREE.BoxGeometry(fw + thick, thick * 1.35, thick * 1.1), frameMat);
-      topBar.position.y = fh * 0.5;
-      // 하단 림
-      const botBar = new THREE.Mesh(new THREE.BoxGeometry(fw * 0.92, thick * (isHorn ? 0.85 : 0.55), thick * 0.9), frameMat);
-      botBar.position.y = -fh * 0.5;
-      // 좌우 세로 림
-      const outerBar = new THREE.Mesh(new THREE.BoxGeometry(thick, fh, thick), frameMat);
-      outerBar.position.x = side * (fw * 0.48);
-      outerBar.rotation.z = side * 0.08;
-      const innerBar = new THREE.Mesh(new THREE.BoxGeometry(thick * 0.85, fh * 0.92, thick * 0.9), frameMat);
-      innerBar.position.x = -side * (fw * 0.46);
-
-      // 반투명 안경알 + 만화풍 사선 빛반사 스트립
-      const lens = new THREE.Mesh(new THREE.PlaneGeometry(fw * 0.88, fh * 0.88), lensMat);
-      lens.position.z = 0.001;
-      const glare = new THREE.Mesh(new THREE.PlaneGeometry(fw * 0.16, fh * 0.78), glareMat);
-      glare.position.set(-fw * 0.16, 0, 0.002);
-      glare.rotation.z = -0.38;
-
-      // 귀로 이어지는 안경다리 (템플)
-      const temple = new THREE.Mesh(new THREE.BoxGeometry(thick * 0.75, thick * 0.85, R * 0.82), frameMat);
-      temple.position.set(side * (fw * 0.50), fh * 0.25, -R * 0.40);
-
-      fBox.add(topBar, botBar, outerBar, innerBar, lens, glare, temple);
-      gGroup.add(fBox);
-    });
-
-    // 중앙 브릿지
-    const bridge = new THREE.Mesh(new THREE.BoxGeometry(eyeOffX * 0.48, thick * 0.95, thick), frameMat);
-    bridge.position.set(0, gY + fh * 0.34, gZ + 0.003);
-    gGroup.add(bridge);
-
-    headGroup.add(gGroup);
-  }
-
-  // -------------------------------------------------------------------------
-  // 6. 한 올씩 살아있는 8종 순정만화 3D 입체 헤어 빌더
-  // -------------------------------------------------------------------------
-  function buildAnimeHairStyle(headGroup, R, cfg, isCute, hairColorHex, accentMat) {
-    const hairGrp = new THREE.Group();
-    headGroup.add(hairGrp);
-
-    const hairMat = makeToonMat(hairColorHex, 'hair');
-    const outlineHex = 0x120f17;
-    const wScale = isCute ? 0.97 : (cfg.gender === 'female' ? 0.89 : 0.92);
-    const hScale = isCute ? 1.03 : 1.11;
-
-    // 1) 두상 볼륨 크라운 돔 + 만화 외곽선
-    const crownGeo = new THREE.SphereGeometry(R * 1.06, 28, 20, 0, Math.PI * 2, 0, Math.PI * 0.62);
-    const crown = new THREE.Mesh(crownGeo, hairMat);
-    crown.scale.set(wScale * 1.05, hScale * 1.04, 1.02);
-    crown.position.set(0, R * 0.06, -R * 0.03);
-    crown.rotation.x = -0.14;
-    attachMangaOutline(crown, R * 0.025, outlineHex);
-    hairGrp.add(crown);
-
-    // 후두부 감싸는 베이스 캡
-    const backCapGeo = new THREE.SphereGeometry(R * 1.04, 24, 18, Math.PI * 0.88, Math.PI * 1.24, Math.PI * 0.16, Math.PI * 0.68);
-    const backCap = new THREE.Mesh(backCapGeo, hairMat);
-    backCap.scale.set(wScale * 1.04, hScale, 1.02);
-    backCap.position.set(0, R * 0.02, -R * 0.04);
-    hairGrp.add(backCap);
-
-    // 공통 헬퍼: 뾰족하게 빠지는 입체 머리카락 한 다발 추가
-    const addLock = (x, y, z, w, len, th, cz, sx, rotX = 0, rotY = 0, rotZ = 0, withOutline = true) => {
-      const sGeo = createHairStrandGeometry(w, len, th, cz, sx);
-      const m = new THREE.Mesh(sGeo, hairMat);
-      m.position.set(x, y, z);
-      m.rotation.set(rotX, rotY, rotZ);
-      if (withOutline) attachMangaOutline(m, R * 0.016, outlineHex);
-      hairGrp.add(m);
-      return m;
-    };
-
-    // 공통 귀 옆 구레나룻/사이드 락 (얼굴 여백을 샤프하게 잡아주는 순정만화 핵심 디테일!)
-    [-1, 1].forEach((side) => {
-      addLock(
-        side * R * wScale * 0.90,
-        R * 0.34,
-        R * 0.36,
-        R * 0.24,
-        R * (cfg.gender === 'female' ? 1.18 : 0.92),
-        R * 0.11,
-        R * 0.08,
-        -side * R * 0.10,
-        0.06,
-        side * 0.35,
-        0
-      );
-    });
-
-    // 목덜미 뒤쪽 삐죽삐죽 샤기 팁 (구체 느낌 완전 제거)
-    [-0.42, -0.15, 0.15, 0.42].forEach((nx) => {
-      addLock(
-        nx * R,
-        -R * 0.20,
-        -R * 0.86,
-        R * 0.28,
-        R * 0.68,
-        R * 0.11,
-        -R * 0.10,
-        nx * R * 0.12,
-        -0.12,
-        0,
-        0,
-        false
-      );
-    });
-
-    // 순정만화 엔젤링(머릿결 하이라이트 아크)
-    const sheenPlane = new THREE.Mesh(
-      new THREE.PlaneGeometry(R * 1.18, R * 0.26),
-      new THREE.MeshBasicMaterial({
-        map: getAngelRingTexture(),
-        transparent: true,
-        depthWrite: false
-      })
-    );
-    sheenPlane.position.set(0, R * 0.64, R * 0.89);
-    sheenPlane.rotation.x = -0.32;
-    hairGrp.add(sheenPlane);
-
-    const style = cfg.hairStyle;
-
-    if (style === 'shaggy_bang' || style === 'short_layered') {
-      // ★ 보내주신 레퍼런스 캐릭터의 시스루 샤기 뱅! (눈썹·안경 위로 한 올씩 갈라지는 7가닥 앞머리 + 정수리 잔머리!)
-      const bangSpecs = [
-        [-0.50, 0.72, 0.72, 0.26, 0.96, -0.06, 0.16],
-        [-0.31, 0.78, 0.77, 0.25, 1.06,  0.04, 0.07],
-        [-0.12, 0.80, 0.80, 0.24, 1.12, -0.03, 0.02],
-        [ 0.06, 0.80, 0.80, 0.26, 1.08,  0.05, -0.03],
-        [ 0.25, 0.78, 0.78, 0.24, 1.02,  0.06, -0.06],
-        [ 0.46, 0.72, 0.72, 0.26, 0.95,  0.08, -0.15]
-      ];
-      bangSpecs.forEach(([bx, by, bz, bw, blen, sx, rz]) => {
-        addLock(bx * R, by * R, bz * R, bw * R, blen * R, R * 0.10, R * 0.16, sx * R, -0.06, 0, rz);
-      });
-
-      // 정수리 볼륨 바보털(아호게) & 결감 레이어
-      if (style === 'shaggy_bang') {
-        const ahoge = createHairStrandGeometry(R * 0.16, R * 0.52, R * 0.07, R * 0.14, R * 0.18, R * 0.12);
-        const ahogeMesh = new THREE.Mesh(ahoge, hairMat);
-        ahogeMesh.position.set(R * 0.05, R * 1.16, R * 0.06);
-        ahogeMesh.rotation.set(2.35, 0.2, -0.45);
-        hairGrp.add(ahogeMesh);
-      }
-    } else if (style === 'dandy') {
-      // 부드러운 6:4 애즈펌 / 가르마펌 만화 남주 헤어
-      addLock(-R * 0.34, R * 0.82, R * 0.74, R * 0.44, R * 1.08, R * 0.14, R * 0.18, -R * 0.22, -0.08, 0, 0.22);
-      addLock(-R * 0.14, R * 0.84, R * 0.78, R * 0.32, R * 0.96, R * 0.12, R * 0.16, -R * 0.14, -0.06, 0, 0.12);
-      addLock( R * 0.24, R * 0.82, R * 0.76, R * 0.42, R * 1.04, R * 0.14, R * 0.18,  R * 0.24, -0.08, 0, -0.24);
-      addLock( R * 0.46, R * 0.74, R * 0.68, R * 0.28, R * 0.92, R * 0.11, R * 0.14,  R * 0.16, -0.06, 0, -0.28);
-    } else if (style === 'pomade') {
-      // 이마가 단정히 드러나며 한 가닥 애교 앞머리가 떨어지는 슬릭 가일/포마드컷
-      addLock(-R * 0.18, R * 1.06, R * 0.56, R * 0.54, R * 0.78, R * 0.18, R * 0.20, -R * 0.35, -1.05, 0, 0.35);
-      addLock( R * 0.22, R * 1.04, R * 0.54, R * 0.48, R * 0.72, R * 0.16, R * 0.18,  R * 0.32, -1.12, 0, -0.32);
-      // 한 올 내려오는 지적인 시스루 스트랜드
-      addLock(-R * 0.26, R * 0.84, R * 0.78, R * 0.18, R * 0.92, R * 0.08, R * 0.15,  R * 0.08, -0.05, 0, 0.08);
-    } else if (style === 'bob_c' || style === 'beret_wave') {
-      // 청순 시스루 뱅 + 턱선을 샤프하게 감싸는 C컬 단발 보브
-      [-0.32, -0.10, 0.12, 0.34].forEach((bx, idx) => {
-        addLock(bx * R, R * 0.78, R * 0.78, R * 0.25, R * 0.96, R * 0.09, R * 0.15, (idx - 1.5) * R * 0.04, -0.06, 0, 0);
-      });
-      [-1, 1].forEach((side) => {
-        addLock(side * R * 0.74, R * 0.52, R * 0.20, R * 0.44, R * 1.68, R * 0.18, R * 0.12, -side * R * 0.22, 0.05, side * 0.25, 0);
-        addLock(side * R * 0.64, R * 0.44, -R * 0.35, R * 0.48, R * 1.62, R * 0.18, -R * 0.08, -side * R * 0.12, 0, side * 0.65, 0, false);
-      });
-      if (style === 'beret_wave') {
-        const beret = new THREE.Mesh(new THREE.SphereGeometry(R * 1.15, 24, 16), accentMat);
-        beret.scale.set(1.06, 0.40, 1.04);
-        beret.position.set(R * 0.14, R * 0.92, -R * 0.05);
-        beret.rotation.z = -0.22;
-        attachMangaOutline(beret, R * 0.022, outlineHex);
-        hairGrp.add(beret);
-      }
-    } else if (style === 'long_wave') {
-      // 순정만화 여주인공 롱 웨이브 헤어 (시스루 앞머리 + 긴 양갈래 웨이브 옆머리 + 풍성한 등판 물결!)
-      [-0.34, -0.11, 0.11, 0.34].forEach((bx) => {
-        addLock(bx * R, R * 0.80, R * 0.78, R * 0.24, R * 0.98, R * 0.09, R * 0.15, bx * R * 0.08, -0.06, 0, 0);
-      });
-      [-1, 1].forEach((side) => {
-        // 얼굴 옆에서 가슴 앞으로 우아하게 흐르는 롱 사이드 락
-        addLock(side * R * 0.76, R * 0.48, R * 0.22, R * 0.38, R * 2.75, R * 0.16, R * 0.18, -side * R * 0.14, 0.08, side * 0.18, side * -0.05);
-      });
-      // 등 뒤 풍성한 5갈래 롱 웨이브 레이어
-      [-0.58, -0.29, 0, 0.29, 0.58].forEach((bx) => {
-        addLock(bx * R, R * 0.30, -R * 0.76, R * 0.48, R * 3.05, R * 0.18, -R * 0.22, bx * R * 0.24, -0.08, 0, 0);
-      });
-    } else if (style === 'low_bun') {
-      // 단아한 로우번 시뇽 + 얼굴 옆 애교 잔머리 S컬
-      [-0.28, 0.0, 0.28].forEach((bx) => {
-        addLock(bx * R, R * 0.80, R * 0.77, R * 0.26, R * 0.92, R * 0.09, R * 0.14, bx * R * 0.12, -0.06, 0, 0);
-      });
-      [-1, 1].forEach((side) => {
-        addLock(side * R * 0.74, R * 0.36, R * 0.34, R * 0.22, R * 1.38, R * 0.09, R * 0.14, -side * R * 0.12, 0.06, side * 0.20, 0);
-      });
-      const bun = new THREE.Mesh(new THREE.SphereGeometry(R * 0.48, 20, 16), hairMat);
-      bun.scale.set(1.12, 0.92, 0.96);
-      bun.position.set(0, -R * 0.18, -R * 1.02);
-      attachMangaOutline(bun, R * 0.022, outlineHex);
-      const pearlPin = new THREE.Mesh(
-        new THREE.SphereGeometry(R * 0.11, 12, 12),
-        new THREE.MeshStandardMaterial({ color: 0xfffbeb, roughness: 0.2, metalness: 0.3 })
-      );
-      pearlPin.position.set(R * 0.24, 0, -R * 0.90);
-      hairGrp.add(bun, pearlPin);
-    } else if (style === 'ponytail') {
-      // 발랄한 하이 포니테일 + 리본 + 시스루 앞머리
-      [-0.32, -0.10, 0.12, 0.34].forEach((bx) => {
-        addLock(bx * R, R * 0.78, R * 0.78, R * 0.24, R * 0.96, R * 0.09, R * 0.15, 0, -0.06, 0, 0);
-      });
-      const ribbon = new THREE.Mesh(new THREE.TorusGeometry(R * 0.20, R * 0.065, 10, 18), accentMat);
-      ribbon.position.set(0, R * 0.42, -R * 0.94);
-      hairGrp.add(ribbon);
-      // 풍성하게 뻗어 내리는 3갈래 포니테일 다발
-      addLock(0, R * 0.44, -R * 1.00, R * 0.52, R * 2.35, R * 0.22, -R * 0.36, 0, -0.22, 0, 0);
-      addLock(-R * 0.14, R * 0.40, -R * 0.98, R * 0.34, R * 2.05, R * 0.15, -R * 0.28, -R * 0.22, -0.20, 0, 0.10, false);
-      addLock( R * 0.14, R * 0.40, -R * 0.98, R * 0.34, R * 2.05, R * 0.15, -R * 0.28,  R * 0.22, -0.20, 0, -0.10, false);
-    }
-  }
-
-  // -------------------------------------------------------------------------
-  // 7. 전체 3D 순정만화 아바타 리깅 조립 (8등신 주인공 비율 & 귀여운 SD 만화 비율)
-  // -------------------------------------------------------------------------
-  function buildStylizedAvatarRig(presetId, rawCfg, currentDrink) {
-    const cfg = resolveAvatarConfig(presetId, rawCfg);
-    const isCute = cfg.bodyStyle === 'cute';
-    const isFemale = cfg.gender === 'female';
-
-    const skinHex = SKIN_TONE_HEX[cfg.skinTone] || '#fff0e6';
-    const hairHex = HAIR_COLOR_HEX[cfg.hairColor] || '#171821';
-    const skinMat = makeToonMat(skinHex, 'skin');
-    const outfitMat = makeToonMat(cfg.outfitColor, 'cloth');
-    const bottomMat = makeToonMat(cfg.bottomColor, 'cloth');
-    const whiteShirtMat = makeToonMat('#f8fafc', 'cloth');
-    const crimsonKnitMat = makeToonMat(isFemale ? '#be185d' : '#8f1d2c', 'cloth');
-    const ribCollarMat = makeToonMat('#524c54', 'cloth');
-    const goldMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.78, roughness: 0.22 });
-    const silverMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.85, roughness: 0.18 });
-    const darkShoeMat = makeToonMat(isFemale ? '#272024' : '#16161d', 'cloth');
-
-    const bodyOutline = 0x1c1520;
-    const skinOutline = 0x432927;
-
-    const rigGroup = new THREE.Group();
-
-    const P = isCute
-      ? {
-          hipY: 0.66,
-          legLen: 0.58,
-          legSpacing: 0.135,
-          torsoH: 0.60,
-          torsoTopR: isFemale ? 0.185 : 0.205,
-          torsoWaistR: isFemale ? 0.155 : 0.175,
-          hipR: isFemale ? 0.195 : 0.185,
-          shoulderY: 1.20,
-          armX: isFemale ? 0.245 : 0.270,
-          armLen: 0.46,
-          neckY: 1.31,
-          headY: 1.56,
-          headR: 0.235,
-          heightTop: 2.04
-        }
-      : {
-          hipY: 0.92,
-          legLen: 0.86,
-          legSpacing: isFemale ? 0.102 : 0.122,
-          torsoH: 0.64,
-          torsoTopR: isFemale ? 0.168 : 0.212,
-          torsoWaistR: isFemale ? 0.122 : 0.164,
-          hipR: isFemale ? 0.168 : 0.166,
-          shoulderY: 1.50,
-          armX: isFemale ? 0.218 : 0.262,
-          armLen: 0.61,
-          neckY: 1.60,
-          headY: 1.78,
-          headR: 0.164,
-          heightTop: 2.18
-        };
-
-    const isSkirtLook = cfg.outfitStyle === 'onepiece' || cfg.outfitStyle === 'jacket_skirt';
-    const isChoir = cfg.outfitStyle === 'choir';
-
-    // 1) 슬림 만화 다리 + 로퍼/스니커즈
-    const makeLeg = () => {
-      const lg = new THREE.Group();
-      const legMat = isSkirtLook ? skinMat : bottomMat;
-      const legOut = isSkirtLook ? skinOutline : bodyOutline;
-      const rTop = isSkirtLook ? 0.066 : 0.082;
-      const rMid = isSkirtLook ? 0.052 : 0.066;
-      const upperH = P.legLen * 0.52;
-      const lowerH = P.legLen * 0.48;
-
-      const thigh = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rMid, upperH, 16), legMat);
-      thigh.position.y = -upperH * 0.5;
-      thigh.castShadow = true;
-      attachMangaOutline(thigh, 0.0038, legOut);
-
-      const calf = new THREE.Mesh(new THREE.CylinderGeometry(rMid, rMid * 0.80, lowerH, 16), legMat);
-      calf.position.y = -upperH - lowerH * 0.5 + 0.02;
-      calf.castShadow = true;
-      attachMangaOutline(calf, 0.0038, legOut);
-
-      const isSneaker = cfg.outfitStyle === 'webtoon_layered' || cfg.outfitStyle === 'knit_slacks';
-      const shoe = new THREE.Mesh(
-        new THREE.SphereGeometry(0.078, 14, 10),
-        isSneaker ? whiteShirtMat : (cfg.outfitStyle === 'onepiece' ? outfitMat : darkShoeMat)
-      );
-      shoe.scale.set(0.84, 0.52, 1.58);
-      shoe.position.set(0, -P.legLen + 0.02, 0.044);
-      attachMangaOutline(shoe, 0.0035, bodyOutline);
-
-      lg.add(thigh, calf, shoe);
-      return lg;
-    };
-
-    const leftLeg = makeLeg();
-    leftLeg.position.set(-P.legSpacing, P.hipY, 0);
-    const rightLeg = makeLeg();
-    rightLeg.position.set(P.legSpacing, P.hipY, 0);
-    rigGroup.add(leftLeg, rightLeg);
-
-    const pelvis = new THREE.Mesh(
-      new THREE.SphereGeometry(P.hipR, 16, 12),
-      isSkirtLook ? (cfg.outfitStyle === 'onepiece' ? outfitMat : bottomMat) : bottomMat
-    );
-    pelvis.scale.set(1.04, 0.54, 0.74);
-    pelvis.position.y = P.hipY;
-    rigGroup.add(pelvis);
-
-    // 2) 슬림 V-테이퍼 상체 & 웹툰 레이어드 의상 디테일
-    const torsoCenterY = P.hipY + P.torsoH * 0.5 - 0.02;
-    const upperTorso = new THREE.Mesh(
-      new THREE.CylinderGeometry(P.torsoTopR, P.torsoWaistR, P.torsoH * 0.62, 20),
-      outfitMat
-    );
-    upperTorso.scale.set(1.18, 1, 0.70);
-    upperTorso.position.y = torsoCenterY + P.torsoH * 0.18;
-    upperTorso.castShadow = true;
-    attachMangaOutline(upperTorso, 0.0045, bodyOutline);
-    rigGroup.add(upperTorso);
-
-    const lowerTorso = new THREE.Mesh(
-      new THREE.CylinderGeometry(P.torsoWaistR, P.hipR * 0.98, P.torsoH * 0.44, 20),
-      outfitMat
-    );
-    lowerTorso.scale.set(1.10, 1, 0.72);
-    lowerTorso.position.y = P.hipY + P.torsoH * 0.18;
-    lowerTorso.castShadow = true;
-    attachMangaOutline(lowerTorso, 0.0045, bodyOutline);
-    rigGroup.add(lowerTorso);
-
-    const shoulderCap = new THREE.Mesh(new THREE.SphereGeometry(P.torsoTopR * 1.14, 18, 12), outfitMat);
-    shoulderCap.scale.set(1.16, 0.34, 0.68);
-    shoulderCap.position.y = P.shoulderY;
-    attachMangaOutline(shoulderCap, 0.0042, bodyOutline);
-    rigGroup.add(shoulderCap);
-
-    // ★ 패션별 만화풍 입체 레이어드 디테일
-    if (cfg.outfitStyle === 'webtoon_layered') {
-      // [레퍼런스 사진 100% 재현!] 오픈 지퍼 블루종 자켓 + 시보리 넥 + 레드/버건디 니트 + 화이트 셔츠 카라 & 탑버튼!
-      const innerKnit = new THREE.Mesh(new THREE.BoxGeometry(P.torsoTopR * 0.92, P.torsoH * 0.84, 0.032), crimsonKnitMat);
-      innerKnit.position.set(0, P.hipY + P.torsoH * 0.46, P.torsoTopR * 0.69);
-      rigGroup.add(innerKnit);
-
-      // 화이트 드레스 셔츠 V카라 + 실버 단추
-      [-1, 1].forEach((side) => {
-        const collarWing = new THREE.Mesh(new THREE.BoxGeometry(0.056, 0.105, 0.022), whiteShirtMat);
-        collarWing.position.set(side * 0.036, P.shoulderY + 0.015, P.torsoTopR * 0.68);
-        collarWing.rotation.z = side * -0.42;
-        attachMangaOutline(collarWing, 0.0025, bodyOutline);
-        rigGroup.add(collarWing);
-
-        // 양쪽 실버 지퍼 라인!
-        const zipTrack = new THREE.Mesh(new THREE.BoxGeometry(0.012, P.torsoH * 0.78, 0.018), silverMat);
-        zipTrack.position.set(side * P.torsoTopR * 0.44, P.hipY + P.torsoH * 0.44, P.torsoTopR * 0.73);
-        zipTrack.rotation.z = side * -0.05;
-        rigGroup.add(zipTrack);
-      });
-
-      const shirtCenter = new THREE.Mesh(new THREE.BoxGeometry(0.068, 0.13, 0.024), whiteShirtMat);
-      shirtCenter.position.set(0, P.shoulderY - 0.03, P.torsoTopR * 0.70);
-      const topBtn = new THREE.Mesh(new THREE.SphereGeometry(0.009, 10, 10), silverMat);
-      topBtn.position.set(0, P.shoulderY - 0.02, P.torsoTopR * 0.73);
-
-      // 블루종 골지 시보리 카라
-      const ribCollar = new THREE.Mesh(new THREE.TorusGeometry(0.088, 0.020, 10, 22, Math.PI * 1.35), ribCollarMat);
-      ribCollar.rotation.x = Math.PI * 0.52;
-      ribCollar.rotation.z = Math.PI * 0.82;
-      ribCollar.position.set(0, P.shoulderY + 0.025, 0.01);
-
-      rigGroup.add(shirtCenter, topBtn, ribCollar);
-    } else if (cfg.outfitStyle === 'suit') {
-      const vZone = new THREE.Mesh(new THREE.ConeGeometry(0.086, 0.34, 4), whiteShirtMat);
-      vZone.rotation.x = Math.PI;
-      vZone.rotation.y = Math.PI * 0.25;
-      vZone.scale.set(1.0, 1.0, 0.35);
-      vZone.position.set(0, P.shoulderY - 0.12, P.torsoTopR * 0.68);
-      const tie = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.25, 0.018), crimsonKnitMat);
-      tie.position.set(0, P.shoulderY - 0.15, P.torsoTopR * 0.74);
-      rigGroup.add(vZone, tie);
-    } else if (cfg.outfitStyle === 'knit_slacks') {
-      [-1, 1].forEach((side) => {
-        const cWing = new THREE.Mesh(new THREE.BoxGeometry(0.052, 0.095, 0.020), whiteShirtMat);
-        cWing.position.set(side * 0.034, P.shoulderY + 0.02, P.torsoTopR * 0.64);
-        cWing.rotation.z = side * -0.45;
-        attachMangaOutline(cWing, 0.0025, bodyOutline);
-        rigGroup.add(cWing);
-      });
-      const vTie = new THREE.Mesh(new THREE.BoxGeometry(0.028, 0.12, 0.018), crimsonKnitMat);
-      vTie.position.set(0, P.shoulderY - 0.05, P.torsoTopR * 0.71);
-      rigGroup.add(vTie);
-    } else if (cfg.outfitStyle === 'onepiece') {
-      // 로맨스 리본 카라 + 플레어 스커트
-      const flareSkirt = new THREE.Mesh(
-        new THREE.CylinderGeometry(P.torsoWaistR * 1.05, P.hipR * 1.78, P.legLen * 0.56, 24),
-        outfitMat
-      );
-      flareSkirt.scale.set(1.06, 1, 0.84);
-      flareSkirt.position.y = P.hipY - P.legLen * 0.18;
-      attachMangaOutline(flareSkirt, 0.0042, bodyOutline);
-      const whiteCollar = new THREE.Mesh(new THREE.TorusGeometry(0.076, 0.018, 10, 20), whiteShirtMat);
-      whiteCollar.rotation.x = Math.PI * 0.48;
-      whiteCollar.position.set(0, P.shoulderY + 0.02, 0.02);
-      const belt = new THREE.Mesh(new THREE.CylinderGeometry(P.torsoWaistR * 1.13, P.torsoWaistR * 1.13, 0.032, 20), darkShoeMat);
-      belt.scale.set(1.08, 1, 0.74);
-      belt.position.y = P.hipY + 0.14;
-      const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.042, 0.038, 0.02), goldMat);
-      buckle.position.set(0, P.hipY + 0.14, P.torsoWaistR * 0.84);
-      rigGroup.add(flareSkirt, whiteCollar, belt, buckle);
-    } else if (cfg.outfitStyle === 'jacket_skirt') {
-      const midiSkirt = new THREE.Mesh(
-        new THREE.CylinderGeometry(P.hipR * 0.98, P.hipR * 1.38, P.legLen * 0.50, 22),
-        bottomMat
-      );
-      midiSkirt.scale.set(1.06, 1, 0.80);
-      midiSkirt.position.y = P.hipY - P.legLen * 0.17;
-      attachMangaOutline(midiSkirt, 0.0042, bodyOutline);
-      rigGroup.add(midiSkirt);
-      for (let bi = 0; bi < 3; bi++) {
-        const btn = new THREE.Mesh(new THREE.SphereGeometry(0.013, 10, 10), goldMat);
-        btn.position.set(0, P.shoulderY - 0.09 - bi * 0.105, P.torsoTopR * 0.74);
-        rigGroup.add(btn);
-      }
-    } else if (cfg.outfitStyle === 'trench') {
-      const innerTurtleneck = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.078, 0.19, 14), bottomMat);
-      innerTurtleneck.position.set(0, P.shoulderY + 0.01, 0.02);
-      const coatHem = new THREE.Mesh(
-        new THREE.CylinderGeometry(P.torsoWaistR * 1.12, P.hipR * 1.52, P.legLen * 0.58, 22, 1, true, Math.PI * 0.18, Math.PI * 1.64),
-        makeToonMat(cfg.outfitColor, 'cloth', { side: THREE.DoubleSide })
-      );
-      coatHem.rotation.y = Math.PI;
-      coatHem.scale.set(1.08, 1, 0.82);
-      coatHem.position.y = P.hipY - P.legLen * 0.16;
-      rigGroup.add(innerTurtleneck, coatHem);
-    } else if (isChoir) {
-      const robeSkirt = new THREE.Mesh(
-        new THREE.CylinderGeometry(P.torsoWaistR * 1.15, P.hipR * 1.78, P.legLen * 0.82, 24),
-        outfitMat
-      );
-      robeSkirt.scale.set(1.08, 1, 0.84);
-      robeSkirt.position.y = P.hipY - P.legLen * 0.34;
-      attachMangaOutline(robeSkirt, 0.0045, bodyOutline);
-      const stole = new THREE.Mesh(new THREE.TorusGeometry(0.135, 0.026, 8, 18), goldMat);
-      stole.rotation.x = Math.PI * 0.38;
-      stole.scale.set(1.0, 1.35, 0.55);
-      stole.position.set(0, P.shoulderY - 0.04, 0.05);
-      rigGroup.add(robeSkirt, stole);
-    }
-
-    // 3) 슬림한 팔 & 섬세한 손목·손
-    const makeArm = () => {
-      const ag = new THREE.Group();
-      const sleeveLen = P.armLen * (cfg.outfitStyle === 'onepiece' ? 0.58 : 0.88);
-      const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.043, sleeveLen, 14), outfitMat);
-      sleeve.position.y = -sleeveLen * 0.5;
-      sleeve.castShadow = true;
-      attachMangaOutline(sleeve, 0.0036, bodyOutline);
-      ag.add(sleeve);
-
-      if (sleeveLen < P.armLen) {
-        const forearmLen = P.armLen - sleeveLen;
-        const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.039, 0.033, forearmLen, 12), skinMat);
-        forearm.position.y = -sleeveLen - forearmLen * 0.5;
-        attachMangaOutline(forearm, 0.003, skinOutline);
-        ag.add(forearm);
-      }
-
-      const hand = new THREE.Mesh(new THREE.SphereGeometry(0.040, 12, 10), skinMat);
-      hand.scale.set(0.82, 1.22, 0.62);
-      hand.position.y = -P.armLen - 0.02;
-      attachMangaOutline(hand, 0.0028, skinOutline);
-      ag.add(hand);
-      return ag;
-    };
-
-    const leftArm = makeArm();
-    leftArm.position.set(-P.armX, P.shoulderY - 0.02, 0);
-    const rightArm = makeArm();
-    rightArm.position.set(P.armX, P.shoulderY - 0.02, 0);
-    rigGroup.add(leftArm, rightArm);
-
-    const cupGroup = new THREE.Group();
-    const cupBody = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.050, 0.038, 0.135, 14),
-      whiteShirtMat
-    );
-    const cupSleeve = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.052, 0.043, 0.055, 14),
-      makeToonMat('#92400e', 'cloth')
-    );
-    cupGroup.add(cupBody, cupSleeve);
-    cupGroup.position.set(0, -P.armLen - 0.01, 0.082);
-    cupGroup.visible = !!currentDrink;
-    rightArm.add(cupGroup);
-
-    // 4) 가늘고 긴 순정만화 목선 + 턱 아래 만화 그림자 + V라인 3D 헤드
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.050, 0.16, 16), skinMat);
-    neck.position.y = P.neckY;
-    attachMangaOutline(neck, 0.003, skinOutline);
-    rigGroup.add(neck);
-
-    const headGroup = new THREE.Group();
-    headGroup.position.y = P.headY;
-    rigGroup.add(headGroup);
-
-    const R = P.headR;
-    const { headGeo, faceGeo } = getAnimeVLineHeadGeometries(R, isFemale, isCute);
-
-    const headMesh = new THREE.Mesh(headGeo, skinMat);
-    headMesh.castShadow = true;
-    attachMangaOutline(headMesh, R * 0.024, skinOutline);
-    headGroup.add(headMesh);
-
-    // 양쪽 귀 + 시크 이어커프/피어싱 디테일(레퍼런스 사진 왼쪽 귀 더블 링 반영!)
-    const earW = isCute ? 0.96 : (isFemale ? 0.88 : 0.91);
-    [-1, 1].forEach((side) => {
-      const ear = new THREE.Mesh(new THREE.SphereGeometry(R * 0.17, 12, 10), skinMat);
-      ear.scale.set(0.42, 0.98, 0.62);
-      ear.position.set(side * R * earW * 0.97, -R * 0.06, -R * 0.04);
-      ear.rotation.z = side * -0.14;
-      attachMangaOutline(ear, R * 0.016, skinOutline);
-      headGroup.add(ear);
-
-      if (side === 1 && (cfg.accessory === 'earcuff' || cfg.accessory === 'horn_glasses')) {
-        const cuffMat = new THREE.MeshStandardMaterial({ color: 0x27272a, metalness: 0.85, roughness: 0.2 });
-        [0.01, -0.04].forEach((cy) => {
-          const cuff = new THREE.Mesh(new THREE.TorusGeometry(R * 0.048, R * 0.012, 8, 14), cuffMat);
-          cuff.position.set(R * earW * 1.03, cy * R - R * 0.02, -R * 0.03);
-          cuff.rotation.y = Math.PI * 0.4;
-          headGroup.add(cuff);
+        .catch((err) => {
+          vrmArrayBufferCache.delete(url);
+          throw err;
         });
+      vrmArrayBufferCache.set(url, p);
+    }
+    return vrmArrayBufferCache.get(url);
+  }
+
+  function parseVrmFromBuffer(arrayBuffer) {
+    return new Promise((resolve, reject) => {
+      if (!window.GLTFLoader || !window.VRMLoaderPlugin) {
+        reject(new Error('GLTFLoader / VRMLoaderPlugin not loaded'));
+        return;
+      }
+      const loader = new window.GLTFLoader();
+      loader.register((parser) => new window.VRMLoaderPlugin(parser));
+      loader.parse(
+        arrayBuffer.slice(0),
+        '',
+        (gltf) => {
+          const vrm = gltf.userData && gltf.userData.vrm;
+          if (!vrm) {
+            reject(new Error('Invalid VRM data'));
+            return;
+          }
+          if (window.VRMUtils) {
+            if (window.VRMUtils.removeUnnecessaryVertices) window.VRMUtils.removeUnnecessaryVertices(gltf.scene);
+            if (window.VRMUtils.removeUnnecessaryJoints) window.VRMUtils.removeUnnecessaryJoints(gltf.scene);
+            // VRM 0.x 모델이 +Z(정면)를 바라보도록 표준화!
+            if (window.VRMUtils.rotateVRM0) window.VRMUtils.rotateVRM0(vrm);
+          }
+
+          // 재질 원본 스냅샷 기록 & 그림자·절두체 컬링 안전 설정
+          const matSnapshots = [];
+          const seenMats = new Set();
+          vrm.scene.traverse((obj) => {
+            if (obj.isMesh) {
+              obj.frustumCulled = false;
+              obj.castShadow = true;
+              const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+              mats.forEach((m) => {
+                if (!m || seenMats.has(m)) return;
+                seenMats.add(m);
+                const mName = String(m.name || '');
+                matSnapshots.push({
+                  mat: m,
+                  name: mName,
+                  origMap: m.map || null,
+                  origShadeMap: m.shadeMultiplyTexture || null,
+                  origColor: m.color ? m.color.clone() : null,
+                  origShadeColor: m.shadeColorFactor ? m.shadeColorFactor.clone() : null,
+                  isHair: /Hair|FaceBrow/i.test(mName),
+                  isEyeIris: /EyeIris/i.test(mName),
+                  isSkin: /_SKIN|Face_00|Body_00/i.test(mName),
+                  isTop: /Tops|Onepiece|Jacket|Coat|AccessoryNeck/i.test(mName),
+                  isBottom: /Bottoms|Skirt|Pants/i.test(mName)
+                });
+              });
+            }
+          });
+
+          // 기본 T-포즈 즉시 해제 (자연스러운 순정만화 차렷 스탠딩 자세 초기화)
+          const hipsNode = vrm.humanoid && vrm.humanoid.getNormalizedBoneNode('hips');
+          const baseHipsY = hipsNode ? hipsNode.position.y : 0.85;
+          const lUA = vrm.humanoid && vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
+          const rUA = vrm.humanoid && vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
+          if (lUA) lUA.rotation.z = -1.22;
+          if (rUA) rUA.rotation.z = 1.22;
+          vrm.update(0.016);
+          vrm.scene.updateMatrixWorld(true);
+
+          // 눈·귀·목 3D 정밀 좌표 자동 계측 (어떤 VRM 모델이든 안경이 콧대·눈 위치에 1mm 오차 없이 장착됨!)
+          const headRaw = vrm.humanoid && vrm.humanoid.getRawBoneNode('head');
+          const lEyeRaw = vrm.humanoid && vrm.humanoid.getRawBoneNode('leftEye');
+          const rEyeRaw = vrm.humanoid && vrm.humanoid.getRawBoneNode('rightEye');
+          const neckRaw = vrm.humanoid && vrm.humanoid.getRawBoneNode('neck');
+
+          let eyeBridgeLocal = new THREE.Vector3(0, 0.055, 0.085);
+          let eyeHalfSpan = 0.032;
+
+          if (headRaw) {
+            const headWorldPos = new THREE.Vector3();
+            headRaw.getWorldPosition(headWorldPos);
+
+            if (lEyeRaw && rEyeRaw) {
+              const lw = new THREE.Vector3();
+              const rw = new THREE.Vector3();
+              lEyeRaw.getWorldPosition(lw);
+              rEyeRaw.getWorldPosition(rw);
+              eyeHalfSpan = Math.max(0.026, Math.min(0.042, lw.distanceTo(rw) * 0.5));
+              const midWorld = lw.clone().add(rw).multiplyScalar(0.5);
+              // 눈뼈 중심에서 코끝/속눈썹 앞쪽으로 살짝 전진 (+Z 월드 정면 기준)
+              const forwardWorld = new THREE.Vector3(0, 0, 1);
+              midWorld.addScaledVector(forwardWorld, 0.042);
+              eyeBridgeLocal = headRaw.worldToLocal(midWorld.clone());
+            }
+          }
+
+          const accessoryAnchor = new THREE.Group();
+          if (headRaw) headRaw.add(accessoryAnchor);
+
+          const neckAnchor = new THREE.Group();
+          if (neckRaw) neckRaw.add(neckAnchor);
+
+          // 오른손 음료 컵 앵커
+          const rHandRaw = vrm.humanoid && vrm.humanoid.getRawBoneNode('rightHand');
+          const cupGroup = new THREE.Group();
+          const cupBody = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.038, 0.029, 0.11, 14),
+            new THREE.MeshStandardMaterial({ color: 0xfafaf9, roughness: 0.35 })
+          );
+          const cupSleeve = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.040, 0.033, 0.045, 14),
+            new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.7 })
+          );
+          cupGroup.add(cupBody, cupSleeve);
+          cupGroup.visible = false;
+          if (rHandRaw) {
+            cupGroup.position.set(0, -0.04, 0.04);
+            rHandRaw.add(cupGroup);
+          }
+
+          const wrapper = new THREE.Group();
+          wrapper.add(vrm.scene);
+
+          resolve({
+            vrm,
+            wrapper,
+            matSnapshots,
+            baseHipsY,
+            headRaw,
+            eyeBridgeLocal,
+            eyeHalfSpan,
+            accessoryAnchor,
+            neckAnchor,
+            cupGroup,
+            appliedStyleKey: ''
+          });
+        },
+        (err) => reject(err)
+      );
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // 이미 로드된 VRM 인스턴스에 헤어·눈동자·피부·의상 컬러·비율·안경을 0ms 즉시 적용!
+  // -------------------------------------------------------------------------
+  function applyStyleToVrmRecord(rec, cfg) {
+    if (!rec || !rec.vrm) return;
+    const styleKey = JSON.stringify(cfg);
+    if (rec.appliedStyleKey === styleKey) return;
+    rec.appliedStyleKey = styleKey;
+
+    const isCute = cfg.bodyStyle === 'cute';
+    rec.wrapper.scale.setScalar(isCute ? 0.96 : 1.14);
+    const headNorm = rec.vrm.humanoid && rec.vrm.humanoid.getNormalizedBoneNode('head');
+    if (headNorm) {
+      headNorm.scale.setScalar(isCute ? 1.32 : 1.0);
+    }
+
+    const skinMult = new THREE.Color(SKIN_MULT_HEX[cfg.skinTone] || '#ffffff');
+
+    rec.matSnapshots.forEach((snap) => {
+      const m = snap.mat;
+      if (snap.isHair) {
+        if (cfg.hairColor && cfg.hairColor !== 'original' && HAIR_DYE_HEX[cfg.hairColor]) {
+          const hex = HAIR_DYE_HEX[cfg.hairColor];
+          if (snap.origMap) m.map = createLuminanceDyedTexture(snap.origMap, hex, 0.92);
+          if (snap.origShadeMap) m.shadeMultiplyTexture = createLuminanceDyedTexture(snap.origShadeMap, hex, 0.92);
+          if (m.color && snap.origColor) m.color.copy(snap.origColor);
+          if (m.shadeColorFactor && snap.origShadeColor) m.shadeColorFactor.copy(snap.origShadeColor);
+        } else {
+          if (snap.origMap) m.map = snap.origMap;
+          if (snap.origShadeMap) m.shadeMultiplyTexture = snap.origShadeMap;
+          if (m.color && snap.origColor) m.color.copy(snap.origColor);
+          if (m.shadeColorFactor && snap.origShadeColor) m.shadeColorFactor.copy(snap.origShadeColor);
+        }
+        m.needsUpdate = true;
+      } else if (snap.isEyeIris) {
+        if (cfg.eyeColor && cfg.eyeColor !== 'original' && EYE_DYE_HEX[cfg.eyeColor]) {
+          const hex = EYE_DYE_HEX[cfg.eyeColor];
+          if (snap.origMap) m.map = createLuminanceDyedTexture(snap.origMap, hex, 0.85);
+          if (snap.origShadeMap) m.shadeMultiplyTexture = createLuminanceDyedTexture(snap.origShadeMap, hex, 0.85);
+        } else {
+          if (snap.origMap) m.map = snap.origMap;
+          if (snap.origShadeMap) m.shadeMultiplyTexture = snap.origShadeMap;
+        }
+        m.needsUpdate = true;
+      } else if (snap.isSkin) {
+        if (m.color && snap.origColor) {
+          m.color.copy(snap.origColor).multiply(skinMult);
+        }
+      } else if (snap.isTop) {
+        if (cfg.outfitColor && cfg.outfitColor !== 'original') {
+          if (snap.origMap) m.map = createLuminanceDyedTexture(snap.origMap, cfg.outfitColor, 0.88);
+          if (snap.origShadeMap) m.shadeMultiplyTexture = createLuminanceDyedTexture(snap.origShadeMap, cfg.outfitColor, 0.88);
+        } else {
+          if (snap.origMap) m.map = snap.origMap;
+          if (snap.origShadeMap) m.shadeMultiplyTexture = snap.origShadeMap;
+        }
+        m.needsUpdate = true;
+      } else if (snap.isBottom) {
+        if (cfg.bottomColor && cfg.bottomColor !== 'original') {
+          if (snap.origMap) m.map = createLuminanceDyedTexture(snap.origMap, cfg.bottomColor, 0.88);
+          if (snap.origShadeMap) m.shadeMultiplyTexture = createLuminanceDyedTexture(snap.origShadeMap, cfg.bottomColor, 0.88);
+        } else {
+          if (snap.origMap) m.map = snap.origMap;
+          if (snap.origShadeMap) m.shadeMultiplyTexture = snap.origShadeMap;
+        }
+        m.needsUpdate = true;
       }
     });
 
-    // 1024px 순정만화 눈동자·속눈썹·입매 데칼 (기본 열림 + 깜빡임 텍스처 스왑용 참조 보관)
-    const openFaceTex = createStylizedFaceTexture(cfg, false);
-    const blinkFaceTex = createStylizedFaceTexture(cfg, true);
-    const faceDecalMat = new THREE.MeshBasicMaterial({
-      map: openFaceTex,
-      transparent: true,
-      alphaTest: 0.01,
-      depthWrite: false
-    });
-    const faceShell = new THREE.Mesh(faceGeo, faceDecalMat);
-    headGroup.add(faceShell);
-
-    // 5) 한 올씩 갈라지는 8종 3D 순정만화 헤어 장착
-    buildAnimeHairStyle(headGroup, R, cfg, isCute, hairHex, outfitMat);
-
-    // 6) 순정만화 안경 / 목걸이 / 크로스백 장착
-    if (cfg.accessory === 'horn_glasses') {
-      addAnimeGlassesToHead(headGroup, R, true, isCute);
-    } else if (cfg.accessory === 'wire_glasses') {
-      addAnimeGlassesToHead(headGroup, R, false, isCute);
-    } else if (cfg.accessory === 'necklace') {
-      const chain = new THREE.Mesh(new THREE.TorusGeometry(0.064, 0.005, 8, 20, Math.PI), silverMat);
-      chain.rotation.x = Math.PI * 0.82;
-      chain.position.set(0, P.shoulderY + 0.02, 0.075);
-      const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.011, 0.046, 0.008), silverMat);
-      crossV.position.set(0, P.shoulderY - 0.05, P.torsoTopR * 0.76);
-      const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.030, 0.010, 0.008), silverMat);
-      crossH.position.set(0, P.shoulderY - 0.04, P.torsoTopR * 0.76);
-      rigGroup.add(chain, crossV, crossH);
-    } else if (cfg.accessory === 'crossbag') {
-      const bagLeather = makeToonMat('#5c341d', 'cloth');
-      const strap = new THREE.Mesh(new THREE.TorusGeometry(P.torsoTopR * 1.36, 0.013, 8, 24), bagLeather);
-      strap.rotation.y = Math.PI * 0.5;
-      strap.rotation.x = 0.55;
-      strap.scale.set(0.60, 1.25, 1.0);
-      strap.position.set(0, P.hipY + P.torsoH * 0.44, 0);
-      const pouch = new THREE.Mesh(new THREE.BoxGeometry(0.105, 0.155, 0.19), bagLeather);
-      pouch.position.set(P.hipR * 1.12, P.hipY + 0.04, 0.04);
-      attachMangaOutline(pouch, 0.0035, bodyOutline);
-      rigGroup.add(strap, pouch);
+    // 안경 · 이어커프 · 십자가 목걸이 갱신
+    while (rec.accessoryAnchor.children.length > 0) {
+      rec.accessoryAnchor.remove(rec.accessoryAnchor.children[0]);
+    }
+    while (rec.neckAnchor.children.length > 0) {
+      rec.neckAnchor.remove(rec.neckAnchor.children[0]);
     }
 
-    return {
-      rigGroup,
-      headGroup,
-      leftLeg,
-      rightLeg,
-      leftArm,
-      rightArm,
-      cupGroup,
-      faceDecalMat,
-      openFaceTex,
-      blinkFaceTex,
-      heightTop: P.heightTop,
-      cfg
-    };
+    if (cfg.accessory === 'horn_glasses' || cfg.accessory === 'wire_glasses') {
+      const isHorn = cfg.accessory === 'horn_glasses';
+      const frameMat = new THREE.MeshStandardMaterial({
+        color: isHorn ? 0x181924 : 0xd4af37,
+        roughness: isHorn ? 0.25 : 0.20,
+        metalness: isHorn ? 0.15 : 0.82
+      });
+      const lensMat = new THREE.MeshBasicMaterial({
+        color: 0xe0f2fe,
+        transparent: true,
+        opacity: 0.16,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+      const glareMat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.45,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+
+      const gRoot = new THREE.Group();
+      // headRaw 로컬 좌표계의 눈 중심점으로 정확히 이동, 월드 +Z 정면과 정렬되도록 쿼터니언 보정
+      gRoot.position.copy(rec.eyeBridgeLocal);
+      if (rec.headRaw) {
+        const headQuat = new THREE.Quaternion();
+        rec.headRaw.getWorldQuaternion(headQuat);
+        gRoot.quaternion.copy(headQuat.invert());
+      }
+
+      const span = rec.eyeHalfSpan || 0.032;
+      const fw = span * 1.48;
+      const fh = span * 0.96;
+      const th = isHorn ? 0.0046 : 0.0024;
+
+      [-1, 1].forEach((side) => {
+        const rim = new THREE.Group();
+        rim.position.set(side * span * 1.02, -0.002, 0);
+        rim.rotation.z = side * -0.03;
+
+        const topB = new THREE.Mesh(new THREE.BoxGeometry(fw + th, th * 1.35, th * 1.1), frameMat);
+        topB.position.y = fh * 0.5;
+        const botB = new THREE.Mesh(new THREE.BoxGeometry(fw * 0.94, th * (isHorn ? 0.85 : 0.55), th * 0.9), frameMat);
+        botB.position.y = -fh * 0.5;
+        const outB = new THREE.Mesh(new THREE.BoxGeometry(th, fh, th), frameMat);
+        outB.position.x = side * fw * 0.48;
+        const inB = new THREE.Mesh(new THREE.BoxGeometry(th * 0.85, fh * 0.92, th * 0.9), frameMat);
+        inB.position.x = -side * fw * 0.46;
+
+        const lens = new THREE.Mesh(new THREE.PlaneGeometry(fw * 0.88, fh * 0.88), lensMat);
+        const glare = new THREE.Mesh(new THREE.PlaneGeometry(fw * 0.16, fh * 0.76), glareMat);
+        glare.position.set(-fw * 0.15, 0, 0.001);
+        glare.rotation.z = -0.38;
+
+        const temple = new THREE.Mesh(new THREE.BoxGeometry(th * 0.75, th * 0.85, 0.085), frameMat);
+        temple.position.set(side * fw * 0.50, fh * 0.20, -0.042);
+
+        rim.add(topB, botB, outB, inB, lens, glare, temple);
+        gRoot.add(rim);
+      });
+
+      const bridge = new THREE.Mesh(new THREE.BoxGeometry(span * 0.58, th, th), frameMat);
+      bridge.position.set(0, fh * 0.28, 0.001);
+      gRoot.add(bridge);
+      rec.accessoryAnchor.add(gRoot);
+    }
+
+    if (cfg.accessory === 'earcuff' || cfg.accessory === 'horn_glasses') {
+      const cuffGroup = new THREE.Group();
+      cuffGroup.position.copy(rec.eyeBridgeLocal);
+      if (rec.headRaw) {
+        const headQuat = new THREE.Quaternion();
+        rec.headRaw.getWorldQuaternion(headQuat);
+        cuffGroup.quaternion.copy(headQuat.invert());
+      }
+      const cuffMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.88, roughness: 0.18 });
+      const earX = (rec.eyeHalfSpan || 0.032) * 2.55;
+      [-0.006, -0.016].forEach((cy) => {
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(0.0065, 0.0016, 8, 14), cuffMat);
+        ring.position.set(earX, cy, -0.048);
+        ring.rotation.y = Math.PI * 0.42;
+        cuffGroup.add(ring);
+      });
+      rec.accessoryAnchor.add(cuffGroup);
+    }
+
+    if (cfg.accessory === 'necklace') {
+      const nGroup = new THREE.Group();
+      if (rec.neckAnchor.parent) {
+        const nq = new THREE.Quaternion();
+        rec.neckAnchor.parent.getWorldQuaternion(nq);
+        nGroup.quaternion.copy(nq.invert());
+      }
+      const silverMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.88, roughness: 0.16 });
+      const chain = new THREE.Mesh(new THREE.TorusGeometry(0.058, 0.0022, 8, 22, Math.PI), silverMat);
+      chain.rotation.x = Math.PI * 0.78;
+      chain.position.set(0, -0.055, 0.048);
+      const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.028, 0.004), silverMat);
+      crossV.position.set(0, -0.102, 0.078);
+      const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.006, 0.004), silverMat);
+      crossH.position.set(0, -0.096, 0.078);
+      nGroup.add(chain, crossV, crossH);
+      rec.neckAnchor.add(nGroup);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // VRM 페이셜 표정(BlendShape) & 휴머노이드 본(스탠딩·걷기·앉기·무릎기도) 실시간 애니메이터
+  // -------------------------------------------------------------------------
+  function animateVrmRecord(rec, opts, dt, elapsed) {
+    if (!rec || !rec.vrm) return;
+    const vrm = rec.vrm;
+    const expr = (opts.cfg && opts.cfg.expression) || 'smile';
+    const pose = opts.pose || 'stand';
+    const moving = !!opts.moving;
+    const walkPhase = opts.walkPhase || 0;
+    const sipTimer = opts.sipTimer || 0;
+    const blinkOffset = opts.blinkOffset || 0;
+
+    // 1) 페이셜 표정 + 자연스러운 눈 깜빡임
+    const em = vrm.expressionManager;
+    if (em) {
+      ['happy', 'relaxed', 'angry', 'sad', 'surprised', 'blink', 'blinkLeft', 'blinkRight'].forEach((k) => {
+        try { em.setValue(k, 0); } catch {}
+      });
+
+      const autoBlink = ((elapsed + blinkOffset) % 4.3) > 4.16 ? 1.0 : 0.0;
+
+      try {
+        if (expr === 'joy') {
+          em.setValue('happy', 1.0);
+        } else if (expr === 'pray') {
+          em.setValue('blink', 1.0);
+          em.setValue('relaxed', 0.45);
+        } else if (expr === 'grace') {
+          em.setValue('surprised', 0.35);
+          em.setValue('relaxed', 0.65);
+          if (autoBlink) em.setValue('blink', 1.0);
+        } else if (expr === 'wink') {
+          em.setValue('blinkRight', 1.0);
+          em.setValue('relaxed', 0.65);
+        } else if (expr === 'calm') {
+          if (autoBlink) em.setValue('blink', 1.0);
+        } else {
+          // 기본 smile: 다정한 순정만화 미소
+          em.setValue('relaxed', 0.78);
+          em.setValue('happy', 0.16);
+          if (autoBlink) em.setValue('blink', 1.0);
+        }
+      } catch {}
+    }
+
+    // 2) 휴머노이드 전신 본 모션
+    const h = vrm.humanoid;
+    if (h) {
+      const hips = h.getNormalizedBoneNode('hips');
+      const spine = h.getNormalizedBoneNode('spine');
+      const neck = h.getNormalizedBoneNode('neck');
+      const head = h.getNormalizedBoneNode('head');
+      const lUA = h.getNormalizedBoneNode('leftUpperArm');
+      const rUA = h.getNormalizedBoneNode('rightUpperArm');
+      const lLA = h.getNormalizedBoneNode('leftLowerArm');
+      const rLA = h.getNormalizedBoneNode('rightLowerArm');
+      const lUL = h.getNormalizedBoneNode('leftUpperLeg');
+      const rUL = h.getNormalizedBoneNode('rightUpperLeg');
+      const lLL = h.getNormalizedBoneNode('leftLowerLeg');
+      const rLL = h.getNormalizedBoneNode('rightLowerLeg');
+
+      const breathe = Math.sin(elapsed * 2.1 + blinkOffset) * 0.022;
+
+      if (pose === 'sit') {
+        if (hips) hips.position.y = rec.baseHipsY - 0.34;
+        if (spine) spine.rotation.set(0.03 + breathe * 0.4, 0, 0);
+        if (neck) neck.rotation.set(0, 0, Math.sin(elapsed * 1.1 + blinkOffset) * 0.03);
+        if (head) head.rotation.set(0, 0, 0);
+        if (lUL) lUL.rotation.set(1.42, 0.06, 0);
+        if (rUL) rUL.rotation.set(1.42, -0.06, 0);
+        if (lLL) lLL.rotation.set(-1.42, 0, 0);
+        if (rLL) rLL.rotation.set(-1.42, 0, 0);
+        if (lUA) lUA.rotation.set(0.28, 0, -1.16);
+        if (rUA) rUA.rotation.set(sipTimer > 0 ? 1.05 : 0.28, 0, 1.16);
+        if (lLA) lLA.rotation.set(0, -0.35, 0);
+        if (rLA) rLA.rotation.set(0, sipTimer > 0 ? 1.15 : 0.35, 0);
+      } else if (pose === 'kneel') {
+        // 강단 앞 무릎 꿇고 두 손 모아 간절히 기도하는 자세
+        if (hips) hips.position.y = rec.baseHipsY - 0.42;
+        if (spine) spine.rotation.set(-0.14, 0, 0);
+        if (neck) neck.rotation.set(-0.26, 0, 0);
+        if (head) head.rotation.set(-0.12, 0, 0);
+        if (lUL) lUL.rotation.set(0.28, 0.04, 0);
+        if (rUL) rUL.rotation.set(0.28, -0.04, 0);
+        if (lLL) lLL.rotation.set(-2.18, 0, 0);
+        if (rLL) rLL.rotation.set(-2.18, 0, 0);
+        if (lUA) lUA.rotation.set(0.68, 0.38, -0.95);
+        if (rUA) rUA.rotation.set(0.68, -0.38, 0.95);
+        if (lLA) lLA.rotation.set(0, -1.25, 0);
+        if (rLA) rLA.rotation.set(0, 1.25, 0);
+      } else if (moving) {
+        // 경쾌하고 자연스러운 순정만화 워킹 사이클
+        const sw = Math.sin(walkPhase) * 0.56;
+        if (hips) hips.position.y = rec.baseHipsY + Math.abs(Math.sin(walkPhase * 2)) * 0.032;
+        if (spine) spine.rotation.set(-0.04, Math.sin(walkPhase) * 0.06, 0);
+        if (neck) neck.rotation.set(0, 0, 0);
+        if (head) head.rotation.set(0, 0, 0);
+        if (lUL) lUL.rotation.set(sw, 0, 0);
+        if (rUL) rUL.rotation.set(-sw, 0, 0);
+        if (lLL) lLL.rotation.set(-Math.max(0, -sw) * 0.85 - 0.08, 0, 0);
+        if (rLL) rLL.rotation.set(-Math.max(0, sw) * 0.85 - 0.08, 0, 0);
+        if (lUA) lUA.rotation.set(-sw * 0.55, 0, -1.18);
+        if (rUA) rUA.rotation.set(sipTimer > 0 ? 1.05 : sw * 0.55, 0, 1.18);
+        if (lLA) lLA.rotation.set(0, -0.22, 0);
+        if (rLA) rLA.rotation.set(0, sipTimer > 0 ? 1.15 : 0.22, 0);
+      } else {
+        // 순정만화 아이들 스탠딩 숨쉬기 & 고개 살랑임
+        if (hips) hips.position.y = rec.baseHipsY + breathe * 0.35;
+        if (spine) spine.rotation.set(breathe * 0.5, Math.sin(elapsed * 0.9 + blinkOffset) * 0.025, 0);
+        if (neck) neck.rotation.set(0, Math.sin(elapsed * 0.7 + blinkOffset) * 0.035, Math.sin(elapsed * 1.1 + blinkOffset) * 0.028);
+        if (head) head.rotation.set(0, 0, 0);
+        if (lUL) lUL.rotation.set(0, 0.02, -0.02);
+        if (rUL) rUL.rotation.set(0, -0.02, 0.02);
+        if (lLL) lLL.rotation.set(0, 0, 0);
+        if (rLL) rLL.rotation.set(0, 0, 0);
+        if (lUA) lUA.rotation.set(0.04, 0, -1.22 - breathe * 0.4);
+        if (rUA) rUA.rotation.set(sipTimer > 0 ? 1.05 : 0.04, 0, 1.22 + breathe * 0.4);
+        if (lLA) lLA.rotation.set(0, -0.16, 0);
+        if (rLA) rLA.rotation.set(0, sipTimer > 0 ? 1.15 : 0.16, 0);
+      }
+    }
+
+    // SpringBone 머리카락·옷자락 물리 연산을 포함한 VRM 프레임 업데이트!
+    vrm.update(dt);
   }
 
   const ZONE_META = {
@@ -1517,7 +817,11 @@
       this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
       this.renderer.toneMappingExposure = 1.0;
-      if (THREE.sRGBEncoding) this.renderer.outputEncoding = THREE.sRGBEncoding;
+      if ('outputColorSpace' in this.renderer && THREE.SRGBColorSpace) {
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+      } else if (THREE.sRGBEncoding) {
+        this.renderer.outputEncoding = THREE.sRGBEncoding;
+      }
 
       this.pbr = new window.ArchitecturalPBR(this.renderer);
       this.scene.environment = this.pbr.envMap;
@@ -1529,7 +833,7 @@
 
       this.boardTexture = new THREE.CanvasTexture(this.boardCanvas);
       this.boardTexture.minFilter = THREE.LinearFilter;
-      if (THREE.sRGBEncoding) this.boardTexture.encoding = THREE.sRGBEncoding;
+      applySrgbColorSpace(this.boardTexture);
       this.boardMesh = null;
 
       const ringGeo = new THREE.RingGeometry(0.38, 0.52, 32);
@@ -1588,8 +892,26 @@
       return resolveAvatarConfig(presetId, rawCfg);
     }
 
-    buildPreviewRig(presetId, rawCfg) {
-      return buildStylizedAvatarRig(presetId, rawCfg, '');
+    setCustomUserVrmBuffer(buffer) {
+      customUserVrmBuffer = buffer;
+    }
+
+    async loadVrmRecordForStudio(presetId, rawCfg) {
+      const cfg = resolveAvatarConfig(presetId, rawCfg);
+      const buf = await fetchVrmBufferCached(cfg.vrmModel);
+      const rec = await parseVrmFromBuffer(buf);
+      applyStyleToVrmRecord(rec, cfg);
+      return rec;
+    }
+
+    applyStyleToStudioVrm(rec, presetId, rawCfg) {
+      const cfg = resolveAvatarConfig(presetId, rawCfg);
+      applyStyleToVrmRecord(rec, cfg);
+    }
+
+    animateStudioVrm(rec, presetId, rawCfg, dt, elapsed) {
+      const cfg = resolveAvatarConfig(presetId, rawCfg);
+      animateVrmRecord(rec, { cfg, pose: 'stand', moving: false, blinkOffset: 0.5 }, dt, elapsed);
     }
 
     getZoneMeta(zoneId) {
@@ -1706,8 +1028,43 @@
     }
 
     // -----------------------------------------------------------------------
-    // PBR 스타일리시 아바타 생성 (7.5등신 슬림 체형 & 귀여운 캐주얼 체형 모두 지원)
+    // 정통 Pixiv VRoid (.vrm) 3D 순정만화 아바타 생성 · 로드 · 스타일 동기화
     // -----------------------------------------------------------------------
+    _mountVrmOntoAvatar(av) {
+      const cfg = av.avatarConfig;
+      const targetModel = cfg.vrmModel || 'fumiriya';
+      const loadTicket = ++av.vrmLoadTicket;
+
+      if (av.loadedVrmModelKey === targetModel && av.vrmRecord) {
+        applyStyleToVrmRecord(av.vrmRecord, cfg);
+        av.vrmRecord.cupGroup.visible = !!av.drink;
+        av.heightTop = cfg.bodyStyle === 'cute' ? 1.78 : 2.04;
+        return;
+      }
+
+      fetchVrmBufferCached(targetModel)
+        .then((buf) => parseVrmFromBuffer(buf))
+        .then((rec) => {
+          if (loadTicket !== av.vrmLoadTicket || !this.avatars.has(av.id)) return;
+          if (av.vrmRecord && av.vrmRecord.wrapper) {
+            av.bodyPivot.remove(av.vrmRecord.wrapper);
+          }
+          if (av.loadingHolo) {
+            av.bodyPivot.remove(av.loadingHolo);
+            av.loadingHolo = null;
+          }
+          av.vrmRecord = rec;
+          av.loadedVrmModelKey = targetModel === 'custom' ? `custom_${Date.now()}` : targetModel;
+          applyStyleToVrmRecord(rec, av.avatarConfig);
+          rec.cupGroup.visible = !!av.drink;
+          av.heightTop = av.avatarConfig.bodyStyle === 'cute' ? 1.78 : 2.04;
+          av.bodyPivot.add(rec.wrapper);
+        })
+        .catch((err) => {
+          console.warn('[VRM Load Warning]', targetModel, err);
+        });
+    }
+
     createAvatar(id, info) {
       if (this.avatars.has(id)) {
         this.updateAvatarInfo(id, info);
@@ -1720,7 +1077,7 @@
 
       let myRing = null;
       if (info.isMe) {
-        const rg = new THREE.RingGeometry(0.46, 0.56, 32);
+        const rg = new THREE.RingGeometry(0.42, 0.52, 32);
         rg.rotateX(-Math.PI / 2);
         myRing = new THREE.Mesh(
           rg,
@@ -1730,9 +1087,16 @@
         root.add(myRing);
       }
 
+      // VRM 로딩 전 0.8초간 보이는 은은한 빛 기둥 실루엣
+      const loadingHolo = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.18, 0.24, 1.55, 16),
+        new THREE.MeshBasicMaterial({ color: 0xfde68a, transparent: true, opacity: 0.18 })
+      );
+      loadingHolo.position.y = 0.80;
+      bodyPivot.add(loadingHolo);
+
       const presetId = info.presetId || 'webtoon_boy';
-      const built = buildStylizedAvatarRig(presetId, info.avatarConfig, info.drink || '');
-      bodyPivot.add(built.rigGroup);
+      const resolvedCfg = resolveAvatarConfig(presetId, info.avatarConfig);
 
       const labelEl = document.createElement('div');
       labelEl.className = 'pointer-events-none absolute -translate-x-1/2 -translate-y-full flex flex-col items-center gap-1 z-10';
@@ -1759,26 +1123,19 @@
         isMe: !!info.isMe,
         isNpc: !!info.isNpc,
         presetId,
-        avatarConfig: built.cfg,
-        configSig: avatarConfigSignature(presetId, info.avatarConfig),
+        avatarConfig: resolvedCfg,
+        vrmRecord: null,
+        loadedVrmModelKey: '',
+        vrmLoadTicket: 0,
+        loadingHolo,
         pose: info.pose || 'stand',
         drink: info.drink || '',
         sipTimer: 0,
         micWave: false,
         root,
         bodyPivot,
-        rigGroup: built.rigGroup,
-        headGroup: built.headGroup,
-        leftLeg: built.leftLeg,
-        rightLeg: built.rightLeg,
-        leftArm: built.leftArm,
-        rightArm: built.rightArm,
-        cupGroup: built.cupGroup,
-        faceDecalMat: built.faceDecalMat,
-        openFaceTex: built.openFaceTex,
-        blinkFaceTex: built.blinkFaceTex,
         blinkOffset: Math.random() * 4.5,
-        heightTop: built.heightTop,
+        heightTop: resolvedCfg.bodyStyle === 'cute' ? 1.78 : 2.04,
         myRing,
         labelEl,
         camWrapEl: labelEl.querySelector('.av-cam-wrap'),
@@ -1804,6 +1161,7 @@
       this.avatarGroup.add(root);
       this.avatars.set(id, av);
       this._refreshTagText(av);
+      this._mountVrmOntoAvatar(av);
       if (info.bubble) this.showBubble(id, info.bubble, 4.5);
       return av;
     }
@@ -1819,28 +1177,13 @@
       if (!av) return;
       if (info.name) av.name = info.name;
 
-      const nextPreset = info.presetId || av.presetId;
-      const nextCfgInput = info.avatarConfig !== undefined ? info.avatarConfig : av.avatarConfig;
-      const nextSig = avatarConfigSignature(nextPreset, nextCfgInput);
-
-      if (nextSig !== av.configSig) {
-        if (av.rigGroup) av.bodyPivot.remove(av.rigGroup);
-        const built = buildStylizedAvatarRig(nextPreset, nextCfgInput, info.drink !== undefined ? info.drink : av.drink);
-        av.bodyPivot.add(built.rigGroup);
+      if (info.presetId !== undefined || info.avatarConfig !== undefined) {
+        const nextPreset = info.presetId || av.presetId;
+        const nextCfg = resolveAvatarConfig(nextPreset, info.avatarConfig !== undefined ? info.avatarConfig : av.avatarConfig);
         av.presetId = nextPreset;
-        av.avatarConfig = built.cfg;
-        av.configSig = nextSig;
-        av.rigGroup = built.rigGroup;
-        av.headGroup = built.headGroup;
-        av.leftLeg = built.leftLeg;
-        av.rightLeg = built.rightLeg;
-        av.leftArm = built.leftArm;
-        av.rightArm = built.rightArm;
-        av.cupGroup = built.cupGroup;
-        av.faceDecalMat = built.faceDecalMat;
-        av.openFaceTex = built.openFaceTex;
-        av.blinkFaceTex = built.blinkFaceTex;
-        av.heightTop = built.heightTop;
+        av.avatarConfig = nextCfg;
+        if (info.forceReloadVrm) av.loadedVrmModelKey = '';
+        this._mountVrmOntoAvatar(av);
       }
 
       if (typeof info.x === 'number') av.tx = info.x;
@@ -1850,7 +1193,9 @@
       if (info.pose) av.pose = info.pose;
       if (info.drink !== undefined) {
         av.drink = info.drink;
-        if (av.cupGroup) av.cupGroup.visible = !!av.drink;
+        if (av.vrmRecord && av.vrmRecord.cupGroup) {
+          av.vrmRecord.cupGroup.visible = !!av.drink;
+        }
       }
       if (info.micWave !== undefined) av.micWave = info.micWave;
       this._refreshTagText(av);
@@ -3393,55 +2738,26 @@
 
         if (av.sipTimer > 0) av.sipTimer = Math.max(0, av.sipTimer - dt);
 
-        // 자연스러운 순정만화 눈 깜빡임 애니메이션 (4.2초 주기로 0.14초 깜빡임)
-        if (av.faceDecalMat && av.openFaceTex && av.blinkFaceTex) {
-          const blinkCycle = (elapsed + (av.blinkOffset || 0)) % 4.2;
-          const shouldBlink = blinkCycle > 4.06;
-          const targetTex = shouldBlink ? av.blinkFaceTex : av.openFaceTex;
-          if (av.faceDecalMat.map !== targetTex) {
-            av.faceDecalMat.map = targetTex;
-            av.faceDecalMat.needsUpdate = true;
-          }
-        }
+        const moving = av.isMe
+          ? !!(this.walkTarget || this.keys['w'] || this.keys['a'] || this.keys['s'] || this.keys['d'] || this.keys['arrowup'] || this.keys['arrowdown'] || this.keys['arrowleft'] || this.keys['arrowright'] || Math.hypot(this.joyVec.x, this.joyVec.y) > 0.08)
+          : Math.hypot(av.tx - av.x, av.tz - av.z) > 0.04;
 
-        const isModelBody = !av.avatarConfig || av.avatarConfig.bodyStyle !== 'cute';
-        if (av.pose === 'sit') {
-          av.bodyPivot.position.y = isModelBody ? -0.36 : -0.18;
-          av.leftLeg.rotation.x = -Math.PI * 0.46;
-          av.rightLeg.rotation.x = -Math.PI * 0.46;
-          av.leftArm.rotation.x = -0.28;
-          av.rightArm.rotation.x = av.sipTimer > 0 ? -1.35 : -0.28;
-          av.headGroup.rotation.x = 0;
-          av.headGroup.rotation.z = Math.sin(elapsed * 1.2 + (av.blinkOffset || 0)) * 0.03;
-        } else if (av.pose === 'kneel') {
-          av.bodyPivot.position.y = isModelBody ? -0.44 : -0.32;
-          av.leftLeg.rotation.x = 1.38;
-          av.rightLeg.rotation.x = 1.38;
-          av.leftArm.rotation.x = -0.95;
-          av.rightArm.rotation.x = -0.95;
-          av.headGroup.rotation.x = 0.25;
-          av.headGroup.rotation.z = 0;
-        } else {
-          av.headGroup.rotation.x = 0;
-          av.headGroup.rotation.z = Math.sin(elapsed * 1.3 + (av.blinkOffset || 0)) * 0.025;
-          const moving = av.isMe
-            ? !!(this.walkTarget || this.keys['w'] || this.keys['a'] || this.keys['s'] || this.keys['d'] || this.keys['arrowup'] || this.keys['arrowdown'] || this.keys['arrowleft'] || this.keys['arrowright'] || Math.hypot(this.joyVec.x, this.joyVec.y) > 0.08)
-            : Math.hypot(av.tx - av.x, av.tz - av.z) > 0.04;
-
-          if (moving) {
-            const sw = Math.sin(av.walkPhase) * 0.60;
-            av.bodyPivot.position.y = Math.abs(Math.sin(av.walkPhase * 2)) * 0.06;
-            av.leftLeg.rotation.x = sw;
-            av.rightLeg.rotation.x = -sw;
-            av.leftArm.rotation.x = -sw * 0.72;
-            av.rightArm.rotation.x = av.sipTimer > 0 ? -1.35 : sw * 0.72;
-          } else {
-            av.bodyPivot.position.y = Math.sin(elapsed * 2 + (av.isMe ? 0 : 1)) * 0.02;
-            av.leftLeg.rotation.x *= 0.82;
-            av.rightLeg.rotation.x *= 0.82;
-            av.leftArm.rotation.x *= 0.82;
-            av.rightArm.rotation.x = av.sipTimer > 0 ? -1.35 : av.rightArm.rotation.x * 0.82;
-          }
+        if (av.vrmRecord) {
+          animateVrmRecord(
+            av.vrmRecord,
+            {
+              cfg: av.avatarConfig,
+              pose: av.pose,
+              moving: av.pose === 'stand' && moving,
+              walkPhase: av.walkPhase,
+              sipTimer: av.sipTimer,
+              blinkOffset: av.blinkOffset
+            },
+            dt,
+            elapsed
+          );
+        } else if (av.loadingHolo) {
+          av.loadingHolo.material.opacity = 0.14 + Math.sin(elapsed * 5) * 0.06;
         }
 
         if (av.myRing) {

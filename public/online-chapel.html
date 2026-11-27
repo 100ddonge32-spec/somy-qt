@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0B0F19" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -15,11 +17,26 @@
   <link rel="apple-touch-icon" href="/somy.png" />
   <title>소미 3D 온라인 캠퍼스 — 예배당 · 사랑방 · 성경통독방 · 큐티방 · 루프탑카페</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/",
+      "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@2.0.6/lib/three-vrm.module.min.js"
+    }
+  }
+  </script>
   <style>
-    * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
-    html, body {
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
       margin: 0;
       padding: 0;
       width: 100%;
@@ -29,12 +46,32 @@
       color: #f8fafc;
       font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", sans-serif;
     }
-    input, textarea, select { user-select: text; -webkit-user-select: text; font-size: 16px; }
-    @media (min-width: 640px) {
-      input, textarea, select { font-size: 13px; }
+
+    input,
+    textarea,
+    select {
+      user-select: text;
+      -webkit-user-select: text;
+      font-size: 16px;
     }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    @media (min-width: 640px) {
+
+      input,
+      textarea,
+      select {
+        font-size: 13px;
+      }
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
 
     /* =====================================================================
        실물 성경전서(HOLY BIBLE) 가죽 표지 · 금박 · 양면 책장 펼침 스타일
@@ -50,11 +87,13 @@
         inset 0 0 0 2px rgba(255, 223, 128, 0.16);
       perspective: 1400px;
     }
+
     @media (min-width: 768px) {
       .holy-bible-cover {
         padding: 12px 15px 14px;
       }
     }
+
     /* 진홍색 성경 가늠끈 리본 */
     .holy-bible-ribbon {
       position: absolute;
@@ -69,6 +108,7 @@
       z-index: 12;
       pointer-events: none;
     }
+
     .holy-bible-pages {
       position: relative;
       display: flex;
@@ -82,10 +122,12 @@
       overflow: hidden;
       transform-origin: center center;
     }
+
     /* 중앙 책 제본선 입체 그림자 (PC/태블릿 양면 펼침 시 표시) */
     .holy-bible-gutter {
       display: none;
     }
+
     @media (min-width: 768px) {
       .holy-bible-gutter {
         display: block;
@@ -95,52 +137,85 @@
         left: 50%;
         width: 34px;
         transform: translateX(-50%);
-        background: linear-gradient(
-          90deg,
-          rgba(92, 68, 42, 0.0) 0%,
-          rgba(82, 58, 34, 0.14) 38%,
-          rgba(48, 32, 18, 0.30) 50%,
-          rgba(82, 58, 34, 0.14) 62%,
-          rgba(92, 68, 42, 0.0) 100%
-        );
+        background: linear-gradient(90deg,
+            rgba(92, 68, 42, 0.0) 0%,
+            rgba(82, 58, 34, 0.14) 38%,
+            rgba(48, 32, 18, 0.30) 50%,
+            rgba(82, 58, 34, 0.14) 62%,
+            rgba(92, 68, 42, 0.0) 100%);
         pointer-events: none;
         z-index: 5;
       }
     }
+
     .bible-page-sheet {
       font-family: "AppleMyungjo", "Nanum Myeongjo", "Batang", "Noto Serif KR", Georgia, serif;
       color: #231b14;
       user-select: text;
       -webkit-user-select: text;
     }
+
     .bible-verse-item {
       padding: 4px 6px;
       border-radius: 8px;
       transition: background-color 0.2s ease, box-shadow 0.2s ease;
       cursor: pointer;
     }
+
     .bible-verse-item:hover {
       background: rgba(217, 119, 6, 0.09);
     }
+
     .verse-reading-active {
       background: linear-gradient(90deg, rgba(251, 191, 36, 0.38), rgba(253, 230, 138, 0.52)) !important;
       box-shadow: inset 3px 0 0 #b45309;
       font-weight: 700;
     }
+
     @keyframes flipNextAnim {
-      0% { transform: rotateY(0deg); opacity: 1; }
-      45% { transform: rotateY(-12deg) scale(0.985); opacity: 0.82; }
-      100% { transform: rotateY(0deg); opacity: 1; }
+      0% {
+        transform: rotateY(0deg);
+        opacity: 1;
+      }
+
+      45% {
+        transform: rotateY(-12deg) scale(0.985);
+        opacity: 0.82;
+      }
+
+      100% {
+        transform: rotateY(0deg);
+        opacity: 1;
+      }
     }
+
     @keyframes flipPrevAnim {
-      0% { transform: rotateY(0deg); opacity: 1; }
-      45% { transform: rotateY(12deg) scale(0.985); opacity: 0.82; }
-      100% { transform: rotateY(0deg); opacity: 1; }
+      0% {
+        transform: rotateY(0deg);
+        opacity: 1;
+      }
+
+      45% {
+        transform: rotateY(12deg) scale(0.985);
+        opacity: 0.82;
+      }
+
+      100% {
+        transform: rotateY(0deg);
+        opacity: 1;
+      }
     }
-    .page-flip-next { animation: flipNextAnim 0.36s cubic-bezier(0.22, 0.61, 0.36, 1); }
-    .page-flip-prev { animation: flipPrevAnim 0.36s cubic-bezier(0.22, 0.61, 0.36, 1); }
+
+    .page-flip-next {
+      animation: flipNextAnim 0.36s cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
+
+    .page-flip-prev {
+      animation: flipPrevAnim 0.36s cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
   </style>
 </head>
+
 <body>
   <div id="appRoot" class="relative w-full h-full overflow-hidden bg-[#0B0F19]">
 
@@ -157,26 +232,33 @@
     <div id="avatarOverlayLayer" class="pointer-events-none absolute inset-0 overflow-hidden z-10"></div>
 
     <!-- 1. 상단 글로벌 HUD 바 (3개 시각적 그룹으로 깔끔하게 정돈 + 통합 게시판 원터치 버튼) -->
-    <div class="absolute top-2.5 sm:top-3.5 inset-x-2.5 sm:inset-x-4 flex flex-wrap items-center justify-between gap-2 pointer-events-none z-20" style="padding-top: env(safe-area-inset-top, 0px);">
+    <div
+      class="absolute top-2.5 sm:top-3.5 inset-x-2.5 sm:inset-x-4 flex flex-wrap items-center justify-between gap-2 pointer-events-none z-20"
+      style="padding-top: env(safe-area-inset-top, 0px);">
       <!-- 그룹 A: 소미앱 홈 복귀 · 현재 위치 · 내 프로필 · 통합 게시판 허브 -->
       <div class="pointer-events-auto flex items-center gap-1.5 flex-wrap">
-        <button id="btn-back-somy" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white hover:bg-amber-50 text-slate-900 border border-amber-300 text-xs font-extrabold cursor-pointer shadow-lg">
+        <button id="btn-back-somy"
+          class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white hover:bg-amber-50 text-slate-900 border border-amber-300 text-xs font-extrabold cursor-pointer shadow-lg">
           <span>🏠 소미앱 홈</span>
         </button>
 
-        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/85 backdrop-blur-md border border-amber-400/40 text-xs font-extrabold shadow-lg">
+        <div
+          class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/85 backdrop-blur-md border border-amber-400/40 text-xs font-extrabold shadow-lg">
           <span id="zone-title-badge" class="text-amber-300">🌿 앞마당 정원</span>
           <span class="text-white/30">|</span>
           <span id="online-count-label" class="text-emerald-300">🟢 실시간 1명</span>
         </div>
 
-        <button id="btn-open-profile" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 backdrop-blur-md border border-amber-300/40 text-xs font-bold text-white cursor-pointer shadow">
+        <button id="btn-open-profile"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 backdrop-blur-md border border-amber-300/40 text-xs font-bold text-white cursor-pointer shadow">
           <span id="my-expr-badge">✨</span>
           <span id="my-name-badge">백동희 성도</span>
-          <span class="px-1.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-extrabold">아바타 꾸미기</span>
+          <span class="px-1.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-extrabold">아바타
+            꾸미기</span>
         </button>
 
-        <button id="btn-campus-hub" class="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow-lg border border-amber-200">
+        <button id="btn-campus-hub"
+          class="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow-lg border border-amber-200">
           <span>📋 통합 게시판 · 전체메뉴</span>
         </button>
       </div>
@@ -185,42 +267,52 @@
       <div class="pointer-events-auto flex items-center gap-2 overflow-x-auto no-scrollbar max-w-full py-0.5">
         <!-- 현재 방 전용 핵심 버튼 -->
         <div class="inline-flex items-center gap-1.5">
-          <button id="btn-sarang-Menu" class="hidden shrink-0 px-3.5 py-1.5 rounded-full bg-orange-400 hover:bg-orange-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow-lg">
+          <button id="btn-sarang-Menu"
+            class="hidden shrink-0 px-3.5 py-1.5 rounded-full bg-orange-400 hover:bg-orange-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow-lg">
             🏠 사랑방 목록 / +개설
           </button>
 
-          <button id="btn-bible-reader" class="hidden shrink-0 px-3.5 py-1.5 rounded-full bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow-lg">
+          <button id="btn-bible-reader"
+            class="hidden shrink-0 px-3.5 py-1.5 rounded-full bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow-lg">
             📖 성경책 · 음성통독
           </button>
 
-          <button id="btn-yes-tongdok-quick" class="hidden shrink-0 px-3.5 py-1.5 rounded-full bg-amber-300 hover:bg-amber-200 text-slate-950 text-xs font-extrabold cursor-pointer shadow-lg">
+          <button id="btn-yes-tongdok-quick"
+            class="hidden shrink-0 px-3.5 py-1.5 rounded-full bg-amber-300 hover:bg-amber-200 text-slate-950 text-xs font-extrabold cursor-pointer shadow-lg">
             🙌 예스통독 게시판
           </button>
 
-          <button id="btn-qt-academy" class="hidden shrink-0 px-3.5 py-1.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow-lg">
+          <button id="btn-qt-academy"
+            class="hidden shrink-0 px-3.5 py-1.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow-lg">
             🌅 소미 큐티 & 나눔방
           </button>
 
-          <button id="btn-rooftop-season" class="hidden shrink-0 px-3.5 py-1.5 rounded-full bg-teal-400 hover:bg-teal-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow-lg">
+          <button id="btn-rooftop-season"
+            class="hidden shrink-0 px-3.5 py-1.5 rounded-full bg-teal-400 hover:bg-teal-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow-lg">
             🏞️ 사계절 실사배경
           </button>
 
-          <button id="btn-candle-board" class="hidden shrink-0 px-3.5 py-1.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow-lg">
+          <button id="btn-candle-board"
+            class="hidden shrink-0 px-3.5 py-1.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer shadow-lg">
             🕯️ 중보기도 등불
           </button>
 
-          <button id="btn-sip-drink" class="hidden shrink-0 px-3 py-1.5 rounded-full bg-amber-700 hover:bg-amber-600 text-white text-xs font-extrabold cursor-pointer border border-amber-300/50">
+          <button id="btn-sip-drink"
+            class="hidden shrink-0 px-3 py-1.5 rounded-full bg-amber-700 hover:bg-amber-600 text-white text-xs font-extrabold cursor-pointer border border-amber-300/50">
             ☕ 커피 마시기
           </button>
         </div>
 
         <!-- 실시간 얼굴·음성 교제 그룹 -->
-        <div class="inline-flex items-center gap-1 p-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-emerald-400/35">
-          <button id="btn-face-cam-toggle" class="shrink-0 px-2.5 py-1 rounded-full bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-extrabold cursor-pointer flex items-center gap-1">
+        <div
+          class="inline-flex items-center gap-1 p-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-emerald-400/35">
+          <button id="btn-face-cam-toggle"
+            class="shrink-0 px-2.5 py-1 rounded-full bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-extrabold cursor-pointer flex items-center gap-1">
             <span id="face-cam-btn-label">📹 얼굴켜기</span>
           </button>
 
-          <button id="btn-mic-toggle" class="shrink-0 px-2.5 py-1 rounded-full hover:bg-white/10 text-emerald-300 text-xs font-extrabold cursor-pointer flex items-center gap-1">
+          <button id="btn-mic-toggle"
+            class="shrink-0 px-2.5 py-1 rounded-full hover:bg-white/10 text-emerald-300 text-xs font-extrabold cursor-pointer flex items-center gap-1">
             <span id="mic-btn-label">🎙️ 마이크</span>
             <span id="mic-meter-wrap" class="hidden inline-flex w-7 h-2 bg-black/60 rounded-full overflow-hidden">
               <span id="mic-meter-bar" class="h-full bg-emerald-400" style="width:0%"></span>
@@ -229,20 +321,26 @@
         </div>
 
         <!-- 강의·환경 도구 그룹 -->
-        <div class="inline-flex items-center gap-1 p-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/15">
-          <button id="btn-board-studio" class="hidden shrink-0 px-2.5 py-1 rounded-full bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold cursor-pointer">
+        <div
+          class="inline-flex items-center gap-1 p-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/15">
+          <button id="btn-board-studio"
+            class="hidden shrink-0 px-2.5 py-1 rounded-full bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold cursor-pointer">
             👨‍🏫 칠판·PPT
           </button>
-          <button id="btn-light-mood" class="shrink-0 px-2.5 py-1 rounded-full bg-amber-100 hover:bg-white text-slate-900 text-[11px] font-extrabold cursor-pointer">
+          <button id="btn-light-mood"
+            class="shrink-0 px-2.5 py-1 rounded-full bg-amber-100 hover:bg-white text-slate-900 text-[11px] font-extrabold cursor-pointer">
             💡 본당조명 ON
           </button>
-          <button id="btn-open-bgm" class="shrink-0 px-2.5 py-1 rounded-full bg-indigo-500/90 hover:bg-indigo-400 text-white text-[11px] font-extrabold cursor-pointer">
+          <button id="btn-open-bgm"
+            class="shrink-0 px-2.5 py-1 rounded-full bg-indigo-500/90 hover:bg-indigo-400 text-white text-[11px] font-extrabold cursor-pointer">
             🎵 음악
           </button>
-          <button id="btn-amen-shout" class="shrink-0 px-2.5 py-1 rounded-full bg-rose-500 hover:bg-rose-400 text-white text-[11px] font-extrabold cursor-pointer">
+          <button id="btn-amen-shout"
+            class="shrink-0 px-2.5 py-1 rounded-full bg-rose-500 hover:bg-rose-400 text-white text-[11px] font-extrabold cursor-pointer">
             🙌 아멘
           </button>
-          <button id="btn-open-share" class="shrink-0 px-2.5 py-1 rounded-full hover:bg-white/15 text-white text-[11px] font-bold cursor-pointer">
+          <button id="btn-open-share"
+            class="shrink-0 px-2.5 py-1 rounded-full hover:bg-white/15 text-white text-[11px] font-bold cursor-pointer">
             📱 QR
           </button>
         </div>
@@ -251,74 +349,102 @@
 
     <!-- ☕ 루프탑 카페 전용: 사계절·날씨 산과 바다 실사 파노라마 전환 바 -->
     <div id="rooftop-season-bar" class="hidden absolute top-14 sm:top-16 left-1/2 -translate-x-1/2 z-20 max-w-[96vw]">
-      <div class="inline-flex items-center gap-1 p-1.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-teal-400/40 shadow-2xl overflow-x-auto no-scrollbar max-w-full">
-        <button data-season="auto" class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-teal-400 text-slate-950 cursor-pointer">🗓️ 계절자동</button>
-        <button data-season="spring" class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold text-pink-200 hover:bg-white/10 cursor-pointer">🌸 봄 벚꽃·바다</button>
-        <button data-season="summer" class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold text-sky-200 hover:bg-white/10 cursor-pointer">🌊 여름 오션·녹음</button>
-        <button data-season="autumn" class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold text-amber-200 hover:bg-white/10 cursor-pointer">🍁 가을 단풍산맥</button>
-        <button data-season="winter" class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold text-slate-100 hover:bg-white/10 cursor-pointer">❄️ 겨울 설산·눈쌓임</button>
-        <button data-season="rain" class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold text-cyan-200 hover:bg-white/10 cursor-pointer">🌧️ 우천 운무·비</button>
-        <button data-season="night" class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold text-indigo-200 hover:bg-white/10 cursor-pointer">🌌 별빛·달빛바다</button>
-        <button id="btn-rain-sound" class="hidden shrink-0 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-cyan-500/30 text-cyan-200 border border-cyan-400/40 cursor-pointer">🔊 빗소리 ON</button>
+      <div
+        class="inline-flex items-center gap-1 p-1.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-teal-400/40 shadow-2xl overflow-x-auto no-scrollbar max-w-full">
+        <button data-season="auto"
+          class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-teal-400 text-slate-950 cursor-pointer">🗓️
+          계절자동</button>
+        <button data-season="spring"
+          class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold text-pink-200 hover:bg-white/10 cursor-pointer">🌸
+          봄 벚꽃·바다</button>
+        <button data-season="summer"
+          class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold text-sky-200 hover:bg-white/10 cursor-pointer">🌊
+          여름 오션·녹음</button>
+        <button data-season="autumn"
+          class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold text-amber-200 hover:bg-white/10 cursor-pointer">🍁
+          가을 단풍산맥</button>
+        <button data-season="winter"
+          class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold text-slate-100 hover:bg-white/10 cursor-pointer">❄️
+          겨울 설산·눈쌓임</button>
+        <button data-season="rain"
+          class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold text-cyan-200 hover:bg-white/10 cursor-pointer">🌧️
+          우천 운무·비</button>
+        <button data-season="night"
+          class="roof-season-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold text-indigo-200 hover:bg-white/10 cursor-pointer">🌌
+          별빛·달빛바다</button>
+        <button id="btn-rain-sound"
+          class="hidden shrink-0 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-cyan-500/30 text-cyan-200 border border-cyan-400/40 cursor-pointer">🔊
+          빗소리 ON</button>
       </div>
     </div>
 
     <!-- 상단 안내 토스트 -->
-    <div id="world-toast" class="hidden absolute top-24 sm:top-28 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-slate-900/90 border border-amber-400/60 text-amber-200 text-xs font-extrabold shadow-xl pointer-events-none z-30 max-w-[92vw] truncate"></div>
+    <div id="world-toast"
+      class="hidden absolute top-24 sm:top-28 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-slate-900/90 border border-amber-400/60 text-amber-200 text-xs font-extrabold shadow-xl pointer-events-none z-30 max-w-[92vw] truncate">
+    </div>
 
     <!-- 👥 양방향 실시간 얼굴 화상 교제 타일 패널 (성도들이 카메라를 켜면 서로의 얼굴이 여기에 실시간 표시 + 캐릭터 머리 위에도 원형 표시!) -->
-    <div id="face-cam-gallery" class="hidden absolute top-14 sm:top-16 left-2.5 sm:left-4 z-20 max-w-[94vw] sm:max-w-[540px] bg-slate-950/85 backdrop-blur-md border border-emerald-400/45 rounded-2xl p-2 shadow-2xl space-y-1.5">
+    <div id="face-cam-gallery"
+      class="hidden absolute top-14 sm:top-16 left-2.5 sm:left-4 z-20 max-w-[94vw] sm:max-w-[540px] bg-slate-950/85 backdrop-blur-md border border-emerald-400/45 rounded-2xl p-2 shadow-2xl space-y-1.5">
       <div class="flex items-center justify-between gap-2 px-1">
         <span id="face-cam-count-title" class="text-[11px] font-extrabold text-emerald-300">📹 실시간 얼굴 교제 (1명)</span>
         <div class="flex items-center gap-1">
-          <button id="btn-face-flip" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 cursor-pointer" title="전면/후면 카메라 전환">🔄 전환</button>
-          <button id="btn-face-mute" class="px-2 py-0.5 rounded-lg bg-emerald-500/25 hover:bg-emerald-500/40 text-[10px] font-extrabold text-emerald-200 cursor-pointer">🎙️ 소리켜짐</button>
-          <button id="btn-face-collapse" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-300 cursor-pointer">접기</button>
+          <button id="btn-face-flip"
+            class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 cursor-pointer"
+            title="전면/후면 카메라 전환">🔄 전환</button>
+          <button id="btn-face-mute"
+            class="px-2 py-0.5 rounded-lg bg-emerald-500/25 hover:bg-emerald-500/40 text-[10px] font-extrabold text-emerald-200 cursor-pointer">🎙️
+            소리켜짐</button>
+          <button id="btn-face-collapse"
+            class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-300 cursor-pointer">접기</button>
         </div>
       </div>
       <div id="face-cam-tiles" class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5"></div>
     </div>
 
     <!-- 기도음악 재생 중 미니 바 -->
-    <div id="bgm-mini-bar" class="hidden absolute top-16 right-3 sm:right-4 bg-indigo-950/90 backdrop-blur-md border border-indigo-400/40 rounded-2xl p-2 flex items-center gap-2 z-20 max-w-[92vw]">
+    <div id="bgm-mini-bar"
+      class="hidden absolute top-16 right-3 sm:right-4 bg-indigo-950/90 backdrop-blur-md border border-indigo-400/40 rounded-2xl p-2 flex items-center gap-2 z-20 max-w-[92vw]">
       <span id="bgm-mini-label" class="text-[11px] font-extrabold text-indigo-200 truncate max-w-[140px]">🎵 기도음악</span>
       <div id="bgm-yt-wrap" class="hidden w-36 h-9 rounded overflow-hidden border border-indigo-400/30 bg-black">
         <iframe id="bgmYtIframe" class="w-full h-full border-0" allow="autoplay; encrypted-media"></iframe>
       </div>
-      <button id="btn-stop-bgm-mini" class="px-2 py-1 rounded-lg bg-rose-500/40 text-white text-[11px] font-bold cursor-pointer">⏹️</button>
+      <button id="btn-stop-bgm-mini"
+        class="px-2 py-1 rounded-lg bg-rose-500/40 text-white text-[11px] font-bold cursor-pointer">⏹️</button>
     </div>
 
     <!-- 실시간 공유 PPT(웹 링크) / 유튜브 / PC화면 공유 플로팅 뷰어 -->
-    <div id="live-media-dock" class="hidden absolute top-28 right-3 sm:right-4 w-[min(92vw,420px)] bg-slate-900/95 border-2 border-sky-400/70 rounded-2xl overflow-hidden shadow-2xl z-20">
+    <div id="live-media-dock"
+      class="hidden absolute top-28 right-3 sm:right-4 w-[min(92vw,420px)] bg-slate-900/95 border-2 border-sky-400/70 rounded-2xl overflow-hidden shadow-2xl z-20">
       <div class="px-3 py-1.5 bg-slate-800 flex items-center justify-between">
         <span id="dock-title" class="text-xs font-extrabold text-sky-300">📊 실시간 공유 자료</span>
-        <button id="btn-close-dock" class="text-xs px-2 py-0.5 rounded bg-slate-700 text-white cursor-pointer">접기 ✕</button>
+        <button id="btn-close-dock" class="text-xs px-2 py-0.5 rounded bg-slate-700 text-white cursor-pointer">접기
+          ✕</button>
       </div>
       <div class="w-full aspect-video bg-black relative">
-        <iframe id="dockEmbedFrame" class="hidden w-full h-full border-0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
+        <iframe id="dockEmbedFrame" class="hidden w-full h-full border-0" allow="autoplay; encrypted-media; fullscreen"
+          allowfullscreen></iframe>
         <video id="screenShareVideo" autoplay playsinline class="hidden w-full h-full object-contain"></video>
       </div>
     </div>
 
     <!-- 근접 상호작용 원터치 팝업 버튼 -->
-    <button
-      id="proximity-btn"
-      class="hidden absolute bottom-28 sm:bottom-24 left-1/2 -translate-x-1/2 px-5 py-2.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-extrabold shadow-2xl border-2 border-white cursor-pointer z-20 animate-bounce"
-    >
+    <button id="proximity-btn"
+      class="hidden absolute bottom-28 sm:bottom-24 left-1/2 -translate-x-1/2 px-5 py-2.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-extrabold shadow-2xl border-2 border-white cursor-pointer z-20 animate-bounce">
       🪑 여기에 앉기
     </button>
 
     <!-- 좌측 하단 가상 조이스틱 (모바일/태블릿 터치 보행용) -->
-    <div
-      id="joystick-base"
-      class="sm:opacity-75 hover:opacity-100 absolute bottom-20 left-3.5 w-24 h-24 rounded-full bg-black/45 backdrop-blur-sm border-2 border-white/25 flex items-center justify-center touch-none z-20"
-    >
-      <div id="joystick-knob" class="w-10 h-10 rounded-full bg-amber-400/90 shadow-lg border border-white pointer-events-none"></div>
+    <div id="joystick-base"
+      class="sm:opacity-75 hover:opacity-100 absolute bottom-20 left-3.5 w-24 h-24 rounded-full bg-black/45 backdrop-blur-sm border-2 border-white/25 flex items-center justify-center touch-none z-20">
+      <div id="joystick-knob"
+        class="w-10 h-10 rounded-full bg-amber-400/90 shadow-lg border border-white pointer-events-none"></div>
     </div>
 
     <!-- 우측 하단 실시간 채팅창 패널 -->
     <div class="absolute bottom-20 right-3.5 flex flex-col items-end gap-2 z-20 pointer-events-none">
-      <div id="chat-panel" class="pointer-events-auto w-72 sm:w-80 bg-slate-900/85 backdrop-blur-md border border-white/15 rounded-2xl p-2.5 shadow-2xl space-y-2">
+      <div id="chat-panel"
+        class="pointer-events-auto w-72 sm:w-80 bg-slate-900/85 backdrop-blur-md border border-white/15 rounded-2xl p-2.5 shadow-2xl space-y-2">
         <div class="flex items-center justify-between">
           <span class="text-[11px] font-extrabold text-emerald-300">💬 현재 공간 실시간 대화</span>
           <span class="text-[10px] text-slate-400">말풍선이 머리 위에 뜹니다</span>
@@ -327,51 +453,63 @@
           <div class="text-[11px] text-slate-400">✨ WASD/조이스틱/바닥 터치로 이동하며 성도들과 인사해보세요!</div>
         </div>
         <form id="chat-form" class="flex gap-1.5">
-          <input
-            id="chat-input"
-            type="text"
-            maxlength="80"
-            placeholder="인사나 아멘, 기도나눔 입력..."
-            class="flex-1 px-2.5 py-1.5 rounded-xl bg-slate-950/90 border border-slate-700 text-white text-xs outline-none focus:border-amber-400"
-          />
-          <button type="submit" class="px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">전송</button>
+          <input id="chat-input" type="text" maxlength="80" placeholder="인사나 아멘, 기도나눔 입력..."
+            class="flex-1 px-2.5 py-1.5 rounded-xl bg-slate-950/90 border border-slate-700 text-white text-xs outline-none focus:border-amber-400" />
+          <button type="submit"
+            class="px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">전송</button>
         </form>
       </div>
 
       <!-- 시점 전환(3인칭 추적 ↔ 파노라마) & 채팅 접기 & 줌 -->
-      <div class="pointer-events-auto inline-flex items-center gap-1 p-1 rounded-full bg-black/70 backdrop-blur-md border border-white/15">
-        <button id="btn-cam-mode" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-amber-300 text-[11px] sm:text-xs font-extrabold cursor-pointer">
+      <div
+        class="pointer-events-auto inline-flex items-center gap-1 p-1 rounded-full bg-black/70 backdrop-blur-md border border-white/15">
+        <button id="btn-cam-mode"
+          class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-amber-300 text-[11px] sm:text-xs font-extrabold cursor-pointer">
           🏛️ 전체 파노라마 뷰
         </button>
-        <button id="btn-zoom-out" class="px-2 py-1 rounded-full text-white text-xs font-bold hover:bg-white/15 cursor-pointer">➖</button>
-        <button id="btn-zoom-in" class="px-2 py-1 rounded-full text-white text-xs font-bold hover:bg-white/15 cursor-pointer">➕</button>
-        <button id="btn-toggle-chat" class="px-2.5 py-1 rounded-full bg-emerald-500/30 text-emerald-200 text-[11px] sm:text-xs font-bold cursor-pointer">💬 채팅창</button>
-        <button id="btn-fullscreen" class="px-2 py-1 rounded-full text-white text-xs font-bold hover:bg-white/15 cursor-pointer">⛶</button>
+        <button id="btn-zoom-out"
+          class="px-2 py-1 rounded-full text-white text-xs font-bold hover:bg-white/15 cursor-pointer">➖</button>
+        <button id="btn-zoom-in"
+          class="px-2 py-1 rounded-full text-white text-xs font-bold hover:bg-white/15 cursor-pointer">➕</button>
+        <button id="btn-toggle-chat"
+          class="px-2.5 py-1 rounded-full bg-emerald-500/30 text-emerald-200 text-[11px] sm:text-xs font-bold cursor-pointer">💬
+          채팅창</button>
+        <button id="btn-fullscreen"
+          class="px-2 py-1 rounded-full text-white text-xs font-bold hover:bg-white/15 cursor-pointer">⛶</button>
       </div>
     </div>
 
     <!-- 2. 최하단 7개 공간 빠른 이동(Quick-Warp) 내비게이션 바 -->
-    <div class="absolute bottom-2.5 inset-x-2.5 flex justify-center pointer-events-none z-20" style="padding-bottom: env(safe-area-inset-bottom, 0px);">
-      <div class="pointer-events-auto inline-flex items-center gap-1 p-1.5 rounded-full bg-black/75 backdrop-blur-md border border-white/15 overflow-x-auto no-scrollbar max-w-full shadow-2xl">
-        <button data-zone="garden" class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-extrabold bg-amber-400 text-slate-950 shadow cursor-pointer">
+    <div class="absolute bottom-2.5 inset-x-2.5 flex justify-center pointer-events-none z-20"
+      style="padding-bottom: env(safe-area-inset-bottom, 0px);">
+      <div
+        class="pointer-events-auto inline-flex items-center gap-1 p-1.5 rounded-full bg-black/75 backdrop-blur-md border border-white/15 overflow-x-auto no-scrollbar max-w-full shadow-2xl">
+        <button data-zone="garden"
+          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-extrabold bg-amber-400 text-slate-950 shadow cursor-pointer">
           🌿 앞마당 정원
         </button>
-        <button data-zone="sanctuary" class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
+        <button data-zone="sanctuary"
+          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
           🏛️ 대성전
         </button>
-        <button data-zone="sarangbang" class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
+        <button data-zone="sarangbang"
+          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
           🏠 사랑방(소그룹)
         </button>
-        <button data-zone="bible" class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
+        <button data-zone="bible"
+          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
           📖 성경통독방
         </button>
-        <button data-zone="qt" class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
+        <button data-zone="qt"
+          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
           ✏️ 큐티방
         </button>
-        <button data-zone="prayer" class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
+        <button data-zone="prayer"
+          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
           🕯️ 기도·갤러리
         </button>
-        <button data-zone="rooftop" class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
+        <button data-zone="rooftop"
+          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
           ☕ 루프탑 카페
         </button>
       </div>
@@ -380,18 +518,29 @@
     <!-- =================================================================== -->
     <!-- [모달 1] 모든 방 공용: 👨‍🏫 강의 칠판 · 실시간 화이트보드 · PPT · PC화면 공유 -->
     <!-- =================================================================== -->
-    <div id="board-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
-      <div class="bg-slate-800 text-white rounded-2xl max-w-2xl w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3 max-h-[92dvh] overflow-y-auto">
+    <div id="board-modal"
+      class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
+      <div
+        class="bg-slate-800 text-white rounded-2xl max-w-2xl w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3 max-h-[92dvh] overflow-y-auto">
         <div class="flex items-center justify-between">
           <span class="text-sm font-extrabold text-sky-300">👨‍🏫 공간 스마트 칠판 · 화이트보드 · PPT · 화면공유</span>
-          <button data-close="board-modal" class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
+          <button data-close="board-modal"
+            class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
         </div>
 
         <div class="flex flex-wrap gap-1.5">
-          <button data-btab="wb" class="board-tab-btn px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-400 text-slate-950 cursor-pointer">✏️ 실시간 화이트보드</button>
-          <button data-btab="ppt" class="board-tab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 cursor-pointer">📊 PPT · 강의자료 공유</button>
-          <button data-btab="screen" class="board-tab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 cursor-pointer">🖥️ PC 화면 · 영상 공유</button>
-          <button data-btab="slide" class="board-tab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 cursor-pointer">✍️ 글 자막 직접 입력</button>
+          <button data-btab="wb"
+            class="board-tab-btn px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-400 text-slate-950 cursor-pointer">✏️
+            실시간 화이트보드</button>
+          <button data-btab="ppt"
+            class="board-tab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 cursor-pointer">📊
+            PPT · 강의자료 공유</button>
+          <button data-btab="screen"
+            class="board-tab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 cursor-pointer">🖥️
+            PC 화면 · 영상 공유</button>
+          <button data-btab="slide"
+            class="board-tab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 cursor-pointer">✍️
+            글 자막 직접 입력</button>
         </div>
 
         <!-- 탭 1: 실시간 화이트보드 판서 -->
@@ -399,14 +548,22 @@
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center gap-1.5">
               <span class="text-xs text-slate-300 font-bold">판서 펜:</span>
-              <button type="button" data-color="#FFFFFF" data-size="5" class="wb-color-btn w-6 h-6 rounded-full bg-white ring-2 ring-amber-400 cursor-pointer"></button>
-              <button type="button" data-color="#FDE047" data-size="5" class="wb-color-btn w-6 h-6 rounded-full bg-yellow-300 cursor-pointer"></button>
-              <button type="button" data-color="#38BDF8" data-size="5" class="wb-color-btn w-6 h-6 rounded-full bg-sky-400 cursor-pointer"></button>
-              <button type="button" data-color="#34D399" data-size="5" class="wb-color-btn w-6 h-6 rounded-full bg-emerald-400 cursor-pointer"></button>
-              <button type="button" data-color="#FB7185" data-size="7" class="wb-color-btn w-6 h-6 rounded-full bg-rose-400 cursor-pointer"></button>
-              <button type="button" data-color="#0f291e" data-size="26" class="wb-color-btn px-2 py-0.5 rounded bg-slate-700 text-[11px] font-bold cursor-pointer">지우개</button>
+              <button type="button" data-color="#FFFFFF" data-size="5"
+                class="wb-color-btn w-6 h-6 rounded-full bg-white ring-2 ring-amber-400 cursor-pointer"></button>
+              <button type="button" data-color="#FDE047" data-size="5"
+                class="wb-color-btn w-6 h-6 rounded-full bg-yellow-300 cursor-pointer"></button>
+              <button type="button" data-color="#38BDF8" data-size="5"
+                class="wb-color-btn w-6 h-6 rounded-full bg-sky-400 cursor-pointer"></button>
+              <button type="button" data-color="#34D399" data-size="5"
+                class="wb-color-btn w-6 h-6 rounded-full bg-emerald-400 cursor-pointer"></button>
+              <button type="button" data-color="#FB7185" data-size="7"
+                class="wb-color-btn w-6 h-6 rounded-full bg-rose-400 cursor-pointer"></button>
+              <button type="button" data-color="#0f291e" data-size="26"
+                class="wb-color-btn px-2 py-0.5 rounded bg-slate-700 text-[11px] font-bold cursor-pointer">지우개</button>
             </div>
-            <button id="btn-wb-clear" class="px-2.5 py-1 rounded-lg bg-rose-600/80 text-white text-xs font-bold cursor-pointer">🗑️ 전체 지우기</button>
+            <button id="btn-wb-clear"
+              class="px-2.5 py-1 rounded-lg bg-rose-600/80 text-white text-xs font-bold cursor-pointer">🗑️ 전체
+              지우기</button>
           </div>
 
           <div class="rounded-xl overflow-hidden border-2 border-amber-500/50 bg-[#0f291e] aspect-video">
@@ -414,9 +571,14 @@
           </div>
 
           <div class="flex gap-2">
-            <input id="wb-text-input" type="text" placeholder="칠판에 깔끔하게 찍을 텍스트 입력..." class="flex-1 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white outline-none" />
-            <button id="btn-wb-stamp" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-xs font-bold cursor-pointer">🔤 글씨 찍기</button>
-            <button id="btn-wb-apply" class="px-3.5 py-1.5 rounded-xl bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">3D 칠판에 고정</button>
+            <input id="wb-text-input" type="text" placeholder="칠판에 깔끔하게 찍을 텍스트 입력..."
+              class="flex-1 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white outline-none" />
+            <button id="btn-wb-stamp"
+              class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-xs font-bold cursor-pointer">🔤 글씨
+              찍기</button>
+            <button id="btn-wb-apply"
+              class="px-3.5 py-1.5 rounded-xl bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">3D 칠판에
+              고정</button>
           </div>
         </div>
 
@@ -424,25 +586,33 @@
         <div id="btab-ppt" class="hidden board-tab-pane space-y-3">
           <div class="p-3 rounded-xl bg-slate-900 border border-slate-700 space-y-2.5">
             <div class="text-xs font-extrabold text-amber-300">방법 1. 📑 PPT 슬라이드 이미지(JPG/PNG 여러 장) 올려서 넘기며 강의하기</div>
-            <p class="text-[11px] text-slate-400 m-0">파워포인트에서 [다른 이름으로 저장 ➔ JPG/PNG] 한 이미지들을 한꺼번에 선택하면 3D 칠판에 선명하게 뜨며, 페이지를 넘길 때마다 성도들 화면도 함께 넘어갑니다.</p>
+            <p class="text-[11px] text-slate-400 m-0">파워포인트에서 [다른 이름으로 저장 ➔ JPG/PNG] 한 이미지들을 한꺼번에 선택하면 3D 칠판에 선명하게 뜨며,
+              페이지를 넘길 때마다 성도들 화면도 함께 넘어갑니다.</p>
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <label class="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer">
+              <label
+                class="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer">
                 📂 슬라이드 이미지 여러 장 선택
                 <input id="ppt-files-input" type="file" accept="image/*" multiple class="hidden" />
               </label>
               <div class="inline-flex items-center gap-1.5">
-                <button id="btn-ppt-prev" class="px-3 py-1.5 rounded-lg bg-slate-700 text-xs font-bold cursor-pointer">◀ 이전 장</button>
+                <button id="btn-ppt-prev" class="px-3 py-1.5 rounded-lg bg-slate-700 text-xs font-bold cursor-pointer">◀
+                  이전 장</button>
                 <span id="ppt-page-indicator" class="text-xs text-slate-300 font-bold px-2">업로드된 슬라이드 없음</span>
-                <button id="btn-ppt-next" class="px-3 py-1.5 rounded-lg bg-slate-700 text-xs font-bold cursor-pointer">다음 장 ▶</button>
+                <button id="btn-ppt-next"
+                  class="px-3 py-1.5 rounded-lg bg-slate-700 text-xs font-bold cursor-pointer">다음 장 ▶</button>
               </div>
             </div>
           </div>
 
           <div class="p-3 rounded-xl bg-slate-900 border border-slate-700 space-y-2">
-            <div class="text-xs font-extrabold text-sky-300">방법 2. 🔗 구글 슬라이드 / 미리캔버스 / Canva / OneDrive PPT 웹 게시 링크</div>
+            <div class="text-xs font-extrabold text-sky-300">방법 2. 🔗 구글 슬라이드 / 미리캔버스 / Canva / OneDrive PPT 웹 게시 링크
+            </div>
             <div class="flex gap-2">
-              <input id="ppt-embed-input" type="text" placeholder="https://docs.google.com/presentation/d/.../embed" class="flex-1 px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
-              <button id="btn-apply-embed" class="shrink-0 px-3.5 py-2 rounded-xl bg-sky-500 text-slate-950 text-xs font-extrabold cursor-pointer">링크 공유</button>
+              <input id="ppt-embed-input" type="text" placeholder="https://docs.google.com/presentation/d/.../embed"
+                class="flex-1 px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+              <button id="btn-apply-embed"
+                class="shrink-0 px-3.5 py-2 rounded-xl bg-sky-500 text-slate-950 text-xs font-extrabold cursor-pointer">링크
+                공유</button>
             </div>
           </div>
         </div>
@@ -451,8 +621,10 @@
         <div id="btab-screen" class="hidden board-tab-pane space-y-3">
           <div class="p-3.5 rounded-xl bg-slate-900 border border-sky-500/40 space-y-2">
             <div class="text-xs font-extrabold text-sky-300">🖥️ 내 PC에 띄운 파워포인트(PPT)·한글·PDF 화면 그대로 실시간 공유</div>
-            <p class="text-[11px] text-slate-400 m-0">컴퓨터에서 실제 PPT 프로그램을 띄워놓고 아래 버튼을 누르면, 같은 방 성도들에게 내 화면이 실시간 중계됩니다.</p>
-            <button id="btn-start-screenshare" class="w-full py-2.5 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold cursor-pointer">
+            <p class="text-[11px] text-slate-400 m-0">컴퓨터에서 실제 PPT 프로그램을 띄워놓고 아래 버튼을 누르면, 같은 방 성도들에게 내 화면이 실시간 중계됩니다.
+            </p>
+            <button id="btn-start-screenshare"
+              class="w-full py-2.5 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold cursor-pointer">
               🖥️ 내 PC 화면(PPT·문서) 실시간 공유 시작
             </button>
           </div>
@@ -460,10 +632,15 @@
           <div class="p-3 rounded-xl bg-slate-900 border border-slate-700 space-y-2">
             <div class="text-xs font-extrabold text-rose-300">▶️ 유튜브 강의/예배 영상 또는 내 카메라 송출</div>
             <div class="flex gap-2">
-              <input id="board-yt-input" type="text" value="https://www.youtube.com/watch?v=M7lc1UVf-VE" placeholder="유튜브 영상 주소..." class="flex-1 px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
-              <button id="btn-apply-yt-board" class="shrink-0 px-3 py-2 rounded-xl bg-rose-600 text-white text-xs font-extrabold cursor-pointer">유튜브 송출</button>
+              <input id="board-yt-input" type="text" value="https://www.youtube.com/watch?v=M7lc1UVf-VE"
+                placeholder="유튜브 영상 주소..."
+                class="flex-1 px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+              <button id="btn-apply-yt-board"
+                class="shrink-0 px-3 py-2 rounded-xl bg-rose-600 text-white text-xs font-extrabold cursor-pointer">유튜브
+                송출</button>
             </div>
-            <button id="btn-webcam-board" class="w-full py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold cursor-pointer">
+            <button id="btn-webcam-board"
+              class="w-full py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold cursor-pointer">
               📹 내 카메라 칠판 송출
             </button>
           </div>
@@ -471,9 +648,12 @@
 
         <!-- 탭 4: 글 자막 슬라이드 직접 타이핑 -->
         <div id="btab-slide" class="hidden board-tab-pane space-y-2.5">
-          <input id="slide-badge-input" type="text" placeholder="상단 배지 / 강의 제목 (예: 1교구 사랑방 나눔 주제)" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white outline-none" />
-          <textarea id="slide-body-input" rows="4" placeholder="칠판에 띄울 성경 본문, 강의 핵심 요약, 기도제목을 여러 줄로 입력하세요." class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white outline-none resize-none"></textarea>
-          <button id="btn-apply-slide-text" class="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer">
+          <input id="slide-badge-input" type="text" placeholder="상단 배지 / 강의 제목 (예: 1교구 사랑방 나눔 주제)"
+            class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white outline-none" />
+          <textarea id="slide-body-input" rows="4" placeholder="칠판에 띄울 성경 본문, 강의 핵심 요약, 기도제목을 여러 줄로 입력하세요."
+            class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white outline-none resize-none"></textarea>
+          <button id="btn-apply-slide-text"
+            class="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer">
             🖥️ 3D 칠판/와이드스크린에 글 올리기
           </button>
         </div>
@@ -483,11 +663,14 @@
     <!-- =================================================================== -->
     <!-- [모달 2] 🏠 사랑방 (그룹별 소그룹실 목록 선택 & 새 사랑방 개설) -->
     <!-- =================================================================== -->
-    <div id="sarang-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
-      <div class="bg-slate-800 text-white rounded-2xl max-w-lg w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3.5 max-h-[92dvh] overflow-y-auto">
+    <div id="sarang-modal"
+      class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
+      <div
+        class="bg-slate-800 text-white rounded-2xl max-w-lg w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3.5 max-h-[92dvh] overflow-y-auto">
         <div class="flex items-center justify-between">
           <span class="text-sm font-extrabold text-orange-300">🏠 그룹별 사랑방(소그룹실) 선택 및 개설</span>
-          <button data-close="sarang-modal" class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
+          <button data-close="sarang-modal"
+            class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
         </div>
         <p class="text-xs text-slate-300 m-0">각 사랑방은 <b>독립된 3D 공간, 전용 채팅, 전용 화이트보드/PPT 칠판</b>을 가집니다.</p>
 
@@ -496,11 +679,15 @@
         <div class="p-3 rounded-xl bg-slate-900 border border-slate-700 space-y-2">
           <div class="text-xs font-extrabold text-amber-300">➕ 우리 순/셀/부서 새 사랑방 만들기</div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <input id="sarang-name-input" type="text" placeholder="방 이름 (예: 2교구 사랑순)" class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
-            <input id="sarang-leader-input" type="text" placeholder="순장/인도자 성함" class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+            <input id="sarang-name-input" type="text" placeholder="방 이름 (예: 2교구 사랑순)"
+              class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+            <input id="sarang-leader-input" type="text" placeholder="순장/인도자 성함"
+              class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
           </div>
-          <input id="sarang-topic-input" type="text" placeholder="오늘 모임 나눔 주제 / 환영 인사" class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
-          <button id="btn-create-sarang" class="w-full py-2 rounded-xl bg-orange-400 hover:bg-orange-300 text-slate-950 text-xs font-extrabold cursor-pointer">
+          <input id="sarang-topic-input" type="text" placeholder="오늘 모임 나눔 주제 / 환영 인사"
+            class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+          <button id="btn-create-sarang"
+            class="w-full py-2 rounded-xl bg-orange-400 hover:bg-orange-300 text-slate-950 text-xs font-extrabold cursor-pointer">
             🏠 새 사랑방 개설 후 바로 입장하기
           </button>
         </div>
@@ -510,26 +697,35 @@
     <!-- =================================================================== -->
     <!-- [모달 3] 📖 성경통독방 — 고가시성 3분할 메뉴 · 아나운서 HD 음성통독 · 분류형 예스통독 게시판 -->
     <!-- =================================================================== -->
-    <div id="bible-modal" class="hidden absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-40">
-      <div class="bg-slate-900 text-white rounded-2xl max-w-5xl w-full p-3 sm:p-5 border-2 border-amber-400/45 shadow-2xl space-y-3 max-h-[95dvh] overflow-y-auto">
+    <div id="bible-modal"
+      class="hidden absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-40">
+      <div
+        class="bg-slate-900 text-white rounded-2xl max-w-5xl w-full p-3 sm:p-5 border-2 border-amber-400/45 shadow-2xl space-y-3 max-h-[95dvh] overflow-y-auto">
         <!-- 상단 타이틀 & 닫기 -->
         <div class="flex flex-wrap items-center justify-between gap-2 pb-1 border-b border-slate-700/80">
           <div class="flex items-center gap-2 flex-wrap">
             <span class="text-base sm:text-lg font-extrabold text-amber-300">📖 예수인교회 성경통독방</span>
-            <span id="bible-active-plan-chip" class="px-2.5 py-0.5 rounded-full bg-emerald-400 text-slate-950 text-[11px] font-extrabold">⏳ 연대기순 통독 · Day 1</span>
+            <span id="bible-active-plan-chip"
+              class="px-2.5 py-0.5 rounded-full bg-emerald-400 text-slate-950 text-[11px] font-extrabold">⏳ 연대기순 통독 ·
+              Day 1</span>
           </div>
-          <button data-close="bible-modal" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-xs font-extrabold cursor-pointer">닫기 ✕</button>
+          <button data-close="bible-modal"
+            class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-xs font-extrabold cursor-pointer">닫기
+            ✕</button>
         </div>
 
         <!-- 한눈에 들어오는 3분할 대형 상단 메뉴 탭 바 -->
         <div class="grid grid-cols-3 gap-1.5 sm:gap-2 p-1.5 rounded-2xl bg-slate-950 border border-slate-700">
-          <button data-bmtab="book" class="bible-mtab-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-extrabold bg-amber-400 text-slate-950 shadow cursor-pointer text-center">
+          <button data-bmtab="book"
+            class="bible-mtab-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-extrabold bg-amber-400 text-slate-950 shadow cursor-pointer text-center">
             1. 📖 성경책 · 음성통독
           </button>
-          <button data-bmtab="plan" class="bible-mtab-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-800/80 text-slate-200 hover:bg-slate-800 cursor-pointer text-center">
+          <button data-bmtab="plan"
+            class="bible-mtab-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-800/80 text-slate-200 hover:bg-slate-800 cursor-pointer text-center">
             2. 📅 통독 코스 · 분량 설정
           </button>
-          <button data-bmtab="board" class="bible-mtab-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-800/80 text-slate-200 hover:bg-slate-800 cursor-pointer text-center">
+          <button data-bmtab="board"
+            class="bible-mtab-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-800/80 text-slate-200 hover:bg-slate-800 cursor-pointer text-center">
             3. 🙌 예스통독 분류 게시판
           </button>
         </div>
@@ -537,53 +733,79 @@
         <!-- [통독 탭 1] 실물 성경책 양면/단면 펼침 리더 & 아나운서 HD 음성 통독 플레이어 -->
         <div id="bmtab-book" class="bible-mtab-pane space-y-2.5">
           <!-- 권/장 선택 & 글자크기 바 -->
-          <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-800 p-2.5 rounded-xl border border-slate-600">
+          <div
+            class="flex flex-wrap items-center justify-between gap-2 bg-slate-800 p-2.5 rounded-xl border border-slate-600">
             <div class="flex flex-wrap items-center gap-1.5">
               <span class="text-xs font-extrabold text-amber-300 mr-0.5">성경 선택:</span>
-              <select id="bible-book-select" class="px-2.5 py-1.5 rounded-lg bg-white text-slate-900 border border-amber-400 text-xs font-extrabold outline-none"></select>
-              <select id="bible-chap-select" class="px-2.5 py-1.5 rounded-lg bg-white text-slate-900 border border-slate-400 text-xs font-extrabold outline-none"></select>
-              <button id="btn-fetch-bible" class="px-3 py-1.5 rounded-lg bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-extrabold cursor-pointer">펼치기</button>
-              <button id="btn-prev-chap" class="px-2.5 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-bold cursor-pointer" title="이전 장">◀ 이전장</button>
-              <button id="btn-next-chap" class="px-2.5 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-bold cursor-pointer" title="다음 장">다음장 ▶</button>
+              <select id="bible-book-select"
+                class="px-2.5 py-1.5 rounded-lg bg-white text-slate-900 border border-amber-400 text-xs font-extrabold outline-none"></select>
+              <select id="bible-chap-select"
+                class="px-2.5 py-1.5 rounded-lg bg-white text-slate-900 border border-slate-400 text-xs font-extrabold outline-none"></select>
+              <button id="btn-fetch-bible"
+                class="px-3 py-1.5 rounded-lg bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-extrabold cursor-pointer">펼치기</button>
+              <button id="btn-prev-chap"
+                class="px-2.5 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-bold cursor-pointer"
+                title="이전 장">◀ 이전장</button>
+              <button id="btn-next-chap"
+                class="px-2.5 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-bold cursor-pointer"
+                title="다음 장">다음장 ▶</button>
             </div>
 
             <div class="flex items-center gap-1.5">
               <span id="bible-portion-progress" class="text-xs text-amber-300 font-extrabold mr-1"></span>
-              <button id="btn-bible-font-down" class="px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-extrabold cursor-pointer">글자 가-</button>
-              <button id="btn-bible-font-up" class="px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-extrabold cursor-pointer">글자 가+</button>
+              <button id="btn-bible-font-down"
+                class="px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-extrabold cursor-pointer">글자
+                가-</button>
+              <button id="btn-bible-font-up"
+                class="px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-extrabold cursor-pointer">글자
+                가+</button>
             </div>
           </div>
 
           <!-- 🔊 아나운서급 AI 신경망 HD 음성 성경통독 바 (성우 선택 + 배속 조절 + 선로딩 무끊김) -->
-          <div class="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-amber-950/90 via-slate-800 to-slate-800 px-3 py-2.5 rounded-xl border border-amber-400/50">
+          <div
+            class="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-amber-950/90 via-slate-800 to-slate-800 px-3 py-2.5 rounded-xl border border-amber-400/50">
             <div class="flex flex-wrap items-center gap-1.5">
-              <button id="btn-tts-toggle" class="px-4 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-extrabold cursor-pointer shadow">
+              <button id="btn-tts-toggle"
+                class="px-4 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-extrabold cursor-pointer shadow">
                 🔊 음성 통독 시작
               </button>
-              <button id="btn-tts-stop" class="px-2.5 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold cursor-pointer">⏹️ 정지</button>
-              <button id="btn-tts-prev" class="px-2 py-1.5 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-[11px] font-bold cursor-pointer">⏮️절</button>
-              <button id="btn-tts-next" class="px-2 py-1.5 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-[11px] font-bold cursor-pointer">절⏭️</button>
+              <button id="btn-tts-stop"
+                class="px-2.5 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold cursor-pointer">⏹️
+                정지</button>
+              <button id="btn-tts-prev"
+                class="px-2 py-1.5 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-[11px] font-bold cursor-pointer">⏮️절</button>
+              <button id="btn-tts-next"
+                class="px-2 py-1.5 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-[11px] font-bold cursor-pointer">절⏭️</button>
 
               <!-- 성우 목소리 선택 -->
-              <select id="tts-voice-select" class="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-amber-400/60 text-amber-200 text-xs font-extrabold outline-none cursor-pointer">
+              <select id="tts-voice-select"
+                class="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-amber-400/60 text-amber-200 text-xs font-extrabold outline-none cursor-pointer">
                 <option value="nova">🎙️ 여성 아나운서 HD (또렷·단아)</option>
                 <option value="onyx">🎙️ 남성 성우 HD (중후·깊음)</option>
                 <option value="shimmer">🎙️ 은혜 낭독 성우 HD (차분·따뜻)</option>
                 <option value="google_ko">🎙️ 클린 표준 성우 (명료·경쾌)</option>
               </select>
 
-              <span id="tts-status-label" class="text-[11px] text-amber-200 font-bold ml-1">아나운서 HD 성우로 또렷하게 낭독합니다</span>
+              <span id="tts-status-label" class="text-[11px] text-amber-200 font-bold ml-1">아나운서 HD 성우로 또렷하게
+                낭독합니다</span>
             </div>
 
             <!-- 속도(배속) 조절 칩 -->
             <div class="flex items-center gap-1">
               <span class="text-[11px] text-slate-200 font-extrabold mr-0.5">배속:</span>
-              <button data-rate="0.85" class="tts-rate-btn px-2 py-0.5 rounded-md bg-slate-700 text-slate-200 text-[11px] font-bold cursor-pointer">0.8x</button>
-              <button data-rate="1.0" class="tts-rate-btn px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 text-[11px] font-extrabold cursor-pointer">1.0x</button>
-              <button data-rate="1.25" class="tts-rate-btn px-2 py-0.5 rounded-md bg-slate-700 text-slate-200 text-[11px] font-bold cursor-pointer">1.25x</button>
-              <button data-rate="1.5" class="tts-rate-btn px-2 py-0.5 rounded-md bg-slate-700 text-slate-200 text-[11px] font-bold cursor-pointer">1.5x</button>
-              <button data-rate="1.8" class="tts-rate-btn px-2 py-0.5 rounded-md bg-slate-700 text-slate-200 text-[11px] font-bold cursor-pointer">1.8x</button>
-              <button data-rate="2.0" class="tts-rate-btn px-2 py-0.5 rounded-md bg-slate-700 text-slate-200 text-[11px] font-bold cursor-pointer">2.0x</button>
+              <button data-rate="0.85"
+                class="tts-rate-btn px-2 py-0.5 rounded-md bg-slate-700 text-slate-200 text-[11px] font-bold cursor-pointer">0.8x</button>
+              <button data-rate="1.0"
+                class="tts-rate-btn px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 text-[11px] font-extrabold cursor-pointer">1.0x</button>
+              <button data-rate="1.25"
+                class="tts-rate-btn px-2 py-0.5 rounded-md bg-slate-700 text-slate-200 text-[11px] font-bold cursor-pointer">1.25x</button>
+              <button data-rate="1.5"
+                class="tts-rate-btn px-2 py-0.5 rounded-md bg-slate-700 text-slate-200 text-[11px] font-bold cursor-pointer">1.5x</button>
+              <button data-rate="1.8"
+                class="tts-rate-btn px-2 py-0.5 rounded-md bg-slate-700 text-slate-200 text-[11px] font-bold cursor-pointer">1.8x</button>
+              <button data-rate="2.0"
+                class="tts-rate-btn px-2 py-0.5 rounded-md bg-slate-700 text-slate-200 text-[11px] font-bold cursor-pointer">2.0x</button>
             </div>
           </div>
 
@@ -594,25 +816,35 @@
               <div class="holy-bible-gutter"></div>
 
               <!-- 성경 상단 러닝 헤더 -->
-              <div class="relative z-10 shrink-0 flex items-center justify-between px-4 sm:px-6 py-2 border-b border-[#e2d6be] bg-[#f4ede0] text-[#5c3d24]">
+              <div
+                class="relative z-10 shrink-0 flex items-center justify-between px-4 sm:px-6 py-2 border-b border-[#e2d6be] bg-[#f4ede0] text-[#5c3d24]">
                 <span id="bible-running-header-left" class="text-xs font-extrabold tracking-wider">성경전서 개역개정판</span>
                 <span id="bible-passage-title" class="text-xs sm:text-sm font-extrabold text-[#7c2d12]">창세기 제 1 장</span>
                 <span id="bible-page-indicator" class="text-[11px] font-bold text-[#785c42]">1 / 1 쪽</span>
               </div>
 
               <!-- PC 양면 2단 / 모바일 단면 1단 본문 영역 -->
-              <div id="bible-spread-grid" class="grid grid-cols-1 md:grid-cols-2 md:grid-rows-1 h-[42dvh] sm:h-[45dvh] min-h-[265px] max-h-[420px] overflow-hidden">
-                <div id="bible-left-page" class="bible-page-sheet min-h-0 h-full p-4 sm:px-6 sm:py-4 pb-5 overflow-y-auto space-y-1.5 border-b md:border-b-0 md:border-r border-[#e8dec9]"></div>
-                <div id="bible-right-page" class="hidden md:block bible-page-sheet min-h-0 h-full p-4 sm:px-6 sm:py-4 pb-5 overflow-y-auto space-y-1.5"></div>
+              <div id="bible-spread-grid"
+                class="grid grid-cols-1 md:grid-cols-2 md:grid-rows-1 h-[42dvh] sm:h-[45dvh] min-h-[265px] max-h-[420px] overflow-hidden">
+                <div id="bible-left-page"
+                  class="bible-page-sheet min-h-0 h-full p-4 sm:px-6 sm:py-4 pb-5 overflow-y-auto space-y-1.5 border-b md:border-b-0 md:border-r border-[#e8dec9]">
+                </div>
+                <div id="bible-right-page"
+                  class="hidden md:block bible-page-sheet min-h-0 h-full p-4 sm:px-6 sm:py-4 pb-5 overflow-y-auto space-y-1.5">
+                </div>
               </div>
 
               <!-- 성경 하단 책장 넘기기 바 -->
-              <div class="relative z-10 shrink-0 flex items-center justify-between px-3 sm:px-6 py-2 border-t border-[#dccfb4] bg-[#efe6d4] text-[#4a321f]">
-                <button id="btn-bible-page-prev" class="px-3.5 py-1.5 rounded-lg bg-[#e2d3b7] hover:bg-[#d6c3a1] text-xs font-extrabold cursor-pointer shadow-sm">
+              <div
+                class="relative z-10 shrink-0 flex items-center justify-between px-3 sm:px-6 py-2 border-t border-[#dccfb4] bg-[#efe6d4] text-[#4a321f]">
+                <button id="btn-bible-page-prev"
+                  class="px-3.5 py-1.5 rounded-lg bg-[#e2d3b7] hover:bg-[#d6c3a1] text-xs font-extrabold cursor-pointer shadow-sm">
                   ◀ 이전 책장 넘기기
                 </button>
-                <span class="text-[11px] text-[#785c42] font-semibold hidden sm:inline">💡 절을 터치하면 아나운서 성우가 그 절부터 낭독합니다</span>
-                <button id="btn-bible-page-next" class="px-3.5 py-1.5 rounded-lg bg-[#e2d3b7] hover:bg-[#d6c3a1] text-xs font-extrabold cursor-pointer shadow-sm">
+                <span class="text-[11px] text-[#785c42] font-semibold hidden sm:inline">💡 절을 터치하면 아나운서 성우가 그 절부터
+                  낭독합니다</span>
+                <button id="btn-bible-page-next"
+                  class="px-3.5 py-1.5 rounded-lg bg-[#e2d3b7] hover:bg-[#d6c3a1] text-xs font-extrabold cursor-pointer shadow-sm">
                   다음 책장 넘기기 ▶
                 </button>
               </div>
@@ -621,10 +853,12 @@
 
           <!-- 하단 액션 버튼 -->
           <div class="flex flex-wrap gap-2 pt-0.5">
-            <button id="btn-send-bible-board" class="flex-1 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-extrabold cursor-pointer">
+            <button id="btn-send-bible-board"
+              class="flex-1 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-extrabold cursor-pointer">
               🖥️ 이 본문을 방 칠판에 띄우기
             </button>
-            <button id="btn-complete-bible" class="flex-1 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-extrabold cursor-pointer shadow-lg">
+            <button id="btn-complete-bible"
+              class="flex-1 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-extrabold cursor-pointer shadow-lg">
               🙌 통독 완료! '예스통독' 인증하러 가기 ➔
             </button>
           </div>
@@ -635,19 +869,23 @@
           <div class="p-4 rounded-2xl bg-[#FFFDF9] text-slate-900 border-2 border-amber-300 space-y-2.5">
             <div class="text-sm font-extrabold text-amber-900">1단계. 성경통독 코스(읽기 방식) 선택</div>
             <div id="bible-plan-cards" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <button type="button" data-plan="chronological" class="plan-type-btn text-left p-3.5 rounded-xl border-2 border-amber-500 bg-amber-50 cursor-pointer">
+              <button type="button" data-plan="chronological"
+                class="plan-type-btn text-left p-3.5 rounded-xl border-2 border-amber-500 bg-amber-50 cursor-pointer">
                 <div class="text-xs sm:text-sm font-extrabold text-amber-900">⏳ 연대기순 성경통독 (역사 사건 시간순)</div>
                 <div class="text-xs text-slate-600 mt-1">창세기 1~11장 ➔ 욥기 ➔ 출애굽 ➔ 왕정·시편·선지서 시대순 ➔ 복음서·사도행전·서신서</div>
               </button>
-              <button type="button" data-plan="canonical" class="plan-type-btn text-left p-3.5 rounded-xl border-2 border-slate-200 bg-white cursor-pointer">
+              <button type="button" data-plan="canonical"
+                class="plan-type-btn text-left p-3.5 rounded-xl border-2 border-slate-200 bg-white cursor-pointer">
                 <div class="text-xs sm:text-sm font-extrabold text-emerald-900">📖 성경 순서 정독 (창세기 ➔ 요한계시록)</div>
                 <div class="text-xs text-slate-600 mt-1">창세기 1장부터 요한계시록 22장까지 총 1,189장을 차례대로 완독하는 정통 코스</div>
               </button>
-              <button type="button" data-plan="balanced" class="plan-type-btn text-left p-3.5 rounded-xl border-2 border-slate-200 bg-white cursor-pointer">
+              <button type="button" data-plan="balanced"
+                class="plan-type-btn text-left p-3.5 rounded-xl border-2 border-slate-200 bg-white cursor-pointer">
                 <div class="text-xs sm:text-sm font-extrabold text-sky-900">⚖️ 구약 + 신약 + 시편 균형 통독</div>
                 <div class="text-xs text-slate-600 mt-1">구약과 신약, 시편·잠언을 날마다 번갈아 읽으며 지루함 없이 완주하는 맥체인 코스</div>
               </button>
-              <button type="button" data-plan="nt_psalms" class="plan-type-btn text-left p-3.5 rounded-xl border-2 border-slate-200 bg-white cursor-pointer">
+              <button type="button" data-plan="nt_psalms"
+                class="plan-type-btn text-left p-3.5 rounded-xl border-2 border-slate-200 bg-white cursor-pointer">
                 <div class="text-xs sm:text-sm font-extrabold text-rose-900">🌱 신약 · 시편 · 잠언 집중 통독</div>
                 <div class="text-xs text-slate-600 mt-1">신약 260장과 시편·잠언(총 441장)을 먼저 깊이 완독하는 은혜 집중 코스</div>
               </button>
@@ -657,33 +895,53 @@
           <div class="p-4 rounded-2xl bg-[#FFFDF9] text-slate-900 border-2 border-emerald-300 space-y-2.5">
             <div class="text-sm font-extrabold text-emerald-900">2단계. 하루에 읽을 분량(장수) 선택</div>
             <div class="flex flex-wrap gap-2">
-              <button type="button" data-chaps="1" class="plan-chaps-btn px-4 py-2 rounded-xl bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold cursor-pointer">하루 1장 (묵상형)</button>
-              <button type="button" data-chaps="2" class="plan-chaps-btn px-4 py-2 rounded-xl bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold cursor-pointer">하루 2장</button>
-              <button type="button" data-chaps="3" class="plan-chaps-btn px-4 py-2 rounded-xl bg-amber-400 border-2 border-amber-600 text-slate-950 text-xs font-extrabold cursor-pointer">하루 3장 (표준 추천)</button>
-              <button type="button" data-chaps="4" class="plan-chaps-btn px-4 py-2 rounded-xl bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold cursor-pointer">하루 4장 (1년 1독)</button>
-              <button type="button" data-chaps="5" class="plan-chaps-btn px-4 py-2 rounded-xl bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold cursor-pointer">하루 5장 (집중)</button>
-              <button type="button" data-chaps="10" class="plan-chaps-btn px-4 py-2 rounded-xl bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold cursor-pointer">하루 10장 (단기완독)</button>
+              <button type="button" data-chaps="1"
+                class="plan-chaps-btn px-4 py-2 rounded-xl bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold cursor-pointer">하루
+                1장 (묵상형)</button>
+              <button type="button" data-chaps="2"
+                class="plan-chaps-btn px-4 py-2 rounded-xl bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold cursor-pointer">하루
+                2장</button>
+              <button type="button" data-chaps="3"
+                class="plan-chaps-btn px-4 py-2 rounded-xl bg-amber-400 border-2 border-amber-600 text-slate-950 text-xs font-extrabold cursor-pointer">하루
+                3장 (표준 추천)</button>
+              <button type="button" data-chaps="4"
+                class="plan-chaps-btn px-4 py-2 rounded-xl bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold cursor-pointer">하루
+                4장 (1년 1독)</button>
+              <button type="button" data-chaps="5"
+                class="plan-chaps-btn px-4 py-2 rounded-xl bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold cursor-pointer">하루
+                5장 (집중)</button>
+              <button type="button" data-chaps="10"
+                class="plan-chaps-btn px-4 py-2 rounded-xl bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold cursor-pointer">하루
+                10장 (단기완독)</button>
             </div>
           </div>
 
           <!-- 오늘 배정된 통독 분량 프리뷰 & 진도 조절 -->
-          <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-900 to-slate-800 border-2 border-emerald-400/60 space-y-3">
+          <div
+            class="p-4 rounded-2xl bg-gradient-to-r from-emerald-900 to-slate-800 border-2 border-emerald-400/60 space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <div id="plan-preview-badge" class="text-xs font-extrabold text-emerald-300">⏳ 연대기순 성경통독 · Day 1</div>
-                <div id="plan-preview-range" class="text-base sm:text-lg font-extrabold text-white mt-0.5">창세기 1장 ~ 3장 (총 3장)</div>
+                <div id="plan-preview-range" class="text-base sm:text-lg font-extrabold text-white mt-0.5">창세기 1장 ~ 3장
+                  (총 3장)</div>
               </div>
               <div class="inline-flex items-center gap-1.5">
-                <button id="btn-plan-day-prev" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-bold cursor-pointer">◀ 이전 Day</button>
+                <button id="btn-plan-day-prev"
+                  class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-bold cursor-pointer">◀ 이전
+                  Day</button>
                 <span id="plan-day-indicator" class="text-xs font-extrabold text-amber-300 px-2">Day 1</span>
-                <button id="btn-plan-day-next" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-bold cursor-pointer">다음 Day ▶</button>
+                <button id="btn-plan-day-next"
+                  class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-bold cursor-pointer">다음 Day
+                  ▶</button>
               </div>
             </div>
             <div class="flex flex-wrap gap-2">
-              <button id="btn-start-plan-reading" class="flex-1 py-2.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs sm:text-sm font-extrabold cursor-pointer">
+              <button id="btn-start-plan-reading"
+                class="flex-1 py-2.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs sm:text-sm font-extrabold cursor-pointer">
                 📖 오늘 분량 성경책으로 바로 펼치기
               </button>
-              <button id="btn-start-plan-audio" class="flex-1 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-extrabold cursor-pointer">
+              <button id="btn-start-plan-audio"
+                class="flex-1 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-extrabold cursor-pointer">
                 🔊 아나운서 성우 연속 음성통독 시작
               </button>
             </div>
@@ -724,11 +982,13 @@
 
               <!-- 간편 '예스통독' 완료 등록 폼 -->
               <div class="p-3.5 rounded-2xl bg-[#F0FDF4] text-slate-900 border-2 border-emerald-400 shadow space-y-2">
-                <div class="text-xs sm:text-sm font-extrabold text-emerald-950 border-b border-emerald-200 pb-1.5">✍️ 오늘 성경통독 완료 '예스통독' 남기기</div>
+                <div class="text-xs sm:text-sm font-extrabold text-emerald-950 border-b border-emerald-200 pb-1.5">✍️ 오늘
+                  성경통독 완료 '예스통독' 남기기</div>
                 <div class="grid grid-cols-12 gap-1.5">
                   <div class="col-span-5">
                     <label class="block text-[10px] font-extrabold text-emerald-900 mb-0.5">통독 코스 분류</label>
-                    <select id="yes-plan-input" class="w-full px-2 py-1.5 rounded-lg bg-white border border-emerald-300 text-xs font-extrabold text-slate-900 outline-none">
+                    <select id="yes-plan-input"
+                      class="w-full px-2 py-1.5 rounded-lg bg-white border border-emerald-300 text-xs font-extrabold text-slate-900 outline-none">
                       <option value="연대기순 통독">⏳ 연대기순 통독</option>
                       <option value="성경 순서 정독">📖 성경 순서 정독</option>
                       <option value="구약+신약 균형">⚖️ 구약+신약 균형</option>
@@ -738,44 +998,72 @@
                   </div>
                   <div class="col-span-5">
                     <label class="block text-[10px] font-extrabold text-emerald-900 mb-0.5">읽은 성경 범위</label>
-                    <input id="yes-range-input" type="text" value="창세기 1장" class="w-full px-2.5 py-1.5 rounded-lg bg-white border border-emerald-300 text-xs font-extrabold text-slate-900 outline-none" />
+                    <input id="yes-range-input" type="text" value="창세기 1장"
+                      class="w-full px-2.5 py-1.5 rounded-lg bg-white border border-emerald-300 text-xs font-extrabold text-slate-900 outline-none" />
                   </div>
                   <div class="col-span-2">
                     <label class="block text-[10px] font-extrabold text-emerald-900 mb-0.5">장수</label>
-                    <input id="yes-count-input" type="number" min="1" max="50" value="1" class="w-full px-1.5 py-1.5 rounded-lg bg-white border border-emerald-300 text-xs font-black text-emerald-800 outline-none text-center" />
+                    <input id="yes-count-input" type="number" min="1" max="50" value="1"
+                      class="w-full px-1.5 py-1.5 rounded-lg bg-white border border-emerald-300 text-xs font-black text-emerald-800 outline-none text-center" />
                   </div>
                 </div>
 
                 <div class="flex flex-wrap gap-1">
-                  <button type="button" data-yesmsg="예스통독! 오늘 말씀 통독 완료했습니다 아멘 🙏" class="yes-preset-chip px-2 py-0.5 rounded-full bg-emerald-200/80 hover:bg-emerald-300 text-emerald-950 text-[11px] font-extrabold cursor-pointer">🙌 예스통독! 완료</button>
-                  <button type="button" data-yesmsg="예스통독! 아나운서 음성으로 함께 들으니 말씀이 귀에 쏙쏙 들어옵니다 ✨" class="yes-preset-chip px-2 py-0.5 rounded-full bg-amber-200/80 hover:bg-amber-300 text-amber-950 text-[11px] font-extrabold cursor-pointer">🔊 음성통독 아멘</button>
-                  <button type="button" data-yesmsg="예스통독! 연대기순으로 읽으니 성경 역사가 한눈에 보입니다 📖" class="yes-preset-chip px-2 py-0.5 rounded-full bg-sky-200/80 hover:bg-sky-300 text-sky-950 text-[11px] font-extrabold cursor-pointer">⏳ 연대기순 완독</button>
+                  <button type="button" data-yesmsg="예스통독! 오늘 말씀 통독 완료했습니다 아멘 🙏"
+                    class="yes-preset-chip px-2 py-0.5 rounded-full bg-emerald-200/80 hover:bg-emerald-300 text-emerald-950 text-[11px] font-extrabold cursor-pointer">🙌
+                    예스통독! 완료</button>
+                  <button type="button" data-yesmsg="예스통독! 아나운서 음성으로 함께 들으니 말씀이 귀에 쏙쏙 들어옵니다 ✨"
+                    class="yes-preset-chip px-2 py-0.5 rounded-full bg-amber-200/80 hover:bg-amber-300 text-amber-950 text-[11px] font-extrabold cursor-pointer">🔊
+                    음성통독 아멘</button>
+                  <button type="button" data-yesmsg="예스통독! 연대기순으로 읽으니 성경 역사가 한눈에 보입니다 📖"
+                    class="yes-preset-chip px-2 py-0.5 rounded-full bg-sky-200/80 hover:bg-sky-300 text-sky-950 text-[11px] font-extrabold cursor-pointer">⏳
+                    연대기순 완독</button>
                 </div>
 
-                <input id="yes-comment-input" type="text" value="예스통독! 오늘 정한 말씀 분량을 기쁨으로 완독했습니다 🙏" placeholder="'예스통독'과 함께 한줄 소감을 남겨주세요" class="w-full px-2.5 py-2 rounded-lg bg-white border border-emerald-300 text-xs font-medium text-slate-900 outline-none" />
+                <input id="yes-comment-input" type="text" value="예스통독! 오늘 정한 말씀 분량을 기쁨으로 완독했습니다 🙏"
+                  placeholder="'예스통독'과 함께 한줄 소감을 남겨주세요"
+                  class="w-full px-2.5 py-2 rounded-lg bg-white border border-emerald-300 text-xs font-medium text-slate-900 outline-none" />
 
-                <button id="btn-submit-yestongdok" class="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 border border-amber-500 text-slate-950 text-xs sm:text-sm font-black cursor-pointer shadow">
+                <button id="btn-submit-yestongdok"
+                  class="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 border border-amber-500 text-slate-950 text-xs sm:text-sm font-black cursor-pointer shadow">
                   🙌 '예스통독' 게시판에 완료 등록하기
                 </button>
               </div>
             </div>
 
             <!-- 우측 컬럼 (7/12): 카테고리별로 명확히 분류된 '예스통독' 인증 게시판 -->
-            <div class="lg:col-span-7 p-3.5 rounded-2xl bg-[#FFFDF9] text-slate-900 border-2 border-slate-300 shadow flex flex-col space-y-2.5">
+            <div
+              class="lg:col-span-7 p-3.5 rounded-2xl bg-[#FFFDF9] text-slate-900 border-2 border-slate-300 shadow flex flex-col space-y-2.5">
               <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2">
-                <span id="bible-board-list-heading" class="text-xs sm:text-sm font-extrabold text-slate-900">🗂️ 분류별 '예스통독' 인증 기록</span>
-                <span id="bible-board-count-badge" class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-800 text-[11px] font-extrabold">총 3건</span>
+                <span id="bible-board-list-heading" class="text-xs sm:text-sm font-extrabold text-slate-900">🗂️ 분류별
+                  '예스통독' 인증 기록</span>
+                <span id="bible-board-count-badge"
+                  class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-800 text-[11px] font-extrabold">총 3건</span>
               </div>
 
               <!-- 카테고리 분류 탭 바 -->
               <div id="bible-board-cat-tabs" class="flex flex-wrap gap-1.5">
-                <button type="button" data-bcat="all" class="bible-cat-btn px-2.5 py-1 rounded-lg bg-slate-900 text-amber-300 text-xs font-extrabold cursor-pointer">📋 전체</button>
-                <button type="button" data-bcat="today" class="bible-cat-btn px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold cursor-pointer">✨ 오늘인증</button>
-                <button type="button" data-bcat="연대기" class="bible-cat-btn px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 hover:bg-amber-200 text-xs font-bold cursor-pointer">⏳ 연대기순</button>
-                <button type="button" data-bcat="순서" class="bible-cat-btn px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-900 hover:bg-emerald-200 text-xs font-bold cursor-pointer">📖 성경순서</button>
-                <button type="button" data-bcat="균형" class="bible-cat-btn px-2.5 py-1 rounded-lg bg-sky-100 text-sky-900 hover:bg-sky-200 text-xs font-bold cursor-pointer">⚖️ 균형통독</button>
-                <button type="button" data-bcat="신약" class="bible-cat-btn px-2.5 py-1 rounded-lg bg-rose-100 text-rose-900 hover:bg-rose-200 text-xs font-bold cursor-pointer">🌱 신약·시편</button>
-                <button type="button" data-bcat="mine" class="bible-cat-btn px-2.5 py-1 rounded-lg bg-indigo-100 text-indigo-900 hover:bg-indigo-200 text-xs font-bold cursor-pointer">🙋 내 기록</button>
+                <button type="button" data-bcat="all"
+                  class="bible-cat-btn px-2.5 py-1 rounded-lg bg-slate-900 text-amber-300 text-xs font-extrabold cursor-pointer">📋
+                  전체</button>
+                <button type="button" data-bcat="today"
+                  class="bible-cat-btn px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold cursor-pointer">✨
+                  오늘인증</button>
+                <button type="button" data-bcat="연대기"
+                  class="bible-cat-btn px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 hover:bg-amber-200 text-xs font-bold cursor-pointer">⏳
+                  연대기순</button>
+                <button type="button" data-bcat="순서"
+                  class="bible-cat-btn px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-900 hover:bg-emerald-200 text-xs font-bold cursor-pointer">📖
+                  성경순서</button>
+                <button type="button" data-bcat="균형"
+                  class="bible-cat-btn px-2.5 py-1 rounded-lg bg-sky-100 text-sky-900 hover:bg-sky-200 text-xs font-bold cursor-pointer">⚖️
+                  균형통독</button>
+                <button type="button" data-bcat="신약"
+                  class="bible-cat-btn px-2.5 py-1 rounded-lg bg-rose-100 text-rose-900 hover:bg-rose-200 text-xs font-bold cursor-pointer">🌱
+                  신약·시편</button>
+                <button type="button" data-bcat="mine"
+                  class="bible-cat-btn px-2.5 py-1 rounded-lg bg-indigo-100 text-indigo-900 hover:bg-indigo-200 text-xs font-bold cursor-pointer">🙋
+                  내 기록</button>
               </div>
 
               <!-- 고가독성 게시판 카드 목록 -->
@@ -789,8 +1077,10 @@
     <!-- =================================================================== -->
     <!-- [모달 4] ✏️ 큐티방 — 오늘의 소미 큐티 본문 & 큐티 기초반 강의안 & 실시간 나눔 -->
     <!-- =================================================================== -->
-    <div id="qt-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
-      <div class="bg-slate-800 text-white rounded-2xl max-w-2xl w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3 max-h-[92dvh] overflow-y-auto">
+    <div id="qt-modal"
+      class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
+      <div
+        class="bg-slate-800 text-white rounded-2xl max-w-2xl w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3 max-h-[92dvh] overflow-y-auto">
         <div class="flex items-center justify-between">
           <span class="text-sm font-extrabold text-amber-300">✏️ 큐티방 — 오늘의 소미 큐티 & 기초반 아카데미</span>
           <button data-close="qt-modal" class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
@@ -798,33 +1088,46 @@
 
         <!-- 3분할 대형 상단 메뉴 탭 바 -->
         <div class="grid grid-cols-3 gap-1.5 sm:gap-2 p-1.5 rounded-2xl bg-slate-950 border border-slate-700">
-          <button data-qtab="today" class="qt-tab-btn py-2 px-2 rounded-xl text-xs sm:text-sm font-extrabold bg-amber-400 text-slate-950 cursor-pointer text-center">1. 🌅 오늘의 소미 큐티</button>
-          <button data-qtab="lectures" class="qt-tab-btn py-2 px-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-800 text-slate-200 cursor-pointer text-center">2. 📘 큐티 기초반 강의안</button>
-          <button data-qtab="share" class="qt-tab-btn py-2 px-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-800 text-slate-200 cursor-pointer text-center">3. 🙏 큐티 나눔 게시판</button>
+          <button data-qtab="today"
+            class="qt-tab-btn py-2 px-2 rounded-xl text-xs sm:text-sm font-extrabold bg-amber-400 text-slate-950 cursor-pointer text-center">1.
+            🌅 오늘의 소미 큐티</button>
+          <button data-qtab="lectures"
+            class="qt-tab-btn py-2 px-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-800 text-slate-200 cursor-pointer text-center">2.
+            📘 큐티 기초반 강의안</button>
+          <button data-qtab="share"
+            class="qt-tab-btn py-2 px-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-800 text-slate-200 cursor-pointer text-center">3.
+            🙏 큐티 나눔 게시판</button>
         </div>
 
         <!-- 서브탭 1: 오늘의 소미 큐티 본문 (날짜 선택 + 성경 원문 + 해설 + 질문 1·2·3 + 기도문) -->
         <div id="qtab-today" class="qt-tab-pane space-y-2.5">
-          <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-900 p-2.5 rounded-xl border border-slate-700">
+          <div
+            class="flex flex-wrap items-center justify-between gap-2 bg-slate-900 p-2.5 rounded-xl border border-slate-700">
             <div class="flex items-center gap-1.5 flex-wrap">
               <span class="text-xs font-extrabold text-amber-300">📅 큐티 날짜:</span>
-              <input id="qt-date-picker" type="date" class="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
-              <button id="btn-reload-qt" class="px-3 py-1 rounded-lg bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">조회</button>
+              <input id="qt-date-picker" type="date"
+                class="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+              <button id="btn-reload-qt"
+                class="px-3 py-1 rounded-lg bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">조회</button>
             </div>
-            <select id="qt-recent-select" class="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-600 text-xs text-slate-200 outline-none">
+            <select id="qt-recent-select"
+              class="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-600 text-xs text-slate-200 outline-none">
               <option value="">최근 등록된 소미 큐티 바로가기</option>
             </select>
           </div>
 
-          <div id="today-qt-box" class="p-4 rounded-2xl bg-[#FDFBF7] text-slate-800 border border-amber-200 max-h-[52dvh] overflow-y-auto space-y-3">
+          <div id="today-qt-box"
+            class="p-4 rounded-2xl bg-[#FDFBF7] text-slate-800 border border-amber-200 max-h-[52dvh] overflow-y-auto space-y-3">
             <div class="text-xs font-bold text-amber-900">🌅 오늘의 소미 큐티 본문을 불러오는 중입니다...</div>
           </div>
 
           <div class="flex flex-wrap gap-2">
-            <button id="btn-project-today-qt" class="flex-1 py-2 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold cursor-pointer">
+            <button id="btn-project-today-qt"
+              class="flex-1 py-2 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold cursor-pointer">
               🖥️ 이 큐티 본문을 방 3D 칠판에 띄우기
             </button>
-            <button id="btn-write-share-from-qt" class="flex-1 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer">
+            <button id="btn-write-share-from-qt"
+              class="flex-1 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer">
               ✍️ 이 말씀으로 큐티 나눔 작성하기
             </button>
           </div>
@@ -841,33 +1144,45 @@
           </div>
 
           <div class="flex flex-wrap justify-between gap-2">
-            <button id="btn-project-qt-lec" class="px-3.5 py-2 rounded-xl bg-sky-400 text-slate-950 text-xs font-extrabold cursor-pointer">
+            <button id="btn-project-qt-lec"
+              class="px-3.5 py-2 rounded-xl bg-sky-400 text-slate-950 text-xs font-extrabold cursor-pointer">
               🖥️ 이 강의안 요약을 3D 칠판에 띄우기
             </button>
-            <button id="btn-toggle-lec-editor" class="px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-xs font-bold cursor-pointer">
+            <button id="btn-toggle-lec-editor"
+              class="px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-xs font-bold cursor-pointer">
               ✍️ 관리자 새 강의안 등록
             </button>
           </div>
 
           <div id="qt-lec-editor" class="hidden p-3 rounded-xl bg-slate-900 border border-amber-400/40 space-y-2">
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <input id="lec-week-input" type="text" placeholder="주차 (예: 4주차 심화)" class="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
-              <input id="lec-title-input" type="text" placeholder="강의 제목 입력" class="sm:col-span-2 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+              <input id="lec-week-input" type="text" placeholder="주차 (예: 4주차 심화)"
+                class="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+              <input id="lec-title-input" type="text" placeholder="강의 제목 입력"
+                class="sm:col-span-2 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
             </div>
-            <textarea id="lec-content-input" rows="4" placeholder="성도들이 읽고 배울 큐티 강의안 내용을 작성하세요..." class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none resize-none"></textarea>
-            <button id="btn-save-qt-lec" class="w-full py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">📘 강의안 저장 및 게시</button>
+            <textarea id="lec-content-input" rows="4" placeholder="성도들이 읽고 배울 큐티 강의안 내용을 작성하세요..."
+              class="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none resize-none"></textarea>
+            <button id="btn-save-qt-lec"
+              class="w-full py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">📘 강의안 저장
+              및 게시</button>
           </div>
         </div>
 
         <!-- 서브탭 3: 실시간 큐티 나눔 보드 (소미 앱 은혜나눔 & 큐티 달력·통계 실시간 연동) -->
         <div id="qtab-share" class="hidden qt-tab-pane space-y-2.5">
-          <div id="qt-somy-sync-badge" class="px-3 py-2 rounded-xl bg-amber-400/15 border border-amber-400/40 text-[11px] sm:text-xs font-bold text-amber-200 flex items-center justify-between gap-2">
+          <div id="qt-somy-sync-badge"
+            class="px-3 py-2 rounded-xl bg-amber-400/15 border border-amber-400/40 text-[11px] sm:text-xs font-bold text-amber-200 flex items-center justify-between gap-2">
             <span>✨ 이곳에서 작성한 큐티 나눔은 <b>소미 앱 [은혜나눔 게시판]</b>과 <b>[오늘의 큐티 완료 달력·통계]</b>에 자동 반영됩니다!</span>
           </div>
           <div class="p-3 rounded-xl bg-slate-900 border border-slate-700 space-y-2">
-            <input id="qt-share-passage" type="text" placeholder="묵상 본문 (예: 시편 27:1)" class="w-full px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
-            <textarea id="qt-share-input" rows="2" placeholder="깨달은 말씀과 오늘 나의 적용(순종)을 성도들과 나누어 주세요!" class="w-full px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none resize-none"></textarea>
-            <button id="btn-submit-qt-share" class="w-full py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer">🙏 큐티 나눔 올리기 (소미 앱 동시 반영)</button>
+            <input id="qt-share-passage" type="text" placeholder="묵상 본문 (예: 시편 27:1)"
+              class="w-full px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+            <textarea id="qt-share-input" rows="2" placeholder="깨달은 말씀과 오늘 나의 적용(순종)을 성도들과 나누어 주세요!"
+              class="w-full px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none resize-none"></textarea>
+            <button id="btn-submit-qt-share"
+              class="w-full py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer">🙏
+              큐티 나눔 올리기 (소미 앱 동시 반영)</button>
           </div>
           <div id="qt-shares-list" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
         </div>
@@ -875,23 +1190,31 @@
     </div>
 
     <!-- [모달 5] 🕯️ 기도 등불 봉헌 & 중보기도 -->
-    <div id="candle-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
-      <div class="bg-slate-800 text-white rounded-2xl max-w-md w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3 max-h-[90dvh] overflow-y-auto">
+    <div id="candle-modal"
+      class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
+      <div
+        class="bg-slate-800 text-white rounded-2xl max-w-md w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3 max-h-[90dvh] overflow-y-auto">
         <div class="flex items-center justify-between">
           <span class="text-sm font-extrabold text-amber-300">🕯️ 강단 앞 기도 등불 밝히기</span>
-          <button data-close="candle-modal" class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
+          <button data-close="candle-modal"
+            class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
         </div>
         <div class="flex gap-2">
-          <input id="candle-text-input" type="text" placeholder="간절한 기도 제목을 적어주세요..." class="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white outline-none" />
-          <button id="btn-add-candle" class="shrink-0 px-3.5 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">🕯️ 점등</button>
+          <input id="candle-text-input" type="text" placeholder="간절한 기도 제목을 적어주세요..."
+            class="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white outline-none" />
+          <button id="btn-add-candle"
+            class="shrink-0 px-3.5 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">🕯️
+            점등</button>
         </div>
         <div id="candles-list-box" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
       </div>
     </div>
 
     <!-- [모달 6] 🎵 배경 기도음악 설정 -->
-    <div id="bgm-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
-      <div class="bg-slate-800 text-white rounded-2xl max-w-md w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3">
+    <div id="bgm-modal"
+      class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
+      <div
+        class="bg-slate-800 text-white rounded-2xl max-w-md w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3">
         <div class="flex items-center justify-between">
           <span class="text-sm font-extrabold text-indigo-300">🎵 배경 기도음악 설정</span>
           <button data-close="bgm-modal" class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
@@ -899,59 +1222,88 @@
         <div class="p-3 rounded-xl bg-slate-900 space-y-2">
           <div class="text-xs font-bold text-rose-300">1. 🔗 유튜브 기도음악 / 찬양 연주 링크</div>
           <div class="flex gap-2">
-            <input id="bgm-yt-input" type="text" value="https://www.youtube.com/watch?v=jfKfPfyJRdk" class="flex-1 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
-            <button id="btn-start-yt-bgm" class="px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-extrabold cursor-pointer">재생</button>
+            <input id="bgm-yt-input" type="text" value="https://www.youtube.com/watch?v=jfKfPfyJRdk"
+              class="flex-1 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+            <button id="btn-start-yt-bgm"
+              class="px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-extrabold cursor-pointer">재생</button>
           </div>
         </div>
         <div class="p-3 rounded-xl bg-slate-900 space-y-2">
           <div class="text-xs font-bold text-emerald-300">2. 📂 내 폰/PC 기도음악 파일(MP3·M4A)</div>
-          <label class="block text-center py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-extrabold cursor-pointer">
+          <label
+            class="block text-center py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-extrabold cursor-pointer">
             음악 파일 불러오기
             <input id="bgm-file-input" type="file" accept="audio/*" class="hidden" />
           </label>
         </div>
         <div class="flex gap-2">
-          <button id="btn-start-synth-bgm" class="flex-1 py-2 rounded-xl bg-indigo-600 text-xs font-extrabold cursor-pointer">🎹 기본 은혜 패드 반주</button>
-          <button id="btn-stop-bgm" class="px-3.5 py-2 rounded-xl bg-slate-700 text-xs font-bold cursor-pointer">⏹️ 끄기</button>
+          <button id="btn-start-synth-bgm"
+            class="flex-1 py-2 rounded-xl bg-indigo-600 text-xs font-extrabold cursor-pointer">🎹 기본 은혜 패드 반주</button>
+          <button id="btn-stop-bgm" class="px-3.5 py-2 rounded-xl bg-slate-700 text-xs font-bold cursor-pointer">⏹️
+            끄기</button>
         </div>
       </div>
     </div>
 
     <!-- [모달 7] ✨ 내 아바타 스타일 스튜디오 (체형 · 얼굴 · 표정 · 헤어 · 패션 · 실시간 3D 미리보기) -->
-    <div id="profile-modal" class="hidden absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-4 z-40">
-      <div class="bg-slate-900 text-white rounded-2xl max-w-4xl w-full p-4 sm:p-5 border-2 border-amber-400/45 shadow-2xl space-y-3.5 max-h-[94dvh] overflow-y-auto">
+    <div id="profile-modal"
+      class="hidden absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-4 z-40">
+      <div
+        class="bg-slate-900 text-white rounded-2xl max-w-4xl w-full p-4 sm:p-5 border-2 border-amber-400/45 shadow-2xl space-y-3.5 max-h-[94dvh] overflow-y-auto">
         <div class="flex items-center justify-between border-b border-slate-700 pb-2.5">
           <div>
             <span class="text-sm sm:text-base font-extrabold text-amber-300">✨ 순정만화 · 웹툰 3D 아바타 스타일 스튜디오</span>
             <p class="text-[11px] text-slate-300 mt-0.5">카툰 셀 셰이딩 · 시스루 입체 헤어 · 투톤 보석 눈동자 · 웹툰 레이어드 패션을 나답게 조합해 보세요!</p>
           </div>
-          <button data-close="profile-modal" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-xs font-extrabold cursor-pointer">닫기 ✕</button>
+          <button data-close="profile-modal"
+            class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-xs font-extrabold cursor-pointer">닫기
+            ✕</button>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-          <!-- 좌측 (5/12): 실시간 360° 3D 미리보기 스테이지 & 이름 설정 -->
+          <!-- 좌측 (5/12): 실시간 360° 3D VRM 미리보기 스테이지 & 이름 설정 -->
           <div class="md:col-span-5 flex flex-col gap-2.5">
-            <div class="relative rounded-2xl overflow-hidden border-2 border-amber-400/40 bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 h-64 sm:h-72 shadow-inner">
-              <canvas id="avatar-preview-canvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
-              <div class="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
-                <span class="px-2 py-0.5 rounded-full bg-black/60 text-amber-300 text-[10px] font-extrabold border border-amber-400/30">🔄 좌우 드래그 회전</span>
-                <button type="button" id="btn-preview-zoom-toggle" class="pointer-events-auto px-2.5 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-extrabold cursor-pointer shadow">
-                  🔍 얼굴 클로즈업
+            <div
+              class="relative rounded-2xl overflow-hidden border-2 border-amber-400/40 bg-gradient-to-b from-slate-800 via-slate-900 to-slate-950 h-64 sm:h-72 shadow-inner">
+              <canvas id="avatar-preview-canvas"
+                class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
+              <div id="vrm-loading-badge" class="hidden absolute inset-0 bg-slate-950/70 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-10 pointer-events-none">
+                <div class="w-7 h-7 rounded-full border-2 border-amber-400 border-t-transparent animate-spin"></div>
+                <span class="text-xs font-extrabold text-amber-300">✨ 순정만화 3D 캐릭터 불러오는 중...</span>
+              </div>
+              <div class="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none z-20">
+                <span
+                  class="px-2 py-0.5 rounded-full bg-black/60 text-amber-300 text-[10px] font-extrabold border border-amber-400/30">🔄
+                  좌우 드래그 회전</span>
+                <button type="button" id="btn-preview-zoom-toggle"
+                  class="pointer-events-auto px-2.5 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-extrabold cursor-pointer shadow">
+                  🧍 전신 보기
                 </button>
               </div>
               <div class="absolute bottom-2 inset-x-2 flex justify-center gap-1 pointer-events-auto">
-                <button type="button" data-qexpr="smile" class="quick-expr-chip px-2 py-0.5 rounded-full bg-black/70 hover:bg-amber-400 hover:text-slate-950 text-[11px] font-bold cursor-pointer">😊 미소</button>
-                <button type="button" data-qexpr="joy" class="quick-expr-chip px-2 py-0.5 rounded-full bg-black/70 hover:bg-amber-400 hover:text-slate-950 text-[11px] font-bold cursor-pointer">😄 기쁨</button>
-                <button type="button" data-qexpr="pray" class="quick-expr-chip px-2 py-0.5 rounded-full bg-black/70 hover:bg-amber-400 hover:text-slate-950 text-[11px] font-bold cursor-pointer">🙏 기도</button>
-                <button type="button" data-qexpr="grace" class="quick-expr-chip px-2 py-0.5 rounded-full bg-black/70 hover:bg-amber-400 hover:text-slate-950 text-[11px] font-bold cursor-pointer">✨ 은혜</button>
-                <button type="button" data-qexpr="wink" class="quick-expr-chip px-2 py-0.5 rounded-full bg-black/70 hover:bg-amber-400 hover:text-slate-950 text-[11px] font-bold cursor-pointer">😉 윙크</button>
+                <button type="button" data-qexpr="smile"
+                  class="quick-expr-chip px-2 py-0.5 rounded-full bg-black/70 hover:bg-amber-400 hover:text-slate-950 text-[11px] font-bold cursor-pointer">😊
+                  미소</button>
+                <button type="button" data-qexpr="joy"
+                  class="quick-expr-chip px-2 py-0.5 rounded-full bg-black/70 hover:bg-amber-400 hover:text-slate-950 text-[11px] font-bold cursor-pointer">😄
+                  기쁨</button>
+                <button type="button" data-qexpr="pray"
+                  class="quick-expr-chip px-2 py-0.5 rounded-full bg-black/70 hover:bg-amber-400 hover:text-slate-950 text-[11px] font-bold cursor-pointer">🙏
+                  기도</button>
+                <button type="button" data-qexpr="grace"
+                  class="quick-expr-chip px-2 py-0.5 rounded-full bg-black/70 hover:bg-amber-400 hover:text-slate-950 text-[11px] font-bold cursor-pointer">✨
+                  은혜</button>
+                <button type="button" data-qexpr="wink"
+                  class="quick-expr-chip px-2 py-0.5 rounded-full bg-black/70 hover:bg-amber-400 hover:text-slate-950 text-[11px] font-bold cursor-pointer">😉
+                  윙크</button>
               </div>
             </div>
 
             <div class="p-3 rounded-xl bg-slate-800/90 border border-slate-700 space-y-2">
               <div>
                 <label class="block text-[11px] text-amber-300 font-extrabold mb-1">이름 / 직분 표시</label>
-                <input id="profile-name-input" type="text" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-600 text-xs text-white font-bold outline-none focus:border-amber-400" />
+                <input id="profile-name-input" type="text"
+                  class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-600 text-xs text-white font-bold outline-none focus:border-amber-400" />
               </div>
               <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer pt-0.5">
                 <input id="npc-toggle-chk" type="checkbox" checked class="accent-amber-400" />
@@ -971,160 +1323,153 @@
 
               <!-- 4대 카테고리 탭 -->
               <div class="grid grid-cols-4 gap-1 p-1 rounded-xl bg-slate-950 border border-slate-700">
-                <button type="button" data-avtab="body" class="av-studio-tab py-1.5 rounded-lg bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">1. 체형·얼굴</button>
+                <button type="button" data-avtab="body" class="av-studio-tab py-1.5 rounded-lg bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer">1. 캐릭터·눈동자</button>
                 <button type="button" data-avtab="expr" class="av-studio-tab py-1.5 rounded-lg text-slate-300 hover:bg-slate-800 text-xs font-bold cursor-pointer">2. 표정</button>
-                <button type="button" data-avtab="hair" class="av-studio-tab py-1.5 rounded-lg text-slate-300 hover:bg-slate-800 text-xs font-bold cursor-pointer">3. 헤어</button>
-                <button type="button" data-avtab="fashion" class="av-studio-tab py-1.5 rounded-lg text-slate-300 hover:bg-slate-800 text-xs font-bold cursor-pointer">4. 패션·소품</button>
+                <button type="button" data-avtab="hair" class="av-studio-tab py-1.5 rounded-lg text-slate-300 hover:bg-slate-800 text-xs font-bold cursor-pointer">3. 헤어·염색</button>
+                <button type="button" data-avtab="fashion" class="av-studio-tab py-1.5 rounded-lg text-slate-300 hover:bg-slate-800 text-xs font-bold cursor-pointer">4. 의상·안경</button>
               </div>
 
-              <!-- 탭 1: 체형 비율 · 성별 실루엣 · 순정만화 눈매 · 투톤 눈동자 컬러 · 피부톤 -->
-              <div id="avpane-body" class="av-studio-pane p-3 rounded-xl bg-slate-800/80 border border-slate-700 space-y-2">
+              <!-- 탭 1: 순정만화 베이스 모델 6종 · 체형 비율 · 눈동자 컬러 · 피부톤 -->
+              <div id="avpane-body"
+                class="av-studio-pane p-3 rounded-xl bg-slate-800/80 border border-slate-700 space-y-2">
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-[11px] font-extrabold text-amber-300">🎨 순정만화 3D 캐릭터 베이스 (얼굴·헤어·코디 원형 선택)</span>
+                    <label class="px-2 py-0.5 rounded-lg bg-indigo-500/30 hover:bg-indigo-500/50 border border-indigo-400/50 text-[10px] font-extrabold text-indigo-200 cursor-pointer">
+                      📂 내 .vrm 파일 열기
+                      <input id="custom-vrm-input" type="file" accept=".vrm" class="hidden" />
+                    </label>
+                  </div>
+                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                    <button type="button" data-avkey="vrmModel" data-avval="fumiriya" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-extrabold cursor-pointer">👨 샤기뱅 남주 (후미리야)</button>
+                    <button type="button" data-avkey="vrmModel" data-avval="sample_c" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-extrabold cursor-pointer">👨 댄디 미소년 (아바타C)</button>
+                    <button type="button" data-avkey="vrmModel" data-avval="sample_b" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-extrabold cursor-pointer">👩 시스루 단발 여주 (B)</button>
+                    <button type="button" data-avkey="vrmModel" data-avval="sample_a" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-extrabold cursor-pointer">👩 청순 롱헤어 여주 (A)</button>
+                    <button type="button" data-avkey="vrmModel" data-avval="shino" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-extrabold cursor-pointer">👩 단아한 장발 (시노)</button>
+                    <button type="button" data-avkey="vrmModel" data-avval="vita" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-extrabold cursor-pointer">👩 상큼 보브컷 (비타)</button>
+                  </div>
+                </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <div class="text-[11px] font-extrabold text-slate-200 mb-1">만화 체형 비율</div>
+                    <div class="text-[11px] font-extrabold text-slate-200 mb-1">체형 비율</div>
                     <div class="grid grid-cols-2 gap-1.5">
-                      <button type="button" data-avkey="bodyStyle" data-avval="model" class="av-opt-btn py-2 px-1.5 rounded-xl border text-[11px] font-extrabold cursor-pointer">✨ 8등신 주인공핏</button>
-                      <button type="button" data-avkey="bodyStyle" data-avval="cute" class="av-opt-btn py-2 px-1.5 rounded-xl border text-[11px] font-extrabold cursor-pointer">🧸 귀여운 SD핏</button>
+                      <button type="button" data-avkey="bodyStyle" data-avval="model" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-extrabold cursor-pointer">✨ 8등신 순정만화</button>
+                      <button type="button" data-avkey="bodyStyle" data-avval="cute" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-extrabold cursor-pointer">🧸 아담 SD 치비핏</button>
                     </div>
                   </div>
                   <div>
-                    <div class="text-[11px] font-extrabold text-slate-200 mb-1">성별 실루엣</div>
-                    <div class="grid grid-cols-2 gap-1.5">
-                      <button type="button" data-avkey="gender" data-avval="male" class="av-opt-btn py-2 px-1.5 rounded-xl border text-[11px] font-extrabold cursor-pointer">👨 순정만화 남주</button>
-                      <button type="button" data-avkey="gender" data-avval="female" class="av-opt-btn py-2 px-1.5 rounded-xl border text-[11px] font-extrabold cursor-pointer">👩 순정만화 여주</button>
+                    <div class="text-[11px] font-extrabold text-slate-200 mb-1">피부 톤</div>
+                    <div class="grid grid-cols-3 gap-1">
+                      <button type="button" data-avkey="skinTone" data-avval="porcelain" class="av-opt-btn py-1.5 px-1 rounded-xl border text-[10px] font-bold cursor-pointer">순백원본</button>
+                      <button type="button" data-avkey="skinTone" data-avval="warm" class="av-opt-btn py-1.5 px-1 rounded-xl border text-[10px] font-bold cursor-pointer">화사웜톤</button>
+                      <button type="button" data-avkey="skinTone" data-avval="tan" class="av-opt-btn py-1.5 px-1 rounded-xl border text-[10px] font-bold cursor-pointer">건강태닝</button>
                     </div>
                   </div>
                 </div>
                 <div>
-                  <div class="text-[11px] font-extrabold text-slate-200 mb-1">순정만화 작화 눈매 · 인상</div>
-                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                    <button type="button" data-avkey="faceStyle" data-avval="gentle" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">다정 온화형</button>
-                    <button type="button" data-avkey="faceStyle" data-avval="chic" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">시크 고양이상</button>
-                    <button type="button" data-avkey="faceStyle" data-avval="lovely" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">청순 초롱눈망울</button>
-                    <button type="button" data-avkey="faceStyle" data-avval="dignified" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">지적인 어른미</button>
-                  </div>
-                </div>
-                <div>
-                  <div class="text-[11px] font-extrabold text-amber-200 mb-1">💎 눈동자 투톤 보석 그라데이션 컬러</div>
+                  <div class="text-[11px] font-extrabold text-amber-200 mb-1">💎 순정만화 눈동자 컬러 변경</div>
                   <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-                    <button type="button" data-avkey="eyeColor" data-avval="amber" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-gradient-to-b from-[#1c1924] to-[#fbbf24] border border-white/50"></span>호박골드</button>
-                    <button type="button" data-avkey="eyeColor" data-avval="obsidian" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-gradient-to-b from-[#111118] to-[#a1a1aa] border border-white/50"></span>오닉스</button>
-                    <button type="button" data-avkey="eyeColor" data-avval="sapphire" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-gradient-to-b from-[#131c36] to-[#38bdf8] border border-white/50"></span>사파이어</button>
-                    <button type="button" data-avkey="eyeColor" data-avval="emerald" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-gradient-to-b from-[#0f2922] to-[#34d399] border border-white/50"></span>에메랄드</button>
-                    <button type="button" data-avkey="eyeColor" data-avval="amethyst" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-gradient-to-b from-[#211438] to-[#c084fc] border border-white/50"></span>자수정</button>
-                    <button type="button" data-avkey="eyeColor" data-avval="rose" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-gradient-to-b from-[#2b1321] to-[#fb7185] border border-white/50"></span>로즈쿼츠</button>
-                  </div>
-                </div>
-                <div>
-                  <div class="text-[11px] font-extrabold text-slate-200 mb-1">피부 톤</div>
-                  <div class="grid grid-cols-4 gap-1.5">
-                    <button type="button" data-avkey="skinTone" data-avval="porcelain" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#fff0e6] border border-slate-400"></span>순백호수</button>
-                    <button type="button" data-avkey="skinTone" data-avval="warm" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#ffe3cf] border border-slate-400"></span>화사웜톤</button>
-                    <button type="button" data-avkey="skinTone" data-avval="natural" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#f4ccb0] border border-slate-400"></span>내추럴</button>
-                    <button type="button" data-avkey="skinTone" data-avval="tan" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#dfa884] border border-slate-400"></span>건강태닝</button>
+                    <button type="button" data-avkey="eyeColor" data-avval="original" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer">✨ 순정원본</button>
+                    <button type="button" data-avkey="eyeColor" data-avval="amber" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-amber-400"></span>호박골드</button>
+                    <button type="button" data-avkey="eyeColor" data-avval="sapphire" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-sky-400"></span>사파이어</button>
+                    <button type="button" data-avkey="eyeColor" data-avval="emerald" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-emerald-400"></span>에메랄드</button>
+                    <button type="button" data-avkey="eyeColor" data-avval="amethyst" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-purple-400"></span>자수정</button>
+                    <button type="button" data-avkey="eyeColor" data-avval="rose" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-rose-400"></span>로즈쿼츠</button>
                   </div>
                 </div>
               </div>
 
               <!-- 탭 2: 표정 6종 -->
-              <div id="avpane-expr" class="hidden av-studio-pane p-3 rounded-xl bg-slate-800/80 border border-slate-700 space-y-2">
-                <div class="text-[11px] font-extrabold text-slate-200">실시간 얼굴 표정 선택 (성도들에게도 그대로 보입니다)</div>
+              <div id="avpane-expr"
+                class="hidden av-studio-pane p-3 rounded-xl bg-slate-800/80 border border-slate-700 space-y-2">
+                <div class="text-[11px] font-extrabold text-slate-200">실시간 순정만화 페이셜 표정 (BlendShape 모핑 · 자동 눈 깜빡임)</div>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  <button type="button" data-avkey="expression" data-avval="smile" class="av-opt-btn p-2.5 rounded-xl border text-xs font-extrabold cursor-pointer">😊 온화한 미소</button>
-                  <button type="button" data-avkey="expression" data-avval="joy" class="av-opt-btn p-2.5 rounded-xl border text-xs font-extrabold cursor-pointer">😄 환한 기쁨 (눈웃음)</button>
+                  <button type="button" data-avkey="expression" data-avval="smile" class="av-opt-btn p-2.5 rounded-xl border text-xs font-extrabold cursor-pointer">😊 다정한 미소</button>
+                  <button type="button" data-avkey="expression" data-avval="joy" class="av-opt-btn p-2.5 rounded-xl border text-xs font-extrabold cursor-pointer">😄 환한 눈웃음 기쁨</button>
                   <button type="button" data-avkey="expression" data-avval="pray" class="av-opt-btn p-2.5 rounded-xl border text-xs font-extrabold cursor-pointer">🙏 경건한 기도·묵상</button>
-                  <button type="button" data-avkey="expression" data-avval="grace" class="av-opt-btn p-2.5 rounded-xl border text-xs font-extrabold cursor-pointer">✨ 은혜 충만 (반짝눈)</button>
-                  <button type="button" data-avkey="expression" data-avval="wink" class="av-opt-btn p-2.5 rounded-xl border text-xs font-extrabold cursor-pointer">😉 반가운 윙크</button>
-                  <button type="button" data-avkey="expression" data-avval="calm" class="av-opt-btn p-2.5 rounded-xl border text-xs font-extrabold cursor-pointer">😌 차분하고 진지함</button>
+                  <button type="button" data-avkey="expression" data-avval="grace" class="av-opt-btn p-2.5 rounded-xl border text-xs font-extrabold cursor-pointer">✨ 은혜 충만 감탄</button>
+                  <button type="button" data-avkey="expression" data-avval="wink" class="av-opt-btn p-2.5 rounded-xl border text-xs font-extrabold cursor-pointer">😉 심쿵 윙크</button>
+                  <button type="button" data-avkey="expression" data-avval="calm" class="av-opt-btn p-2.5 rounded-xl border text-xs font-extrabold cursor-pointer">😌 차분·시크 기본</button>
                 </div>
               </div>
 
-              <!-- 탭 3: 헤어스타일 8종 & 염색 컬러 6종 -->
-              <div id="avpane-hair" class="hidden av-studio-pane p-3 rounded-xl bg-slate-800/80 border border-slate-700 space-y-2.5">
+              <!-- 탭 3: 헤어모델 전환 & 만화 머릿결 염색 컬러 -->
+              <div id="avpane-hair"
+                class="hidden av-studio-pane p-3 rounded-xl bg-slate-800/80 border border-slate-700 space-y-2.5">
                 <div>
-                  <div class="text-[11px] font-extrabold text-slate-200 mb-1">시스루 입체 만화 헤어스타일 (8종 · 엔젤링 광택)</div>
-                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                    <button type="button" data-avkey="hairStyle" data-avval="shaggy_bang" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">✨ 시스루 샤기뱅</button>
-                    <button type="button" data-avkey="hairStyle" data-avval="dandy" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">댄디 애즈펌</button>
-                    <button type="button" data-avkey="hairStyle" data-avval="pomade" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">지적인 가일컷</button>
-                    <button type="button" data-avkey="hairStyle" data-avval="bob_c" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">청순 C컬 단발</button>
-                    <button type="button" data-avkey="hairStyle" data-avval="long_wave" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">여신 롱 웨이브</button>
-                    <button type="button" data-avkey="hairStyle" data-avval="low_bun" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">단아한 올림머리</button>
-                    <button type="button" data-avkey="hairStyle" data-avval="ponytail" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">발랄 포니테일</button>
-                    <button type="button" data-avkey="hairStyle" data-avval="beret_wave" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">베레모 & 단발</button>
-                  </div>
-                </div>
-                <div>
-                  <div class="text-[11px] font-extrabold text-slate-200 mb-1">헤어 컬러</div>
-                  <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-                    <button type="button" data-avkey="hairColor" data-avval="black" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-[#19181d] border border-white/40"></span>블랙</button>
-                    <button type="button" data-avkey="hairColor" data-avval="espresso" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-[#342118] border border-white/40"></span>초코</button>
-                    <button type="button" data-avkey="hairColor" data-avval="chestnut" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-[#5e3a24] border border-white/40"></span>체스트넛</button>
-                    <button type="button" data-avkey="hairColor" data-avval="ash_brown" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-[#7c5e48] border border-white/40"></span>애쉬골드</button>
-                    <button type="button" data-avkey="hairColor" data-avval="burgundy" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-[#541e2b] border border-white/40"></span>와인</button>
-                    <button type="button" data-avkey="hairColor" data-avval="silver" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-[#9ca3af] border border-white/40"></span>실버품격</button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 탭 4: 패션 코디 7종 · 의상 색상 · 액세서리 -->
-              <div id="avpane-fashion" class="hidden av-studio-pane p-3 rounded-xl bg-slate-800/80 border border-slate-700 space-y-2.5">
-                <div>
-                  <div class="text-[11px] font-extrabold text-slate-200 mb-1">웹툰 · 순정만화 패션 코디</div>
+                  <div class="text-[11px] font-extrabold text-slate-200 mb-1">순정만화 머릿결 & 헤어스타일 캐릭터 선택 (살랑이는 물리엔진 적용)</div>
                   <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                    <button type="button" data-avkey="outfitStyle" data-avval="webtoon_layered" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer sm:col-span-2">✨ 웹툰 집업자켓 & 레드니트·셔츠</button>
-                    <button type="button" data-avkey="outfitStyle" data-avval="suit" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">👔 슬림 정장 수트</button>
-                    <button type="button" data-avkey="outfitStyle" data-avval="knit_slacks" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">🧶 프레피 니트·셔츠</button>
-                    <button type="button" data-avkey="outfitStyle" data-avval="onepiece" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">👗 리본 플레어 원피스</button>
-                    <button type="button" data-avkey="outfitStyle" data-avval="trench" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">🧥 캐시미어 롱코트</button>
-                    <button type="button" data-avkey="outfitStyle" data-avval="jacket_skirt" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">💎 트위드 셋업</button>
-                    <button type="button" data-avkey="outfitStyle" data-avval="choir" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">🎵 성가대 찬양 가운</button>
+                    <button type="button" data-avkey="vrmModel" data-avval="fumiriya" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">✨ 시스루 샤기컷 (남주)</button>
+                    <button type="button" data-avkey="vrmModel" data-avval="sample_c" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">댄디 레이어드컷 (남주)</button>
+                    <button type="button" data-avkey="vrmModel" data-avval="sample_b" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">세련 시스루 미디단발</button>
+                    <button type="button" data-avkey="vrmModel" data-avval="sample_a" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">청순 스트레이트 롱</button>
+                    <button type="button" data-avkey="vrmModel" data-avval="shino" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">우아한 사이드뱅 장발</button>
+                    <button type="button" data-avkey="vrmModel" data-avval="vita" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">발랄 C컬 보브 단발</button>
                   </div>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <div class="text-[11px] font-extrabold text-amber-200 mb-1">🎨 머릿결 결감 보존 염색 컬러 (7종)</div>
+                  <div class="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
+                    <button type="button" data-avkey="hairColor" data-avval="original" class="av-opt-btn py-1.5 px-1 rounded-xl border text-[10px] font-bold cursor-pointer">원본색</button>
+                    <button type="button" data-avkey="hairColor" data-avval="black" class="av-opt-btn py-1.5 px-1 rounded-xl border text-[10px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-[#181922] border border-white/40"></span>칠흑블랙</button>
+                    <button type="button" data-avkey="hairColor" data-avval="espresso" class="av-opt-btn py-1.5 px-1 rounded-xl border text-[10px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-[#38231c] border border-white/40"></span>다크초코</button>
+                    <button type="button" data-avkey="hairColor" data-avval="chestnut" class="av-opt-btn py-1.5 px-1 rounded-xl border text-[10px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-[#6f442c] border border-white/40"></span>체스트넛</button>
+                    <button type="button" data-avkey="hairColor" data-avval="ash_brown" class="av-opt-btn py-1.5 px-1 rounded-xl border text-[10px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-[#b09274] border border-white/40"></span>애쉬골드</button>
+                    <button type="button" data-avkey="hairColor" data-avval="burgundy" class="av-opt-btn py-1.5 px-1 rounded-xl border text-[10px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-[#752038] border border-white/40"></span>와인</button>
+                    <button type="button" data-avkey="hairColor" data-avval="silver" class="av-opt-btn py-1.5 px-1 rounded-xl border text-[10px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-[#cbd5e1] border border-white/40"></span>실버</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 탭 4: 의상 컬러 커스터마이징 & 안경·이어커프·목걸이 -->
+              <div id="avpane-fashion"
+                class="hidden av-studio-pane p-3 rounded-xl bg-slate-800/80 border border-slate-700 space-y-2.5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <div>
-                    <div class="text-[11px] font-extrabold text-slate-200 mb-1">상의 · 아우터 컬러</div>
-                    <div class="flex flex-wrap gap-1.5">
-                      <button type="button" data-avkey="outfitColor" data-avval="#181920" title="웹툰 제트블랙" class="av-opt-btn w-7 h-7 rounded-full bg-[#181920] border-2 cursor-pointer"></button>
-                      <button type="button" data-avkey="outfitColor" data-avval="#1e3a8a" title="클래식 네이비" class="av-opt-btn w-7 h-7 rounded-full bg-[#1e3a8a] border-2 cursor-pointer"></button>
-                      <button type="button" data-avkey="outfitColor" data-avval="#f8fafc" title="크림 아이보리" class="av-opt-btn w-7 h-7 rounded-full bg-[#f8fafc] border-2 cursor-pointer"></button>
-                      <button type="button" data-avkey="outfitColor" data-avval="#b48352" title="카멜 베이지" class="av-opt-btn w-7 h-7 rounded-full bg-[#b48352] border-2 cursor-pointer"></button>
-                      <button type="button" data-avkey="outfitColor" data-avval="#be185d" title="로즈 핑크" class="av-opt-btn w-7 h-7 rounded-full bg-[#be185d] border-2 cursor-pointer"></button>
-                      <button type="button" data-avkey="outfitColor" data-avval="#881337" title="버건디 와인" class="av-opt-btn w-7 h-7 rounded-full bg-[#881337] border-2 cursor-pointer"></button>
-                      <button type="button" data-avkey="outfitColor" data-avval="#047857" title="세이지 에메랄드" class="av-opt-btn w-7 h-7 rounded-full bg-[#047857] border-2 cursor-pointer"></button>
-                      <button type="button" data-avkey="outfitColor" data-avval="#6d28d9" title="로얄 바이올렛" class="av-opt-btn w-7 h-7 rounded-full bg-[#6d28d9] border-2 cursor-pointer"></button>
+                    <div class="text-[11px] font-extrabold text-slate-200 mb-1">👔 상의 · 자켓 · 원피스 염색</div>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                      <button type="button" data-avkey="outfitColor" data-avval="original" class="av-opt-btn px-2 py-1 rounded-lg border text-[10px] font-extrabold cursor-pointer">순정원본</button>
+                      <button type="button" data-avkey="outfitColor" data-avval="#1c1e29" title="제트 블랙" class="av-opt-btn w-6 h-6 rounded-full bg-[#1c1e29] border-2 cursor-pointer"></button>
+                      <button type="button" data-avkey="outfitColor" data-avval="#1e3a8a" title="네이비" class="av-opt-btn w-6 h-6 rounded-full bg-[#1e3a8a] border-2 cursor-pointer"></button>
+                      <button type="button" data-avkey="outfitColor" data-avval="#f1f5f9" title="크림 화이트" class="av-opt-btn w-6 h-6 rounded-full bg-[#f1f5f9] border-2 cursor-pointer"></button>
+                      <button type="button" data-avkey="outfitColor" data-avval="#b48352" title="카멜 베이지" class="av-opt-btn w-6 h-6 rounded-full bg-[#b48352] border-2 cursor-pointer"></button>
+                      <button type="button" data-avkey="outfitColor" data-avval="#be185d" title="로즈 핑크" class="av-opt-btn w-6 h-6 rounded-full bg-[#be185d] border-2 cursor-pointer"></button>
+                      <button type="button" data-avkey="outfitColor" data-avval="#881337" title="버건디" class="av-opt-btn w-6 h-6 rounded-full bg-[#881337] border-2 cursor-pointer"></button>
+                      <button type="button" data-avkey="outfitColor" data-avval="#047857" title="에메랄드" class="av-opt-btn w-6 h-6 rounded-full bg-[#047857] border-2 cursor-pointer"></button>
                     </div>
                   </div>
                   <div>
-                    <div class="text-[11px] font-extrabold text-slate-200 mb-1">하의 · 스커트 컬러</div>
-                    <div class="flex flex-wrap gap-1.5">
-                      <button type="button" data-avkey="bottomColor" data-avval="#1e293b" title="다크 슬레이트" class="av-opt-btn w-7 h-7 rounded-full bg-[#1e293b] border-2 cursor-pointer"></button>
-                      <button type="button" data-avkey="bottomColor" data-avval="#18181b" title="딥 블랙" class="av-opt-btn w-7 h-7 rounded-full bg-[#18181b] border-2 cursor-pointer"></button>
-                      <button type="button" data-avkey="bottomColor" data-avval="#e7e5e4" title="아이보리 크림" class="av-opt-btn w-7 h-7 rounded-full bg-[#e7e5e4] border-2 cursor-pointer"></button>
-                      <button type="button" data-avkey="bottomColor" data-avval="#44403c" title="웜 토프브라운" class="av-opt-btn w-7 h-7 rounded-full bg-[#44403c] border-2 cursor-pointer"></button>
-                      <button type="button" data-avkey="bottomColor" data-avval="#1e1b4b" title="미드나잇 네이비" class="av-opt-btn w-7 h-7 rounded-full bg-[#1e1b4b] border-2 cursor-pointer"></button>
+                    <div class="text-[11px] font-extrabold text-slate-200 mb-1">👖 하의 · 스커트 염색</div>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                      <button type="button" data-avkey="bottomColor" data-avval="original" class="av-opt-btn px-2 py-1 rounded-lg border text-[10px] font-extrabold cursor-pointer">순정원본</button>
+                      <button type="button" data-avkey="bottomColor" data-avval="#1e293b" title="다크 슬레이트" class="av-opt-btn w-6 h-6 rounded-full bg-[#1e293b] border-2 cursor-pointer"></button>
+                      <button type="button" data-avkey="bottomColor" data-avval="#18181b" title="딥 블랙" class="av-opt-btn w-6 h-6 rounded-full bg-[#18181b] border-2 cursor-pointer"></button>
+                      <button type="button" data-avkey="bottomColor" data-avval="#e7e5e4" title="아이보리" class="av-opt-btn w-6 h-6 rounded-full bg-[#e7e5e4] border-2 cursor-pointer"></button>
+                      <button type="button" data-avkey="bottomColor" data-avval="#57534e" title="웜 토프" class="av-opt-btn w-6 h-6 rounded-full bg-[#57534e] border-2 cursor-pointer"></button>
+                      <button type="button" data-avkey="bottomColor" data-avval="#312e81" title="인디고" class="av-opt-btn w-6 h-6 rounded-full bg-[#312e81] border-2 cursor-pointer"></button>
                     </div>
                   </div>
                 </div>
                 <div>
-                  <div class="text-[11px] font-extrabold text-slate-200 mb-1">순정만화 안경 · 이어커프 · 액세서리</div>
-                  <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-                    <button type="button" data-avkey="accessory" data-avval="horn_glasses" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer">🕶️ 만화뿔테</button>
-                    <button type="button" data-avkey="accessory" data-avval="wire_glasses" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer">👓 금테안경</button>
-                    <button type="button" data-avkey="accessory" data-avval="earcuff" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer">✨ 이어커프</button>
-                    <button type="button" data-avkey="accessory" data-avval="necklace" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer">✝️ 목걸이</button>
-                    <button type="button" data-avkey="accessory" data-avval="crossbag" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer">👜 크로스백</button>
-                    <button type="button" data-avkey="accessory" data-avval="none" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer">없음</button>
+                  <div class="text-[11px] font-extrabold text-amber-200 mb-1">👓 순정만화 안경 · 이어커프 · 십자가 목걸이 (눈/목 위치 정밀 추적)</div>
+                  <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+                    <button type="button" data-avkey="accessory" data-avval="horn_glasses" class="av-opt-btn py-2 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer">🕶️ 순정만화 뿔테</button>
+                    <button type="button" data-avkey="accessory" data-avval="wire_glasses" class="av-opt-btn py-2 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer">👓 지적 금테안경</button>
+                    <button type="button" data-avkey="accessory" data-avval="earcuff" class="av-opt-btn py-2 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer">✨ 시크 이어커프</button>
+                    <button type="button" data-avkey="accessory" data-avval="necklace" class="av-opt-btn py-2 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer">✝️ 십자가 목걸이</button>
+                    <button type="button" data-avkey="accessory" data-avval="none" class="av-opt-btn py-2 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer">없음 (기본)</button>
                   </div>
                 </div>
               </div>
             </div>
 
             <div class="flex gap-2 pt-1">
-              <button type="button" id="btn-random-avatar" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-extrabold text-amber-200 cursor-pointer">
+              <button type="button" id="btn-random-avatar"
+                class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-extrabold text-amber-200 cursor-pointer">
                 🎲 랜덤 코디
               </button>
-              <button type="button" id="btn-save-profile" class="flex-1 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-black cursor-pointer shadow-lg">
+              <button type="button" id="btn-save-profile"
+                class="flex-1 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs sm:text-sm font-black cursor-pointer shadow-lg">
                 ✨ 내 아바타 스타일 적용하기
               </button>
             </div>
@@ -1134,108 +1479,149 @@
     </div>
 
     <!-- [모달 8] 🖼️ 성화·말씀 갤러리 해설 -->
-    <div id="art-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-40">
-      <div class="bg-[#FDFBF7] text-slate-800 rounded-2xl max-w-sm w-full p-5 border border-amber-300 shadow-2xl space-y-3 text-center">
+    <div id="art-modal"
+      class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-40">
+      <div
+        class="bg-[#FDFBF7] text-slate-800 rounded-2xl max-w-sm w-full p-5 border border-amber-300 shadow-2xl space-y-3 text-center">
         <div id="art-modal-title" class="text-sm font-extrabold text-amber-900"></div>
         <div id="art-modal-desc" class="text-xs leading-relaxed font-medium text-slate-700 break-keep"></div>
-        <button data-close="art-modal" class="w-full py-2 rounded-xl bg-amber-600 text-white text-xs font-extrabold cursor-pointer">묵상하며 닫기 🙏</button>
+        <button data-close="art-modal"
+          class="w-full py-2 rounded-xl bg-amber-600 text-white text-xs font-extrabold cursor-pointer">묵상하며 닫기
+          🙏</button>
       </div>
     </div>
 
     <!-- [모달 9] 📱 친구 초대 & 스마트폰 QR 열기 -->
-    <div id="share-modal" class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-40">
-      <div class="bg-slate-800 text-white rounded-2xl max-w-sm w-full p-5 border border-slate-600 shadow-2xl space-y-3 text-center">
+    <div id="share-modal"
+      class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-40">
+      <div
+        class="bg-slate-800 text-white rounded-2xl max-w-sm w-full p-5 border border-slate-600 shadow-2xl space-y-3 text-center">
         <div class="flex items-center justify-between">
           <span class="text-sm font-extrabold text-emerald-300">📱 성도 초대 & 스마트폰 접속</span>
-          <button data-close="share-modal" class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
+          <button data-close="share-modal"
+            class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
         </div>
         <div class="bg-white rounded-2xl p-3 inline-block mx-auto">
           <img id="share-qr-img" alt="QR" class="w-36 h-36 object-contain" onerror="this.style.display='none'" />
         </div>
         <p class="text-xs text-slate-300 m-0">같은 링크로 접속한 성도들은 3D 공간에서 실시간으로 만나 걸어 다니고 대화할 수 있습니다!</p>
         <div class="flex gap-1.5">
-          <input id="share-url-input" type="text" readonly class="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-emerald-300 font-bold outline-none" />
-          <button id="btn-copy-share" class="px-3 py-2 rounded-xl bg-emerald-400 text-slate-950 text-xs font-extrabold cursor-pointer">복사</button>
+          <input id="share-url-input" type="text" readonly
+            class="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-emerald-300 font-bold outline-none" />
+          <button id="btn-copy-share"
+            class="px-3 py-2 rounded-xl bg-emerald-400 text-slate-950 text-xs font-extrabold cursor-pointer">복사</button>
         </div>
       </div>
     </div>
 
     <!-- [모달 10] 📋 예수인교회 캠퍼스 통합 게시판 & 전체 메뉴 한눈에 보기 허브 -->
-    <div id="hub-modal" class="hidden absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-4 z-40">
-      <div class="bg-slate-900 text-white rounded-2xl max-w-5xl w-full p-4 sm:p-5 border-2 border-amber-400/50 shadow-2xl space-y-4 max-h-[94dvh] overflow-y-auto">
+    <div id="hub-modal"
+      class="hidden absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-4 z-40">
+      <div
+        class="bg-slate-900 text-white rounded-2xl max-w-5xl w-full p-4 sm:p-5 border-2 border-amber-400/50 shadow-2xl space-y-4 max-h-[94dvh] overflow-y-auto">
         <div class="flex items-center justify-between border-b border-slate-700 pb-2.5">
           <div>
-            <div id="hub-church-title" class="text-base sm:text-lg font-extrabold text-amber-300">📋 예수인교회 온라인 캠퍼스 — 분류별 통합 게시판 & 메뉴</div>
+            <div id="hub-church-title" class="text-base sm:text-lg font-extrabold text-amber-300">📋 예수인교회 온라인 캠퍼스 — 분류별
+              통합 게시판 & 메뉴</div>
             <div class="text-xs text-slate-300 mt-0.5">우리 교회 4대 게시판과 7개 공간을 분류별로 한눈에 확인하고 바로 이동하세요</div>
           </div>
-          <button data-close="hub-modal" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-xs font-extrabold cursor-pointer">닫기 ✕</button>
+          <button data-close="hub-modal"
+            class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-xs font-extrabold cursor-pointer">닫기
+            ✕</button>
         </div>
 
         <!-- 7개 공간 원터치 바로가기 카드 바 -->
         <div class="grid grid-cols-2 sm:grid-cols-7 gap-1.5">
-          <button data-hubzone="garden" class="hub-zone-btn p-2 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 border border-slate-700 text-xs font-extrabold cursor-pointer">🌿 앞마당</button>
-          <button data-hubzone="sanctuary" class="hub-zone-btn p-2 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 border border-slate-700 text-xs font-extrabold cursor-pointer">🏛️ 대성전</button>
-          <button data-hubzone="sarangbang" class="hub-zone-btn p-2 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 border border-slate-700 text-xs font-extrabold cursor-pointer">🏠 사랑방</button>
-          <button data-hubzone="bible" class="hub-zone-btn p-2 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 border border-slate-700 text-xs font-extrabold cursor-pointer">📖 성경통독방</button>
-          <button data-hubzone="qt" class="hub-zone-btn p-2 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 border border-slate-700 text-xs font-extrabold cursor-pointer">✏️ 큐티방</button>
-          <button data-hubzone="prayer" class="hub-zone-btn p-2 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 border border-slate-700 text-xs font-extrabold cursor-pointer">🕯️ 기도실</button>
-          <button data-hubzone="rooftop" class="hub-zone-btn p-2 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 border border-slate-700 text-xs font-extrabold cursor-pointer">☕ 루프탑카페</button>
+          <button data-hubzone="garden"
+            class="hub-zone-btn p-2 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 border border-slate-700 text-xs font-extrabold cursor-pointer">🌿
+            앞마당</button>
+          <button data-hubzone="sanctuary"
+            class="hub-zone-btn p-2 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 border border-slate-700 text-xs font-extrabold cursor-pointer">🏛️
+            대성전</button>
+          <button data-hubzone="sarangbang"
+            class="hub-zone-btn p-2 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 border border-slate-700 text-xs font-extrabold cursor-pointer">🏠
+            사랑방</button>
+          <button data-hubzone="bible"
+            class="hub-zone-btn p-2 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 border border-slate-700 text-xs font-extrabold cursor-pointer">📖
+            성경통독방</button>
+          <button data-hubzone="qt"
+            class="hub-zone-btn p-2 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 border border-slate-700 text-xs font-extrabold cursor-pointer">✏️
+            큐티방</button>
+          <button data-hubzone="prayer"
+            class="hub-zone-btn p-2 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 border border-slate-700 text-xs font-extrabold cursor-pointer">🕯️
+            기도실</button>
+          <button data-hubzone="rooftop"
+            class="hub-zone-btn p-2 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 border border-slate-700 text-xs font-extrabold cursor-pointer">☕
+            루프탑카페</button>
         </div>
 
         <!-- 4대 분류별 통합 게시판 그리드 (밝은 고대비 카드 디자인) -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           <!-- 분류 1: 예스통독 인증 게시판 -->
-          <div class="p-4 rounded-2xl bg-[#FFFDF9] text-slate-900 border-2 border-emerald-400 shadow space-y-2.5 flex flex-col justify-between">
+          <div
+            class="p-4 rounded-2xl bg-[#FFFDF9] text-slate-900 border-2 border-emerald-400 shadow space-y-2.5 flex flex-col justify-between">
             <div class="space-y-2">
               <div class="flex items-center justify-between border-b border-emerald-200 pb-2">
                 <span class="text-sm font-black text-emerald-900">1. 🙌 예스통독 인증 게시판</span>
-                <span id="hub-bible-stat" class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[11px] font-extrabold">참여 현황</span>
+                <span id="hub-bible-stat"
+                  class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[11px] font-extrabold">참여
+                  현황</span>
               </div>
               <div id="hub-bible-preview" class="space-y-1.5 text-xs"></div>
             </div>
-            <button id="btn-hub-go-bible" class="w-full py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold cursor-pointer">
+            <button id="btn-hub-go-bible"
+              class="w-full py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold cursor-pointer">
               📖 성경통독방 & 예스통독 게시판 열기 ➔
             </button>
           </div>
 
           <!-- 분류 2: 소미 큐티 & 묵상나눔 게시판 -->
-          <div class="p-4 rounded-2xl bg-[#FFFDF9] text-slate-900 border-2 border-amber-400 shadow space-y-2.5 flex flex-col justify-between">
+          <div
+            class="p-4 rounded-2xl bg-[#FFFDF9] text-slate-900 border-2 border-amber-400 shadow space-y-2.5 flex flex-col justify-between">
             <div class="space-y-2">
               <div class="flex items-center justify-between border-b border-amber-200 pb-2">
                 <span class="text-sm font-black text-amber-900">2. 🌅 오늘의 소미 큐티 & 나눔 게시판</span>
-                <span id="hub-qt-stat" class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[11px] font-extrabold">오늘의 말씀</span>
+                <span id="hub-qt-stat"
+                  class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[11px] font-extrabold">오늘의 말씀</span>
               </div>
               <div id="hub-qt-preview" class="space-y-1.5 text-xs"></div>
             </div>
-            <button id="btn-hub-go-qt" class="w-full py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer">
+            <button id="btn-hub-go-qt"
+              class="w-full py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer">
               ✏️ 큐티 본문 읽기 & 나눔 게시판 열기 ➔
             </button>
           </div>
 
           <!-- 분류 3: 중보기도 등불 게시판 -->
-          <div class="p-4 rounded-2xl bg-[#FFFDF9] text-slate-900 border-2 border-rose-300 shadow space-y-2.5 flex flex-col justify-between">
+          <div
+            class="p-4 rounded-2xl bg-[#FFFDF9] text-slate-900 border-2 border-rose-300 shadow space-y-2.5 flex flex-col justify-between">
             <div class="space-y-2">
               <div class="flex items-center justify-between border-b border-rose-200 pb-2">
                 <span class="text-sm font-black text-rose-900">3. 🕯️ 중보기도 등불 게시판</span>
-                <span id="hub-candle-stat" class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-900 text-[11px] font-extrabold">중보기도</span>
+                <span id="hub-candle-stat"
+                  class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-900 text-[11px] font-extrabold">중보기도</span>
               </div>
               <div id="hub-candle-preview" class="space-y-1.5 text-xs"></div>
             </div>
-            <button id="btn-hub-go-candle" class="w-full py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-white text-xs font-extrabold cursor-pointer">
+            <button id="btn-hub-go-candle"
+              class="w-full py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-white text-xs font-extrabold cursor-pointer">
               🕯️ 기도 등불 밝히기 & 중보기도 보기 ➔
             </button>
           </div>
 
           <!-- 분류 4: 사랑방(소그룹) 모임 게시판 -->
-          <div class="p-4 rounded-2xl bg-[#FFFDF9] text-slate-900 border-2 border-sky-400 shadow space-y-2.5 flex flex-col justify-between">
+          <div
+            class="p-4 rounded-2xl bg-[#FFFDF9] text-slate-900 border-2 border-sky-400 shadow space-y-2.5 flex flex-col justify-between">
             <div class="space-y-2">
               <div class="flex items-center justify-between border-b border-sky-200 pb-2">
                 <span class="text-sm font-black text-sky-900">4. 🏠 교구·셀 사랑방 모임 현황판</span>
-                <span id="hub-sarang-stat" class="px-2 py-0.5 rounded-full bg-sky-100 text-sky-900 text-[11px] font-extrabold">소그룹실</span>
+                <span id="hub-sarang-stat"
+                  class="px-2 py-0.5 rounded-full bg-sky-100 text-sky-900 text-[11px] font-extrabold">소그룹실</span>
               </div>
               <div id="hub-sarang-preview" class="space-y-1.5 text-xs"></div>
             </div>
-            <button id="btn-hub-go-sarang" class="w-full py-2 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold cursor-pointer">
+            <button id="btn-hub-go-sarang"
+              class="w-full py-2 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-extrabold cursor-pointer">
               🏠 사랑방 목록 보기 & 새 방 개설하기 ➔
             </button>
           </div>
@@ -1245,8 +1631,28 @@
 
   </div>
 
-  <script src="/chapel-pbr.js?v=10"></script>
-  <script src="/chapel-engine.js?v=10"></script>
-  <script src="/chapel-app.js?v=10"></script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+
+    window.THREE = THREE;
+    window.GLTFLoader = GLTFLoader;
+    window.VRMLoaderPlugin = VRMLoaderPlugin;
+    window.VRMUtils = VRMUtils;
+
+    const loadScriptSequential = (src) => new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = reject;
+      document.body.appendChild(s);
+    });
+
+    await loadScriptSequential('/chapel-pbr.js?v=11');
+    await loadScriptSequential('/chapel-engine.js?v=11');
+    await loadScriptSequential('/chapel-app.js?v=11');
+  </script>
 </body>
+
 </html>
