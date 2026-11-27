@@ -132,28 +132,28 @@
 
   const SAMPLE_NPCS = {
     garden: [
-      { id: 'npc_g1', name: '김은혜 권사', presetId: 'lydia', x: -8.5, z: 13, rotY: Math.PI / 2, pose: 'sit', isNpc: true, bubble: '🌿 정원 공기가 참 평안하네요' },
-      { id: 'npc_g2', name: '박소망 청년', presetId: 'joseph', x: -12.5, z: -5.5, rotY: 0.3, pose: 'stand', drink: 'coffee', isNpc: true, bubble: '☕ 대성전 들어가기 전 커피 한 잔!' }
+      { id: 'npc_g1', name: '김은혜 권사', presetId: 'kwonsa_grace', x: -8.5, z: 13, rotY: Math.PI / 2, pose: 'sit', isNpc: true, bubble: '🌿 정원 공기가 참 평안하네요' },
+      { id: 'npc_g2', name: '박소망 청년', presetId: 'trench_chic', x: -12.5, z: -5.5, rotY: 0.3, pose: 'stand', drink: 'coffee', isNpc: true, bubble: '☕ 대성전 들어가기 전 커피 한 잔!' }
     ],
     sanctuary: [
-      { id: 'npc_s1', name: '한충성 장로', presetId: 'david', x: -2.96, z: -4.16, rotY: Math.PI, pose: 'sit', isNpc: true, bubble: '🙏 주님 홀로 영광 받으소서' },
-      { id: 'npc_s2', name: '이믿음 집사', presetId: 'miriam', x: 2.96, z: -4.16, rotY: Math.PI, pose: 'sit', isNpc: true },
-      { id: 'npc_s3', name: '정온유 성도', presetId: 'lydia', x: 0, z: -13.6, rotY: Math.PI, pose: 'kneel', isNpc: true, bubble: '🕯️ 간절히 무릎으로 기도합니다' }
+      { id: 'npc_s1', name: '한충성 장로', presetId: 'elder_suit', x: -2.96, z: -4.16, rotY: Math.PI, pose: 'sit', isNpc: true, bubble: '🙏 주님 홀로 영광 받으소서' },
+      { id: 'npc_s2', name: '이믿음 집사', presetId: 'tweed_bob', x: 2.96, z: -4.16, rotY: Math.PI, pose: 'sit', isNpc: true },
+      { id: 'npc_s3', name: '정온유 성도', presetId: 'lovely_wave', avatarConfig: { bodyStyle: 'model', gender: 'female', skinTone: 'porcelain', faceStyle: 'gentle', expression: 'pray', hairStyle: 'long_wave', hairColor: 'espresso', outfitStyle: 'onepiece', outfitColor: '#f8fafc', bottomColor: '#e7e5e4', accessory: 'necklace' }, x: 0, z: -13.6, rotY: Math.PI, pose: 'kneel', isNpc: true, bubble: '🕯️ 간절히 무릎으로 기도합니다' }
     ],
     sarangbang: [
-      { id: 'npc_r1', name: '윤평강 순장', presetId: 'somy', x: -3.6, z: 4.1, rotY: 2.3, pose: 'sit', drink: 'coffee', isNpc: true, bubble: '🏠 사랑방에 오신 것을 환영해요!' }
+      { id: 'npc_r1', name: '윤평강 순장', presetId: 'dandy_suit', avatarConfig: { bodyStyle: 'model', gender: 'male', skinTone: 'warm', faceStyle: 'gentle', expression: 'joy', hairStyle: 'dandy', hairColor: 'chestnut', outfitStyle: 'knit_slacks', outfitColor: '#047857', bottomColor: '#1e293b', accessory: 'wire_glasses' }, x: -3.6, z: 4.1, rotY: 2.3, pose: 'sit', drink: 'coffee', isNpc: true, bubble: '🏠 사랑방에 오신 것을 환영해요!' }
     ],
     bible: [
-      { id: 'npc_b1', name: '강기쁨 청년', presetId: 'miriam', x: -7.2, z: -3.95, rotY: Math.PI, pose: 'sit', isNpc: true, bubble: '📖 연대기순 음성통독 중! 예스통독 🙌' }
+      { id: 'npc_b1', name: '강기쁨 청년', presetId: 'lovely_wave', x: -7.2, z: -3.95, rotY: Math.PI, pose: 'sit', isNpc: true, bubble: '📖 연대기순 음성통독 중! 예스통독 🙌' }
     ],
     qt: [
-      { id: 'npc_q1', name: '송찬양 간사', presetId: 'somy', x: -6.4, z: -3.75, rotY: Math.PI, pose: 'sit', isNpc: true, bubble: '🌅 오늘의 소미 큐티 말씀 함께 묵상해요!' }
+      { id: 'npc_q1', name: '송찬양 간사', presetId: 'tweed_bob', x: -6.4, z: -3.75, rotY: Math.PI, pose: 'sit', isNpc: true, bubble: '🌅 오늘의 소미 큐티 말씀 함께 묵상해요!' }
     ],
     prayer: [
-      { id: 'npc_p1', name: '오감사 권사', presetId: 'lydia', x: -2, z: -11.2, rotY: Math.PI, pose: 'kneel', isNpc: true }
+      { id: 'npc_p1', name: '오감사 권사', presetId: 'kwonsa_grace', avatarConfig: { bodyStyle: 'model', gender: 'female', skinTone: 'warm', faceStyle: 'gentle', expression: 'pray', hairStyle: 'low_bun', hairColor: 'espresso', outfitStyle: 'jacket_skirt', outfitColor: '#6d28d9', bottomColor: '#1e1b4b', accessory: 'necklace' }, x: -2, z: -11.2, rotY: Math.PI, pose: 'kneel', isNpc: true }
     ],
     rooftop: [
-      { id: 'npc_t1', name: '류화평 청년', presetId: 'joseph', x: -6.2, z: -17.6, rotY: Math.PI, pose: 'sit', drink: 'coffee', isNpc: true, bubble: '🏞️ 산과 바다 사계절 풍경이 정말 아름답네요!' }
+      { id: 'npc_t1', name: '류화평 청년', presetId: 'trench_chic', x: -6.2, z: -17.6, rotY: Math.PI, pose: 'sit', drink: 'coffee', isNpc: true, bubble: '🏞️ 산과 바다 사계절 풍경이 정말 아름답네요!' }
     ]
   };
 
@@ -193,14 +193,17 @@
     }).then((r) => r.json()).catch(() => null);
   }
 
-  // 내 프로필 상태
+  // 내 프로필 & 커스텀 아바타 상태
   const myClientId = 'u_' + Math.random().toString(36).slice(2, 10);
   let myName = '백동희 성도';
-  let myPresetId = 'david';
+  let myPresetId = 'dandy_suit';
+  let myAvatarConfig = null;
   let myDrink = '';
   try {
     myName = localStorage.getItem('somy_world_name') || myName;
     myPresetId = localStorage.getItem('somy_world_preset') || myPresetId;
+    const savedCfg = localStorage.getItem('somy_world_avatar_v2');
+    if (savedCfg) myAvatarConfig = JSON.parse(savedCfg);
   } catch {}
   if (somyUserName) {
     myName = somyUserName.slice(0, 18);
@@ -405,15 +408,19 @@
         clientId: myClientId,
         name: myName,
         presetId: myPresetId,
+        avatarConfig: myAvatarConfig,
         ...coords
       });
     }
   });
 
+  myAvatarConfig = world3d.resolveAvatarConfig(myPresetId, myAvatarConfig);
+
   world3d.createAvatar('me', {
     isMe: true,
     name: myName,
     presetId: myPresetId,
+    avatarConfig: myAvatarConfig,
     drink: myDrink,
     x: 0,
     y: 0,
@@ -850,6 +857,7 @@
       clientId: myClientId,
       name: myName,
       presetId: myPresetId,
+      avatarConfig: myAvatarConfig,
       drink: myDrink,
       camOn: myFaceCamOn,
       x: me ? me.x : 0,
@@ -907,7 +915,8 @@
           isMe: false,
           isNpc: false,
           name: p.name || '성도',
-          presetId: p.presetId || 'david',
+          presetId: p.presetId || 'dandy_suit',
+          avatarConfig: p.avatarConfig || undefined,
           drink: p.drink || '',
           x: p.x ?? 0,
           y: p.y ?? 0,
@@ -953,6 +962,17 @@
         world3d.createAvatar(payload.clientId, { ...payload, isMe: false, isNpc: false });
       } else {
         world3d.updateAvatarInfo(payload.clientId, payload);
+      }
+    });
+
+    roomChannel.on('broadcast', { event: 'avatar_style' }, ({ payload }) => {
+      if (!payload || payload.clientId === myClientId) return;
+      if (world3d.avatars.has(payload.clientId)) {
+        world3d.updateAvatarInfo(payload.clientId, {
+          name: payload.name,
+          presetId: payload.presetId,
+          avatarConfig: payload.avatarConfig
+        });
       }
     });
 
@@ -3395,45 +3415,303 @@
     btn.addEventListener('click', () => closeModal(btn.getAttribute('data-close')));
   });
 
-  // 프로필 & 캐릭터 선택 모달
+  // -------------------------------------------------------------------------
+  // ✨ 내 3D 아바타 스타일 스튜디오 & 실시간 360° 프리뷰 렌더러
+  // -------------------------------------------------------------------------
+  const EXPR_ICONS = {
+    smile: '😊',
+    joy: '😄',
+    pray: '🙏',
+    grace: '✨',
+    wink: '😉',
+    calm: '😌'
+  };
+
+  function updateMyExprBadge() {
+    const el = document.getElementById('my-expr-badge');
+    if (el && myAvatarConfig) {
+      el.textContent = EXPR_ICONS[myAvatarConfig.expression] || '✨';
+    }
+  }
+
+  let tempPreset = myPresetId;
+  let draftAvatarCfg = { ...myAvatarConfig };
+  let previewRenderer = null;
+  let previewScene = null;
+  let previewCamera = null;
+  let previewAvatarPivot = null;
+  let previewAnimId = null;
+  let previewRotY = 0;
+  let previewZoomClose = false;
+  let previewDragging = false;
+  let previewLastX = 0;
+
+  function ensureAvatarPreviewStudio() {
+    const pCanvas = document.getElementById('avatar-preview-canvas');
+    if (!pCanvas || !window.THREE) return;
+    if (!previewRenderer) {
+      const THREE = window.THREE;
+      previewScene = new THREE.Scene();
+      previewCamera = new THREE.PerspectiveCamera(36, 1, 0.1, 20);
+      previewRenderer = new THREE.WebGLRenderer({ canvas: pCanvas, antialias: true, alpha: true });
+      previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      if (THREE.sRGBEncoding) previewRenderer.outputEncoding = THREE.sRGBEncoding;
+
+      const hemi = new THREE.HemisphereLight(0xfffbeb, 0x334155, 1.05);
+      const keyLight = new THREE.DirectionalLight(0xfff7ed, 1.15);
+      keyLight.position.set(2.2, 3.2, 3.5);
+      const rimLight = new THREE.DirectionalLight(0xfde68a, 0.55);
+      rimLight.position.set(-2.4, 2.5, -2.2);
+      previewScene.add(hemi, keyLight, rimLight);
+
+      const pedestal = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.55, 0.62, 0.08, 32),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.35, roughness: 0.4 })
+      );
+      pedestal.position.y = -0.04;
+      const goldRim = new THREE.Mesh(
+        new THREE.TorusGeometry(0.56, 0.015, 10, 36),
+        new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.75, roughness: 0.25 })
+      );
+      goldRim.rotation.x = Math.PI * 0.5;
+      goldRim.position.y = 0.005;
+      previewScene.add(pedestal, goldRim);
+
+      previewAvatarPivot = new THREE.Group();
+      previewScene.add(previewAvatarPivot);
+
+      pCanvas.addEventListener('pointerdown', (e) => {
+        previewDragging = true;
+        previewLastX = e.clientX;
+        try { pCanvas.setPointerCapture(e.pointerId); } catch {}
+      });
+      pCanvas.addEventListener('pointermove', (e) => {
+        if (!previewDragging) return;
+        const dx = e.clientX - previewLastX;
+        previewLastX = e.clientX;
+        previewRotY += dx * 0.014;
+      });
+      pCanvas.addEventListener('pointerup', () => { previewDragging = false; });
+      pCanvas.addEventListener('pointercancel', () => { previewDragging = false; });
+    }
+
+    const rect = pCanvas.parentElement.getBoundingClientRect();
+    const w = Math.max(220, rect.width || 300);
+    const h = Math.max(200, rect.height || 260);
+    previewCamera.aspect = w / h;
+    previewCamera.updateProjectionMatrix();
+    previewRenderer.setSize(w, h, false);
+  }
+
+  function rebuildPreviewAvatarMesh() {
+    ensureAvatarPreviewStudio();
+    if (!previewAvatarPivot) return;
+    while (previewAvatarPivot.children.length > 0) {
+      previewAvatarPivot.remove(previewAvatarPivot.children[0]);
+    }
+    const built = world3d.buildPreviewRig(tempPreset, draftAvatarCfg);
+    previewAvatarPivot.add(built.rigGroup);
+  }
+
+  function updatePreviewCameraFraming() {
+    if (!previewCamera) return;
+    const isCute = draftAvatarCfg && draftAvatarCfg.bodyStyle === 'cute';
+    if (previewZoomClose) {
+      const faceY = isCute ? 1.54 : 1.73;
+      previewCamera.position.set(0, faceY + 0.03, isCute ? 1.25 : 1.02);
+      previewCamera.lookAt(0, faceY - 0.02, 0);
+    } else {
+      previewCamera.position.set(0, isCute ? 1.00 : 1.08, isCute ? 3.15 : 3.35);
+      previewCamera.lookAt(0, isCute ? 0.92 : 1.02, 0);
+    }
+  }
+
+  function startAvatarPreviewLoop() {
+    if (previewAnimId) cancelAnimationFrame(previewAnimId);
+    const tick = () => {
+      const modal = document.getElementById('profile-modal');
+      if (!modal || modal.classList.contains('hidden')) {
+        previewAnimId = null;
+        return;
+      }
+      if (previewRenderer && previewScene && previewCamera && previewAvatarPivot) {
+        if (!previewDragging) previewRotY += 0.0055;
+        previewAvatarPivot.rotation.y = Math.sin(previewRotY) * 0.48;
+        updatePreviewCameraFraming();
+        previewRenderer.render(previewScene, previewCamera);
+      }
+      previewAnimId = requestAnimationFrame(tick);
+    };
+    previewAnimId = requestAnimationFrame(tick);
+  }
+
+  function syncAvatarStudioUiHighlights() {
+    document.querySelectorAll('.preset-pick-btn').forEach((b) => {
+      const active = b.getAttribute('data-pid') === tempPreset;
+      b.className = active
+        ? 'preset-pick-btn px-2 py-2 rounded-xl border-2 border-amber-400 bg-amber-400/20 text-white text-[11px] font-extrabold cursor-pointer truncate'
+        : 'preset-pick-btn px-2 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-300 hover:border-slate-500 text-[11px] font-bold cursor-pointer truncate';
+    });
+
+    document.querySelectorAll('.av-opt-btn').forEach((b) => {
+      const key = b.getAttribute('data-avkey');
+      const val = b.getAttribute('data-avval');
+      const isActive = draftAvatarCfg && String(draftAvatarCfg[key]) === String(val);
+      const isColorSwatch = key === 'outfitColor' || key === 'bottomColor';
+      if (isColorSwatch) {
+        b.classList.toggle('ring-2', isActive);
+        b.classList.toggle('ring-amber-300', isActive);
+        b.classList.toggle('scale-110', isActive);
+        b.classList.toggle('border-amber-300', isActive);
+        b.classList.toggle('border-white/30', !isActive);
+      } else {
+        b.classList.toggle('border-amber-400', isActive);
+        b.classList.toggle('bg-amber-400/20', isActive);
+        b.classList.toggle('text-amber-200', isActive);
+        b.classList.toggle('border-slate-700', !isActive);
+        b.classList.toggle('bg-slate-900', !isActive);
+        b.classList.toggle('text-slate-200', !isActive);
+      }
+    });
+
+    document.querySelectorAll('.quick-expr-chip').forEach((c) => {
+      const act = draftAvatarCfg && c.getAttribute('data-qexpr') === draftAvatarCfg.expression;
+      c.className = act
+        ? 'quick-expr-chip px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[11px] font-extrabold cursor-pointer shadow'
+        : 'quick-expr-chip px-2 py-0.5 rounded-full bg-black/70 hover:bg-white/20 text-white text-[11px] font-bold cursor-pointer';
+    });
+  }
+
   const presetBox = document.getElementById('avatar-preset-grid');
   presetBox.innerHTML = world3d.getPresets().map((p) => `
-    <button type="button" data-pid="${p.id}" class="preset-pick-btn p-2.5 rounded-xl border ${
-      p.id === myPresetId ? 'border-amber-400 bg-amber-400/20 text-white' : 'border-slate-700 bg-slate-900 text-slate-300'
-    } text-xs font-extrabold cursor-pointer">
-      😊 ${p.label}
+    <button type="button" data-pid="${p.id}" class="preset-pick-btn px-2 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-300 text-[11px] font-bold cursor-pointer truncate">
+      ${p.label}
     </button>
   `).join('');
 
-  let tempPreset = myPresetId;
   presetBox.querySelectorAll('.preset-pick-btn').forEach((b) => {
     b.addEventListener('click', () => {
       tempPreset = b.getAttribute('data-pid');
-      presetBox.querySelectorAll('.preset-pick-btn').forEach((x) => {
-        x.className = 'preset-pick-btn p-2.5 rounded-xl border border-slate-700 bg-slate-900 text-slate-300 text-xs font-extrabold cursor-pointer';
-      });
-      b.className = 'preset-pick-btn p-2.5 rounded-xl border border-amber-400 bg-amber-400/20 text-white text-xs font-extrabold cursor-pointer';
+      draftAvatarCfg = world3d.resolveAvatarConfig(tempPreset, null);
+      syncAvatarStudioUiHighlights();
+      rebuildPreviewAvatarMesh();
     });
   });
 
+  document.querySelectorAll('.av-studio-tab').forEach((tabBtn) => {
+    tabBtn.addEventListener('click', () => {
+      const target = tabBtn.getAttribute('data-avtab');
+      document.querySelectorAll('.av-studio-pane').forEach((p) => p.classList.add('hidden'));
+      const pane = document.getElementById(`avpane-${target}`);
+      if (pane) pane.classList.remove('hidden');
+      document.querySelectorAll('.av-studio-tab').forEach((x) => {
+        const act = x === tabBtn;
+        x.className = act
+          ? 'av-studio-tab py-1.5 rounded-lg bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer'
+          : 'av-studio-tab py-1.5 rounded-lg text-slate-300 hover:bg-slate-800 text-xs font-bold cursor-pointer';
+      });
+      if (target === 'expr' || target === 'hair') {
+        previewZoomClose = true;
+        document.getElementById('btn-preview-zoom-toggle').textContent = '🧍 전신 보기';
+      } else if (target === 'fashion') {
+        previewZoomClose = false;
+        document.getElementById('btn-preview-zoom-toggle').textContent = '🔍 얼굴 클로즈업';
+      }
+    });
+  });
+
+  document.querySelectorAll('.av-opt-btn').forEach((optBtn) => {
+    optBtn.addEventListener('click', () => {
+      const key = optBtn.getAttribute('data-avkey');
+      const val = optBtn.getAttribute('data-avval');
+      if (!key || !val) return;
+      draftAvatarCfg = { ...draftAvatarCfg, [key]: val };
+      // 성별 전환 시 어색하지 않도록 기본 의상·헤어 자연 보정 (원하면 다시 선택 가능)
+      if (key === 'gender') {
+        if (val === 'female' && (draftAvatarCfg.hairStyle === 'pomade' || draftAvatarCfg.hairStyle === 'dandy')) {
+          draftAvatarCfg.hairStyle = 'long_wave';
+        } else if (val === 'male' && (draftAvatarCfg.hairStyle === 'long_wave' || draftAvatarCfg.hairStyle === 'low_bun' || draftAvatarCfg.hairStyle === 'ponytail')) {
+          draftAvatarCfg.hairStyle = 'dandy';
+        }
+      }
+      syncAvatarStudioUiHighlights();
+      rebuildPreviewAvatarMesh();
+    });
+  });
+
+  document.querySelectorAll('.quick-expr-chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const expr = chip.getAttribute('data-qexpr') || 'smile';
+      draftAvatarCfg = { ...draftAvatarCfg, expression: expr };
+      syncAvatarStudioUiHighlights();
+      rebuildPreviewAvatarMesh();
+    });
+  });
+
+  document.getElementById('btn-preview-zoom-toggle').addEventListener('click', (e) => {
+    previewZoomClose = !previewZoomClose;
+    e.currentTarget.textContent = previewZoomClose ? '🧍 전신 보기' : '🔍 얼굴 클로즈업';
+  });
+
+  document.getElementById('btn-random-avatar').addEventListener('click', () => {
+    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const g = pick(['male', 'female']);
+    draftAvatarCfg = {
+      bodyStyle: pick(['model', 'model', 'model', 'cute']),
+      gender: g,
+      skinTone: pick(['porcelain', 'warm', 'natural', 'tan']),
+      faceStyle: pick(['gentle', 'chic', 'lovely', 'dignified']),
+      expression: pick(['smile', 'joy', 'grace', 'wink']),
+      hairStyle: g === 'female' ? pick(['long_wave', 'bob_c', 'low_bun', 'ponytail', 'beret_wave']) : pick(['dandy', 'pomade', 'short_layered']),
+      hairColor: pick(['black', 'espresso', 'chestnut', 'ash_brown', 'burgundy']),
+      outfitStyle: g === 'female' ? pick(['onepiece', 'jacket_skirt', 'knit_slacks', 'trench', 'choir']) : pick(['suit', 'trench', 'knit_slacks', 'choir']),
+      outfitColor: pick(['#1e3a8a', '#27272a', '#f8fafc', '#b48352', '#be185d', '#881337', '#047857', '#6d28d9']),
+      bottomColor: pick(['#1e293b', '#18181b', '#e7e5e4', '#44403c', '#1e1b4b']),
+      accessory: pick(['none', 'none', 'wire_glasses', 'horn_glasses', 'necklace', 'crossbag'])
+    };
+    syncAvatarStudioUiHighlights();
+    rebuildPreviewAvatarMesh();
+  });
+
   document.getElementById('btn-open-profile').addEventListener('click', () => {
+    tempPreset = myPresetId;
+    draftAvatarCfg = { ...world3d.resolveAvatarConfig(myPresetId, myAvatarConfig) };
+    previewRotY = 0;
     document.getElementById('profile-name-input').value = myName;
     openModal('profile-modal');
+    setTimeout(() => {
+      syncAvatarStudioUiHighlights();
+      rebuildPreviewAvatarMesh();
+      startAvatarPreviewLoop();
+    }, 30);
   });
 
   document.getElementById('btn-save-profile').addEventListener('click', () => {
     const n = document.getElementById('profile-name-input').value.trim();
     if (n) myName = n.slice(0, 18);
     myPresetId = tempPreset;
+    myAvatarConfig = world3d.resolveAvatarConfig(myPresetId, draftAvatarCfg);
     try {
       localStorage.setItem('somy_world_name', myName);
       localStorage.setItem('somy_world_preset', myPresetId);
+      localStorage.setItem('somy_world_avatar_v2', JSON.stringify(myAvatarConfig));
     } catch {}
     document.getElementById('my-name-badge').textContent = myName;
-    world3d.updateAvatarInfo('me', { name: myName, presetId: myPresetId });
+    updateMyExprBadge();
+    world3d.updateAvatarInfo('me', {
+      name: myName,
+      presetId: myPresetId,
+      avatarConfig: myAvatarConfig
+    });
     syncMyPresence();
+    broadcastEvent('avatar_style', {
+      clientId: myClientId,
+      name: myName,
+      presetId: myPresetId,
+      avatarConfig: myAvatarConfig
+    });
     closeModal('profile-modal');
-    toast(`✨ '${myName}' 프로필이 적용되었습니다!`);
+    toast(`✨ '${myName}' 나만의 아바타 스타일이 적용되었습니다!`);
   });
 
   document.getElementById('npc-toggle-chk').addEventListener('change', (e) => {
@@ -3565,6 +3843,7 @@
   // -------------------------------------------------------------------------
   async function boot() {
     document.getElementById('my-name-badge').textContent = myName;
+    updateMyExprBadge();
     const hubTitleEl = document.getElementById('hub-church-title');
     if (hubTitleEl) {
       hubTitleEl.textContent = `📋 ${currentChurchName} 온라인 캠퍼스 — 분류별 통합 게시판 & 메뉴`;
@@ -3574,7 +3853,7 @@
     renderBibleBookPages();
     updateBiblePlanPreview();
     world3d.loadZone('garden');
-    world3d.updateAvatarInfo('me', { name: myName, presetId: myPresetId });
+    world3d.updateAvatarInfo('me', { name: myName, presetId: myPresetId, avatarConfig: myAvatarConfig });
     refreshNpcsForZone();
     world3d.start();
 

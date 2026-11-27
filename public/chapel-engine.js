@@ -7,12 +7,806 @@
   if (!THREE) return;
 
   const AVATAR_PRESETS = [
-    { id: 'david',  label: '다윗 (형제)', hair: 0x241914, outfit: 0x2563eb, pants: 0x1e293b, skin: 0xfce0c8, bag: 0x6b3410, hairType: 'short' },
-    { id: 'miriam', label: '미리암 (자매)', hair: 0x432818, outfit: 0xdb2777, pants: 0x334155, skin: 0xffe6d5, bag: 0x831843, hairType: 'bun' },
-    { id: 'joseph', label: '요셉 (청년)', hair: 0x18181b, outfit: 0x059669, pants: 0x1f2937, skin: 0xfddfca, bag: 0x365314, hairType: 'short' },
-    { id: 'lydia',  label: '루디아 (집사)', hair: 0x58351e, outfit: 0x7c3aed, pants: 0x1e1b4b, skin: 0xffe4d0, bag: 0x581c87, hairType: 'bob' },
-    { id: 'somy',   label: '소미 (인도자)', hair: 0x3b2a1e, outfit: 0xd97706, pants: 0x1e293b, skin: 0xffe8d6, bag: 0x92400e, hairType: 'bob' }
+    {
+      id: 'dandy_suit',
+      label: '✨ 댄디 수트 (형제)',
+      config: { bodyStyle: 'model', gender: 'male', skinTone: 'warm', faceStyle: 'chic', expression: 'smile', hairStyle: 'dandy', hairColor: 'espresso', outfitStyle: 'suit', outfitColor: '#1e3a8a', bottomColor: '#1e293b', accessory: 'none' }
+    },
+    {
+      id: 'lovely_wave',
+      label: '🌸 롱웨이브 원피스 (자매)',
+      config: { bodyStyle: 'model', gender: 'female', skinTone: 'porcelain', faceStyle: 'lovely', expression: 'smile', hairStyle: 'long_wave', hairColor: 'chestnut', outfitStyle: 'onepiece', outfitColor: '#be185d', bottomColor: '#fdf2f8', accessory: 'necklace' }
+    },
+    {
+      id: 'trench_chic',
+      label: '🧥 감성 트렌치코트 (청년)',
+      config: { bodyStyle: 'model', gender: 'male', skinTone: 'natural', faceStyle: 'gentle', expression: 'grace', hairStyle: 'short_layered', hairColor: 'black', outfitStyle: 'trench', outfitColor: '#b48352', bottomColor: '#1f2937', accessory: 'wire_glasses' }
+    },
+    {
+      id: 'tweed_bob',
+      label: '💎 세련된 단발 셋업 (자매)',
+      config: { bodyStyle: 'model', gender: 'female', skinTone: 'porcelain', faceStyle: 'chic', expression: 'smile', hairStyle: 'bob_c', hairColor: 'espresso', outfitStyle: 'jacket_skirt', outfitColor: '#f8fafc', bottomColor: '#334155', accessory: 'crossbag' }
+    },
+    {
+      id: 'elder_suit',
+      label: '👔 품격 정장 (장로·집사)',
+      config: { bodyStyle: 'model', gender: 'male', skinTone: 'natural', faceStyle: 'dignified', expression: 'smile', hairStyle: 'pomade', hairColor: 'silver', outfitStyle: 'suit', outfitColor: '#27272a', bottomColor: '#18181b', accessory: 'wire_glasses' }
+    },
+    {
+      id: 'kwonsa_grace',
+      label: '🌺 단아한 올림머리 (권사·집사)',
+      config: { bodyStyle: 'model', gender: 'female', skinTone: 'warm', faceStyle: 'gentle', expression: 'smile', hairStyle: 'low_bun', hairColor: 'espresso', outfitStyle: 'jacket_skirt', outfitColor: '#6d28d9', bottomColor: '#1e1b4b', accessory: 'necklace' }
+    },
+    {
+      id: 'choir_gown',
+      label: '🎵 은혜 성가대 가운',
+      config: { bodyStyle: 'model', gender: 'female', skinTone: 'porcelain', faceStyle: 'lovely', expression: 'grace', hairStyle: 'ponytail', hairColor: 'ash_brown', outfitStyle: 'choir', outfitColor: '#f8fafc', bottomColor: '#1e293b', accessory: 'none' }
+    },
+    {
+      id: 'cute_somy',
+      label: '🧸 귀여운 캐주얼 소미핏',
+      config: { bodyStyle: 'cute', gender: 'female', skinTone: 'porcelain', faceStyle: 'lovely', expression: 'joy', hairStyle: 'beret_wave', hairColor: 'chestnut', outfitStyle: 'knit_slacks', outfitColor: '#f59e0b', bottomColor: '#334155', accessory: 'crossbag' }
+    },
+    // 기존 ID 하위 호환용 매핑
+    {
+      id: 'david',
+      label: '다윗 (형제)',
+      config: { bodyStyle: 'model', gender: 'male', skinTone: 'warm', faceStyle: 'gentle', expression: 'smile', hairStyle: 'dandy', hairColor: 'espresso', outfitStyle: 'suit', outfitColor: '#1d4ed8', bottomColor: '#1e293b', accessory: 'none' }
+    },
+    {
+      id: 'miriam',
+      label: '미리암 (자매)',
+      config: { bodyStyle: 'model', gender: 'female', skinTone: 'porcelain', faceStyle: 'lovely', expression: 'smile', hairStyle: 'long_wave', hairColor: 'chestnut', outfitStyle: 'onepiece', outfitColor: '#db2777', bottomColor: '#334155', accessory: 'necklace' }
+    },
+    {
+      id: 'joseph',
+      label: '요셉 (청년)',
+      config: { bodyStyle: 'model', gender: 'male', skinTone: 'natural', faceStyle: 'chic', expression: 'smile', hairStyle: 'short_layered', hairColor: 'black', outfitStyle: 'trench', outfitColor: '#047857', bottomColor: '#1f2937', accessory: 'horn_glasses' }
+    },
+    {
+      id: 'lydia',
+      label: '루디아 (집사)',
+      config: { bodyStyle: 'model', gender: 'female', skinTone: 'warm', faceStyle: 'gentle', expression: 'smile', hairStyle: 'low_bun', hairColor: 'espresso', outfitStyle: 'jacket_skirt', outfitColor: '#6d28d9', bottomColor: '#1e1b4b', accessory: 'necklace' }
+    },
+    {
+      id: 'somy',
+      label: '소미 (인도자)',
+      config: { bodyStyle: 'model', gender: 'female', skinTone: 'porcelain', faceStyle: 'lovely', expression: 'joy', hairStyle: 'bob_c', hairColor: 'ash_brown', outfitStyle: 'knit_slacks', outfitColor: '#d97706', bottomColor: '#1e293b', accessory: 'crossbag' }
+    }
   ];
+
+  const SKIN_TONE_HEX = {
+    porcelain: '#ffe9dc',
+    warm: '#fcdcc5',
+    natural: '#eec2a2',
+    tan: '#d79e78'
+  };
+
+  const HAIR_COLOR_HEX = {
+    black: '#19181d',
+    espresso: '#342118',
+    chestnut: '#5e3a24',
+    ash_brown: '#7c5e48',
+    burgundy: '#541e2b',
+    silver: '#9ca3af'
+  };
+
+  function resolveAvatarConfig(presetId, rawCfg) {
+    const found = AVATAR_PRESETS.find((p) => p.id === presetId) || AVATAR_PRESETS[0];
+    const base = found.config;
+    const cfg = rawCfg && typeof rawCfg === 'object' ? rawCfg : {};
+    const gender = cfg.gender || base.gender || 'male';
+    return {
+      bodyStyle: cfg.bodyStyle === 'cute' ? 'cute' : (base.bodyStyle || 'model'),
+      gender,
+      skinTone: SKIN_TONE_HEX[cfg.skinTone] ? cfg.skinTone : (base.skinTone || 'warm'),
+      faceStyle: cfg.faceStyle || base.faceStyle || 'gentle',
+      expression: cfg.expression || base.expression || 'smile',
+      hairStyle: cfg.hairStyle || base.hairStyle || (gender === 'female' ? 'long_wave' : 'dandy'),
+      hairColor: HAIR_COLOR_HEX[cfg.hairColor] ? cfg.hairColor : (base.hairColor || 'espresso'),
+      outfitStyle: cfg.outfitStyle || base.outfitStyle || (gender === 'female' ? 'onepiece' : 'suit'),
+      outfitColor: cfg.outfitColor || base.outfitColor || '#1e3a8a',
+      bottomColor: cfg.bottomColor || base.bottomColor || '#1e293b',
+      accessory: cfg.accessory || base.accessory || 'none'
+    };
+  }
+
+  function avatarConfigSignature(presetId, rawCfg) {
+    return JSON.stringify(resolveAvatarConfig(presetId, rawCfg));
+  }
+
+  // 고해상도 512x512 얼굴 스타일 · 눈동자 홍채 · 눈썹 · 볼터치 · 표정 텍스처 렌더러
+  const faceTextureCache = new Map();
+  function createStylizedFaceTexture(cfg) {
+    const key = `${cfg.gender}|${cfg.skinTone}|${cfg.faceStyle}|${cfg.expression}|${cfg.hairColor}`;
+    if (faceTextureCache.has(key)) return faceTextureCache.get(key);
+
+    const c = document.createElement('canvas');
+    c.width = 512;
+    c.height = 512;
+    const g = c.getContext('2d');
+    g.clearRect(0, 0, 512, 512);
+
+    const isFemale = cfg.gender === 'female';
+    const browColor = HAIR_COLOR_HEX[cfg.hairColor] || '#2b1d14';
+    const eyeY = 236;
+    const leftX = 172;
+    const rightX = 340;
+
+    // 1) 은은한 생기 볼터치 (블러셔)
+    const blushAlpha = cfg.faceStyle === 'lovely' || cfg.expression === 'joy' ? 0.28 : (isFemale ? 0.18 : 0.08);
+    [leftX - 24, rightX + 24].forEach((bx) => {
+      const grad = g.createRadialGradient(bx, eyeY + 56, 4, bx, eyeY + 56, 48);
+      grad.addColorStop(0, `rgba(244, 114, 130, ${blushAlpha})`);
+      grad.addColorStop(1, 'rgba(244, 114, 130, 0)');
+      g.fillStyle = grad;
+      g.beginPath();
+      g.arc(bx, eyeY + 56, 48, 0, Math.PI * 2);
+      g.fill();
+    });
+
+    // 2) 눈썹 (얼굴 스타일별 디테일)
+    g.strokeStyle = browColor;
+    g.lineCap = 'round';
+    g.lineWidth = isFemale ? 9 : 13;
+    const browLift = cfg.expression === 'joy' || cfg.expression === 'grace' ? -8 : 0;
+
+    const drawBrow = (cx, dir) => {
+      g.beginPath();
+      if (cfg.faceStyle === 'chic') {
+        g.moveTo(cx - dir * 42, eyeY - 48 + browLift);
+        g.quadraticCurveTo(cx + dir * 6, eyeY - 62 + browLift, cx + dir * 44, eyeY - 50 + browLift);
+      } else if (cfg.faceStyle === 'dignified') {
+        g.moveTo(cx - dir * 44, eyeY - 46 + browLift);
+        g.quadraticCurveTo(cx, eyeY - 54 + browLift, cx + dir * 42, eyeY - 44 + browLift);
+      } else {
+        g.moveTo(cx - dir * 40, eyeY - 48 + browLift);
+        g.quadraticCurveTo(cx, eyeY - 56 + browLift, cx + dir * 42, eyeY - 47 + browLift);
+      }
+      g.stroke();
+    };
+    drawBrow(leftX, -1);
+    drawBrow(rightX, 1);
+
+    // 3) 눈 & 속눈썹 & 홍채 하이라이트 (표정별 분기)
+    const drawOpenEye = (cx, isLeft) => {
+      const rx = isFemale ? 33 : 30;
+      const ry = cfg.faceStyle === 'chic' ? 22 : (cfg.faceStyle === 'lovely' ? 27 : 24);
+
+      // 흰자위
+      g.save();
+      g.fillStyle = '#ffffff';
+      g.beginPath();
+      g.ellipse(cx, eyeY, rx, ry, 0, 0, Math.PI * 2);
+      g.fill();
+      g.clip();
+
+      // 홍채 그라데이션
+      const irisR = ry * 0.88;
+      const irisGrad = g.createRadialGradient(cx, eyeY + 2, 4, cx, eyeY, irisR);
+      irisGrad.addColorStop(0, '#181311');
+      irisGrad.addColorStop(0.55, cfg.faceStyle === 'chic' ? '#3b2820' : '#4a3121');
+      irisGrad.addColorStop(1, '#1c1512');
+      g.fillStyle = irisGrad;
+      g.beginPath();
+      g.arc(cx, eyeY + 1, irisR, 0, Math.PI * 2);
+      g.fill();
+
+      // 동공
+      g.fillStyle = '#0f0d0c';
+      g.beginPath();
+      g.arc(cx, eyeY + 1, irisR * 0.46, 0, Math.PI * 2);
+      g.fill();
+
+      // 듀얼 캐치라이트 (생동감 있는 눈빛)
+      const sparkleBoost = cfg.expression === 'grace' ? 1.32 : 1.0;
+      g.fillStyle = 'rgba(255,255,255,0.96)';
+      g.beginPath();
+      g.arc(cx - 7, eyeY - 7, 6.2 * sparkleBoost, 0, Math.PI * 2);
+      g.fill();
+      g.beginPath();
+      g.arc(cx + 8, eyeY + 7, 3.2 * sparkleBoost, 0, Math.PI * 2);
+      g.fill();
+      g.restore();
+
+      // 쌍꺼풀 라인
+      g.strokeStyle = 'rgba(92, 58, 42, 0.42)';
+      g.lineWidth = 3.2;
+      g.beginPath();
+      g.arc(cx, eyeY - 3, rx * 0.96, Math.PI * 1.12, Math.PI * 1.88);
+      g.stroke();
+
+      // 윗 아이라인 & 속눈썹
+      g.strokeStyle = '#181210';
+      g.lineWidth = isFemale ? 7.5 : 6.0;
+      g.beginPath();
+      g.ellipse(cx, eyeY - 1, rx, ry, 0, Math.PI * 1.06, Math.PI * 1.94);
+      g.stroke();
+
+      if (isFemale) {
+        const outerDir = isLeft ? -1 : 1;
+        g.lineWidth = 4.2;
+        g.beginPath();
+        g.moveTo(cx + outerDir * (rx - 2), eyeY - 4);
+        g.lineTo(cx + outerDir * (rx + 10), eyeY - 11);
+        g.stroke();
+      }
+    };
+
+    const drawClosedArcEye = (cx, upwardSmile) => {
+      g.strokeStyle = '#231815';
+      g.lineWidth = isFemale ? 7.5 : 6.8;
+      g.beginPath();
+      if (upwardSmile) {
+        g.arc(cx, eyeY + 10, 28, Math.PI * 1.12, Math.PI * 1.88);
+      } else {
+        g.arc(cx, eyeY - 10, 28, Math.PI * 0.14, Math.PI * 0.86);
+      }
+      g.stroke();
+    };
+
+    if (cfg.expression === 'pray') {
+      drawClosedArcEye(leftX, false);
+      drawClosedArcEye(rightX, false);
+    } else if (cfg.expression === 'joy') {
+      drawClosedArcEye(leftX, true);
+      drawClosedArcEye(rightX, true);
+    } else if (cfg.expression === 'wink') {
+      drawOpenEye(leftX, true);
+      drawClosedArcEye(rightX, true);
+    } else {
+      drawOpenEye(leftX, true);
+      drawOpenEye(rightX, false);
+    }
+
+    // 4) 섬세한 콧방울 음영
+    g.strokeStyle = 'rgba(138, 88, 62, 0.38)';
+    g.lineWidth = 3.5;
+    g.beginPath();
+    g.arc(256, 298, 9, Math.PI * 0.18, Math.PI * 0.82);
+    g.stroke();
+
+    // 5) 입술 & 표정 입매
+    const lipY = 352;
+    const lipTint = isFemale
+      ? (cfg.faceStyle === 'chic' ? '#be4b58' : '#e06377')
+      : '#c56b68';
+
+    if (cfg.expression === 'joy') {
+      // 활짝 웃는 기쁨 미소
+      g.fillStyle = '#a83847';
+      g.beginPath();
+      g.moveTo(214, lipY - 4);
+      g.quadraticCurveTo(256, lipY + 3, 298, lipY - 4);
+      g.quadraticCurveTo(256, lipY + 42, 214, lipY - 4);
+      g.fill();
+
+      g.fillStyle = '#ffffff';
+      g.beginPath();
+      g.moveTo(222, lipY - 2);
+      g.quadraticCurveTo(256, lipY + 4, 290, lipY - 2);
+      g.quadraticCurveTo(256, lipY + 13, 222, lipY - 2);
+      g.fill();
+    } else if (cfg.expression === 'pray' || cfg.expression === 'calm') {
+      // 고요하고 평안한 입술
+      g.fillStyle = lipTint;
+      g.beginPath();
+      g.ellipse(256, lipY + 2, isFemale ? 24 : 22, isFemale ? 8 : 6, 0, 0, Math.PI * 2);
+      g.fill();
+      g.strokeStyle = 'rgba(110, 42, 48, 0.55)';
+      g.lineWidth = 3;
+      g.beginPath();
+      g.moveTo(228, lipY + 2);
+      g.quadraticCurveTo(256, lipY + 6, 284, lipY + 2);
+      g.stroke();
+    } else {
+      // 온화하고 세련된 미소 (smile / grace / wink)
+      if (isFemale) {
+        g.fillStyle = lipTint;
+        g.beginPath();
+        g.ellipse(256, lipY + 2, 28, 10, 0, 0, Math.PI * 2);
+        g.fill();
+        // 글로스 하이라이트
+        g.fillStyle = 'rgba(255,255,255,0.38)';
+        g.beginPath();
+        g.ellipse(256, lipY + 5, 13, 3.2, 0, 0, Math.PI * 2);
+        g.fill();
+      }
+      g.strokeStyle = isFemale ? '#882938' : '#8b4543';
+      g.lineWidth = 4.6;
+      g.beginPath();
+      g.moveTo(218, lipY - 2);
+      g.quadraticCurveTo(256, lipY + 18, 294, lipY - 2);
+      g.stroke();
+    }
+
+    const tex = new THREE.CanvasTexture(c);
+    tex.minFilter = THREE.LinearFilter;
+    if (THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
+    faceTextureCache.set(key, tex);
+    return tex;
+  }
+
+  // 7.5등신 슬림 모델 체형 & 귀여운 캐주얼 체형 겸용 고품격 3D 캐릭터 빌더
+  function buildStylizedAvatarRig(presetId, rawCfg, currentDrink) {
+    const cfg = resolveAvatarConfig(presetId, rawCfg);
+    const isCute = cfg.bodyStyle === 'cute';
+    const isFemale = cfg.gender === 'female';
+
+    const skinMat = new THREE.MeshStandardMaterial({ color: SKIN_TONE_HEX[cfg.skinTone] || '#fcdcc5', roughness: 0.52 });
+    const hairMat = new THREE.MeshStandardMaterial({ color: HAIR_COLOR_HEX[cfg.hairColor] || '#342118', roughness: 0.62 });
+    const outfitMat = new THREE.MeshStandardMaterial({ color: cfg.outfitColor, roughness: 0.58 });
+    const bottomMat = new THREE.MeshStandardMaterial({ color: cfg.bottomColor, roughness: 0.68 });
+    const whiteShirtMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.45 });
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.72, roughness: 0.25 });
+    const silverMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.78, roughness: 0.22 });
+    const darkLeatherMat = new THREE.MeshStandardMaterial({ color: isFemale ? 0x292524 : 0x18181b, roughness: 0.34 });
+
+    const rigGroup = new THREE.Group();
+
+    // 체형별 정밀 인체 비례 상수 (얼큰이 탈피: model은 머리 반경 0.156m의 늘씬한 7.5등신 비율!)
+    const P = isCute
+      ? {
+          hipY: 0.66,
+          legLen: 0.58,
+          legSpacing: 0.145,
+          torsoH: 0.64,
+          torsoTopR: isFemale ? 0.20 : 0.23,
+          torsoWaistR: isFemale ? 0.17 : 0.20,
+          hipR: isFemale ? 0.21 : 0.20,
+          shoulderY: 1.24,
+          armX: isFemale ? 0.27 : 0.30,
+          armLen: 0.48,
+          neckY: 1.34,
+          headY: 1.56,
+          headR: 0.235,
+          heightTop: 2.02
+        }
+      : {
+          hipY: 0.90,
+          legLen: 0.84,
+          legSpacing: isFemale ? 0.108 : 0.128,
+          torsoH: 0.64,
+          torsoTopR: isFemale ? 0.175 : 0.218,
+          torsoWaistR: isFemale ? 0.132 : 0.176,
+          hipR: isFemale ? 0.178 : 0.176,
+          shoulderY: 1.48,
+          armX: isFemale ? 0.228 : 0.268,
+          armLen: 0.60,
+          neckY: 1.58,
+          headY: 1.75,
+          headR: 0.156,
+          heightTop: 2.16
+        };
+
+    const isSkirtLook = cfg.outfitStyle === 'onepiece' || cfg.outfitStyle === 'jacket_skirt';
+    const isChoir = cfg.outfitStyle === 'choir';
+
+    // 1) 다리 (슬랙스 바지 또는 스커트용 각선미 다리 + 세련된 구두/스니커즈)
+    const makeLeg = () => {
+      const lg = new THREE.Group();
+      const upperMat = isSkirtLook ? skinMat : bottomMat;
+      const lowerMat = isSkirtLook ? skinMat : bottomMat;
+
+      const thighRTop = isSkirtLook ? 0.072 : 0.086;
+      const thighRBot = isSkirtLook ? 0.056 : 0.070;
+      const upperH = P.legLen * 0.52;
+      const lowerH = P.legLen * 0.48;
+
+      const thigh = new THREE.Mesh(new THREE.CylinderGeometry(thighRTop, thighRBot, upperH, 14), upperMat);
+      thigh.position.y = -upperH * 0.5;
+      thigh.castShadow = true;
+
+      const calf = new THREE.Mesh(new THREE.CylinderGeometry(thighRBot, thighRBot * 0.82, lowerH, 14), lowerMat);
+      calf.position.y = -upperH - lowerH * 0.5 + 0.02;
+      calf.castShadow = true;
+
+      const shoeMat = cfg.outfitStyle === 'knit_slacks'
+        ? whiteShirtMat
+        : (cfg.outfitStyle === 'onepiece' ? outfitMat : darkLeatherMat);
+      const shoe = new THREE.Mesh(new THREE.SphereGeometry(0.082, 14, 10), shoeMat);
+      shoe.scale.set(0.86, 0.55, 1.58);
+      shoe.position.set(0, -P.legLen + 0.02, 0.045);
+      shoe.castShadow = true;
+
+      lg.add(thigh, calf, shoe);
+      return lg;
+    };
+
+    const leftLeg = makeLeg();
+    leftLeg.position.set(-P.legSpacing, P.hipY, 0);
+    const rightLeg = makeLeg();
+    rightLeg.position.set(P.legSpacing, P.hipY, 0);
+    rigGroup.add(leftLeg, rightLeg);
+
+    // 골반 연결부
+    const pelvis = new THREE.Mesh(
+      new THREE.SphereGeometry(P.hipR, 16, 12),
+      isSkirtLook ? (cfg.outfitStyle === 'onepiece' ? outfitMat : bottomMat) : bottomMat
+    );
+    pelvis.scale.set(1.06, 0.56, 0.78);
+    pelvis.position.y = P.hipY;
+    rigGroup.add(pelvis);
+
+    // 2) 상체 & 패션 스타일별 입체 의상 디테일
+    const torsoCenterY = P.hipY + P.torsoH * 0.5 - 0.02;
+    const upperTorso = new THREE.Mesh(
+      new THREE.CylinderGeometry(P.torsoTopR, P.torsoWaistR, P.torsoH * 0.62, 18),
+      outfitMat
+    );
+    upperTorso.scale.set(1.16, 1, 0.72);
+    upperTorso.position.y = torsoCenterY + P.torsoH * 0.18;
+    upperTorso.castShadow = true;
+    rigGroup.add(upperTorso);
+
+    const lowerTorso = new THREE.Mesh(
+      new THREE.CylinderGeometry(P.torsoWaistR, P.hipR * 0.98, P.torsoH * 0.44, 18),
+      outfitMat
+    );
+    lowerTorso.scale.set(1.10, 1, 0.74);
+    lowerTorso.position.y = P.hipY + P.torsoH * 0.18;
+    lowerTorso.castShadow = true;
+    rigGroup.add(lowerTorso);
+
+    // 자연스러운 어깨 라인
+    const shoulderCap = new THREE.Mesh(new THREE.SphereGeometry(P.torsoTopR * 1.14, 18, 12), outfitMat);
+    shoulderCap.scale.set(1.14, 0.36, 0.70);
+    shoulderCap.position.y = P.shoulderY;
+    rigGroup.add(shoulderCap);
+
+    // 패션별 커스텀 코디 디테일
+    if (cfg.outfitStyle === 'suit') {
+      // 드레스 셔츠 V존 + 테일러드 라펠 + 넥타이/스카프
+      const vZone = new THREE.Mesh(new THREE.ConeGeometry(0.088, 0.32, 4), whiteShirtMat);
+      vZone.rotation.x = Math.PI;
+      vZone.rotation.y = Math.PI * 0.25;
+      vZone.scale.set(1.0, 1.0, 0.35);
+      vZone.position.set(0, P.shoulderY - 0.12, P.torsoTopR * 0.70);
+      rigGroup.add(vZone);
+
+      const tieMat = new THREE.MeshStandardMaterial({ color: isFemale ? 0xfda4af : 0x991b1b, roughness: 0.4 });
+      const tie = new THREE.Mesh(new THREE.BoxGeometry(0.036, 0.24, 0.018), tieMat);
+      tie.position.set(0, P.shoulderY - 0.15, P.torsoTopR * 0.76);
+      rigGroup.add(tie);
+    } else if (cfg.outfitStyle === 'knit_slacks') {
+      // 레이어드 화이트 셔츠 카라 + 하단 시보리
+      const collarRing = new THREE.Mesh(new THREE.TorusGeometry(0.078, 0.018, 10, 20), whiteShirtMat);
+      collarRing.rotation.x = Math.PI * 0.5;
+      collarRing.position.set(0, P.shoulderY + 0.03, 0.01);
+      rigGroup.add(collarRing);
+    } else if (cfg.outfitStyle === 'onepiece') {
+      // 우아한 A라인 플레어 스커트 + 골드 버클 벨트
+      const flareSkirt = new THREE.Mesh(
+        new THREE.CylinderGeometry(P.torsoWaistR * 1.06, P.hipR * 1.72, P.legLen * 0.56, 24, 1, false),
+        outfitMat
+      );
+      flareSkirt.scale.set(1.06, 1, 0.86);
+      flareSkirt.position.y = P.hipY - P.legLen * 0.18;
+      flareSkirt.castShadow = true;
+      rigGroup.add(flareSkirt);
+
+      const belt = new THREE.Mesh(new THREE.CylinderGeometry(P.torsoWaistR * 1.13, P.torsoWaistR * 1.13, 0.035, 20), darkLeatherMat);
+      belt.scale.set(1.08, 1, 0.76);
+      belt.position.y = P.hipY + 0.14;
+      const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.042, 0.02), goldMat);
+      buckle.position.set(0, P.hipY + 0.14, P.torsoWaistR * 0.86);
+      rigGroup.add(belt, buckle);
+    } else if (cfg.outfitStyle === 'jacket_skirt') {
+      // 모던 H/A라인 미디 스커트 + 트위드 골드 버튼
+      const midiSkirt = new THREE.Mesh(
+        new THREE.CylinderGeometry(P.hipR * 0.98, P.hipR * 1.32, P.legLen * 0.52, 22),
+        bottomMat
+      );
+      midiSkirt.scale.set(1.06, 1, 0.82);
+      midiSkirt.position.y = P.hipY - P.legLen * 0.18;
+      midiSkirt.castShadow = true;
+      rigGroup.add(midiSkirt);
+
+      for (let bi = 0; bi < 3; bi++) {
+        const btn = new THREE.Mesh(new THREE.SphereGeometry(0.014, 10, 10), goldMat);
+        btn.position.set(0, P.shoulderY - 0.10 - bi * 0.11, P.torsoTopR * 0.76);
+        rigGroup.add(btn);
+      }
+    } else if (cfg.outfitStyle === 'trench') {
+      // 멋스러운 롱 트렌치코트 하단 자락 + 이너 니트
+      const innerNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.085, 0.18, 14), bottomMat);
+      innerNeck.position.set(0, P.shoulderY - 0.02, 0.03);
+      const coatHem = new THREE.Mesh(
+        new THREE.CylinderGeometry(P.torsoWaistR * 1.12, P.hipR * 1.48, P.legLen * 0.58, 20, 1, true, Math.PI * 0.18, Math.PI * 1.64),
+        outfitMat
+      );
+      coatHem.material = outfitMat.clone();
+      coatHem.material.side = THREE.DoubleSide;
+      coatHem.rotation.y = Math.PI;
+      coatHem.scale.set(1.08, 1, 0.84);
+      coatHem.position.y = P.hipY - P.legLen * 0.16;
+      rigGroup.add(innerNeck, coatHem);
+    } else if (isChoir) {
+      // 성가대 찬양 가운 + 골드 V-스톨
+      const robeSkirt = new THREE.Mesh(
+        new THREE.CylinderGeometry(P.torsoWaistR * 1.15, P.hipR * 1.75, P.legLen * 0.82, 24),
+        outfitMat
+      );
+      robeSkirt.scale.set(1.08, 1, 0.86);
+      robeSkirt.position.y = P.hipY - P.legLen * 0.34;
+      robeSkirt.castShadow = true;
+
+      const stole = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.028, 8, 18), goldMat);
+      stole.rotation.x = Math.PI * 0.38;
+      stole.scale.set(1.0, 1.35, 0.55);
+      stole.position.set(0, P.shoulderY - 0.04, 0.05);
+      rigGroup.add(robeSkirt, stole);
+    }
+
+    // 3) 팔 & 자연스러운 손
+    const makeArm = () => {
+      const ag = new THREE.Group();
+      const sleeveLen = P.armLen * (cfg.outfitStyle === 'onepiece' ? 0.58 : 0.86);
+      const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.056, 0.046, sleeveLen, 12), outfitMat);
+      sleeve.position.y = -sleeveLen * 0.5;
+      sleeve.castShadow = true;
+      ag.add(sleeve);
+
+      if (sleeveLen < P.armLen) {
+        const forearmLen = P.armLen - sleeveLen;
+        const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.043, 0.036, forearmLen, 12), skinMat);
+        forearm.position.y = -sleeveLen - forearmLen * 0.5;
+        ag.add(forearm);
+      }
+
+      const hand = new THREE.Mesh(new THREE.SphereGeometry(0.044, 12, 10), skinMat);
+      hand.scale.set(0.85, 1.18, 0.68);
+      hand.position.y = -P.armLen - 0.02;
+      ag.add(hand);
+      return ag;
+    };
+
+    const leftArm = makeArm();
+    leftArm.position.set(-P.armX, P.shoulderY - 0.02, 0);
+    const rightArm = makeArm();
+    rightArm.position.set(P.armX, P.shoulderY - 0.02, 0);
+    rigGroup.add(leftArm, rightArm);
+
+    // 음료 컵 (오른손 위치 정확히 정렬)
+    const cupGroup = new THREE.Group();
+    const cupBody = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.052, 0.040, 0.14, 14),
+      new THREE.MeshStandardMaterial({ color: 0xfafaf9, roughness: 0.35 })
+    );
+    const cupSleeve = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.054, 0.045, 0.058, 14),
+      new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.75 })
+    );
+    cupGroup.add(cupBody, cupSleeve);
+    cupGroup.position.set(0, -P.armLen - 0.01, 0.085);
+    cupGroup.visible = !!currentDrink;
+    rightArm.add(cupGroup);
+
+    // 4) 목 & 입체 V라인 얼굴 & 512px 표정 텍스처 & 귀·코
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.056, 0.14, 14), skinMat);
+    neck.position.y = P.neckY;
+    rigGroup.add(neck);
+
+    const headGroup = new THREE.Group();
+    headGroup.position.y = P.headY;
+    rigGroup.add(headGroup);
+
+    const R = P.headR;
+    const headScaleX = isCute ? 0.96 : (isFemale ? 0.87 : 0.90);
+    const headScaleY = isCute ? 1.00 : 1.08;
+    const headScaleZ = isCute ? 0.95 : 0.93;
+
+    const head = new THREE.Mesh(new THREE.SphereGeometry(R, 28, 24), skinMat);
+    head.scale.set(headScaleX, headScaleY, headScaleZ);
+    head.castShadow = true;
+    headGroup.add(head);
+
+    // 양쪽 귀
+    [-1, 1].forEach((side) => {
+      const ear = new THREE.Mesh(new THREE.SphereGeometry(R * 0.19, 10, 10), skinMat);
+      ear.scale.set(0.45, 0.95, 0.65);
+      ear.position.set(side * R * headScaleX * 0.98, -R * 0.04, -R * 0.05);
+      headGroup.add(ear);
+    });
+
+    // 섬세한 입체 콧대
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(R * 0.075, R * 0.22, 10), skinMat);
+    nose.rotation.x = Math.PI * 0.36;
+    nose.position.set(0, -R * 0.05, R * headScaleZ * 0.99);
+    headGroup.add(nose);
+
+    // 고해상도 얼굴 표정 곡면 데칼 쉘 (+Z 정면 완벽 매핑)
+    const faceTex = createStylizedFaceTexture(cfg);
+    const faceShellGeo = new THREE.SphereGeometry(
+      R * 1.008,
+      28,
+      24,
+      Math.PI * 0.24,
+      Math.PI * 0.52,
+      Math.PI * 0.22,
+      Math.PI * 0.58
+    );
+    const faceShellMat = new THREE.MeshStandardMaterial({
+      map: faceTex,
+      transparent: true,
+      alphaTest: 0.01,
+      roughness: 0.50
+    });
+    const faceShell = new THREE.Mesh(faceShellGeo, faceShellMat);
+    faceShell.scale.set(headScaleX, headScaleY, headScaleZ);
+    headGroup.add(faceShell);
+
+    // 5) 8종 입체 헤어스타일 모델링
+    const hairGrp = new THREE.Group();
+    headGroup.add(hairGrp);
+
+    // 공통 정수리·후두부 볼륨 베이스
+    const crownCap = new THREE.Mesh(
+      new THREE.SphereGeometry(R * 1.06, 26, 20, 0, Math.PI * 2, 0, Math.PI * 0.58),
+      hairMat
+    );
+    crownCap.scale.set(headScaleX * 1.04, headScaleY * 1.03, headScaleZ * 1.05);
+    crownCap.position.set(0, R * 0.05, -R * 0.02);
+    crownCap.rotation.x = -0.18;
+    crownCap.castShadow = true;
+    hairGrp.add(crownCap);
+
+    const napeCap = new THREE.Mesh(
+      new THREE.SphereGeometry(R * 1.03, 22, 16, Math.PI * 0.95, Math.PI * 1.10, Math.PI * 0.20, Math.PI * 0.62),
+      hairMat
+    );
+    napeCap.scale.set(headScaleX * 1.02, headScaleY, headScaleZ * 1.04);
+    hairGrp.add(napeCap);
+
+    if (cfg.hairStyle === 'dandy') {
+      // 6:4 가르마 볼륨 앞머리
+      const leftBang = new THREE.Mesh(new THREE.SphereGeometry(R * 0.48, 16, 12), hairMat);
+      leftBang.scale.set(1.18, 0.62, 0.55);
+      leftBang.position.set(-R * 0.26, R * 0.56, R * 0.72);
+      leftBang.rotation.z = 0.28;
+      const rightBang = new THREE.Mesh(new THREE.SphereGeometry(R * 0.42, 16, 12), hairMat);
+      rightBang.scale.set(1.05, 0.58, 0.52);
+      rightBang.position.set(R * 0.30, R * 0.58, R * 0.70);
+      rightBang.rotation.z = -0.32;
+      hairGrp.add(leftBang, rightBang);
+    } else if (cfg.hairStyle === 'pomade') {
+      // 이마가 시원하게 드러나는 슬릭 포마드 볼륨업
+      const quiff = new THREE.Mesh(new THREE.SphereGeometry(R * 0.56, 18, 12), hairMat);
+      quiff.scale.set(1.15, 0.52, 0.88);
+      quiff.position.set(R * 0.06, R * 0.88, R * 0.32);
+      quiff.rotation.x = -0.25;
+      quiff.rotation.z = -0.10;
+      hairGrp.add(quiff);
+    } else if (cfg.hairStyle === 'short_layered') {
+      // 내추럴 시스루 덮머리
+      const frontFringe = new THREE.Mesh(
+        new THREE.SphereGeometry(R * 1.05, 22, 14, Math.PI * 0.26, Math.PI * 0.48, Math.PI * 0.14, Math.PI * 0.26),
+        hairMat
+      );
+      frontFringe.scale.set(headScaleX * 1.02, headScaleY, headScaleZ * 1.03);
+      frontFringe.position.y = R * 0.04;
+      hairGrp.add(frontFringe);
+    } else if (cfg.hairStyle === 'bob_c') {
+      // 단정한 C컬 중단발 보브컷
+      [-1, 1].forEach((side) => {
+        const sideBob = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.32, R * 0.38, R * 1.45, 14), hairMat);
+        sideBob.scale.set(0.55, 1, 0.95);
+        sideBob.position.set(side * R * 0.76, -R * 0.22, 0);
+        sideBob.rotation.z = side * -0.08;
+        hairGrp.add(sideBob);
+      });
+      const backBob = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.82, R * 0.90, R * 1.35, 18, 1, false, Math.PI * 0.65, Math.PI * 1.70), hairMat);
+      backBob.scale.set(headScaleX, 1, headScaleZ * 0.95);
+      backBob.position.set(0, -R * 0.22, -R * 0.08);
+      const fringe = new THREE.Mesh(new THREE.SphereGeometry(R * 0.52, 16, 12), hairMat);
+      fringe.scale.set(1.35, 0.46, 0.48);
+      fringe.position.set(0, R * 0.62, R * 0.72);
+      hairGrp.add(backBob, fringe);
+    } else if (cfg.hairStyle === 'long_wave') {
+      // 어깨 아래로 흐르는 우아한 여신 롱 웨이브
+      const backFlow = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.86, R * 1.08, R * 2.85, 18), hairMat);
+      backFlow.scale.set(0.92, 1, 0.52);
+      backFlow.position.set(0, -R * 0.92, -R * 0.48);
+      hairGrp.add(backFlow);
+
+      [-1, 1].forEach((side) => {
+        const waveLock = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.26, R * 0.30, R * 2.35, 14), hairMat);
+        waveLock.scale.set(0.68, 1, 0.78);
+        waveLock.position.set(side * R * 0.78, -R * 0.68, R * 0.16);
+        waveLock.rotation.z = side * -0.06;
+        hairGrp.add(waveLock);
+      });
+      const sideSweep = new THREE.Mesh(new THREE.SphereGeometry(R * 0.50, 16, 12), hairMat);
+      sideSweep.scale.set(1.28, 0.48, 0.48);
+      sideSweep.position.set(-R * 0.18, R * 0.62, R * 0.72);
+      sideSweep.rotation.z = 0.18;
+      hairGrp.add(sideSweep);
+    } else if (cfg.hairStyle === 'low_bun') {
+      // 단아한 로우번 올림머리 + 진주 핀
+      const bun = new THREE.Mesh(new THREE.SphereGeometry(R * 0.46, 16, 14), hairMat);
+      bun.scale.set(1.08, 0.92, 0.95);
+      bun.position.set(0, -R * 0.22, -R * 0.98);
+      const pearlPin = new THREE.Mesh(new THREE.SphereGeometry(R * 0.11, 12, 12), whiteShirtMat);
+      pearlPin.position.set(R * 0.22, -R * 0.04, -R * 0.88);
+      const softFringe = new THREE.Mesh(new THREE.SphereGeometry(R * 0.48, 16, 12), hairMat);
+      softFringe.scale.set(1.25, 0.44, 0.45);
+      softFringe.position.set(-R * 0.14, R * 0.62, R * 0.70);
+      hairGrp.add(bun, pearlPin, softFringe);
+    } else if (cfg.hairStyle === 'ponytail') {
+      // 발랄한 하이 포니테일
+      const tieBand = new THREE.Mesh(new THREE.TorusGeometry(R * 0.20, R * 0.06, 10, 16), outfitMat);
+      tieBand.position.set(0, R * 0.36, -R * 0.92);
+      const tail = new THREE.Mesh(new THREE.ConeGeometry(R * 0.36, R * 1.95, 16), hairMat);
+      tail.rotation.x = Math.PI * 0.82;
+      tail.position.set(0, -R * 0.36, -R * 1.24);
+      const airyBang = new THREE.Mesh(new THREE.SphereGeometry(R * 0.50, 16, 12), hairMat);
+      airyBang.scale.set(1.30, 0.44, 0.46);
+      airyBang.position.set(0, R * 0.62, R * 0.72);
+      hairGrp.add(tieBand, tail, airyBang);
+    } else if (cfg.hairStyle === 'beret_wave') {
+      // 감각적인 베레모 + 단발 웨이브
+      [-1, 1].forEach((side) => {
+        const lock = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.28, R * 0.34, R * 1.45, 14), hairMat);
+        lock.scale.set(0.58, 1, 0.88);
+        lock.position.set(side * R * 0.76, -R * 0.25, 0.04);
+        hairGrp.add(lock);
+      });
+      const beret = new THREE.Mesh(new THREE.SphereGeometry(R * 1.16, 22, 14), outfitMat);
+      beret.scale.set(1.06, 0.42, 1.04);
+      beret.position.set(R * 0.12, R * 0.86, -R * 0.06);
+      beret.rotation.z = -0.20;
+      hairGrp.add(beret);
+    }
+
+    // 6) 액세서리 (안경 / 뿔테 / 십자가 목걸이 / 모던 크로스백)
+    if (cfg.accessory === 'wire_glasses' || cfg.accessory === 'horn_glasses') {
+      const frameMat = cfg.accessory === 'wire_glasses' ? goldMat : darkLeatherMat;
+      const thick = cfg.accessory === 'wire_glasses' ? R * 0.028 : R * 0.052;
+      const gZ = R * headScaleZ * 0.97;
+      const gY = R * 0.06;
+      [-1, 1].forEach((side) => {
+        const rim = new THREE.Mesh(new THREE.TorusGeometry(R * 0.26, thick, 10, 24), frameMat);
+        rim.position.set(side * R * 0.33, gY, gZ);
+        headGroup.add(rim);
+      });
+      const bridge = new THREE.Mesh(new THREE.CylinderGeometry(thick * 0.8, thick * 0.8, R * 0.16, 8), frameMat);
+      bridge.rotation.z = Math.PI * 0.5;
+      bridge.position.set(0, gY + R * 0.03, gZ);
+      headGroup.add(bridge);
+    } else if (cfg.accessory === 'necklace') {
+      const chain = new THREE.Mesh(new THREE.TorusGeometry(0.066, 0.005, 8, 20, Math.PI), silverMat);
+      chain.rotation.x = Math.PI * 0.82;
+      chain.position.set(0, P.shoulderY + 0.02, 0.08);
+      const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.048, 0.008), silverMat);
+      crossV.position.set(0, P.shoulderY - 0.05, P.torsoTopR * 0.78);
+      const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.011, 0.008), silverMat);
+      crossH.position.set(0, P.shoulderY - 0.04, P.torsoTopR * 0.78);
+      rigGroup.add(chain, crossV, crossH);
+    } else if (cfg.accessory === 'crossbag') {
+      const bagLeather = new THREE.MeshStandardMaterial({ color: 0x5c341d, roughness: 0.45 });
+      const strap = new THREE.Mesh(new THREE.TorusGeometry(P.torsoTopR * 1.38, 0.014, 8, 24), bagLeather);
+      strap.rotation.y = Math.PI * 0.5;
+      strap.rotation.x = 0.55;
+      strap.scale.set(0.62, 1.25, 1.0);
+      strap.position.set(0, P.hipY + P.torsoH * 0.44, 0);
+      const pouch = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.16, 0.20), bagLeather);
+      pouch.position.set(P.hipR * 1.12, P.hipY + 0.04, 0.04);
+      pouch.castShadow = true;
+      rigGroup.add(strap, pouch);
+    }
+
+    return {
+      rigGroup,
+      headGroup,
+      leftLeg,
+      rightLeg,
+      leftArm,
+      rightArm,
+      cupGroup,
+      heightTop: P.heightTop,
+      cfg
+    };
+  }
 
   const ZONE_META = {
     garden: {
@@ -209,7 +1003,15 @@
     }
 
     getPresets() {
-      return AVATAR_PRESETS;
+      return AVATAR_PRESETS.slice(0, 8);
+    }
+
+    resolveAvatarConfig(presetId, rawCfg) {
+      return resolveAvatarConfig(presetId, rawCfg);
+    }
+
+    buildPreviewRig(presetId, rawCfg) {
+      return buildStylizedAvatarRig(presetId, rawCfg, '');
     }
 
     getZoneMeta(zoneId) {
@@ -326,7 +1128,7 @@
     }
 
     // -----------------------------------------------------------------------
-    // PBR 아바타 생성
+    // PBR 스타일리시 아바타 생성 (7.5등신 슬림 체형 & 귀여운 캐주얼 체형 모두 지원)
     // -----------------------------------------------------------------------
     createAvatar(id, info) {
       if (this.avatars.has(id)) {
@@ -334,21 +1136,13 @@
         return this.avatars.get(id);
       }
 
-      const preset = AVATAR_PRESETS.find((p) => p.id === info.presetId) || AVATAR_PRESETS[0];
       const root = new THREE.Group();
       const bodyPivot = new THREE.Group();
       root.add(bodyPivot);
 
-      const skinMat = new THREE.MeshStandardMaterial({ color: preset.skin, roughness: 0.58 });
-      const hairMat = new THREE.MeshStandardMaterial({ color: preset.hair, roughness: 0.72 });
-      const outfitMat = new THREE.MeshStandardMaterial({ color: preset.outfit, roughness: 0.68 });
-      const pantsMat = new THREE.MeshStandardMaterial({ color: preset.pants, roughness: 0.78 });
-      const shoeMat = new THREE.MeshStandardMaterial({ color: 0x1c1917, roughness: 0.42 });
-      const bagMat = new THREE.MeshStandardMaterial({ color: preset.bag, roughness: 0.55 });
-
       let myRing = null;
       if (info.isMe) {
-        const rg = new THREE.RingGeometry(0.54, 0.66, 32);
+        const rg = new THREE.RingGeometry(0.46, 0.56, 32);
         rg.rotateX(-Math.PI / 2);
         myRing = new THREE.Mesh(
           rg,
@@ -358,113 +1152,9 @@
         root.add(myRing);
       }
 
-      const makeLeg = () => {
-        const lg = new THREE.Group();
-        const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.11, 0.58, 12), pantsMat);
-        thigh.position.y = -0.29;
-        thigh.castShadow = true;
-        const shoe = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 10), shoeMat);
-        shoe.scale.set(0.95, 0.65, 1.35);
-        shoe.position.set(0, -0.58, 0.04);
-        shoe.castShadow = true;
-        lg.add(thigh, shoe);
-        return lg;
-      };
-
-      const leftLeg = makeLeg();
-      leftLeg.position.set(-0.17, 0.64, 0);
-      const rightLeg = makeLeg();
-      rightLeg.position.set(0.17, 0.64, 0);
-      bodyPivot.add(leftLeg, rightLeg);
-
-      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.36, 0.84, 16), outfitMat);
-      torso.scale.set(1.12, 1, 0.78);
-      torso.position.y = 1.04;
-      torso.castShadow = true;
-      bodyPivot.add(torso);
-
-      const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 12), outfitMat);
-      shoulder.scale.set(1.15, 0.45, 0.76);
-      shoulder.position.y = 1.40;
-      bodyPivot.add(shoulder);
-
-      const collar = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.20, 0.24, 0.10, 14),
-        new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.5 })
-      );
-      collar.position.y = 1.48;
-      bodyPivot.add(collar);
-
-      const backpack = new THREE.Mesh(new THREE.SphereGeometry(0.28, 14, 12), bagMat);
-      backpack.scale.set(0.95, 1.15, 0.55);
-      backpack.position.set(0, 1.05, -0.28);
-      backpack.castShadow = true;
-      bodyPivot.add(backpack);
-
-      const makeArm = () => {
-        const ag = new THREE.Group();
-        const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.085, 0.54, 12), outfitMat);
-        sleeve.position.y = -0.27;
-        sleeve.castShadow = true;
-        const hand = new THREE.Mesh(new THREE.SphereGeometry(0.085, 10, 10), skinMat);
-        hand.position.y = -0.56;
-        ag.add(sleeve, hand);
-        return ag;
-      };
-
-      const leftArm = makeArm();
-      leftArm.position.set(-0.44, 1.36, 0);
-      const rightArm = makeArm();
-      rightArm.position.set(0.44, 1.36, 0);
-      bodyPivot.add(leftArm, rightArm);
-
-      const cupGroup = new THREE.Group();
-      const cupBody = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.095, 0.075, 0.24, 14),
-        new THREE.MeshStandardMaterial({ color: 0xfafaf9, roughness: 0.35 })
-      );
-      const cupSleeve = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.098, 0.084, 0.10, 14),
-        new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.75 })
-      );
-      cupGroup.add(cupBody, cupSleeve);
-      cupGroup.position.set(0, -0.56, 0.15);
-      cupGroup.visible = !!info.drink;
-      rightArm.add(cupGroup);
-
-      const headGroup = new THREE.Group();
-      headGroup.position.y = 1.92;
-      bodyPivot.add(headGroup);
-
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 22, 18), skinMat);
-      head.castShadow = true;
-      headGroup.add(head);
-
-      const eyeGeo = new THREE.SphereGeometry(0.042, 10, 10);
-      const eyeMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.2 });
-      const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
-      leftEye.position.set(-0.14, -0.01, 0.385);
-      const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
-      rightEye.position.set(0.14, -0.01, 0.385);
-      headGroup.add(leftEye, rightEye);
-
-      const hairCap = new THREE.Mesh(
-        new THREE.SphereGeometry(0.448, 22, 16, 0, Math.PI * 2, 0, Math.PI * 0.58),
-        hairMat
-      );
-      hairCap.position.y = 0.03;
-      hairCap.rotation.x = -0.18;
-      hairCap.castShadow = true;
-      headGroup.add(hairCap);
-
-      const hairBack = new THREE.Mesh(new THREE.SphereGeometry(0.435, 18, 14), hairMat);
-      hairBack.position.set(0, 0.01, -0.06);
-      headGroup.add(hairBack);
-
-      const bunMesh = new THREE.Mesh(new THREE.SphereGeometry(0.18, 14, 12), hairMat);
-      bunMesh.position.set(0, 0.44, -0.16);
-      bunMesh.visible = preset.hairType === 'bun';
-      headGroup.add(bunMesh);
+      const presetId = info.presetId || 'dandy_suit';
+      const built = buildStylizedAvatarRig(presetId, info.avatarConfig, info.drink || '');
+      bodyPivot.add(built.rigGroup);
 
       const labelEl = document.createElement('div');
       labelEl.className = 'pointer-events-none absolute -translate-x-1/2 -translate-y-full flex flex-col items-center gap-1 z-10';
@@ -475,9 +1165,13 @@
           <video autoplay playsinline muted class="av-cam-video w-full h-full object-cover"></video>
         </div>
         <div class="av-bubble hidden px-2.5 py-1 rounded-xl bg-white/95 text-slate-900 border border-amber-400 text-[11px] font-bold shadow-lg max-w-[210px] text-center break-keep"></div>
-        <div class="av-tag px-2.5 py-0.5 rounded-full text-[11px] font-extrabold whitespace-nowrap shadow ${
-          info.isMe ? 'bg-amber-400 text-slate-950' : info.isNpc ? 'bg-slate-900/80 text-slate-100 border border-white/15' : 'bg-emerald-500/90 text-slate-950'
-        }"></div>
+        <div class="av-tag ${
+          info.isMe
+            ? 'px-2.5 py-0.5 text-[11px] bg-amber-400 text-slate-950 font-extrabold'
+            : info.isNpc
+              ? 'px-2 py-0.5 text-[10px] bg-slate-950/75 text-slate-100 border border-white/15 font-bold'
+              : 'px-2.5 py-0.5 text-[11px] bg-emerald-500/90 text-slate-950 font-extrabold'
+        } rounded-full whitespace-nowrap shadow"></div>
       `;
       this.overlayContainer.appendChild(labelEl);
 
@@ -486,25 +1180,23 @@
         name: info.name || '성도',
         isMe: !!info.isMe,
         isNpc: !!info.isNpc,
-        presetId: preset.id,
+        presetId,
+        avatarConfig: built.cfg,
+        configSig: avatarConfigSignature(presetId, info.avatarConfig),
         pose: info.pose || 'stand',
         drink: info.drink || '',
         sipTimer: 0,
         micWave: false,
         root,
         bodyPivot,
-        headGroup,
-        leftLeg,
-        rightLeg,
-        leftArm,
-        rightArm,
-        cupGroup,
-        bunMesh,
-        skinMat,
-        hairMat,
-        outfitMat,
-        pantsMat,
-        bagMat,
+        rigGroup: built.rigGroup,
+        headGroup: built.headGroup,
+        leftLeg: built.leftLeg,
+        rightLeg: built.rightLeg,
+        leftArm: built.leftArm,
+        rightArm: built.rightArm,
+        cupGroup: built.cupGroup,
+        heightTop: built.heightTop,
         myRing,
         labelEl,
         camWrapEl: labelEl.querySelector('.av-cam-wrap'),
@@ -544,16 +1236,28 @@
       const av = this.avatars.get(id);
       if (!av) return;
       if (info.name) av.name = info.name;
-      if (info.presetId && info.presetId !== av.presetId) {
-        const pr = AVATAR_PRESETS.find((p) => p.id === info.presetId) || AVATAR_PRESETS[0];
-        av.presetId = pr.id;
-        av.skinMat.color.setHex(pr.skin);
-        av.hairMat.color.setHex(pr.hair);
-        av.outfitMat.color.setHex(pr.outfit);
-        av.pantsMat.color.setHex(pr.pants);
-        av.bagMat.color.setHex(pr.bag);
-        av.bunMesh.visible = pr.hairType === 'bun';
+
+      const nextPreset = info.presetId || av.presetId;
+      const nextCfgInput = info.avatarConfig !== undefined ? info.avatarConfig : av.avatarConfig;
+      const nextSig = avatarConfigSignature(nextPreset, nextCfgInput);
+
+      if (nextSig !== av.configSig) {
+        if (av.rigGroup) av.bodyPivot.remove(av.rigGroup);
+        const built = buildStylizedAvatarRig(nextPreset, nextCfgInput, info.drink !== undefined ? info.drink : av.drink);
+        av.bodyPivot.add(built.rigGroup);
+        av.presetId = nextPreset;
+        av.avatarConfig = built.cfg;
+        av.configSig = nextSig;
+        av.rigGroup = built.rigGroup;
+        av.headGroup = built.headGroup;
+        av.leftLeg = built.leftLeg;
+        av.rightLeg = built.rightLeg;
+        av.leftArm = built.leftArm;
+        av.rightArm = built.rightArm;
+        av.cupGroup = built.cupGroup;
+        av.heightTop = built.heightTop;
       }
+
       if (typeof info.x === 'number') av.tx = info.x;
       if (typeof info.y === 'number') av.ty = info.y;
       if (typeof info.z === 'number') av.tz = info.z;
@@ -561,7 +1265,7 @@
       if (info.pose) av.pose = info.pose;
       if (info.drink !== undefined) {
         av.drink = info.drink;
-        av.cupGroup.visible = !!av.drink;
+        if (av.cupGroup) av.cupGroup.visible = !!av.drink;
       }
       if (info.micWave !== undefined) av.micWave = info.micWave;
       this._refreshTagText(av);
@@ -2104,16 +2808,18 @@
 
         if (av.sipTimer > 0) av.sipTimer = Math.max(0, av.sipTimer - dt);
 
+        const isModelBody = !av.avatarConfig || av.avatarConfig.bodyStyle !== 'cute';
         if (av.pose === 'sit') {
-          av.bodyPivot.position.y = -0.18;
-          av.leftLeg.rotation.x = -Math.PI * 0.45;
-          av.rightLeg.rotation.x = -Math.PI * 0.45;
-          av.leftArm.rotation.x = -0.32;
-          av.rightArm.rotation.x = av.sipTimer > 0 ? -1.35 : -0.32;
+          av.bodyPivot.position.y = isModelBody ? -0.36 : -0.18;
+          av.leftLeg.rotation.x = -Math.PI * 0.46;
+          av.rightLeg.rotation.x = -Math.PI * 0.46;
+          av.leftArm.rotation.x = -0.28;
+          av.rightArm.rotation.x = av.sipTimer > 0 ? -1.35 : -0.28;
+          av.headGroup.rotation.x = 0;
         } else if (av.pose === 'kneel') {
-          av.bodyPivot.position.y = -0.32;
-          av.leftLeg.rotation.x = 1.35;
-          av.rightLeg.rotation.x = 1.35;
+          av.bodyPivot.position.y = isModelBody ? -0.44 : -0.32;
+          av.leftLeg.rotation.x = 1.38;
+          av.rightLeg.rotation.x = 1.38;
           av.leftArm.rotation.x = -0.95;
           av.rightArm.rotation.x = -0.95;
           av.headGroup.rotation.x = 0.25;
@@ -2199,7 +2905,8 @@
     _updateHtmlOverlays() {
       const v = new THREE.Vector3();
       for (const av of this.avatars.values()) {
-        v.set(av.x, av.y + 2.62, av.z);
+        const poseDrop = av.pose === 'sit' ? 0.34 : av.pose === 'kneel' ? 0.42 : 0;
+        v.set(av.x, av.y + (av.heightTop || 2.16) - poseDrop, av.z);
         v.project(this.camera);
         if (v.z > 1) {
           av.labelEl.style.display = 'none';

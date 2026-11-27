@@ -2952,7 +2952,7 @@ export default function App() {
             const effectiveAvatarUrl = profileAvatar || user?.user_metadata?.avatar_url || "";
             const qs = new URLSearchParams({
                 embedded: "1",
-                v: "8",
+                v: "9",
                 church_id: effectiveChurchId,
                 church_name: effectiveChurchName,
                 user_id: user?.id || "",
