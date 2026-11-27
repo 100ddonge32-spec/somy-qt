@@ -193,16 +193,16 @@
     }).then((r) => r.json()).catch(() => null);
   }
 
-  // 내 프로필 & 커스텀 아바타 상태
+  // 내 프로필 & 순정만화 3D 커스텀 아바타 상태
   const myClientId = 'u_' + Math.random().toString(36).slice(2, 10);
   let myName = '백동희 성도';
-  let myPresetId = 'dandy_suit';
+  let myPresetId = 'webtoon_boy';
   let myAvatarConfig = null;
   let myDrink = '';
   try {
     myName = localStorage.getItem('somy_world_name') || myName;
-    myPresetId = localStorage.getItem('somy_world_preset') || myPresetId;
-    const savedCfg = localStorage.getItem('somy_world_avatar_v2');
+    myPresetId = localStorage.getItem('somy_world_preset_v3') || 'webtoon_boy';
+    const savedCfg = localStorage.getItem('somy_world_avatar_v3');
     if (savedCfg) myAvatarConfig = JSON.parse(savedCfg);
   } catch {}
   if (somyUserName) {
@@ -3503,26 +3503,27 @@
     previewRenderer.setSize(w, h, false);
   }
 
+  let previewBuiltRef = null;
   function rebuildPreviewAvatarMesh() {
     ensureAvatarPreviewStudio();
     if (!previewAvatarPivot) return;
     while (previewAvatarPivot.children.length > 0) {
       previewAvatarPivot.remove(previewAvatarPivot.children[0]);
     }
-    const built = world3d.buildPreviewRig(tempPreset, draftAvatarCfg);
-    previewAvatarPivot.add(built.rigGroup);
+    previewBuiltRef = world3d.buildPreviewRig(tempPreset, draftAvatarCfg);
+    previewAvatarPivot.add(previewBuiltRef.rigGroup);
   }
 
   function updatePreviewCameraFraming() {
     if (!previewCamera) return;
     const isCute = draftAvatarCfg && draftAvatarCfg.bodyStyle === 'cute';
     if (previewZoomClose) {
-      const faceY = isCute ? 1.54 : 1.73;
-      previewCamera.position.set(0, faceY + 0.03, isCute ? 1.25 : 1.02);
+      const faceY = isCute ? 1.55 : 1.77;
+      previewCamera.position.set(0, faceY + 0.02, isCute ? 1.18 : 0.94);
       previewCamera.lookAt(0, faceY - 0.02, 0);
     } else {
-      previewCamera.position.set(0, isCute ? 1.00 : 1.08, isCute ? 3.15 : 3.35);
-      previewCamera.lookAt(0, isCute ? 0.92 : 1.02, 0);
+      previewCamera.position.set(0, isCute ? 1.00 : 1.10, isCute ? 3.10 : 3.30);
+      previewCamera.lookAt(0, isCute ? 0.92 : 1.04, 0);
     }
   }
 
@@ -3535,8 +3536,12 @@
         return;
       }
       if (previewRenderer && previewScene && previewCamera && previewAvatarPivot) {
-        if (!previewDragging) previewRotY += 0.0055;
-        previewAvatarPivot.rotation.y = Math.sin(previewRotY) * 0.48;
+        if (!previewDragging) previewRotY += 0.006;
+        previewAvatarPivot.rotation.y = Math.sin(previewRotY) * 0.44;
+        if (previewBuiltRef && previewBuiltRef.faceDecalMat) {
+          const bt = (performance.now() * 0.001) % 3.8;
+          previewBuiltRef.faceDecalMat.map = bt > 3.66 ? previewBuiltRef.blinkFaceTex : previewBuiltRef.openFaceTex;
+        }
         updatePreviewCameraFraming();
         previewRenderer.render(previewScene, previewCamera);
       }
@@ -3628,10 +3633,10 @@
       draftAvatarCfg = { ...draftAvatarCfg, [key]: val };
       // 성별 전환 시 어색하지 않도록 기본 의상·헤어 자연 보정 (원하면 다시 선택 가능)
       if (key === 'gender') {
-        if (val === 'female' && (draftAvatarCfg.hairStyle === 'pomade' || draftAvatarCfg.hairStyle === 'dandy')) {
+        if (val === 'female' && (draftAvatarCfg.hairStyle === 'pomade' || draftAvatarCfg.hairStyle === 'dandy' || draftAvatarCfg.hairStyle === 'shaggy_bang')) {
           draftAvatarCfg.hairStyle = 'long_wave';
         } else if (val === 'male' && (draftAvatarCfg.hairStyle === 'long_wave' || draftAvatarCfg.hairStyle === 'low_bun' || draftAvatarCfg.hairStyle === 'ponytail')) {
-          draftAvatarCfg.hairStyle = 'dandy';
+          draftAvatarCfg.hairStyle = 'shaggy_bang';
         }
       }
       syncAvatarStudioUiHighlights();
@@ -3659,15 +3664,16 @@
     draftAvatarCfg = {
       bodyStyle: pick(['model', 'model', 'model', 'cute']),
       gender: g,
-      skinTone: pick(['porcelain', 'warm', 'natural', 'tan']),
+      skinTone: pick(['porcelain', 'porcelain', 'warm', 'natural']),
       faceStyle: pick(['gentle', 'chic', 'lovely', 'dignified']),
+      eyeColor: pick(['amber', 'sapphire', 'emerald', 'amethyst', 'rose', 'obsidian']),
       expression: pick(['smile', 'joy', 'grace', 'wink']),
-      hairStyle: g === 'female' ? pick(['long_wave', 'bob_c', 'low_bun', 'ponytail', 'beret_wave']) : pick(['dandy', 'pomade', 'short_layered']),
+      hairStyle: g === 'female' ? pick(['long_wave', 'bob_c', 'low_bun', 'ponytail', 'beret_wave']) : pick(['shaggy_bang', 'dandy', 'pomade']),
       hairColor: pick(['black', 'espresso', 'chestnut', 'ash_brown', 'burgundy']),
-      outfitStyle: g === 'female' ? pick(['onepiece', 'jacket_skirt', 'knit_slacks', 'trench', 'choir']) : pick(['suit', 'trench', 'knit_slacks', 'choir']),
-      outfitColor: pick(['#1e3a8a', '#27272a', '#f8fafc', '#b48352', '#be185d', '#881337', '#047857', '#6d28d9']),
+      outfitStyle: g === 'female' ? pick(['onepiece', 'jacket_skirt', 'webtoon_layered', 'knit_slacks', 'trench']) : pick(['webtoon_layered', 'suit', 'trench', 'knit_slacks']),
+      outfitColor: pick(['#181920', '#1e3a8a', '#f8fafc', '#b48352', '#be185d', '#881337', '#047857', '#6d28d9']),
       bottomColor: pick(['#1e293b', '#18181b', '#e7e5e4', '#44403c', '#1e1b4b']),
-      accessory: pick(['none', 'none', 'wire_glasses', 'horn_glasses', 'necklace', 'crossbag'])
+      accessory: pick(['horn_glasses', 'wire_glasses', 'earcuff', 'necklace', 'crossbag', 'none'])
     };
     syncAvatarStudioUiHighlights();
     rebuildPreviewAvatarMesh();
@@ -3677,6 +3683,8 @@
     tempPreset = myPresetId;
     draftAvatarCfg = { ...world3d.resolveAvatarConfig(myPresetId, myAvatarConfig) };
     previewRotY = 0;
+    previewZoomClose = true;
+    document.getElementById('btn-preview-zoom-toggle').textContent = '🧍 전신 보기';
     document.getElementById('profile-name-input').value = myName;
     openModal('profile-modal');
     setTimeout(() => {
@@ -3693,8 +3701,8 @@
     myAvatarConfig = world3d.resolveAvatarConfig(myPresetId, draftAvatarCfg);
     try {
       localStorage.setItem('somy_world_name', myName);
-      localStorage.setItem('somy_world_preset', myPresetId);
-      localStorage.setItem('somy_world_avatar_v2', JSON.stringify(myAvatarConfig));
+      localStorage.setItem('somy_world_preset_v3', myPresetId);
+      localStorage.setItem('somy_world_avatar_v3', JSON.stringify(myAvatarConfig));
     } catch {}
     document.getElementById('my-name-badge').textContent = myName;
     updateMyExprBadge();

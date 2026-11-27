@@ -922,8 +922,8 @@
       <div class="bg-slate-900 text-white rounded-2xl max-w-4xl w-full p-4 sm:p-5 border-2 border-amber-400/45 shadow-2xl space-y-3.5 max-h-[94dvh] overflow-y-auto">
         <div class="flex items-center justify-between border-b border-slate-700 pb-2.5">
           <div>
-            <span class="text-sm sm:text-base font-extrabold text-amber-300">✨ 내 3D 아바타 스타일 스튜디오</span>
-            <p class="text-[11px] text-slate-300 mt-0.5">8등신 슬림 모델 체형부터 귀여운 피규어핏까지, 표정·얼굴·헤어·패션을 나답게 꾸며보세요!</p>
+            <span class="text-sm sm:text-base font-extrabold text-amber-300">✨ 순정만화 · 웹툰 3D 아바타 스타일 스튜디오</span>
+            <p class="text-[11px] text-slate-300 mt-0.5">카툰 셀 셰이딩 · 시스루 입체 헤어 · 투톤 보석 눈동자 · 웹툰 레이어드 패션을 나답게 조합해 보세요!</p>
           </div>
           <button data-close="profile-modal" class="px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-xs font-extrabold cursor-pointer">닫기 ✕</button>
         </div>
@@ -977,38 +977,51 @@
                 <button type="button" data-avtab="fashion" class="av-studio-tab py-1.5 rounded-lg text-slate-300 hover:bg-slate-800 text-xs font-bold cursor-pointer">4. 패션·소품</button>
               </div>
 
-              <!-- 탭 1: 체형 비율 · 성별 실루엣 · 얼굴 인상 · 피부톤 -->
-              <div id="avpane-body" class="av-studio-pane p-3 rounded-xl bg-slate-800/80 border border-slate-700 space-y-2.5">
-                <div>
-                  <div class="text-[11px] font-extrabold text-slate-200 mb-1">체형 비율 (등신 선택)</div>
-                  <div class="grid grid-cols-2 gap-2">
-                    <button type="button" data-avkey="bodyStyle" data-avval="model" class="av-opt-btn p-2 rounded-xl border text-xs font-extrabold cursor-pointer">✨ 슬림 8등신 모델핏 (현실형)</button>
-                    <button type="button" data-avkey="bodyStyle" data-avval="cute" class="av-opt-btn p-2 rounded-xl border text-xs font-extrabold cursor-pointer">🧸 귀여운 캐주얼 피규어핏</button>
+              <!-- 탭 1: 체형 비율 · 성별 실루엣 · 순정만화 눈매 · 투톤 눈동자 컬러 · 피부톤 -->
+              <div id="avpane-body" class="av-studio-pane p-3 rounded-xl bg-slate-800/80 border border-slate-700 space-y-2">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <div class="text-[11px] font-extrabold text-slate-200 mb-1">만화 체형 비율</div>
+                    <div class="grid grid-cols-2 gap-1.5">
+                      <button type="button" data-avkey="bodyStyle" data-avval="model" class="av-opt-btn py-2 px-1.5 rounded-xl border text-[11px] font-extrabold cursor-pointer">✨ 8등신 주인공핏</button>
+                      <button type="button" data-avkey="bodyStyle" data-avval="cute" class="av-opt-btn py-2 px-1.5 rounded-xl border text-[11px] font-extrabold cursor-pointer">🧸 귀여운 SD핏</button>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="text-[11px] font-extrabold text-slate-200 mb-1">성별 실루엣</div>
+                    <div class="grid grid-cols-2 gap-1.5">
+                      <button type="button" data-avkey="gender" data-avval="male" class="av-opt-btn py-2 px-1.5 rounded-xl border text-[11px] font-extrabold cursor-pointer">👨 순정만화 남주</button>
+                      <button type="button" data-avkey="gender" data-avval="female" class="av-opt-btn py-2 px-1.5 rounded-xl border text-[11px] font-extrabold cursor-pointer">👩 순정만화 여주</button>
+                    </div>
                   </div>
                 </div>
                 <div>
-                  <div class="text-[11px] font-extrabold text-slate-200 mb-1">성별 실루엣</div>
-                  <div class="grid grid-cols-2 gap-2">
-                    <button type="button" data-avkey="gender" data-avval="male" class="av-opt-btn p-2 rounded-xl border text-xs font-extrabold cursor-pointer">👨 멋진 남성 라인</button>
-                    <button type="button" data-avkey="gender" data-avval="female" class="av-opt-btn p-2 rounded-xl border text-xs font-extrabold cursor-pointer">👩 우아한 여성 라인</button>
-                  </div>
-                </div>
-                <div>
-                  <div class="text-[11px] font-extrabold text-slate-200 mb-1">얼굴 스타일 (눈매 · 눈썹 · 메이크업 인상)</div>
+                  <div class="text-[11px] font-extrabold text-slate-200 mb-1">순정만화 작화 눈매 · 인상</div>
                   <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                    <button type="button" data-avkey="faceStyle" data-avval="gentle" class="av-opt-btn py-2 px-2 rounded-xl border text-xs font-bold cursor-pointer">선한 호감형</button>
-                    <button type="button" data-avkey="faceStyle" data-avval="chic" class="av-opt-btn py-2 px-2 rounded-xl border text-xs font-bold cursor-pointer">세련 지성미</button>
-                    <button type="button" data-avkey="faceStyle" data-avval="lovely" class="av-opt-btn py-2 px-2 rounded-xl border text-xs font-bold cursor-pointer">화사 동안미</button>
-                    <button type="button" data-avkey="faceStyle" data-avval="dignified" class="av-opt-btn py-2 px-2 rounded-xl border text-xs font-bold cursor-pointer">중후한 품격</button>
+                    <button type="button" data-avkey="faceStyle" data-avval="gentle" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">다정 온화형</button>
+                    <button type="button" data-avkey="faceStyle" data-avval="chic" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">시크 고양이상</button>
+                    <button type="button" data-avkey="faceStyle" data-avval="lovely" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">청순 초롱눈망울</button>
+                    <button type="button" data-avkey="faceStyle" data-avval="dignified" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">지적인 어른미</button>
+                  </div>
+                </div>
+                <div>
+                  <div class="text-[11px] font-extrabold text-amber-200 mb-1">💎 눈동자 투톤 보석 그라데이션 컬러</div>
+                  <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                    <button type="button" data-avkey="eyeColor" data-avval="amber" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-gradient-to-b from-[#1c1924] to-[#fbbf24] border border-white/50"></span>호박골드</button>
+                    <button type="button" data-avkey="eyeColor" data-avval="obsidian" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-gradient-to-b from-[#111118] to-[#a1a1aa] border border-white/50"></span>오닉스</button>
+                    <button type="button" data-avkey="eyeColor" data-avval="sapphire" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-gradient-to-b from-[#131c36] to-[#38bdf8] border border-white/50"></span>사파이어</button>
+                    <button type="button" data-avkey="eyeColor" data-avval="emerald" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-gradient-to-b from-[#0f2922] to-[#34d399] border border-white/50"></span>에메랄드</button>
+                    <button type="button" data-avkey="eyeColor" data-avval="amethyst" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-gradient-to-b from-[#211438] to-[#c084fc] border border-white/50"></span>자수정</button>
+                    <button type="button" data-avkey="eyeColor" data-avval="rose" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"><span class="w-3 h-3 rounded-full bg-gradient-to-b from-[#2b1321] to-[#fb7185] border border-white/50"></span>로즈쿼츠</button>
                   </div>
                 </div>
                 <div>
                   <div class="text-[11px] font-extrabold text-slate-200 mb-1">피부 톤</div>
                   <div class="grid grid-cols-4 gap-1.5">
-                    <button type="button" data-avkey="skinTone" data-avval="porcelain" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#ffe9dc] border border-slate-400"></span>밝은호수</button>
-                    <button type="button" data-avkey="skinTone" data-avval="warm" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#fcdcc5] border border-slate-400"></span>화사웜톤</button>
-                    <button type="button" data-avkey="skinTone" data-avval="natural" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#eec2a2] border border-slate-400"></span>내추럴</button>
-                    <button type="button" data-avkey="skinTone" data-avval="tan" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#d79e78] border border-slate-400"></span>건강태닝</button>
+                    <button type="button" data-avkey="skinTone" data-avval="porcelain" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#fff0e6] border border-slate-400"></span>순백호수</button>
+                    <button type="button" data-avkey="skinTone" data-avval="warm" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#ffe3cf] border border-slate-400"></span>화사웜톤</button>
+                    <button type="button" data-avkey="skinTone" data-avval="natural" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#f4ccb0] border border-slate-400"></span>내추럴</button>
+                    <button type="button" data-avkey="skinTone" data-avval="tan" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-[#dfa884] border border-slate-400"></span>건강태닝</button>
                   </div>
                 </div>
               </div>
@@ -1029,12 +1042,12 @@
               <!-- 탭 3: 헤어스타일 8종 & 염색 컬러 6종 -->
               <div id="avpane-hair" class="hidden av-studio-pane p-3 rounded-xl bg-slate-800/80 border border-slate-700 space-y-2.5">
                 <div>
-                  <div class="text-[11px] font-extrabold text-slate-200 mb-1">입체 헤어스타일 (8종)</div>
+                  <div class="text-[11px] font-extrabold text-slate-200 mb-1">시스루 입체 만화 헤어스타일 (8종 · 엔젤링 광택)</div>
                   <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                    <button type="button" data-avkey="hairStyle" data-avval="dandy" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">댄디 가르마펌</button>
-                    <button type="button" data-avkey="hairStyle" data-avval="pomade" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">깔끔 포마드</button>
-                    <button type="button" data-avkey="hairStyle" data-avval="short_layered" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">내추럴 덮머리</button>
-                    <button type="button" data-avkey="hairStyle" data-avval="bob_c" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">중단발 C컬 보브</button>
+                    <button type="button" data-avkey="hairStyle" data-avval="shaggy_bang" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">✨ 시스루 샤기뱅</button>
+                    <button type="button" data-avkey="hairStyle" data-avval="dandy" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">댄디 애즈펌</button>
+                    <button type="button" data-avkey="hairStyle" data-avval="pomade" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">지적인 가일컷</button>
+                    <button type="button" data-avkey="hairStyle" data-avval="bob_c" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">청순 C컬 단발</button>
                     <button type="button" data-avkey="hairStyle" data-avval="long_wave" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">여신 롱 웨이브</button>
                     <button type="button" data-avkey="hairStyle" data-avval="low_bun" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">단아한 올림머리</button>
                     <button type="button" data-avkey="hairStyle" data-avval="ponytail" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">발랄 포니테일</button>
@@ -1054,25 +1067,26 @@
                 </div>
               </div>
 
-              <!-- 탭 4: 패션 코디 6종 · 의상 색상 · 액세서리 -->
+              <!-- 탭 4: 패션 코디 7종 · 의상 색상 · 액세서리 -->
               <div id="avpane-fashion" class="hidden av-studio-pane p-3 rounded-xl bg-slate-800/80 border border-slate-700 space-y-2.5">
                 <div>
-                  <div class="text-[11px] font-extrabold text-slate-200 mb-1">패션 코디 스타일</div>
+                  <div class="text-[11px] font-extrabold text-slate-200 mb-1">웹툰 · 순정만화 패션 코디</div>
                   <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                    <button type="button" data-avkey="outfitStyle" data-avval="suit" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">👔 모던 정장 수트</button>
-                    <button type="button" data-avkey="outfitStyle" data-avval="knit_slacks" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">🧶 셔츠 레이어드 니트</button>
-                    <button type="button" data-avkey="outfitStyle" data-avval="onepiece" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">👗 우아한 플레어 원피스</button>
-                    <button type="button" data-avkey="outfitStyle" data-avval="trench" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">🧥 트렌치 롱코트</button>
-                    <button type="button" data-avkey="outfitStyle" data-avval="jacket_skirt" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">💎 트위드 자켓·스커트</button>
+                    <button type="button" data-avkey="outfitStyle" data-avval="webtoon_layered" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer sm:col-span-2">✨ 웹툰 집업자켓 & 레드니트·셔츠</button>
+                    <button type="button" data-avkey="outfitStyle" data-avval="suit" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">👔 슬림 정장 수트</button>
+                    <button type="button" data-avkey="outfitStyle" data-avval="knit_slacks" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">🧶 프레피 니트·셔츠</button>
+                    <button type="button" data-avkey="outfitStyle" data-avval="onepiece" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">👗 리본 플레어 원피스</button>
+                    <button type="button" data-avkey="outfitStyle" data-avval="trench" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">🧥 캐시미어 롱코트</button>
+                    <button type="button" data-avkey="outfitStyle" data-avval="jacket_skirt" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">💎 트위드 셋업</button>
                     <button type="button" data-avkey="outfitStyle" data-avval="choir" class="av-opt-btn py-2 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">🎵 성가대 찬양 가운</button>
                   </div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <div class="text-[11px] font-extrabold text-slate-200 mb-1">상의 · 메인 컬러</div>
+                    <div class="text-[11px] font-extrabold text-slate-200 mb-1">상의 · 아우터 컬러</div>
                     <div class="flex flex-wrap gap-1.5">
+                      <button type="button" data-avkey="outfitColor" data-avval="#181920" title="웹툰 제트블랙" class="av-opt-btn w-7 h-7 rounded-full bg-[#181920] border-2 cursor-pointer"></button>
                       <button type="button" data-avkey="outfitColor" data-avval="#1e3a8a" title="클래식 네이비" class="av-opt-btn w-7 h-7 rounded-full bg-[#1e3a8a] border-2 cursor-pointer"></button>
-                      <button type="button" data-avkey="outfitColor" data-avval="#27272a" title="모던 차콜블랙" class="av-opt-btn w-7 h-7 rounded-full bg-[#27272a] border-2 cursor-pointer"></button>
                       <button type="button" data-avkey="outfitColor" data-avval="#f8fafc" title="크림 아이보리" class="av-opt-btn w-7 h-7 rounded-full bg-[#f8fafc] border-2 cursor-pointer"></button>
                       <button type="button" data-avkey="outfitColor" data-avval="#b48352" title="카멜 베이지" class="av-opt-btn w-7 h-7 rounded-full bg-[#b48352] border-2 cursor-pointer"></button>
                       <button type="button" data-avkey="outfitColor" data-avval="#be185d" title="로즈 핑크" class="av-opt-btn w-7 h-7 rounded-full bg-[#be185d] border-2 cursor-pointer"></button>
@@ -1093,13 +1107,14 @@
                   </div>
                 </div>
                 <div>
-                  <div class="text-[11px] font-extrabold text-slate-200 mb-1">포인트 소품 · 액세서리</div>
-                  <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
-                    <button type="button" data-avkey="accessory" data-avval="none" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">없음 (깔끔)</button>
-                    <button type="button" data-avkey="accessory" data-avval="wire_glasses" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">👓 메탈 안경</button>
-                    <button type="button" data-avkey="accessory" data-avval="horn_glasses" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">🕶️ 뿔테 안경</button>
-                    <button type="button" data-avkey="accessory" data-avval="necklace" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">✝️ 십자가 목걸이</button>
-                    <button type="button" data-avkey="accessory" data-avval="crossbag" class="av-opt-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold cursor-pointer">👜 크로스백</button>
+                  <div class="text-[11px] font-extrabold text-slate-200 mb-1">순정만화 안경 · 이어커프 · 액세서리</div>
+                  <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                    <button type="button" data-avkey="accessory" data-avval="horn_glasses" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer">🕶️ 만화뿔테</button>
+                    <button type="button" data-avkey="accessory" data-avval="wire_glasses" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer">👓 금테안경</button>
+                    <button type="button" data-avkey="accessory" data-avval="earcuff" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer">✨ 이어커프</button>
+                    <button type="button" data-avkey="accessory" data-avval="necklace" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer">✝️ 목걸이</button>
+                    <button type="button" data-avkey="accessory" data-avval="crossbag" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer">👜 크로스백</button>
+                    <button type="button" data-avkey="accessory" data-avval="none" class="av-opt-btn py-1.5 px-1.5 rounded-xl border text-[11px] font-bold cursor-pointer">없음</button>
                   </div>
                 </div>
               </div>
@@ -1230,8 +1245,8 @@
 
   </div>
 
-  <script src="/chapel-pbr.js?v=9"></script>
-  <script src="/chapel-engine.js?v=9"></script>
-  <script src="/chapel-app.js?v=9"></script>
+  <script src="/chapel-pbr.js?v=10"></script>
+  <script src="/chapel-engine.js?v=10"></script>
+  <script src="/chapel-app.js?v=10"></script>
 </body>
 </html>
