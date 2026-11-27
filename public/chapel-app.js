@@ -1846,8 +1846,8 @@
     document.querySelectorAll('.bible-mtab-btn').forEach((b) => {
       const active = b.getAttribute('data-bmtab') === tabName;
       b.className = active
-        ? 'bible-mtab-btn px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-400 text-slate-950 cursor-pointer'
-        : 'bible-mtab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-200 cursor-pointer';
+        ? 'bible-mtab-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-extrabold bg-amber-400 text-slate-950 shadow cursor-pointer text-center'
+        : 'bible-mtab-btn py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-800/80 text-slate-200 hover:bg-slate-800 cursor-pointer text-center';
     });
     if (tabName === 'plan') updateBiblePlanPreview();
     if (tabName === 'board') renderBibleBoard();
@@ -2154,8 +2154,80 @@
   });
 
   // -------------------------------------------------------------------------
-  // 🔊 실시간 한국어 음성 성경통독 엔진 (절 하이라이트 · 자동 책장 넘김 · 배속 조절)
+  // 🔊 아나운서급 한국어 AI 신경망 HD 음성 성경통독 엔진
+  //    (/api/bible-tts 스튜디오 성우 MP3 + 다음 절 선로딩 무끊김 재생 + 음정 유지 배속 조절)
   // -------------------------------------------------------------------------
+  const bibleTtsAudio = document.getElementById('bibleTtsAudio');
+  const ttsVoiceSelect = document.getElementById('tts-voice-select');
+  const ttsBlobCache = new Map(); // `${voice}::${text}` -> Promise<string(blobUrl)>
+  let ttsVoice = 'nova';
+  try {
+    ttsVoice = localStorage.getItem('somy_bible_tts_voice') || 'nova';
+  } catch {}
+  if (ttsVoiceSelect) {
+    ttsVoiceSelect.value = ttsVoice;
+    ttsVoiceSelect.addEventListener('change', () => {
+      ttsVoice = ttsVoiceSelect.value || 'nova';
+      try { localStorage.setItem('somy_bible_tts_voice', ttsVoice); } catch {}
+      if (ttsPlaying) {
+        startBibleTtsFrom(ttsVerseIdx);
+      } else {
+        toast('🎙️ 성경 낭독 성우 목소리가 변경되었습니다');
+      }
+    });
+  }
+
+  function applyAudioPlaybackSpeed() {
+    if (!bibleTtsAudio) return;
+    bibleTtsAudio.playbackRate = ttsRate;
+    if ('preservesPitch' in bibleTtsAudio) bibleTtsAudio.preservesPitch = true;
+    if ('webkitPreservesPitch' in bibleTtsAudio) bibleTtsAudio.webkitPreservesPitch = true;
+  }
+
+  function getSpokenTextForVerse(idx) {
+    const v = parsedVerses[idx];
+    if (!v) return '';
+    return idx === 0
+      ? `${currentBibleBook} ${currentBibleChap}${unitWord(currentBibleBook)}. ${v.text}`
+      : v.text;
+  }
+
+  function fetchVerseAudioUrl(spokenText, voice) {
+    const key = `${voice}::${spokenText}`;
+    if (ttsBlobCache.has(key)) return ttsBlobCache.get(key);
+
+    const promise = fetch('/api/bible-tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: spokenText, voice })
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('TTS HTTP ' + res.status);
+        return res.blob();
+      })
+      .then((blob) => {
+        if (!blob || blob.size < 200) throw new Error('Empty audio');
+        return URL.createObjectURL(blob);
+      })
+      .catch((err) => {
+        ttsBlobCache.delete(key);
+        throw err;
+      });
+
+    ttsBlobCache.set(key, promise);
+    return promise;
+  }
+
+  function prefetchUpcomingVerses(fromIdx) {
+    for (let offset = 1; offset <= 2; offset++) {
+      const nextIdx = fromIdx + offset;
+      if (nextIdx < parsedVerses.length) {
+        const txt = getSpokenTextForVerse(nextIdx);
+        if (txt) fetchVerseAudioUrl(txt, ttsVoice).catch(() => {});
+      }
+    }
+  }
+
   function pickKoreanVoice() {
     if (!window.speechSynthesis) return null;
     const voices = window.speechSynthesis.getVoices() || [];
@@ -2169,25 +2241,34 @@
     window.speechSynthesis.onvoiceschanged = () => pickKoreanVoice();
   }
 
-  function updateTtsUi() {
+  function updateTtsUi(isLoading = false) {
     const btn = document.getElementById('btn-tts-toggle');
     const lbl = document.getElementById('tts-status-label');
     if (!btn || !lbl) return;
     if (ttsPlaying) {
       btn.textContent = '⏸️ 일시정지';
       const v = parsedVerses[ttsVerseIdx];
-      lbl.textContent = v
-        ? `🔊 ${currentBibleBook} ${currentBibleChap}${unitWord(currentBibleBook)} ${v.num}절 낭독 중 (${ttsRate}x)`
-        : '🔊 음성 통독 중...';
+      if (isLoading) {
+        lbl.textContent = `🎙️ 아나운서 성우 음성 준비 중...`;
+      } else {
+        lbl.textContent = v
+          ? `🔊 ${currentBibleBook} ${currentBibleChap}${unitWord(currentBibleBook)} ${v.num}절 아나운서 낭독 중 (${ttsRate}x)`
+          : '🔊 음성 통독 중...';
+      }
     } else {
       btn.textContent = '🔊 음성 통독 시작';
-      lbl.textContent = '절을 터치하거나 [음성 통독 시작]을 누르세요';
+      lbl.textContent = '아나운서 HD 성우로 또렷하게 낭독합니다';
     }
   }
 
   function stopBibleTts() {
     ttsSessionToken++;
     ttsPlaying = false;
+    if (bibleTtsAudio) {
+      bibleTtsAudio.onended = null;
+      bibleTtsAudio.onerror = null;
+      try { bibleTtsAudio.pause(); } catch {}
+    }
     if (window.speechSynthesis) {
       try { window.speechSynthesis.cancel(); } catch {}
     }
@@ -2215,61 +2296,87 @@
   }
 
   function startBibleTtsFrom(index) {
-    if (!window.speechSynthesis) {
-      toast('⚠️ 현재 브라우저에서 음성 합성(TTS)을 지원하지 않습니다');
-      return;
-    }
     ttsSessionToken++;
     const myToken = ttsSessionToken;
-    try { window.speechSynthesis.cancel(); } catch {}
+    if (bibleTtsAudio) {
+      bibleTtsAudio.onended = null;
+      bibleTtsAudio.onerror = null;
+      try { bibleTtsAudio.pause(); } catch {}
+    }
+    if (window.speechSynthesis) {
+      try { window.speechSynthesis.cancel(); } catch {}
+    }
 
     ttsVerseIdx = Math.max(0, Math.min(parsedVerses.length - 1, index));
     ttsPlaying = true;
     ensureVerseVisibleOnSpread(ttsVerseIdx);
-    updateTtsUi();
+    updateTtsUi(true);
 
-    const speakCurrent = () => {
+    const advanceToNextVerse = () => {
       if (myToken !== ttsSessionToken || !ttsPlaying) return;
-      const v = parsedVerses[ttsVerseIdx];
-      if (!v) {
-        // 한 장 낭독 완료 -> 연속 다음 장 자동 진행!
+      ttsVerseIdx++;
+      if (ttsVerseIdx < parsedVerses.length) {
+        speakCurrent();
+      } else {
         stepToAdjacentChapter(1, true);
+      }
+    };
+
+    const fallbackBrowserSpeak = (spokenText) => {
+      if (!window.speechSynthesis) {
+        ttsPlaying = false;
+        updateTtsUi();
         return;
       }
-
-      ensureVerseVisibleOnSpread(ttsVerseIdx);
-      updateTtsUi();
-
-      // 절 번호('1절', '2절'...)는 읽지 않고 말씀 본문만 자연스럽게 낭독 (장 시작 시에만 장 제목 안내)
-      const spokenText = ttsVerseIdx === 0
-        ? `${currentBibleBook} ${currentBibleChap}${unitWord(currentBibleBook)}. ${v.text}`
-        : v.text;
+      updateTtsUi(false);
       const utter = new SpeechSynthesisUtterance(spokenText);
       utter.lang = 'ko-KR';
       utter.rate = ttsRate;
       utter.pitch = 1.0;
       const koVoice = pickKoreanVoice();
       if (koVoice) utter.voice = koVoice;
-
-      utter.onend = () => {
-        if (myToken !== ttsSessionToken || !ttsPlaying) return;
-        ttsVerseIdx++;
-        if (ttsVerseIdx < parsedVerses.length) {
-          speakCurrent();
-        } else {
-          stepToAdjacentChapter(1, true);
-        }
-      };
+      utter.onend = advanceToNextVerse;
       utter.onerror = () => {
         if (myToken !== ttsSessionToken) return;
         ttsPlaying = false;
         updateTtsUi();
       };
-
       window.speechSynthesis.speak(utter);
     };
 
-    setTimeout(speakCurrent, 40);
+    const speakCurrent = async () => {
+      if (myToken !== ttsSessionToken || !ttsPlaying) return;
+      const v = parsedVerses[ttsVerseIdx];
+      if (!v) {
+        stepToAdjacentChapter(1, true);
+        return;
+      }
+
+      ensureVerseVisibleOnSpread(ttsVerseIdx);
+      const spokenText = getSpokenTextForVerse(ttsVerseIdx);
+      // 다음 2개 절을 백그라운드로 미리 합성해 구절 간 끊김 0초 달성!
+      prefetchUpcomingVerses(ttsVerseIdx);
+
+      try {
+        updateTtsUi(true);
+        const audioUrl = await fetchVerseAudioUrl(spokenText, ttsVoice);
+        if (myToken !== ttsSessionToken || !ttsPlaying) return;
+
+        bibleTtsAudio.src = audioUrl;
+        applyAudioPlaybackSpeed();
+        updateTtsUi(false);
+
+        bibleTtsAudio.onended = advanceToNextVerse;
+        bibleTtsAudio.onerror = () => fallbackBrowserSpeak(spokenText);
+        await bibleTtsAudio.play();
+        applyAudioPlaybackSpeed();
+      } catch {
+        if (myToken !== ttsSessionToken || !ttsPlaying) return;
+        fallbackBrowserSpeak(spokenText);
+      }
+    };
+
+    speakCurrent();
   }
 
   document.getElementById('btn-tts-toggle').addEventListener('click', () => {
@@ -2298,7 +2405,11 @@
         b.className = 'tts-rate-btn px-2 py-0.5 rounded-md bg-slate-700 text-slate-200 text-[11px] font-bold cursor-pointer';
       });
       btn.className = 'tts-rate-btn px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 text-[11px] font-extrabold cursor-pointer';
-      if (ttsPlaying) {
+      if (ttsPlaying && bibleTtsAudio && !bibleTtsAudio.paused) {
+        // 재생 중인 HD 오디오는 끊김 없이 즉시 속도만 부드럽게 변경!
+        applyAudioPlaybackSpeed();
+        updateTtsUi(false);
+      } else if (ttsPlaying) {
         startBibleTtsFrom(ttsVerseIdx);
       } else {
         toast(`🔊 통독 음성 속도가 ${ttsRate}배속으로 설정되었습니다`);
@@ -2339,14 +2450,14 @@
     document.querySelectorAll('.plan-type-btn').forEach((b) => {
       const act = b.getAttribute('data-plan') === biblePlanType;
       b.className = act
-        ? 'plan-type-btn text-left p-3 rounded-xl border border-amber-400 bg-amber-400/15 cursor-pointer'
-        : 'plan-type-btn text-left p-3 rounded-xl border border-slate-700 bg-slate-900 cursor-pointer';
+        ? 'plan-type-btn text-left p-3.5 rounded-xl border-2 border-amber-500 bg-amber-50 shadow-sm cursor-pointer'
+        : 'plan-type-btn text-left p-3.5 rounded-xl border-2 border-slate-200 bg-white hover:bg-slate-50 cursor-pointer';
     });
     document.querySelectorAll('.plan-chaps-btn').forEach((b) => {
       const act = Number(b.getAttribute('data-chaps')) === biblePlanChaps;
       b.className = act
-        ? 'plan-chaps-btn px-3.5 py-2 rounded-xl bg-amber-400 text-slate-950 border border-amber-400 text-xs font-extrabold cursor-pointer'
-        : 'plan-chaps-btn px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-slate-200 cursor-pointer';
+        ? 'plan-chaps-btn px-4 py-2 rounded-xl bg-amber-400 border-2 border-amber-600 text-slate-950 text-xs font-extrabold cursor-pointer shadow-sm'
+        : 'plan-chaps-btn px-4 py-2 rounded-xl bg-slate-100 border border-slate-300 text-slate-800 hover:bg-slate-200 text-xs font-bold cursor-pointer';
     });
   }
 
@@ -2388,16 +2499,24 @@
   document.getElementById('btn-start-plan-audio').addEventListener('click', () => launchPlanPortion(true));
 
   // -------------------------------------------------------------------------
-  // 🙌 '예스통독' 인증 게시판 & 참여 성도 한눈에 보기
+  // 🙌 분류형 고가시성 '예스통독' 인증 게시판 & 참여 성도 한눈에 보기
   // -------------------------------------------------------------------------
+  let currentBibleBoardCat = 'all';
+  let currentBibleReaderFilter = '';
+
   function syncYesTongdokFormDefaults() {
     const planInp = document.getElementById('yes-plan-input');
     const rangeInp = document.getElementById('yes-range-input');
     const cntInp = document.getElementById('yes-count-input');
     if (!planInp || !rangeInp || !cntInp) return;
 
-    const cleanPlan = (PLAN_NAMES[biblePlanType] || '연대기순 통독').replace(/^[^\s]+\s*/, '');
-    planInp.value = cleanPlan;
+    const mapByPlan = {
+      chronological: '연대기순 통독',
+      canonical: '성경 순서 정독',
+      balanced: '구약+신약 균형',
+      nt_psalms: '신약·시편 집중'
+    };
+    planInp.value = mapByPlan[biblePlanType] || '연대기순 통독';
     if (activePortionQueue.length > 0) {
       rangeInp.value = formatChapterQueueLabel(activePortionQueue);
       cntInp.value = String(activePortionQueue.length);
@@ -2407,11 +2526,21 @@
     }
   }
 
+  function getPlanBadgeTheme(planName) {
+    const s = String(planName || '');
+    if (s.includes('연대기')) return { border: 'border-l-amber-500', pill: 'bg-amber-100 text-amber-900 border-amber-300', icon: '⏳' };
+    if (s.includes('순서')) return { border: 'border-l-emerald-500', pill: 'bg-emerald-100 text-emerald-900 border-emerald-300', icon: '📖' };
+    if (s.includes('균형')) return { border: 'border-l-sky-500', pill: 'bg-sky-100 text-sky-900 border-sky-300', icon: '⚖️' };
+    if (s.includes('신약')) return { border: 'border-l-rose-500', pill: 'bg-rose-100 text-rose-900 border-rose-300', icon: '🌱' };
+    return { border: 'border-l-indigo-500', pill: 'bg-indigo-100 text-indigo-900 border-indigo-300', icon: '✨' };
+  }
+
   function renderBibleBoard() {
     const logs = Array.isArray(worldState.bibleLogs) ? worldState.bibleLogs : [];
     const partGrid = document.getElementById('bible-participants-grid');
-    const totalEl = document.getElementById('bible-community-total');
     const listEl = document.getElementById('bible-logs-list');
+    const headingEl = document.getElementById('bible-board-list-heading');
+    const countBadge = document.getElementById('bible-board-count-badge');
     if (!partGrid || !listEl) return;
 
     const todayStr = getTodayKstStr();
@@ -2426,6 +2555,7 @@
         totalChaps: 0,
         count: 0,
         lastRange: l.rangeLabel,
+        lastPlan: l.planName,
         doneToday: false
       };
       prev.totalChaps += ch;
@@ -2436,40 +2566,102 @@
 
     const participants = Array.from(byReader.values()).sort((a, b) => b.totalChaps - a.totalChaps);
     const todayDoneCount = participants.filter((p) => p.doneToday).length;
-    if (totalEl) {
-      totalEl.textContent = `🔥 공동체 누적 ${totalChaps}장 · 참여 성도 ${participants.length}명 (오늘 ${todayDoneCount}명 완료)`;
+
+    const kpiReaders = document.getElementById('kpi-readers-count');
+    const kpiChaps = document.getElementById('kpi-total-chaps');
+    const kpiToday = document.getElementById('kpi-today-done');
+    if (kpiReaders) kpiReaders.textContent = `${participants.length}명`;
+    if (kpiChaps) kpiChaps.textContent = `${totalChaps}장`;
+    if (kpiToday) kpiToday.textContent = `${todayDoneCount}명`;
+
+    // 좌측: 참여 성도별 누적 현황표 (클릭 시 해당 성도의 인증 기록만 필터링!)
+    partGrid.innerHTML = participants.map((p, idx) => {
+      const isSelected = currentBibleReaderFilter === p.reader;
+      const rankIcon = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '📖';
+      return `
+        <button type="button" data-reader="${p.reader}" class="reader-filter-row w-full text-left px-3 py-2 rounded-xl border-2 transition cursor-pointer flex items-center justify-between gap-2 ${
+          isSelected
+            ? 'bg-amber-100 border-amber-500 shadow-sm'
+            : p.doneToday
+              ? 'bg-white hover:bg-amber-50/70 border-amber-200'
+              : 'bg-slate-50 hover:bg-slate-100 border-slate-200'
+        }">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-1.5">
+              <span class="text-sm">${rankIcon}</span>
+              <span class="text-xs sm:text-sm font-black text-slate-900 truncate">${p.reader}</span>
+              ${p.doneToday ? '<span class="px-1.5 py-0.5 rounded-md bg-emerald-500 text-white text-[10px] font-extrabold">오늘 완료</span>' : ''}
+            </div>
+            <div class="text-[11px] text-slate-600 truncate mt-0.5">최근: <b>${p.lastRange}</b></div>
+          </div>
+          <div class="shrink-0 text-right">
+            <div class="text-xs sm:text-sm font-black text-amber-800">${p.totalChaps}장</div>
+            <div class="text-[10px] font-bold text-slate-500">${p.count}회 인증</div>
+          </div>
+        </button>
+      `;
+    }).join('');
+
+    partGrid.querySelectorAll('.reader-filter-row').forEach((row) => {
+      row.addEventListener('click', () => {
+        const rName = row.getAttribute('data-reader') || '';
+        currentBibleReaderFilter = currentBibleReaderFilter === rName ? '' : rName;
+        renderBibleBoard();
+      });
+    });
+
+    // 카테고리 탭 스타일 업데이트
+    document.querySelectorAll('.bible-cat-btn').forEach((b) => {
+      const cat = b.getAttribute('data-bcat');
+      const active = !currentBibleReaderFilter && cat === currentBibleBoardCat;
+      if (active) {
+        b.className = 'bible-cat-btn px-2.5 py-1 rounded-lg bg-slate-900 text-amber-300 text-xs font-extrabold cursor-pointer shadow';
+      } else {
+        b.className = 'bible-cat-btn px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer';
+      }
+    });
+
+    // 분류 필터 적용
+    const filtered = logs.filter((l) => {
+      if (currentBibleReaderFilter) return l.reader === currentBibleReaderFilter;
+      if (currentBibleBoardCat === 'all') return true;
+      if (currentBibleBoardCat === 'today') return l.dateKey === todayStr || String(l.createdAt || '').includes('오늘');
+      if (currentBibleBoardCat === 'mine') return l.reader === myName;
+      return String(l.planName || '').includes(currentBibleBoardCat);
+    });
+
+    if (headingEl) {
+      headingEl.textContent = currentBibleReaderFilter
+        ? `👤 '${currentBibleReaderFilter}' 성도님의 예스통독 기록 (다시 누르면 전체 해제)`
+        : `🗂️ 분류별 '예스통독' 인증 게시판`;
+    }
+    if (countBadge) countBadge.textContent = `${filtered.length}건`;
+
+    if (!filtered.length) {
+      listEl.innerHTML = `<div class="p-8 rounded-xl bg-slate-50 border border-dashed border-slate-300 text-center text-xs font-bold text-slate-500">선택하신 분류에 아직 등록된 예스통독 인증이 없습니다. 첫 인증의 주인공이 되어보세요! 🙌</div>`;
+      return;
     }
 
-    partGrid.innerHTML = participants.map((p, idx) => `
-      <div class="px-3 py-2 rounded-xl border ${p.doneToday ? 'bg-amber-400/15 border-amber-400/60' : 'bg-slate-900 border-slate-700'} flex items-center gap-2">
-        <span class="text-sm">${idx === 0 ? '👑' : p.doneToday ? '✨' : '📖'}</span>
-        <div>
-          <div class="text-xs font-extrabold text-white flex items-center gap-1.5">
-            <span>${p.reader}</span>
-            ${p.doneToday ? '<span class="px-1.5 py-0.2 rounded bg-emerald-400 text-slate-950 text-[10px] font-extrabold">오늘 예스통독</span>' : ''}
+    listEl.innerHTML = filtered.map((l) => {
+      const th = getPlanBadgeTheme(l.planName);
+      return `
+        <div class="p-3 rounded-xl bg-white border border-slate-200 border-l-4 ${th.border} shadow-sm flex items-start justify-between gap-2.5">
+          <div class="min-w-0 flex-1 space-y-1.5">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 text-[11px] font-black">예스통독 🙌</span>
+              <span class="text-xs sm:text-sm font-black text-slate-900">${l.reader}</span>
+              <span class="px-2 py-0.5 rounded-md border text-[11px] font-extrabold ${th.pill}">${th.icon} ${l.planName}</span>
+              <span class="px-2 py-0.5 rounded-md bg-slate-900 text-amber-300 text-[11px] font-extrabold">📖 ${l.rangeLabel} · ${l.chaptersCount || 1}장</span>
+              <span class="text-[11px] font-semibold text-slate-400 ml-auto">${l.createdAt || ''}</span>
+            </div>
+            <div class="text-xs sm:text-[13px] font-semibold text-slate-800 leading-relaxed break-keep">${String(l.comment || '').replace(/</g, '&lt;')}</div>
           </div>
-          <div class="text-[11px] text-amber-300 font-bold">누적 ${p.totalChaps}장 (${p.count}회) <span class="text-slate-400 font-normal">· 최근 ${p.lastRange}</span></div>
+          <button data-blid="${l.id}" class="bible-log-amen-btn shrink-0 px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-900 text-xs font-black cursor-pointer">
+            🙏 ${l.amens || 1}
+          </button>
         </div>
-      </div>
-    `).join('');
-
-    listEl.innerHTML = logs.map((l) => `
-      <div class="p-3 rounded-xl bg-slate-800 border border-slate-700 flex items-start justify-between gap-2.5">
-        <div class="min-w-0 flex-1 space-y-1">
-          <div class="flex flex-wrap items-center gap-1.5">
-            <span class="px-2 py-0.5 rounded-md bg-amber-400 text-slate-950 text-[10px] font-extrabold">예스통독 🙌</span>
-            <span class="text-xs font-extrabold text-white">${l.reader}</span>
-            <span class="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">${l.planName}</span>
-            <span class="px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 text-[10px] font-extrabold">📖 ${l.rangeLabel} (${l.chaptersCount || 1}장)</span>
-            <span class="text-[10px] text-slate-400">${l.createdAt || ''}</span>
-          </div>
-          <div class="text-xs text-amber-100 leading-relaxed break-keep">${String(l.comment || '').replace(/</g, '&lt;')}</div>
-        </div>
-        <button data-blid="${l.id}" class="bible-log-amen-btn shrink-0 px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 text-xs font-extrabold cursor-pointer">
-          🙏 ${l.amens || 1}
-        </button>
-      </div>
-    `).join('');
+      `;
+    }).join('');
 
     listEl.querySelectorAll('.bible-log-amen-btn').forEach((b) => {
       b.addEventListener('click', async () => {
@@ -2487,6 +2679,14 @@
       });
     });
   }
+
+  document.querySelectorAll('.bible-cat-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      currentBibleReaderFilter = '';
+      currentBibleBoardCat = btn.getAttribute('data-bcat') || 'all';
+      renderBibleBoard();
+    });
+  });
 
   document.querySelectorAll('.yes-preset-chip').forEach((chip) => {
     chip.addEventListener('click', () => {
@@ -2820,8 +3020,8 @@
     document.querySelectorAll('.qt-tab-btn').forEach((b) => {
       const act = b.getAttribute('data-qtab') === t;
       b.className = act
-        ? 'qt-tab-btn px-3 py-1.5 rounded-xl text-xs font-extrabold bg-amber-400 text-slate-950 cursor-pointer'
-        : 'qt-tab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-300 cursor-pointer';
+        ? 'qt-tab-btn py-2 px-2 rounded-xl text-xs sm:text-sm font-extrabold bg-amber-400 text-slate-950 cursor-pointer text-center shadow'
+        : 'qt-tab-btn py-2 px-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-800 text-slate-200 hover:bg-slate-700 cursor-pointer text-center';
     });
     if (t === 'today') loadTodaySomyQt();
     if (t === 'lectures') renderQtLectures();
@@ -3100,7 +3300,49 @@
     world3d.setJoystick(dx / maxR, dy / maxR);
   }
 
+  // 4대 통합 게시판 & 캠퍼스 전체 메뉴 한눈에 보기 허브 렌더링
+  function renderCampusHubModal() {
+    const logs = Array.isArray(worldState.bibleLogs) ? worldState.bibleLogs : [];
+    const totalChaps = logs.reduce((acc, l) => acc + (Number(l.chaptersCount) || 1), 0);
+    const readersSet = new Set(logs.map((l) => l.reader));
+
+    document.getElementById('hub-bible-stat').textContent = `${readersSet.size}명 · 누적 ${totalChaps}장`;
+    document.getElementById('hub-bible-preview').innerHTML = logs.slice(0, 3).map((l) => `
+      <div class="p-2 rounded-lg bg-emerald-50/70 border border-emerald-200 flex items-center justify-between gap-2">
+        <div class="truncate"><span class="font-extrabold text-emerald-950">${l.reader}</span> · <span class="font-bold text-slate-700">${l.rangeLabel}</span></div>
+        <span class="shrink-0 px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 text-[10px] font-black">예스통독</span>
+      </div>
+    `).join('');
+
+    const qtRef = (currentSomyQt && currentSomyQt.reference) || '오늘의 큐티 말씀';
+    const qtShares = Array.isArray(worldState.qtShares) ? worldState.qtShares : [];
+    document.getElementById('hub-qt-stat').textContent = `나눔 ${qtShares.length}건`;
+    document.getElementById('hub-qt-preview').innerHTML = `
+      <div class="p-2 rounded-lg bg-amber-100 border border-amber-300 font-extrabold text-amber-950">📖 오늘 본문: ${qtRef}</div>
+      ${qtShares.slice(0, 2).map((s) => `
+        <div class="p-2 rounded-lg bg-white border border-slate-200 truncate"><span class="font-extrabold text-slate-900">${s.author}:</span> <span class="text-slate-600">${s.content}</span></div>
+      `).join('')}
+    `;
+
+    const candles = Array.isArray(worldState.candles) ? worldState.candles : [];
+    document.getElementById('hub-candle-stat').textContent = `등불 ${candles.length}개 점등`;
+    document.getElementById('hub-candle-preview').innerHTML = candles.slice(0, 3).map((c) => `
+      <div class="p-2 rounded-lg bg-rose-50/70 border border-rose-200 truncate">
+        <span class="font-extrabold text-rose-950">🕯️ ${c.name}:</span> <span class="text-slate-700">${c.text}</span>
+      </div>
+    `).join('');
+
+    const rooms = Array.isArray(worldState.sarangbangs) ? worldState.sarangbangs : [];
+    document.getElementById('hub-sarang-stat').textContent = `${rooms.length}개 사랑방 운영 중`;
+    document.getElementById('hub-sarang-preview').innerHTML = rooms.slice(0, 3).map((r) => `
+      <div class="p-2 rounded-lg bg-sky-50/70 border border-sky-200 flex items-center justify-between gap-2">
+        <div class="truncate"><span class="font-extrabold text-sky-950">🏠 ${r.name}</span> <span class="text-slate-600">· ${r.leader}</span></div>
+      </div>
+    `).join('');
+  }
+
   function openModal(id) {
+    if (id === 'hub-modal') renderCampusHubModal();
     if (id === 'sarang-modal') renderSarangList();
     if (id === 'bible-modal') {
       updateBiblePlanPreview();
@@ -3197,6 +3439,36 @@
   document.getElementById('btn-sip-drink').addEventListener('click', () => {
     world3d.triggerSip('me');
     world3d.showBubble('me', myDrink === 'water' ? '💧 시원하다~ 감사히 마십니다!' : '☕ 향긋한 커피 한 모금~', 3.5);
+  });
+
+  document.getElementById('btn-campus-hub').addEventListener('click', () => openModal('hub-modal'));
+  document.querySelectorAll('.hub-zone-btn').forEach((b) => {
+    b.addEventListener('click', () => {
+      const z = b.getAttribute('data-hubzone');
+      closeModal('hub-modal');
+      if (z) enterZone(z);
+    });
+  });
+  document.getElementById('btn-hub-go-bible').addEventListener('click', () => {
+    closeModal('hub-modal');
+    if (currentZone !== 'bible') enterZone('bible');
+    switchBibleTab('board');
+    openModal('bible-modal');
+  });
+  document.getElementById('btn-hub-go-qt').addEventListener('click', () => {
+    closeModal('hub-modal');
+    if (currentZone !== 'qt') enterZone('qt');
+    switchQtTab('today');
+    openModal('qt-modal');
+  });
+  document.getElementById('btn-hub-go-candle').addEventListener('click', () => {
+    closeModal('hub-modal');
+    if (currentZone !== 'sanctuary' && currentZone !== 'prayer') enterZone('sanctuary');
+    openModal('candle-modal');
+  });
+  document.getElementById('btn-hub-go-sarang').addEventListener('click', () => {
+    closeModal('hub-modal');
+    openModal('sarang-modal');
   });
 
   document.getElementById('btn-board-studio').addEventListener('click', () => openModal('board-modal'));
