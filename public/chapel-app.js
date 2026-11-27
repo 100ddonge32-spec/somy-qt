@@ -413,6 +413,7 @@
       });
     }
   });
+  window.__world3d = world3d;
 
   myAvatarConfig = world3d.resolveAvatarConfig(myPresetId, myAvatarConfig);
 
@@ -3531,6 +3532,7 @@
         previewAvatarPivot.remove(previewAvatarPivot.children[0]);
       }
       previewVrmRec = rec;
+      window.__previewVrmRec = rec;
       previewLoadedModelKey = targetModel;
       previewAvatarPivot.add(rec.wrapper);
     } catch (e) {
@@ -3552,11 +3554,11 @@
     }
 
     if (previewZoomClose) {
-      previewCamera.position.set(0, headWorldY + 0.02, isCute ? 1.05 : 0.92);
-      previewCamera.lookAt(0, headWorldY - 0.03, 0);
+      previewCamera.position.set(0, headWorldY - 0.02, isCute ? 1.05 : 0.95);
+      previewCamera.lookAt(0, headWorldY - 0.05, 0);
     } else {
-      previewCamera.position.set(0, isCute ? 0.85 : 0.98, isCute ? 2.85 : 3.25);
-      previewCamera.lookAt(0, isCute ? 0.80 : 0.94, 0);
+      previewCamera.position.set(0, headWorldY * 0.60, isCute ? 2.50 : 2.75);
+      previewCamera.lookAt(0, headWorldY * 0.52, 0);
     }
   }
 

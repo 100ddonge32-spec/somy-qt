@@ -128,14 +128,14 @@
 
     return {
       vrmModel: validModel,
-      bodyStyle: cfg.bodyStyle === 'cute' ? 'cute' : (base.bodyStyle || 'model'),
-      skinTone: SKIN_MULT_HEX[cfg.skinTone] ? cfg.skinTone : (base.skinTone || 'porcelain'),
-      eyeColor: (cfg.eyeColor === 'original' || EYE_DYE_HEX[cfg.eyeColor]) ? cfg.eyeColor : (base.eyeColor || 'original'),
-      expression: cfg.expression || base.expression || 'smile',
-      hairColor: (cfg.hairColor === 'original' || HAIR_DYE_HEX[cfg.hairColor]) ? cfg.hairColor : (base.hairColor || 'original'),
-      outfitColor: cfg.outfitColor || base.outfitColor || 'original',
-      bottomColor: cfg.bottomColor || base.bottomColor || 'original',
-      accessory: cfg.accessory || base.accessory || 'none'
+      bodyStyle: cfg.bodyStyle === 'cute' ? 'cute' : (cfg.bodyStyle || base.bodyStyle || 'model'),
+      skinTone: SKIN_MULT_HEX[cfg.skinTone] ? cfg.skinTone : (cfg.skinTone || base.skinTone || 'porcelain'),
+      eyeColor: (cfg.eyeColor === 'original' || EYE_DYE_HEX[cfg.eyeColor]) ? cfg.eyeColor : (cfg.eyeColor || base.eyeColor || 'original'),
+      expression: cfg.expression !== undefined ? cfg.expression : (base.expression || 'smile'),
+      hairColor: (cfg.hairColor === 'original' || HAIR_DYE_HEX[cfg.hairColor]) ? cfg.hairColor : (cfg.hairColor || base.hairColor || 'original'),
+      outfitColor: cfg.outfitColor !== undefined ? cfg.outfitColor : (base.outfitColor || 'original'),
+      bottomColor: cfg.bottomColor !== undefined ? cfg.bottomColor : (base.bottomColor || 'original'),
+      accessory: cfg.accessory !== undefined ? cfg.accessory : (base.accessory || 'none')
     };
   }
 
@@ -297,8 +297,9 @@
           const baseHipsY = hipsNode ? hipsNode.position.y : 0.85;
           const lUA = vrm.humanoid && vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
           const rUA = vrm.humanoid && vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
-          if (lUA) lUA.rotation.z = -1.22;
-          if (rUA) rUA.rotation.z = 1.22;
+          // 팔을 차렷 자세(몸통 옆으로 자연스럽게 내림)로 초기화
+          if (lUA) lUA.rotation.z = 1.25;
+          if (rUA) rUA.rotation.z = -1.25;
           vrm.update(0.016);
           vrm.scene.updateMatrixWorld(true);
 
@@ -308,7 +309,7 @@
           const rEyeRaw = vrm.humanoid && vrm.humanoid.getRawBoneNode('rightEye');
           const neckRaw = vrm.humanoid && vrm.humanoid.getRawBoneNode('neck');
 
-          let eyeBridgeLocal = new THREE.Vector3(0, 0.055, 0.085);
+          let eyeBridgeLocal = new THREE.Vector3(0, 0.058, -0.048);
           let eyeHalfSpan = 0.032;
 
           if (headRaw) {
@@ -322,10 +323,9 @@
               rEyeRaw.getWorldPosition(rw);
               eyeHalfSpan = Math.max(0.026, Math.min(0.042, lw.distanceTo(rw) * 0.5));
               const midWorld = lw.clone().add(rw).multiplyScalar(0.5);
-              // 눈뼈 중심에서 코끝/속눈썹 앞쪽으로 살짝 전진 (+Z 월드 정면 기준)
-              const forwardWorld = new THREE.Vector3(0, 0, 1);
-              midWorld.addScaledVector(forwardWorld, 0.042);
-              eyeBridgeLocal = headRaw.worldToLocal(midWorld.clone());
+              const localEye = headRaw.worldToLocal(midWorld.clone());
+              // VRM headRaw 좌표계에서 콧대 정면(-Z)으로 18mm 배치
+              eyeBridgeLocal = new THREE.Vector3(0, localEye.y - 0.002, localEye.z - 0.018);
             }
           }
 
@@ -475,13 +475,11 @@
       });
 
       const gRoot = new THREE.Group();
-      // headRaw 로컬 좌표계의 눈 중심점으로 정확히 이동, 월드 +Z 정면과 정렬되도록 쿼터니언 보정
+      // headRaw 로컬 좌표계의 눈 중심점(eyeBridgeLocal)에 직접 배치.
+      // headRaw 좌표계에서 얼굴 전면은 -Z이므로, +Z로 모델링된 안경을 Y축 180도 회전시켜
+      // 고개가 끄덕이거나 좌우로 돌아갈 때 1mm 오차 없이 얼굴에 완전 밀착!
       gRoot.position.copy(rec.eyeBridgeLocal);
-      if (rec.headRaw) {
-        const headQuat = new THREE.Quaternion();
-        rec.headRaw.getWorldQuaternion(headQuat);
-        gRoot.quaternion.copy(headQuat.invert());
-      }
+      gRoot.rotation.set(0, Math.PI, 0);
 
       const span = rec.eyeHalfSpan || 0.032;
       const fw = span * 1.48;
@@ -520,14 +518,10 @@
       rec.accessoryAnchor.add(gRoot);
     }
 
-    if (cfg.accessory === 'earcuff' || cfg.accessory === 'horn_glasses') {
+    if (cfg.accessory === 'earcuff') {
       const cuffGroup = new THREE.Group();
       cuffGroup.position.copy(rec.eyeBridgeLocal);
-      if (rec.headRaw) {
-        const headQuat = new THREE.Quaternion();
-        rec.headRaw.getWorldQuaternion(headQuat);
-        cuffGroup.quaternion.copy(headQuat.invert());
-      }
+      cuffGroup.rotation.set(0, Math.PI, 0);
       const cuffMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.88, roughness: 0.18 });
       const earX = (rec.eyeHalfSpan || 0.032) * 2.55;
       [-0.006, -0.016].forEach((cy) => {
@@ -541,11 +535,7 @@
 
     if (cfg.accessory === 'necklace') {
       const nGroup = new THREE.Group();
-      if (rec.neckAnchor.parent) {
-        const nq = new THREE.Quaternion();
-        rec.neckAnchor.parent.getWorldQuaternion(nq);
-        nGroup.quaternion.copy(nq.invert());
-      }
+      nGroup.rotation.set(0, Math.PI, 0);
       const silverMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.88, roughness: 0.16 });
       const chain = new THREE.Mesh(new THREE.TorusGeometry(0.058, 0.0022, 8, 22, Math.PI), silverMat);
       chain.rotation.x = Math.PI * 0.78;
