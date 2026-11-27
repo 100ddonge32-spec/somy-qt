@@ -632,10 +632,10 @@
         if (rUL) rUL.rotation.set(1.42, -0.06, 0);
         if (lLL) lLL.rotation.set(-1.42, 0, 0);
         if (rLL) rLL.rotation.set(-1.42, 0, 0);
-        if (lUA) lUA.rotation.set(0.28, 0, -1.16);
-        if (rUA) rUA.rotation.set(sipTimer > 0 ? 1.05 : 0.28, 0, 1.16);
-        if (lLA) lLA.rotation.set(0, -0.35, 0);
-        if (rLA) rLA.rotation.set(0, sipTimer > 0 ? 1.15 : 0.35, 0);
+        if (lUA) lUA.rotation.set(0.28, 0, 1.16);
+        if (rUA) rUA.rotation.set(sipTimer > 0 ? 1.05 : 0.28, 0, -1.16);
+        if (lLA) lLA.rotation.set(0, 0.35, 0);
+        if (rLA) rLA.rotation.set(0, sipTimer > 0 ? 1.15 : -0.35, 0);
       } else if (pose === 'kneel') {
         // 강단 앞 무릎 꿇고 두 손 모아 간절히 기도하는 자세
         if (hips) hips.position.y = rec.baseHipsY - 0.42;
@@ -646,10 +646,10 @@
         if (rUL) rUL.rotation.set(0.28, -0.04, 0);
         if (lLL) lLL.rotation.set(-2.18, 0, 0);
         if (rLL) rLL.rotation.set(-2.18, 0, 0);
-        if (lUA) lUA.rotation.set(0.68, 0.38, -0.95);
-        if (rUA) rUA.rotation.set(0.68, -0.38, 0.95);
-        if (lLA) lLA.rotation.set(0, -1.25, 0);
-        if (rLA) rLA.rotation.set(0, 1.25, 0);
+        if (lUA) lUA.rotation.set(0.68, 0.38, 0.95);
+        if (rUA) rUA.rotation.set(0.68, -0.38, -0.95);
+        if (lLA) lLA.rotation.set(0, 1.25, 0);
+        if (rLA) rLA.rotation.set(0, -1.25, 0);
       } else if (moving) {
         // 경쾌하고 자연스러운 순정만화 워킹 사이클
         const sw = Math.sin(walkPhase) * 0.56;
@@ -661,12 +661,12 @@
         if (rUL) rUL.rotation.set(-sw, 0, 0);
         if (lLL) lLL.rotation.set(-Math.max(0, -sw) * 0.85 - 0.08, 0, 0);
         if (rLL) rLL.rotation.set(-Math.max(0, sw) * 0.85 - 0.08, 0, 0);
-        if (lUA) lUA.rotation.set(-sw * 0.55, 0, -1.18);
-        if (rUA) rUA.rotation.set(sipTimer > 0 ? 1.05 : sw * 0.55, 0, 1.18);
-        if (lLA) lLA.rotation.set(0, -0.22, 0);
-        if (rLA) rLA.rotation.set(0, sipTimer > 0 ? 1.15 : 0.22, 0);
+        if (lUA) lUA.rotation.set(-sw * 0.55, 0, 1.18);
+        if (rUA) rUA.rotation.set(sipTimer > 0 ? 1.05 : sw * 0.55, 0, -1.18);
+        if (lLA) lLA.rotation.set(0, 0.22, 0);
+        if (rLA) rLA.rotation.set(0, sipTimer > 0 ? 1.15 : -0.22, 0);
       } else {
-        // 순정만화 아이들 스탠딩 숨쉬기 & 고개 살랑임
+        // 순정만화 편안한 스탠딩 (양팔 자연스럽게 내림 & 숨쉬기)
         if (hips) hips.position.y = rec.baseHipsY + breathe * 0.35;
         if (spine) spine.rotation.set(breathe * 0.5, Math.sin(elapsed * 0.9 + blinkOffset) * 0.025, 0);
         if (neck) neck.rotation.set(0, Math.sin(elapsed * 0.7 + blinkOffset) * 0.035, Math.sin(elapsed * 1.1 + blinkOffset) * 0.028);
@@ -675,10 +675,10 @@
         if (rUL) rUL.rotation.set(0, -0.02, 0.02);
         if (lLL) lLL.rotation.set(0, 0, 0);
         if (rLL) rLL.rotation.set(0, 0, 0);
-        if (lUA) lUA.rotation.set(0.04, 0, -1.22 - breathe * 0.4);
-        if (rUA) rUA.rotation.set(sipTimer > 0 ? 1.05 : 0.04, 0, 1.22 + breathe * 0.4);
-        if (lLA) lLA.rotation.set(0, -0.16, 0);
-        if (rLA) rLA.rotation.set(0, sipTimer > 0 ? 1.15 : 0.16, 0);
+        if (lUA) lUA.rotation.set(0.04, 0, 1.22 + breathe * 0.4);
+        if (rUA) rUA.rotation.set(sipTimer > 0 ? 1.05 : 0.04, 0, -1.22 - breathe * 0.4);
+        if (lLA) lLA.rotation.set(0, 0.16, 0);
+        if (rLA) rLA.rotation.set(0, sipTimer > 0 ? 1.15 : -0.16, 0);
       }
     }
 
