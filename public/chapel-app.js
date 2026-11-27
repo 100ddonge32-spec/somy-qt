@@ -213,6 +213,32 @@
   let currentZone = 'garden';
   let currentSarangId = 'group-1';
 
+  // -------------------------------------------------------------------------
+  // 👑 관리자 및 인도자 권한 판별 (칠판 게시 · 화면공유 · 전원 찬양 송출 통제)
+  // -------------------------------------------------------------------------
+  function isUserLeaderOrAdmin() {
+    // 1) URL 파라미터로 명시적 role이 전달된 경우 (소미 관리자/순장/교역자 연동)
+    const paramRole = (chapelParams.get('role') || '').toLowerCase();
+    if (paramRole === 'admin' || paramRole === 'super_admin' || paramRole === 'leader' || paramRole === 'pastor') {
+      return true;
+    }
+    // 2) 이름에 담긴 직분 판정 (목사, 전도사, 강도사, 장로, 권사, 순장, 리더, 간사 등 관리자/리더 직분)
+    const nameStr = String(myName || '').trim();
+    if (/목사|전도사|강도사|장로|권사|순장|리더|간사|관리자|인도자/i.test(nameStr)) {
+      return true;
+    }
+    // 3) 백동희 성도(본계정 마스터/총괄 관리자)
+    if (nameStr.includes('백동희') || nameStr.includes('동희')) {
+      return true;
+    }
+    // 4) 현재 사랑방의 순장/인도자 성함과 일치하는 경우
+    const curSarang = (worldState.sarangbangs || []).find((s) => s.id === currentSarangId);
+    if (curSarang && curSarang.leader && nameStr.includes(curSarang.leader.replace(/권사|집사|순장|성도|리더/g, '').trim())) {
+      return true;
+    }
+    return false;
+  }
+
   // 서버 공용 상태
   let worldState = {
     sarangbangs: [
@@ -1024,6 +1050,33 @@
       toast('👨‍🏫 인도자가 칠판/강의자료를 업데이트했습니다');
     });
 
+    // 🎵 관리자가 송출한 배경 기도음악/유튜브 찬양 전 접속자 실시간 동기화
+    roomChannel.on('broadcast', { event: 'bgm_sync' }, ({ payload }) => {
+      if (!payload) return;
+      if (payload.action === 'play_youtube') {
+        const vid = payload.youtubeId;
+        if (!vid) return;
+        stopAllBgm(false);
+        bgmType = 'youtube';
+        bgmYtIframe.src = `https://www.youtube.com/embed/${vid}?autoplay=1&loop=1&playlist=${vid}&playsinline=1&rel=0`;
+        const miniLabel = document.getElementById('bgm-mini-label');
+        if (miniLabel) miniLabel.textContent = `🎵 ${payload.senderName || '인도자'}의 찬양 연주`;
+        const wrap = document.getElementById('bgm-yt-wrap');
+        if (wrap) wrap.classList.remove('hidden');
+        document.getElementById('bgm-mini-bar').classList.remove('hidden');
+        const listenerStatus = document.getElementById('bgm-listener-status');
+        if (listenerStatus) listenerStatus.textContent = `▶️ ${payload.senderName || '관리자'}님이 설정한 유튜브 찬양이 재생 중입니다.`;
+        toast(`🎵 ${payload.senderName || '인도자'}님이 공간 찬양 음악을 연결했습니다!`);
+      } else if (payload.action === 'play_synth') {
+        stopAllBgm(false);
+        playGraceSynthChords();
+        toast('🎹 인도자가 기본 은혜 패드 기도반주를 시작했습니다');
+      } else if (payload.action === 'stop') {
+        stopAllBgm(false);
+        toast('⏹️ 배경 음악이 중지되었습니다');
+      }
+    });
+
     roomChannel.on('broadcast', { event: 'rtc_signal' }, async ({ payload }) => {
       if (!payload || payload.targetId !== myClientId) return;
       await handleRtcSignal(payload);
@@ -1614,6 +1667,10 @@
   });
 
   document.getElementById('btn-wb-apply').addEventListener('click', () => {
+    if (!isUserLeaderOrAdmin()) {
+      toast('🔒 화이트보드 3D 칠판 반영은 관리자/인도자만 가능합니다');
+      return;
+    }
     boardState.mode = 'whiteboard';
     renderBoardSurface();
     broadcastEvent('board_sync', { mode: 'whiteboard' });
@@ -1622,6 +1679,11 @@
   });
 
   document.getElementById('ppt-files-input').addEventListener('change', async (e) => {
+    if (!isUserLeaderOrAdmin()) {
+      toast('🔒 PPT/강의자료 등록은 관리자/인도자만 가능합니다');
+      e.target.value = '';
+      return;
+    }
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
@@ -1660,6 +1722,10 @@
   });
 
   function stepPptSlide(dir) {
+    if (!isUserLeaderOrAdmin()) {
+      toast('🔒 슬라이드 넘김은 관리자/인도자만 제어할 수 있습니다');
+      return;
+    }
     const total = (boardState.slideImages || []).length;
     if (!total) return;
     boardState.mode = 'ppt_images';
@@ -1672,6 +1738,10 @@
   document.getElementById('btn-ppt-next').addEventListener('click', () => stepPptSlide(1));
 
   document.getElementById('btn-apply-embed').addEventListener('click', async () => {
+    if (!isUserLeaderOrAdmin()) {
+      toast('🔒 PPT/웹링크 공유는 관리자/인도자만 가능합니다');
+      return;
+    }
     const url = document.getElementById('ppt-embed-input').value.trim();
     if (!url) return;
     boardState.mode = 'ppt_embed';
@@ -1685,6 +1755,10 @@
   });
 
   document.getElementById('btn-apply-slide-text').addEventListener('click', async () => {
+    if (!isUserLeaderOrAdmin()) {
+      toast('🔒 칠판 자막 게시는 관리자/인도자만 가능합니다');
+      return;
+    }
     const badge = document.getElementById('slide-badge-input').value.trim();
     const body = document.getElementById('slide-body-input').value.trim();
     if (!badge && !body) return;
@@ -1700,6 +1774,10 @@
   });
 
   document.getElementById('btn-apply-yt-board').addEventListener('click', async () => {
+    if (!isUserLeaderOrAdmin()) {
+      toast('🔒 유튜브 영상 게시는 관리자/인도자만 가능합니다');
+      return;
+    }
     const raw = document.getElementById('board-yt-input').value.trim();
     const m = raw.match(/(?:v=|youtu\.be\/|embed\/|live\/|shorts\/)([a-zA-Z0-9_-]{11})/);
     const vid = m ? m[1] : raw;
@@ -1715,6 +1793,10 @@
   });
 
   document.getElementById('btn-start-screenshare').addEventListener('click', () => {
+    if (!isUserLeaderOrAdmin()) {
+      toast('🔒 PC 화면/영상 공유는 관리자 및 임명된 리더만 가능합니다');
+      return;
+    }
     if (isSharingMyScreen) stopMyScreenShare();
     else startMyScreenShare();
   });
@@ -3146,48 +3228,22 @@
   // -------------------------------------------------------------------------
   // 🎵 기도음악 & 🎙️ 마이크 & 📹 카메라
   // -------------------------------------------------------------------------
-  function stopAllBgm() {
+  function stopAllBgm(notifyBroadcast = true) {
     bgmType = 'none';
     if (synthTimer) { clearInterval(synthTimer); synthTimer = null; }
     customBgmAudio.pause();
     customBgmAudio.src = '';
     bgmYtIframe.src = '';
     document.getElementById('bgm-mini-bar').classList.add('hidden');
+    const listenerStatus = document.getElementById('bgm-listener-status');
+    if (listenerStatus) listenerStatus.textContent = '현재 배경 음악이 멈춰 있습니다.';
+    if (notifyBroadcast && isUserLeaderOrAdmin()) {
+      broadcastEvent('bgm_sync', { action: 'stop' });
+    }
   }
 
-  document.getElementById('btn-start-yt-bgm').addEventListener('click', () => {
-    const raw = document.getElementById('bgm-yt-input').value.trim();
-    const m = raw.match(/(?:v=|youtu\.be\/|embed\/|live\/|shorts\/)([a-zA-Z0-9_-]{11})/);
-    const vid = m ? m[1] : raw;
-    if (!vid) return;
-    stopAllBgm();
-    bgmType = 'youtube';
-    bgmYtIframe.src = `https://www.youtube.com/embed/${vid}?autoplay=1&loop=1&playlist=${vid}&playsinline=1&rel=0`;
-    document.getElementById('bgm-mini-label').textContent = '🎵 유튜브 기도음악 재생 중';
-    document.getElementById('bgm-yt-wrap').classList.remove('hidden');
-    document.getElementById('bgm-mini-bar').classList.remove('hidden');
-    closeModal('bgm-modal');
-    toast('🎵 유튜브 기도음악이 연결되었습니다!');
-  });
-
-  document.getElementById('bgm-file-input').addEventListener('change', async (e) => {
-    const f = e.target.files && e.target.files[0];
-    if (!f) return;
-    stopAllBgm();
-    if (bgmBlobUrl) URL.revokeObjectURL(bgmBlobUrl);
-    bgmBlobUrl = URL.createObjectURL(f);
-    bgmType = 'audio';
-    customBgmAudio.src = bgmBlobUrl;
-    customBgmAudio.volume = 0.65;
-    document.getElementById('bgm-mini-label').textContent = `🎵 ${f.name}`;
-    document.getElementById('bgm-yt-wrap').classList.add('hidden');
-    document.getElementById('bgm-mini-bar').classList.remove('hidden');
-    closeModal('bgm-modal');
-    customBgmAudio.play().catch(() => {});
-  });
-
-  document.getElementById('btn-start-synth-bgm').addEventListener('click', () => {
-    stopAllBgm();
+  function playGraceSynthChords() {
+    stopAllBgm(false);
     bgmType = 'synth';
     const chords = [
       [261.63, 329.63, 392.00, 523.25],
@@ -3224,11 +3280,61 @@
     document.getElementById('bgm-mini-label').textContent = '🎹 기본 은혜 패드 기도반주';
     document.getElementById('bgm-yt-wrap').classList.add('hidden');
     document.getElementById('bgm-mini-bar').classList.remove('hidden');
+    const listenerStatus = document.getElementById('bgm-listener-status');
+    if (listenerStatus) listenerStatus.textContent = '▶️ 기본 은혜 패드 기도반주가 실시간 재생 중입니다.';
+  }
+
+  document.getElementById('btn-start-yt-bgm').addEventListener('click', () => {
+    if (!isUserLeaderOrAdmin()) {
+      toast('🔒 배경 기도음악 설정 및 송출은 관리자/인도자만 가능합니다');
+      return;
+    }
+    const raw = document.getElementById('bgm-yt-input').value.trim();
+    const m = raw.match(/(?:v=|youtu\.be\/|embed\/|live\/|shorts\/)([a-zA-Z0-9_-]{11})/);
+    const vid = m ? m[1] : raw;
+    if (!vid) return;
+    stopAllBgm(false);
+    bgmType = 'youtube';
+    bgmYtIframe.src = `https://www.youtube.com/embed/${vid}?autoplay=1&loop=1&playlist=${vid}&playsinline=1&rel=0`;
+    document.getElementById('bgm-mini-label').textContent = '🎵 유튜브 기도음악 재생 중';
+    document.getElementById('bgm-yt-wrap').classList.remove('hidden');
+    document.getElementById('bgm-mini-bar').classList.remove('hidden');
+    // 모든 접속 성도에게 실시간 동기화 송출
+    broadcastEvent('bgm_sync', {
+      action: 'play_youtube',
+      youtubeId: vid,
+      senderName: myName
+    });
+    closeModal('bgm-modal');
+    toast('🎵 모든 접속 성도들에게 유튜브 기도음악이 동시 재생됩니다!');
+  });
+
+  document.getElementById('bgm-file-input').addEventListener('change', async (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    stopAllBgm(false);
+    if (bgmBlobUrl) URL.revokeObjectURL(bgmBlobUrl);
+    bgmBlobUrl = URL.createObjectURL(f);
+    bgmType = 'audio';
+    customBgmAudio.src = bgmBlobUrl;
+    customBgmAudio.volume = 0.65;
+    document.getElementById('bgm-mini-label').textContent = `🎵 ${f.name}`;
+    document.getElementById('bgm-yt-wrap').classList.add('hidden');
+    document.getElementById('bgm-mini-bar').classList.remove('hidden');
+    closeModal('bgm-modal');
+    customBgmAudio.play().catch(() => {});
+  });
+
+  document.getElementById('btn-start-synth-bgm').addEventListener('click', () => {
+    playGraceSynthChords();
+    if (isUserLeaderOrAdmin()) {
+      broadcastEvent('bgm_sync', { action: 'play_synth', senderName: myName });
+    }
     closeModal('bgm-modal');
   });
 
-  document.getElementById('btn-stop-bgm').addEventListener('click', stopAllBgm);
-  document.getElementById('btn-stop-bgm-mini').addEventListener('click', stopAllBgm);
+  document.getElementById('btn-stop-bgm').addEventListener('click', () => stopAllBgm(true));
+  document.getElementById('btn-stop-bgm-mini').addEventListener('click', () => stopAllBgm(true));
 
   document.getElementById('btn-mic-toggle').addEventListener('click', async () => {
     const lbl = document.getElementById('mic-btn-label');
@@ -3392,10 +3498,34 @@
     }
     if (id === 'candle-modal') renderCandlesList();
     if (id === 'board-modal') {
+      const isLeader = isUserLeaderOrAdmin();
+      const leaderBadge = document.getElementById('board-leader-badge');
+      if (leaderBadge) leaderBadge.classList.toggle('hidden', !isLeader);
+      const permNotice = document.getElementById('board-permission-notice');
+      if (permNotice) permNotice.classList.toggle('hidden', isLeader);
+
+      // 일반 성도의 경우 등록/공유 버튼을 비활성화하고 시각적으로 보호
+      const applyBtns = ['btn-wb-apply', 'btn-apply-embed', 'btn-apply-slide-text', 'btn-apply-yt-board', 'btn-start-screenshare'];
+      applyBtns.forEach((bId) => {
+        const b = document.getElementById(bId);
+        if (b) {
+          b.disabled = !isLeader;
+          b.classList.toggle('opacity-50', !isLeader);
+          b.classList.toggle('cursor-not-allowed', !isLeader);
+        }
+      });
+
       document.getElementById('slide-badge-input').value = boardState.badge || '';
       document.getElementById('slide-body-input').value = boardState.body || '';
       updatePptPageUi();
       renderBoardSurface();
+    }
+    if (id === 'bgm-modal') {
+      const isLeader = isUserLeaderOrAdmin();
+      const adminCtrls = document.getElementById('bgm-admin-controls');
+      if (adminCtrls) adminCtrls.classList.toggle('hidden', !isLeader);
+      const listenerNotice = document.getElementById('bgm-listener-notice');
+      if (listenerNotice) listenerNotice.classList.toggle('hidden', isLeader);
     }
     if (id === 'share-modal') {
       const url = window.location.href.startsWith('http') ? window.location.href : 'https://somy-qt.vercel.app/chapel';

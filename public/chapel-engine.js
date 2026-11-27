@@ -597,17 +597,41 @@
 
     if (cfg.accessory === 'necklace') {
       const nGroup = new THREE.Group();
-      // 목걸이는 목 뼈(neckAnchor) 기준 옷/자켓 전면 바깥쪽으로 정면 배치
-      nGroup.position.set(0, -0.015, -0.065);
-      const silverMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.90, roughness: 0.14 });
-      const chain = new THREE.Mesh(new THREE.TorusGeometry(0.062, 0.0024, 8, 24, Math.PI), silverMat);
-      chain.rotation.x = -Math.PI * 0.22;
-      chain.position.set(0, -0.035, 0.025);
-      const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.007, 0.032, 0.004), silverMat);
-      crossV.position.set(0, -0.088, 0.058);
-      const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.007, 0.004), silverMat);
-      crossH.position.set(0, -0.082, 0.058);
-      nGroup.add(chain, crossV, crossH);
+      // 목걸이는 목 뼈(neckAnchor) 기준 옷/가슴 앞쪽(+Z 방향)으로 자연스럽게 떨어지도록 배치
+      nGroup.position.set(0, -0.025, 0.055);
+      const silverMat = new THREE.MeshStandardMaterial({
+        color: 0xf8fafc,
+        metalness: 0.92,
+        roughness: 0.12
+      });
+
+      // 목을 자연스럽게 감싸며 쇄골 아래로 완만하게 늘어지는 타원형 체인 (XZ 수평면 기준 완만한 U자형)
+      const chainCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-0.046,  0.018, -0.038),
+        new THREE.Vector3(-0.036,  0.004, -0.012),
+        new THREE.Vector3(-0.020, -0.015,  0.014),
+        new THREE.Vector3( 0.000, -0.028,  0.024), // 펜던트 연결 최하단 지점
+        new THREE.Vector3( 0.020, -0.015,  0.014),
+        new THREE.Vector3( 0.036,  0.004, -0.012),
+        new THREE.Vector3( 0.046,  0.018, -0.038)
+      ]);
+      const chainGeo = new THREE.TubeGeometry(chainCurve, 28, 0.0022, 8, false);
+      const chainMesh = new THREE.Mesh(chainGeo, silverMat);
+      nGroup.add(chainMesh);
+
+      // 체인과 십자가를 잇는 정교한 고리 (Bail)
+      const ringGeo = new THREE.TorusGeometry(0.0042, 0.0011, 8, 16);
+      const ringMesh = new THREE.Mesh(ringGeo, silverMat);
+      ringMesh.position.set(0, -0.030, 0.025);
+      nGroup.add(ringMesh);
+
+      // 입체 실버 십자가 펜던트 (가슴 전면에 단정하고 선명하게 드리워짐)
+      const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.0075, 0.034, 0.0045), silverMat);
+      crossV.position.set(0, -0.050, 0.025);
+      const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.023, 0.0075, 0.0045), silverMat);
+      crossH.position.set(0, -0.044, 0.025);
+      nGroup.add(crossV, crossH);
+
       rec.neckAnchor.add(nGroup);
     }
   }
@@ -861,14 +885,25 @@
 
       this.scene = new THREE.Scene();
       this.camera = new THREE.PerspectiveCamera(56, 16 / 9, 0.2, 480);
+
+      // 모바일 기기(iOS/안드로이드) 여부 감지
+      const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+      this.isMobile = isMobileDevice;
+
       this.renderer = new THREE.WebGLRenderer({
         canvas: this.canvas,
-        antialias: true,
-        powerPreference: 'high-performance'
+        antialias: !isMobileDevice, // 모바일 GPU 메모리 절약 (크래시/컨텍스트 로스트 방지)
+        powerPreference: isMobileDevice ? 'default' : 'high-performance'
       });
-      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+      // 모바일에서는 DPR을 1.25로 제한하여 GPU VRAM 폭증 및 Safari 튕김 원천 방지
+      const maxDpr = isMobileDevice ? 1.25 : 2.0;
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
+
+      // 모바일에서는 소프트 섀도우 연산 부하를 일반 ShadowMap으로 경량화
       this.renderer.shadowMap.enabled = true;
-      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      this.renderer.shadowMap.type = isMobileDevice ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
+
       this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
       this.renderer.toneMappingExposure = 1.0;
       if ('outputColorSpace' in this.renderer && THREE.SRGBColorSpace) {
@@ -876,6 +911,17 @@
       } else if (THREE.sRGBEncoding) {
         this.renderer.outputEncoding = THREE.sRGBEncoding;
       }
+
+      // WebGL Context Lost 안전 복구 핸들러 (모바일 백그라운드 전환/메모리 부족 시 안전 복원)
+      this.canvas.addEventListener('webglcontextlost', (e) => {
+        e.preventDefault();
+        console.warn('[WebGL Warning] WebGL Context Lost detected on mobile device. Preventing app termination...');
+      }, false);
+      this.canvas.addEventListener('webglcontextrestored', () => {
+        console.info('[WebGL Info] WebGL Context Restored! Rebuilding 3D scene...');
+        this.resize();
+        this.loadZone(this.currentZone);
+      }, false);
 
       this.pbr = new window.ArchitecturalPBR(this.renderer);
       this.scene.environment = this.pbr.envMap;
@@ -1027,6 +1073,9 @@
       this.camera.aspect = w / h;
       this.camera.fov = w < h ? 68 : 56;
       this.camera.updateProjectionMatrix();
+
+      const maxDpr = this.isMobile ? 1.25 : 2.0;
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
       this.renderer.setSize(w, h, false);
     }
 
@@ -1258,8 +1307,11 @@
     removeAvatar(id) {
       const av = this.avatars.get(id);
       if (!av) return;
+      if (av.vrmRecord && av.vrmRecord.wrapper) {
+        av.bodyPivot.remove(av.vrmRecord.wrapper);
+      }
       this.avatarGroup.remove(av.root);
-      av.labelEl.remove();
+      if (av.labelEl) av.labelEl.remove();
       this.avatars.delete(id);
     }
 

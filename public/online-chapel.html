@@ -521,8 +521,17 @@
         class="bg-slate-800 text-white rounded-2xl max-w-2xl w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3 max-h-[92dvh] overflow-y-auto">
         <div class="flex items-center justify-between">
           <span class="text-sm font-extrabold text-sky-300">👨‍🏫 공간 스마트 칠판 · 화이트보드 · PPT · 화면공유</span>
-          <button data-close="board-modal"
-            class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
+          <div class="flex items-center gap-2">
+            <span id="board-leader-badge" class="hidden px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-400/30">👑 진행자 권한</span>
+            <button data-close="board-modal"
+              class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
+          </div>
+        </div>
+
+        <!-- 성도(일반 참여자) 안내 배너 -->
+        <div id="board-permission-notice" class="hidden p-2.5 rounded-xl bg-amber-500/15 border border-amber-400/40 text-amber-200 text-xs space-y-1">
+          <div class="font-extrabold flex items-center gap-1">🔒 칠판/화면공유는 관리자 및 모임 리더만 게시할 수 있습니다</div>
+          <div class="text-[11px] text-amber-200/80">현재 진행 중인 강의 및 화면공유는 정면 대형 칠판과 화면 뷰어를 통해 모든 성도에게 실시간 중계됩니다.</div>
         </div>
 
         <div class="flex flex-wrap gap-1.5">
@@ -1213,31 +1222,47 @@
       <div
         class="bg-slate-800 text-white rounded-2xl max-w-md w-full p-4 sm:p-5 border border-slate-600 shadow-2xl space-y-3">
         <div class="flex items-center justify-between">
-          <span class="text-sm font-extrabold text-indigo-300">🎵 배경 기도음악 설정</span>
+          <span class="text-sm font-extrabold text-indigo-300">🎵 배경 기도음악 · 찬양</span>
           <button data-close="bgm-modal" class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
         </div>
-        <div class="p-3 rounded-xl bg-slate-900 space-y-2">
-          <div class="text-xs font-bold text-rose-300">1. 🔗 유튜브 기도음악 / 찬양 연주 링크</div>
-          <div class="flex gap-2">
-            <input id="bgm-yt-input" type="text" value="https://www.youtube.com/watch?v=jfKfPfyJRdk"
-              class="flex-1 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
-            <button id="btn-start-yt-bgm"
-              class="px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-extrabold cursor-pointer">재생</button>
+
+        <!-- 성도 안내용 배너 (관리자가 올린 음악 청취 전용) -->
+        <div id="bgm-listener-notice" class="hidden p-3 rounded-xl bg-indigo-950/80 border border-indigo-400/40 text-indigo-100 text-xs space-y-2">
+          <div class="font-extrabold text-amber-300 flex items-center gap-1">🎧 공간 공용 기도음악 실시간 청취 중</div>
+          <div class="text-[11px] text-indigo-200">관리자/인도자가 방 전체에 틀어놓은 유튜브 기도음악 및 은혜 패드 반주가 모든 성도에게 동일하게 동기화되어 재생됩니다.</div>
+          <div id="bgm-listener-status" class="p-2 rounded-lg bg-black/40 text-[11px] text-emerald-300 font-bold">현재 재생 중인 음악을 수신 대기하고 있습니다.</div>
+        </div>
+
+        <!-- 관리자 및 인도자 전용 유튜브 음악 등록/송출 컨트롤 -->
+        <div id="bgm-admin-controls" class="space-y-2.5">
+          <div class="p-3 rounded-xl bg-slate-900 space-y-2 border border-slate-700">
+            <div class="text-xs font-bold text-rose-300 flex items-center justify-between">
+              <span>1. 🔗 유튜브 기도음악 / 찬양 연주 링크</span>
+              <span class="px-1.5 py-0.5 rounded text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold">방 전체 동기화</span>
+            </div>
+            <p class="text-[10px] text-slate-400 m-0">관리자가 유튜브를 재생하면 모든 접속 성도에게 동일한 음악이 실시간으로 동시 재생됩니다.</p>
+            <div class="flex gap-2">
+              <input id="bgm-yt-input" type="text" value="https://www.youtube.com/watch?v=jfKfPfyJRdk"
+                class="flex-1 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-600 text-xs text-white outline-none" />
+              <button id="btn-start-yt-bgm"
+                class="px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-extrabold cursor-pointer">방 전체 재생</button>
+            </div>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-900 space-y-2 border border-slate-700">
+            <div class="text-xs font-bold text-emerald-300">2. 📂 내 폰/PC 기도음악 파일(MP3·M4A)</div>
+            <label
+              class="block text-center py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-extrabold cursor-pointer">
+              음악 파일 불러오기
+              <input id="bgm-file-input" type="file" accept="audio/*" class="hidden" />
+            </label>
           </div>
         </div>
-        <div class="p-3 rounded-xl bg-slate-900 space-y-2">
-          <div class="text-xs font-bold text-emerald-300">2. 📂 내 폰/PC 기도음악 파일(MP3·M4A)</div>
-          <label
-            class="block text-center py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-extrabold cursor-pointer">
-            음악 파일 불러오기
-            <input id="bgm-file-input" type="file" accept="audio/*" class="hidden" />
-          </label>
-        </div>
+
         <div class="flex gap-2">
           <button id="btn-start-synth-bgm"
             class="flex-1 py-2 rounded-xl bg-indigo-600 text-xs font-extrabold cursor-pointer">🎹 기본 은혜 패드 반주</button>
           <button id="btn-stop-bgm" class="px-3.5 py-2 rounded-xl bg-slate-700 text-xs font-bold cursor-pointer">⏹️
-            끄기</button>
+            음악 끄기</button>
         </div>
       </div>
     </div>
