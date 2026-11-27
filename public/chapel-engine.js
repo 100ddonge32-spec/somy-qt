@@ -9,15 +9,28 @@
   // =========================================================================
   // 🎨 정통 Pixiv VRoid (.vrm) 3D 순정만화 캐릭터 로더 · MToon 염색 · 휴머노이드 모션 엔진
   // =========================================================================
-  const VRM_BASE_CDN = 'https://raw.githubusercontent.com/madjin/vrm-samples/master';
+  const VRM_RELATIVE_PATHS = {
+    fumiriya: 'vroid/beta/Sakurada_Fumiriya.vrm',
+    sample_c: 'vroid/stable/AvatarSample_C.vrm',
+    sample_b: 'vroid/stable/AvatarSample_B.vrm',
+    sample_a: 'vroid/stable/AvatarSample_A.vrm',
+    shino:    'vroid/beta/Sendagaya_Shino.vrm',
+    vita:     'vroid/beta/Vita.vrm'
+  };
+
+  const VRM_CDN_MIRRORS = [
+    'https://cdn.jsdelivr.net/gh/madjin/vrm-samples@master',
+    'https://raw.githubusercontent.com/madjin/vrm-samples/master',
+    'https://fastly.jsdelivr.net/gh/madjin/vrm-samples@master'
+  ];
 
   const VRM_MODEL_URLS = {
-    fumiriya: `${VRM_BASE_CDN}/vroid/beta/Sakurada_Fumiriya.vrm`,
-    sample_c: `${VRM_BASE_CDN}/vroid/stable/AvatarSample_C.vrm`,
-    sample_b: `${VRM_BASE_CDN}/vroid/stable/AvatarSample_B.vrm`,
-    sample_a: `${VRM_BASE_CDN}/vroid/stable/AvatarSample_A.vrm`,
-    shino:    `${VRM_BASE_CDN}/vroid/beta/Sendagaya_Shino.vrm`,
-    vita:     `${VRM_BASE_CDN}/vroid/beta/Vita.vrm`
+    fumiriya: `${VRM_CDN_MIRRORS[0]}/${VRM_RELATIVE_PATHS.fumiriya}`,
+    sample_c: `${VRM_CDN_MIRRORS[0]}/${VRM_RELATIVE_PATHS.sample_c}`,
+    sample_b: `${VRM_CDN_MIRRORS[0]}/${VRM_RELATIVE_PATHS.sample_b}`,
+    sample_a: `${VRM_CDN_MIRRORS[0]}/${VRM_RELATIVE_PATHS.sample_a}`,
+    shino:    `${VRM_CDN_MIRRORS[0]}/${VRM_RELATIVE_PATHS.shino}`,
+    vita:     `${VRM_CDN_MIRRORS[0]}/${VRM_RELATIVE_PATHS.vita}`
   };
 
   const AVATAR_PRESETS = [
@@ -214,29 +227,41 @@
   }
 
   // -------------------------------------------------------------------------
-  // VRM 바이너리 네트워크 중복 다운로드 방지 캐시 & 파서
+  // VRM 바이너리 네트워크 중복 다운로드 방지 캐시 & 3단계 멀티 CDN 폴백 페처
   // -------------------------------------------------------------------------
   const vrmArrayBufferCache = new Map();
   let customUserVrmBuffer = null;
+
+  async function fetchWithFallbackMirrors(relPath) {
+    let lastErr = null;
+    for (const cdn of VRM_CDN_MIRRORS) {
+      const url = `${cdn}/${relPath}`;
+      try {
+        const res = await fetch(url, { mode: 'cors' });
+        if (res.ok) {
+          return await res.arrayBuffer();
+        }
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    throw lastErr || new Error(`Failed to load VRM from all mirrors for ${relPath}`);
+  }
 
   function fetchVrmBufferCached(modelKey) {
     if (modelKey === 'custom' && customUserVrmBuffer) {
       return Promise.resolve(customUserVrmBuffer);
     }
-    const url = VRM_MODEL_URLS[modelKey] || VRM_MODEL_URLS.fumiriya;
-    if (!vrmArrayBufferCache.has(url)) {
-      const p = fetch(url, { mode: 'cors' })
-        .then((res) => {
-          if (!res.ok) throw new Error('VRM HTTP ' + res.status);
-          return res.arrayBuffer();
-        })
+    const relPath = VRM_RELATIVE_PATHS[modelKey] || VRM_RELATIVE_PATHS.fumiriya;
+    if (!vrmArrayBufferCache.has(relPath)) {
+      const p = fetchWithFallbackMirrors(relPath)
         .catch((err) => {
-          vrmArrayBufferCache.delete(url);
+          vrmArrayBufferCache.delete(relPath);
           throw err;
         });
-      vrmArrayBufferCache.set(url, p);
+      vrmArrayBufferCache.set(relPath, p);
     }
-    return vrmArrayBufferCache.get(url);
+    return vrmArrayBufferCache.get(relPath);
   }
 
   function parseVrmFromBuffer(arrayBuffer) {
@@ -1152,9 +1177,9 @@
           if (av.vrmRecord && av.vrmRecord.wrapper) {
             av.bodyPivot.remove(av.vrmRecord.wrapper);
           }
-          if (av.loadingHolo) {
-            av.bodyPivot.remove(av.loadingHolo);
-            av.loadingHolo = null;
+          if (av.placeholderGroup) {
+            av.bodyPivot.remove(av.placeholderGroup);
+            av.placeholderGroup = null;
           }
           av.vrmRecord = rec;
           av.loadedVrmModelKey = targetModel === 'custom' ? `custom_${Date.now()}` : targetModel;
@@ -1190,13 +1215,76 @@
         root.add(myRing);
       }
 
-      // VRM 로딩 전 0.8초간 보이는 은은한 빛 기둥 실루엣
-      const loadingHolo = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.18, 0.24, 1.55, 16),
-        new THREE.MeshBasicMaterial({ color: 0xfde68a, transparent: true, opacity: 0.18 })
+      // VRM 로딩 전 또는 네트워크 지연 시 즉시 보이는 정교한 3D 캐릭터 실루엣 메시 (폴백 아바타)
+      const placeholderGroup = new THREE.Group();
+      placeholderGroup.name = 'avatar_placeholder';
+
+      // 1) 발밑 집중 스포트라이트 링
+      const ringG = new THREE.RingGeometry(0.22, 0.32, 24);
+      ringG.rotateX(-Math.PI / 2);
+      const baseDisc = new THREE.Mesh(
+        ringG,
+        new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.65, side: THREE.DoubleSide })
       );
-      loadingHolo.position.y = 0.80;
-      bodyPivot.add(loadingHolo);
+      baseDisc.position.y = 0.02;
+      placeholderGroup.add(baseDisc);
+
+      // 2) 신체 (헤드, 헤어, 상체 코트, 하체 바지 실루엣)
+      const outfitHex = (resolvedCfg.outfitColor && resolvedCfg.outfitColor.startsWith('#'))
+        ? parseInt(resolvedCfg.outfitColor.replace('#', '0x'))
+        : 0x1e293b;
+      const hairHex = HAIR_DYE_HEX[resolvedCfg.hairColor]
+        ? parseInt(HAIR_DYE_HEX[resolvedCfg.hairColor].replace('#', '0x'))
+        : 0x27272a;
+
+      const bodyMat = new THREE.MeshLambertMaterial({ color: outfitHex });
+      const pantsMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
+      const skinMat = new THREE.MeshLambertMaterial({ color: 0xffedd5 });
+      const hairMat = new THREE.MeshLambertMaterial({ color: hairHex });
+
+      // 상체 (토르소)
+      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.20, 0.72, 16), bodyMat);
+      torso.position.y = 1.08;
+      torso.castShadow = true;
+      placeholderGroup.add(torso);
+
+      // 머리
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.19, 16, 16), skinMat);
+      head.position.y = 1.62;
+      head.castShadow = true;
+      placeholderGroup.add(head);
+
+      // 헤어 실루엣
+      const hair = new THREE.Mesh(new THREE.SphereGeometry(0.205, 16, 16), hairMat);
+      hair.position.set(0, 1.66, -0.02);
+      hair.scale.set(1.02, 1.05, 1.08);
+      placeholderGroup.add(hair);
+
+      // 다리 (좌/우)
+      const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.07, 0.74, 12), pantsMat);
+      legL.position.set(-0.11, 0.38, 0);
+      legL.castShadow = true;
+      const legR = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.07, 0.74, 12), pantsMat);
+      legR.position.set(0.11, 0.38, 0);
+      legR.castShadow = true;
+      placeholderGroup.add(legL, legR);
+
+      // 양팔
+      const armL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.055, 0.62, 12), bodyMat);
+      armL.position.set(-0.28, 1.05, 0);
+      const armR = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.055, 0.62, 12), bodyMat);
+      armR.position.set(0.28, 1.05, 0);
+      placeholderGroup.add(armL, armR);
+
+      // 은은한 오라 빛기둥
+      const aura = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.24, 0.30, 1.80, 16),
+        new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.15 })
+      );
+      aura.position.y = 0.90;
+      placeholderGroup.add(aura);
+
+      bodyPivot.add(placeholderGroup);
 
       const presetId = info.presetId || 'webtoon_boy';
       const resolvedCfg = resolveAvatarConfig(presetId, info.avatarConfig);
@@ -1230,7 +1318,7 @@
         vrmRecord: null,
         loadedVrmModelKey: '',
         vrmLoadTicket: 0,
-        loadingHolo,
+        placeholderGroup,
         pose: info.pose || 'stand',
         drink: info.drink || '',
         sipTimer: 0,
@@ -2862,8 +2950,13 @@
             dt,
             elapsed
           );
-        } else if (av.loadingHolo) {
-          av.loadingHolo.material.opacity = 0.14 + Math.sin(elapsed * 5) * 0.06;
+        } else if (av.placeholderGroup) {
+          // VRM 로드 대기 중 폴백 아바타 바운스 & 이동 애니메이션
+          if (moving) {
+            av.placeholderGroup.position.y = Math.abs(Math.sin(elapsed * 10)) * 0.05;
+          } else {
+            av.placeholderGroup.position.y = 0;
+          }
         }
 
         if (av.myRing) {

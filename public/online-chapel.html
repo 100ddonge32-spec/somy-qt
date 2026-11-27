@@ -232,23 +232,23 @@
     <div id="avatarOverlayLayer" class="pointer-events-none absolute inset-0 overflow-hidden z-10"></div>
 
     <!-- 1. 상단 글로벌 HUD 바 (3개 시각적 그룹으로 깔끔하게 정돈 + 통합 게시판 원터치 버튼) -->
-    <!-- 1. 상단 글로벌 HUD 바 (PC/모바일 반응형 2단 깔끔 분리 구조: 겹침 원천 차단) -->
+    <!-- 1. 상단 글로벌 HUD 바 (한눈에 정돈된 콤팩트 스마트 헤더: 겹침 차단 & 직관적 아이콘 바) -->
     <div
       class="absolute top-2 sm:top-3.5 inset-x-2 sm:inset-x-4 flex flex-col gap-1.5 pointer-events-none z-20"
       style="padding-top: env(safe-area-inset-top, 0px);">
-      <!-- 1단 (주요 네비게이션): 홈 · 장소배지 · 아바타 · 통합게시판 (한 줄에 정돈) -->
+      <!-- 1단 (주요 네비게이션): 홈 · 장소배지 · 아바타 · 통합메뉴 -->
       <div class="pointer-events-auto flex items-center justify-between gap-1.5 w-full">
-        <div class="flex items-center gap-1.5 shrink-0">
+        <div class="flex items-center gap-1.5 min-w-0">
           <button id="btn-back-somy"
             class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full bg-white hover:bg-amber-50 text-slate-900 border border-amber-300 text-[11px] sm:text-xs font-extrabold cursor-pointer shadow-lg shrink-0">
-            <span>🏠 소미앱 홈</span>
+            <span>🏠 <span class="hidden xs:inline sm:inline">소미</span>홈</span>
           </button>
 
           <div
-            class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-slate-950/85 backdrop-blur-md border border-amber-400/40 text-[11px] sm:text-xs font-extrabold shadow-lg shrink-0">
-            <span id="zone-title-badge" class="text-amber-300">🌿 앞마당 정원</span>
-            <span class="text-white/30">|</span>
-            <span id="online-count-label" class="text-emerald-300">🟢 1명</span>
+            class="inline-flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-full bg-slate-950/90 backdrop-blur-md border border-amber-400/40 text-[11px] sm:text-xs font-extrabold shadow-lg shrink-0 truncate">
+            <span id="zone-title-badge" class="text-amber-300 truncate">🌿 앞마당 정원</span>
+            <span class="text-white/30 mx-0.5">|</span>
+            <span id="online-count-label" class="text-emerald-300 whitespace-nowrap">🟢 1명</span>
           </div>
         </div>
 
@@ -256,89 +256,93 @@
           <button id="btn-open-profile"
             class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 backdrop-blur-md border border-amber-300/40 text-[11px] sm:text-xs font-bold text-white cursor-pointer shadow shrink-0">
             <span id="my-expr-badge">✨</span>
-            <span id="my-name-badge" class="hidden sm:inline">백동희 성도</span>
-            <span class="px-1.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-extrabold">꾸미기</span>
+            <span id="my-name-badge" class="hidden md:inline">백동희 성도</span>
+            <span class="px-1.5 py-0.5 rounded-full bg-amber-400/25 text-amber-300 text-[10px] font-extrabold">꾸미기</span>
           </button>
 
           <button id="btn-campus-hub"
             class="inline-flex items-center gap-1 px-2.5 sm:px-3.5 py-1.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] sm:text-xs font-extrabold cursor-pointer shadow-lg border border-amber-200 shrink-0">
-            <span>📋 <span class="hidden sm:inline">통합</span> 메뉴</span>
+            <span>📋 메뉴</span>
           </button>
         </div>
       </div>
 
-      <!-- 2단 (가로 스크롤 가능한 퀵 액션 도구바: 모바일/PC 모두 화면 밖으로 넘어가도 겹치지 않고 좌우 스와이프 가능) -->
-      <div class="pointer-events-auto flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full py-0.5">
-        <!-- 현재 방 전용 핵심 버튼 -->
+      <!-- 2단 (한눈에 들어오는 콤팩트 퀵 액션 바: 여백 최소화, 모바일에서도 정갈하게 정렬) -->
+      <div class="pointer-events-auto flex items-center justify-between gap-1 overflow-x-auto no-scrollbar w-full py-0.5">
+        <!-- 좌측: 현재 방 전용 바로가기 버튼 (상황에 따라 노출) -->
         <div class="inline-flex items-center gap-1 shrink-0">
           <button id="btn-sarang-Menu"
-            class="hidden shrink-0 px-2.5 sm:px-3 py-1 rounded-full bg-orange-400 hover:bg-orange-300 text-slate-950 text-[11px] sm:text-xs font-extrabold cursor-pointer shadow">
-            🏠 사랑방 목록
+            class="hidden shrink-0 px-2 sm:px-2.5 py-1 rounded-full bg-orange-400 hover:bg-orange-300 text-slate-950 text-[10px] sm:text-[11px] font-extrabold cursor-pointer shadow">
+            🏠 사랑방목록
           </button>
           <button id="btn-bible-reader"
-            class="hidden shrink-0 px-2.5 sm:px-3 py-1 rounded-full bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-[11px] sm:text-xs font-extrabold cursor-pointer shadow">
+            class="hidden shrink-0 px-2 sm:px-2.5 py-1 rounded-full bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-[10px] sm:text-[11px] font-extrabold cursor-pointer shadow">
             📖 성경통독
           </button>
           <button id="btn-yes-tongdok-quick"
-            class="hidden shrink-0 px-2.5 sm:px-3 py-1 rounded-full bg-amber-300 hover:bg-amber-200 text-slate-950 text-[11px] sm:text-xs font-extrabold cursor-pointer shadow">
+            class="hidden shrink-0 px-2 sm:px-2.5 py-1 rounded-full bg-amber-300 hover:bg-amber-200 text-slate-950 text-[10px] sm:text-[11px] font-extrabold cursor-pointer shadow">
             🙌 예스통독
           </button>
           <button id="btn-qt-academy"
-            class="hidden shrink-0 px-2.5 sm:px-3 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] sm:text-xs font-extrabold cursor-pointer shadow">
+            class="hidden shrink-0 px-2 sm:px-2.5 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] sm:text-[11px] font-extrabold cursor-pointer shadow">
             🌅 큐티나눔
           </button>
           <button id="btn-rooftop-season"
-            class="hidden shrink-0 px-2.5 sm:px-3 py-1 rounded-full bg-teal-400 hover:bg-teal-300 text-slate-950 text-[11px] sm:text-xs font-extrabold cursor-pointer shadow">
+            class="hidden shrink-0 px-2 sm:px-2.5 py-1 rounded-full bg-teal-400 hover:bg-teal-300 text-slate-950 text-[10px] sm:text-[11px] font-extrabold cursor-pointer shadow">
             🏞️ 사계절배경
           </button>
           <button id="btn-candle-board"
-            class="hidden shrink-0 px-2.5 sm:px-3 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] sm:text-xs font-extrabold cursor-pointer shadow">
+            class="hidden shrink-0 px-2 sm:px-2.5 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] sm:text-[11px] font-extrabold cursor-pointer shadow">
             🕯️ 중보등불
           </button>
           <button id="btn-sip-drink"
-            class="hidden shrink-0 px-2.5 sm:px-3 py-1 rounded-full bg-amber-700 hover:bg-amber-600 text-white text-[11px] sm:text-xs font-extrabold cursor-pointer border border-amber-300/50">
+            class="hidden shrink-0 px-2 sm:px-2.5 py-1 rounded-full bg-amber-700 hover:bg-amber-600 text-white text-[10px] sm:text-[11px] font-extrabold cursor-pointer border border-amber-300/50">
             ☕ 커피
           </button>
         </div>
 
-        <!-- 실시간 얼굴·음성 교제 그룹 -->
+        <!-- 우측: 핵심 커뮤니케이션 & 환경 도구 통합 캡슐 (한눈에 정돈된 일렬 배치) -->
         <div
-          class="inline-flex items-center gap-1 p-0.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-emerald-400/35 shrink-0">
+          class="inline-flex items-center gap-0.5 sm:gap-1 p-0.5 rounded-full bg-slate-950/85 backdrop-blur-md border border-white/20 shadow-lg shrink-0 ml-auto">
+          <!-- 얼굴/캠 토글 -->
           <button id="btn-face-cam-toggle"
-            class="shrink-0 px-2.5 py-1 rounded-full bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-[11px] sm:text-xs font-extrabold cursor-pointer flex items-center gap-1">
-            <span id="face-cam-btn-label">📹 얼굴켜기</span>
+            class="shrink-0 px-2 sm:px-2.5 py-1 rounded-full bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-[10px] sm:text-[11px] font-extrabold cursor-pointer flex items-center gap-0.5 sm:gap-1">
+            <span id="face-cam-btn-label">📹 얼굴</span>
           </button>
+          <!-- 마이크 토글 -->
           <button id="btn-mic-toggle"
-            class="shrink-0 px-2 py-1 rounded-full hover:bg-white/10 text-emerald-300 text-[11px] sm:text-xs font-extrabold cursor-pointer flex items-center gap-1">
+            class="shrink-0 px-1.5 sm:px-2 py-1 rounded-full hover:bg-white/10 text-emerald-300 text-[10px] sm:text-[11px] font-extrabold cursor-pointer flex items-center gap-1">
             <span id="mic-btn-label">🎙️</span>
-            <span id="mic-meter-wrap" class="hidden inline-flex w-5 h-1.5 bg-black/60 rounded-full overflow-hidden">
+            <span id="mic-meter-wrap" class="hidden inline-flex w-4 sm:w-5 h-1.5 bg-black/60 rounded-full overflow-hidden">
               <span id="mic-meter-bar" class="h-full bg-emerald-400" style="width:0%"></span>
             </span>
           </button>
-        </div>
-
-        <!-- 강의·환경 도구 그룹 -->
-        <div
-          class="inline-flex items-center gap-1 p-0.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/15 shrink-0">
+          <!-- 구분선 -->
+          <span class="w-[1px] h-3 bg-white/20 my-auto"></span>
+          <!-- 칠판 -->
           <button id="btn-board-studio"
-            class="hidden shrink-0 px-2.5 py-1 rounded-full bg-sky-400 hover:bg-sky-300 text-slate-950 text-[11px] font-extrabold cursor-pointer">
+            class="hidden shrink-0 px-2 py-1 rounded-full bg-sky-400 hover:bg-sky-300 text-slate-950 text-[10px] sm:text-[11px] font-extrabold cursor-pointer">
             👨‍🏫 칠판
           </button>
+          <!-- 조명 -->
           <button id="btn-light-mood"
-            class="shrink-0 px-2.5 py-1 rounded-full bg-amber-100 hover:bg-white text-slate-900 text-[11px] font-extrabold cursor-pointer">
+            class="shrink-0 px-2 py-1 rounded-full bg-amber-100 hover:bg-white text-slate-900 text-[10px] sm:text-[11px] font-extrabold cursor-pointer">
             💡 조명
           </button>
+          <!-- 찬양 BGM -->
           <button id="btn-open-bgm"
-            class="shrink-0 px-2.5 py-1 rounded-full bg-indigo-500/90 hover:bg-indigo-400 text-white text-[11px] font-extrabold cursor-pointer">
+            class="shrink-0 px-2 py-1 rounded-full bg-indigo-500/90 hover:bg-indigo-400 text-white text-[10px] sm:text-[11px] font-extrabold cursor-pointer">
             🎵 찬양
           </button>
+          <!-- 아멘 리액션 -->
           <button id="btn-amen-shout"
-            class="shrink-0 px-2.5 py-1 rounded-full bg-rose-500 hover:bg-rose-400 text-white text-[11px] font-extrabold cursor-pointer">
+            class="shrink-0 px-2 py-1 rounded-full bg-rose-500 hover:bg-rose-400 text-white text-[10px] sm:text-[11px] font-extrabold cursor-pointer">
             🙌 아멘
           </button>
+          <!-- QR 공유 -->
           <button id="btn-open-share"
-            class="shrink-0 px-2 py-1 rounded-full hover:bg-white/15 text-white text-[11px] font-bold cursor-pointer">
-            📱 QR
+            class="shrink-0 px-1.5 py-1 rounded-full hover:bg-white/15 text-white text-[10px] sm:text-[11px] font-bold cursor-pointer">
+            📱
           </button>
         </div>
       </div>
@@ -382,7 +386,7 @@
 
     <!-- 👥 양방향 실시간 얼굴 화상 교제 타일 패널 (상단 메뉴바와 겹치지 않도록 top-24 / sm:top-28로 분리 배치) -->
     <div id="face-cam-gallery"
-      class="hidden absolute top-20 sm:top-24 left-2.5 sm:left-4 z-20 max-w-[94vw] sm:max-w-[540px] bg-slate-950/90 backdrop-blur-md border border-emerald-400/45 rounded-2xl p-2 shadow-2xl space-y-1.5">
+      class="hidden absolute top-24 sm:top-28 left-2.5 sm:left-4 z-20 max-w-[94vw] sm:max-w-[540px] bg-slate-950/90 backdrop-blur-md border border-emerald-400/45 rounded-2xl p-2 shadow-2xl space-y-1.5">
       <div class="flex items-center justify-between gap-2 px-1">
         <span id="face-cam-count-title" class="text-[11px] font-extrabold text-emerald-300">📹 실시간 얼굴 교제 (1명)</span>
         <div class="flex items-center gap-1">
