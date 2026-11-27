@@ -297,9 +297,13 @@
           const baseHipsY = hipsNode ? hipsNode.position.y : 0.85;
           const lUA = vrm.humanoid && vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
           const rUA = vrm.humanoid && vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
-          // 팔을 차렷 자세(몸통 옆으로 자연스럽게 내림)로 초기화
-          if (lUA) lUA.rotation.z = 1.25;
-          if (rUA) rUA.rotation.z = -1.25;
+          const lLA = vrm.humanoid && vrm.humanoid.getNormalizedBoneNode('leftLowerArm');
+          const rLA = vrm.humanoid && vrm.humanoid.getNormalizedBoneNode('rightLowerArm');
+          // 팔을 차렷 자세(몸통에 자연스럽게 밀착)로 초기화
+          if (lUA) lUA.rotation.set(0.04, 0.05, 1.45);
+          if (rUA) rUA.rotation.set(0.04, -0.05, -1.45);
+          if (lLA) lLA.rotation.set(0.12, 0, 0);
+          if (rLA) rLA.rotation.set(0.12, 0, 0);
           vrm.update(0.016);
           vrm.scene.updateMatrixWorld(true);
 
@@ -309,7 +313,7 @@
           const rEyeRaw = vrm.humanoid && vrm.humanoid.getRawBoneNode('rightEye');
           const neckRaw = vrm.humanoid && vrm.humanoid.getRawBoneNode('neck');
 
-          let eyeBridgeLocal = new THREE.Vector3(0, 0.058, -0.048);
+          let eyeBridgeLocal = new THREE.Vector3(0, 0.058, -0.108);
           let eyeHalfSpan = 0.032;
 
           if (headRaw) {
@@ -324,8 +328,8 @@
               eyeHalfSpan = Math.max(0.026, Math.min(0.042, lw.distanceTo(rw) * 0.5));
               const midWorld = lw.clone().add(rw).multiplyScalar(0.5);
               const localEye = headRaw.worldToLocal(midWorld.clone());
-              // VRM headRaw 좌표계에서 콧대 정면(-Z)으로 18mm 배치
-              eyeBridgeLocal = new THREE.Vector3(0, localEye.y - 0.002, localEye.z - 0.018);
+              // VRoid 3D 앞머리 레이어 바깥쪽 콧대(-Z)로 안경 중심 배치 (앞머리에 파묻힘 원천 차단)
+              eyeBridgeLocal = new THREE.Vector3(0, localEye.y - 0.002, localEye.z - 0.076);
             }
           }
 
@@ -641,8 +645,8 @@
         if (lLA) lLA.rotation.set(0, 1.25, 0);
         if (rLA) rLA.rotation.set(0, -1.25, 0);
       } else if (moving) {
-        // 경쾌하고 자연스러운 순정만화 워킹 사이클
-        const sw = Math.sin(walkPhase) * 0.56;
+        // 경쾌하고 자연스러운 순정만화 워킹 사이클 (양팔이 앞뒤로 자연스럽게 스윙!)
+        const sw = Math.sin(walkPhase) * 0.52;
         if (hips) hips.position.y = rec.baseHipsY + Math.abs(Math.sin(walkPhase * 2)) * 0.032;
         if (spine) spine.rotation.set(-0.04, Math.sin(walkPhase) * 0.06, 0);
         if (neck) neck.rotation.set(0, 0, 0);
@@ -651,12 +655,13 @@
         if (rUL) rUL.rotation.set(-sw, 0, 0);
         if (lLL) lLL.rotation.set(-Math.max(0, -sw) * 0.85 - 0.08, 0, 0);
         if (rLL) rLL.rotation.set(-Math.max(0, sw) * 0.85 - 0.08, 0, 0);
-        if (lUA) lUA.rotation.set(-sw * 0.55, 0, 1.18);
-        if (rUA) rUA.rotation.set(sipTimer > 0 ? 1.05 : sw * 0.55, 0, -1.18);
-        if (lLA) lLA.rotation.set(0, 0.22, 0);
-        if (rLA) rLA.rotation.set(0, sipTimer > 0 ? 1.15 : -0.22, 0);
+        // 걸을 때 양팔이 몸통 옆에 붙은 상태로 앞뒤로 자연스럽게 스윙 (sw에 따른 전후 X축 회전 + 팔꿈치 살짝 굽힘)
+        if (lUA) lUA.rotation.set(-sw * 0.72, 0.05, 1.44);
+        if (rUA) rUA.rotation.set(sipTimer > 0 ? 1.05 : sw * 0.72, -0.05, -1.44);
+        if (lLA) lLA.rotation.set(Math.max(0, -sw) * 0.32 + 0.12, 0, 0);
+        if (rLA) rLA.rotation.set(sipTimer > 0 ? 1.15 : Math.max(0, sw) * 0.32 + 0.12, 0, 0);
       } else {
-        // 순정만화 편안한 스탠딩 (양팔 자연스럽게 내림 & 숨쉬기)
+        // 순정만화 편안한 스탠딩 (양팔이 몸통 옆에 자연스럽게 촥 붙은 완벽한 핏)
         if (hips) hips.position.y = rec.baseHipsY + breathe * 0.35;
         if (spine) spine.rotation.set(breathe * 0.5, Math.sin(elapsed * 0.9 + blinkOffset) * 0.025, 0);
         if (neck) neck.rotation.set(0, Math.sin(elapsed * 0.7 + blinkOffset) * 0.035, Math.sin(elapsed * 1.1 + blinkOffset) * 0.028);
@@ -665,10 +670,10 @@
         if (rUL) rUL.rotation.set(0, -0.02, 0.02);
         if (lLL) lLL.rotation.set(0, 0, 0);
         if (rLL) rLL.rotation.set(0, 0, 0);
-        if (lUA) lUA.rotation.set(0.04, 0, 1.22 + breathe * 0.4);
-        if (rUA) rUA.rotation.set(sipTimer > 0 ? 1.05 : 0.04, 0, -1.22 - breathe * 0.4);
-        if (lLA) lLA.rotation.set(0, 0.16, 0);
-        if (rLA) rLA.rotation.set(0, sipTimer > 0 ? 1.15 : -0.16, 0);
+        if (lUA) lUA.rotation.set(0.04, 0.05, 1.45 + breathe * 0.25);
+        if (rUA) rUA.rotation.set(sipTimer > 0 ? 1.05 : 0.04, -0.05, -1.45 - breathe * 0.25);
+        if (lLA) lLA.rotation.set(0.12, 0, 0);
+        if (rLA) rLA.rotation.set(sipTimer > 0 ? 1.15 : 0.12, 0, 0);
       }
     }
 
