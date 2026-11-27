@@ -171,6 +171,28 @@
     return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
   }
 
+  // 소미 앱 통합 파라미터 (교회 ID · 성도 계정 · 임베드 모드)
+  const chapelParams = new URLSearchParams(window.location.search);
+  const isEmbeddedInSomy = chapelParams.get('embedded') === '1';
+  const currentChurchId = (chapelParams.get('church_id') || 'jesus-in').trim() || 'jesus-in';
+  const currentChurchName = (chapelParams.get('church_name') || '예수인교회').trim() || '예수인교회';
+  let somyUserId = (chapelParams.get('user_id') || '').trim();
+  const somyUserName = (chapelParams.get('user_name') || '').trim();
+  const somyAvatarUrl = (chapelParams.get('avatar_url') || '').trim();
+  window.SOMY_CHURCH_NAME = currentChurchName;
+
+  function postChapelApi(action, payload) {
+    return fetch('/api/chapel-world', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action,
+        churchId: currentChurchId,
+        payload: { ...(payload || {}), churchId: currentChurchId }
+      })
+    }).then((r) => r.json()).catch(() => null);
+  }
+
   // 내 프로필 상태
   const myClientId = 'u_' + Math.random().toString(36).slice(2, 10);
   let myName = '백동희 성도';
@@ -180,6 +202,9 @@
     myName = localStorage.getItem('somy_world_name') || myName;
     myPresetId = localStorage.getItem('somy_world_preset') || myPresetId;
   } catch {}
+  if (somyUserName) {
+    myName = somyUserName.slice(0, 18);
+  }
 
   let showNpcs = true;
   let currentZone = 'garden';
@@ -860,7 +885,8 @@
     renderFaceCamGallery();
     if (!supaClient) return;
 
-    const chanName = `somy_world_v2:${getRoomKey()}`;
+    const churchScope = currentChurchId === 'jesus-in' ? '' : `${currentChurchId}:`;
+    const chanName = `somy_world_v2:${churchScope}${getRoomKey()}`;
     roomChannel = supaClient.channel(chanName, {
       config: { presence: { key: myClientId }, broadcast: { self: false } }
     });
@@ -945,6 +971,13 @@
         if (payload.reader) {
           toast(`🙌 ${payload.reader}님이 '${payload.rangeLabel}' 예스통독을 완료했습니다!`);
         }
+      }
+    });
+
+    roomChannel.on('broadcast', { event: 'qt_share_sync' }, ({ payload }) => {
+      if (payload && Array.isArray(payload.qtShares)) {
+        worldState.qtShares = payload.qtShares;
+        renderQtShares();
       }
     });
 
@@ -1671,14 +1704,7 @@
 
   async function saveRoomBoardToServer() {
     try {
-      await fetch('/api/chapel-world', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'update_room_board',
-          payload: { roomKey: getRoomKey(), board: boardState }
-        })
-      });
+      await postChapelApi('update_room_board', { roomKey: getRoomKey(), board: boardState });
     } catch {}
   }
 
@@ -1730,11 +1756,7 @@
     box.querySelectorAll('.sarang-del-btn').forEach((b) => {
       b.addEventListener('click', async () => {
         const id = b.getAttribute('data-srid');
-        const res = await fetch('/api/chapel-world', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'delete_sarangbang', payload: { id } })
-        }).then((r) => r.json()).catch(() => null);
+        const res = await postChapelApi('delete_sarangbang', { id });
         if (res && res.state) {
           worldState = res.state;
           if (currentSarangId === id) currentSarangId = worldState.sarangbangs[0].id;
@@ -1753,18 +1775,11 @@
       nameEl.focus();
       return;
     }
-    const res = await fetch('/api/chapel-world', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'create_sarangbang',
-        payload: {
-          name,
-          leader: leaderEl.value.trim() || myName,
-          topic: topicEl.value.trim() || '함께 말씀을 나누는 사랑방'
-        }
-      })
-    }).then((r) => r.json()).catch(() => null);
+    const res = await postChapelApi('create_sarangbang', {
+      name,
+      leader: leaderEl.value.trim() || myName,
+      topic: topicEl.value.trim() || '함께 말씀을 나누는 사랑방'
+    });
 
     if (res && res.room) {
       worldState = res.state;
@@ -2666,11 +2681,7 @@
     listEl.querySelectorAll('.bible-log-amen-btn').forEach((b) => {
       b.addEventListener('click', async () => {
         const id = b.getAttribute('data-blid');
-        const res = await fetch('/api/chapel-world', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'amen_bible_log', payload: { id } })
-        }).then((r) => r.json()).catch(() => null);
+        const res = await postChapelApi('amen_bible_log', { id });
         if (res && res.state) {
           worldState = res.state;
           renderBibleBoard();
@@ -2726,14 +2737,13 @@
     let comment = document.getElementById('yes-comment-input').value.trim() || '예스통독!';
     if (!comment.includes('예스통독')) comment = `예스통독! ${comment}`;
 
-    const res = await fetch('/api/chapel-world', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'add_bible_log',
-        payload: { reader: myName, planName, rangeLabel, chaptersCount, comment }
-      })
-    }).then((r) => r.json()).catch(() => null);
+    const res = await postChapelApi('add_bible_log', {
+      reader: myName,
+      planName,
+      rangeLabel,
+      chaptersCount,
+      comment
+    });
 
     if (res && res.state) {
       worldState = res.state;
@@ -2812,11 +2822,7 @@
     const content = document.getElementById('lec-content-input').value.trim();
     if (!title || !content) return;
 
-    const res = await fetch('/api/chapel-world', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'save_qt_lecture', payload: { week, title, content } })
-    }).then((r) => r.json()).catch(() => null);
+    const res = await postChapelApi('save_qt_lecture', { week, title, content });
 
     if (res && res.state) {
       worldState = res.state;
@@ -2964,26 +2970,27 @@
     const box = document.getElementById('qt-shares-list');
     if (!box) return;
     box.innerHTML = (worldState.qtShares || []).map((s) => `
-      <div class="p-3 rounded-xl bg-slate-900 border border-slate-700 space-y-1">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-extrabold text-amber-300">✍️ ${s.author} <span class="text-slate-400 font-normal">· ${s.passage}</span></span>
-          <button data-qsid="${s.id}" class="qt-amen-btn px-2.5 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 text-xs font-extrabold cursor-pointer">🙏 아멘 ${s.amens || 1}</button>
+      <div class="p-3 rounded-xl bg-slate-900 border ${s.fromSomyApp ? 'border-amber-400/40' : 'border-slate-700'} space-y-1">
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0 truncate">
+            <span class="text-xs font-extrabold text-amber-300">✍️ ${s.author}</span>
+            <span class="text-xs text-slate-400 font-normal"> · ${s.passage}</span>
+            ${s.fromSomyApp ? '<span class="ml-1 px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold">소미앱 연동</span>' : ''}
+          </div>
+          <button data-qsid="${s.id}" class="qt-amen-btn shrink-0 px-2.5 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 text-xs font-extrabold cursor-pointer">🙏 아멘 ${s.amens || 1}</button>
         </div>
-        <div class="text-xs text-slate-200 leading-relaxed break-keep">${s.content}</div>
+        <div class="text-xs text-slate-200 leading-relaxed whitespace-pre-line break-keep">${s.content}</div>
       </div>
     `).join('');
 
     box.querySelectorAll('.qt-amen-btn').forEach((b) => {
       b.addEventListener('click', async () => {
         const id = b.getAttribute('data-qsid');
-        const res = await fetch('/api/chapel-world', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'amen_qt_share', payload: { id } })
-        }).then((r) => r.json()).catch(() => null);
+        const res = await postChapelApi('amen_qt_share', { id, userId: somyUserId, clientId: myClientId });
         if (res && res.state) {
           worldState = res.state;
           renderQtShares();
+          broadcastEvent('qt_share_sync', { qtShares: worldState.qtShares });
         }
       });
     });
@@ -2995,21 +3002,32 @@
     const content = contentEl.value.trim();
     if (!content) return;
 
-    const res = await fetch('/api/chapel-world', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'add_qt_share',
-        payload: { author: myName, passage, content }
-      })
-    }).then((r) => r.json()).catch(() => null);
+    const res = await postChapelApi('add_qt_share', {
+      author: myName,
+      passage,
+      content,
+      userId: somyUserId,
+      avatarUrl: somyAvatarUrl
+    });
 
     if (res && res.state) {
       worldState = res.state;
       contentEl.value = '';
       renderQtShares();
+      broadcastEvent('qt_share_sync', { qtShares: worldState.qtShares });
       sendChatMessage(`✏️ [큐티 나눔 · ${passage}] ${content.slice(0, 36)}${content.length > 36 ? '...' : ''}`);
-      toast('🙏 큐티 묵상 나눔이 등록되었습니다!');
+
+      if (res.syncedToSomy && window.parent && window.parent !== window) {
+        try {
+          window.parent.postMessage({ type: 'SOMY_CHAPEL_QT_SHARED', post: res.somyPost || null }, '*');
+        } catch {}
+      }
+
+      toast(
+        res.syncedToSomy
+          ? '✨ 큐티 나눔이 소미 앱 은혜나눔 게시판 & 오늘의 묵상완료에 반영되었습니다!'
+          : '🙏 큐티 묵상 나눔이 등록되었습니다!'
+      );
     }
   });
 
@@ -3051,11 +3069,7 @@
     box.querySelectorAll('.candle-amen-btn').forEach((b) => {
       b.addEventListener('click', async () => {
         const id = Number(b.getAttribute('data-cid'));
-        const res = await fetch('/api/chapel-world', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'amen_candle', payload: { id } })
-        }).then((r) => r.json()).catch(() => null);
+        const res = await postChapelApi('amen_candle', { id });
         if (res && res.state) {
           worldState = res.state;
           renderCandlesList();
@@ -3068,11 +3082,7 @@
     const inp = document.getElementById('candle-text-input');
     const text = inp.value.trim();
     if (!text) return;
-    const res = await fetch('/api/chapel-world', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'add_candle', payload: { name: myName, text } })
-    }).then((r) => r.json()).catch(() => null);
+    const res = await postChapelApi('add_candle', { name: myName, text });
     if (res && res.state) {
       worldState = res.state;
       inp.value = '';
@@ -3528,21 +3538,48 @@
     sendChatMessage('🙌 할렐루야 아멘!');
   });
 
+  // 소미 앱 홈 복귀 버튼 (미디어·마이크·카메라·음성낭독 안전 종료 후 복귀)
+  const backSomyBtn = document.getElementById('btn-back-somy');
+  if (backSomyBtn) {
+    backSomyBtn.addEventListener('click', () => {
+      try { stopBibleTts(); } catch {}
+      try { stopAllBgm(); } catch {}
+      try { if (myFaceCamOn) stopMyFaceCam(); } catch {}
+      try {
+        if (micStream) {
+          micStream.getTracks().forEach((t) => t.stop());
+          micStream = null;
+        }
+      } catch {}
+
+      if (isEmbeddedInSomy && window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'SOMY_CHAPEL_CLOSE' }, '*');
+      } else {
+        window.location.href = '/';
+      }
+    });
+  }
+
   // -------------------------------------------------------------------------
   // 서버 상태 · 소미 큐티 본문 · Supabase Realtime 초기화 후 월드 시작
   // -------------------------------------------------------------------------
   async function boot() {
     document.getElementById('my-name-badge').textContent = myName;
+    const hubTitleEl = document.getElementById('hub-church-title');
+    if (hubTitleEl) {
+      hubTitleEl.textContent = `📋 ${currentChurchName} 온라인 캠퍼스 — 분류별 통합 게시판 & 메뉴`;
+    }
     document.getElementById('qt-date-picker').value = getTodayKstStr();
     renderBoardSurface();
     renderBibleBookPages();
     updateBiblePlanPreview();
     world3d.loadZone('garden');
+    world3d.updateAvatarInfo('me', { name: myName, presetId: myPresetId });
     refreshNpcsForZone();
     world3d.start();
 
     try {
-      const res = await fetch('/api/chapel-world').then((r) => r.json());
+      const res = await fetch(`/api/chapel-world?church_id=${encodeURIComponent(currentChurchId)}`).then((r) => r.json());
       if (res && res.state) {
         worldState = res.state;
         if (worldState.sarangbangs && worldState.sarangbangs.length > 0) {
@@ -3561,6 +3598,16 @@
         supaClient = window.supabase.createClient(res.supabaseUrl, res.supabaseAnonKey, {
           realtime: { params: { eventsPerSecond: 12 } }
         });
+        // 단독 URL(/chapel)로 직접 열었을 때도 동일 브라우저의 소미 앱 로그인 세션을 자동 감지
+        if (!somyUserId && supaClient.auth) {
+          try {
+            const { data: sessionData } = await supaClient.auth.getSession();
+            const sessUser = sessionData && sessionData.session && sessionData.session.user;
+            if (sessUser && sessUser.id) {
+              somyUserId = sessUser.id;
+            }
+          } catch {}
+        }
         joinMultiplayerRoom();
       }
     } catch (e) {

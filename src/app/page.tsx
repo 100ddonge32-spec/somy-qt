@@ -8,10 +8,8 @@ import { getTodayCcm, CcmVideo, CCM_LIST } from "@/lib/ccm";
 import { getDailyPsalm, getRandomPsalm } from '@/lib/psalm-verses';
 import * as XLSX from 'xlsx';
 import FamilyTree from "@/components/FamilyTree";
-import BibleReadingView from "@/components/BibleReadingView";
-import BibleReadingManageView from "@/components/BibleReadingManageView";
 
-type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "statsManage" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "adminGuide" | "brandGuide" | "profile" | "memberSearch" | "book" | "pastorColumn" | "gallery" | "churchSettings" | "memberManage" | "pastoralInsightsManage" | "galleryManage" | "adminManage" | "dataReset" | "masterManage" | "bibleReading" | "bibleReadingManage";
+type View = "home" | "chat" | "qt" | "community" | "thanksgiving" | "counseling" | "qtManage" | "stats" | "statsManage" | "history" | "admin" | "ccm" | "sermon" | "sermonManage" | "guide" | "adminGuide" | "brandGuide" | "profile" | "memberSearch" | "book" | "pastorColumn" | "gallery" | "churchSettings" | "memberManage" | "pastoralInsightsManage" | "galleryManage" | "adminManage" | "dataReset" | "masterManage" | "onlineChapel";
 
 const SOMY_IMG = "/somy.png";
 const CHURCH_LOGO = process.env.NEXT_PUBLIC_CHURCH_LOGO_URL || "https://lfjrfyylsxhvwosdpujv.supabase.co/storage/v1/object/public/church-assets/jesus-in-logo.png";
@@ -2914,27 +2912,78 @@ export default function App() {
         }
     }, [ccmVolume, initPlayer, lastToggleTime]);
 
+    // 🏛️ 3D 온라인예배당(큐티방 나눔 · 홈 복귀) 양방향 메시지 연동
+    useEffect(() => {
+        const onChapelMessage = (event: MessageEvent) => {
+            const msg = event?.data;
+            if (!msg || typeof msg !== "object") return;
+
+            if (msg.type === "SOMY_CHAPEL_CLOSE") {
+                setView("home");
+                handleLoadCommunity(true);
+                if (user?.id) fetchHistory(user.id);
+            } else if (msg.type === "SOMY_CHAPEL_QT_SHARED") {
+                if (msg.post && msg.post.id) {
+                    setCommunityPosts((prev: any) => {
+                        const exists = Array.isArray(prev) && prev.some((p: any) => String(p.id) === String(msg.post.id));
+                        return exists ? prev : [{ ...msg.post, comments: msg.post.comments || [] }, ...(prev || [])];
+                    });
+                } else {
+                    handleLoadCommunity(true);
+                }
+                setIsStatsSaved(true);
+                if (user?.id) fetchHistory(user.id);
+            }
+        };
+        window.addEventListener("message", onChapelMessage);
+        return () => window.removeEventListener("message", onChapelMessage);
+    }, [user?.id, handleLoadCommunity]);
+
     const renderContent = () => {
-        if (view === "bibleReading") {
+        if (view === "onlineChapel") {
+            const effectiveChurchId = churchId || "jesus-in";
+            const effectiveChurchName = churchSettings?.church_name || CHURCH_NAME || "예수인교회";
+            const effectiveUserName =
+                profileName ||
+                user?.user_metadata?.full_name ||
+                user?.user_metadata?.name ||
+                (user?.email ? user.email.split("@")[0] : "") ||
+                "";
+            const effectiveAvatarUrl = profileAvatar || user?.user_metadata?.avatar_url || "";
+            const qs = new URLSearchParams({
+                embedded: "1",
+                v: "8",
+                church_id: effectiveChurchId,
+                church_name: effectiveChurchName,
+                user_id: user?.id || "",
+                user_name: effectiveUserName,
+                avatar_url: effectiveAvatarUrl,
+                is_admin: isAdmin ? "1" : "0",
+            });
+
             return (
-                <BibleReadingView
-                    user={user}
-                    profileName={profileName}
-                    churchId={churchId}
-                    onBack={handleBack}
-                    baseFont={baseFont}
-                    isAdmin={isAdmin}
-                />
-            );
-        }
-        if (view === "bibleReadingManage") {
-            return (
-                <BibleReadingManageView
-                    user={user}
-                    churchId={churchId}
-                    onBack={handleBack}
-                    baseFont={baseFont}
-                />
+                <div style={{
+                    position: "fixed",
+                    inset: 0,
+                    width: "100vw",
+                    height: "100dvh",
+                    zIndex: 9999,
+                    background: "#0B0F19",
+                    overflow: "hidden"
+                }}>
+                    <iframe
+                        src={`/online-chapel.html?${qs.toString()}`}
+                        title="온라인예배당"
+                        allow="camera; microphone; display-capture; autoplay; fullscreen; clipboard-write"
+                        allowFullScreen
+                        style={{
+                            width: "100%",
+                            height: "100%",
+                            border: "none",
+                            display: "block"
+                        }}
+                    />
+                </div>
             );
         }
         if (view === "book") {
@@ -3727,21 +3776,26 @@ export default function App() {
                                         <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>성도 주소록</span>
                                     </button>
 
-                                    {/* 성경통독 */}
-                                    <button onClick={() => setView('bibleReading')} className="main-action-button" style={{
+                                    {/* 온라인예배당 */}
+                                    <button onClick={() => setView('onlineChapel')} className="main-action-button" style={{
                                         width: '100%',
-                                        padding: "16px 12px",
-                                        background: "linear-gradient(145deg, #ffffff 0%, #fffbe6 100%)", color: "#AA7C11",
+                                        padding: "16px 14px",
+                                        background: "linear-gradient(145deg, #fffdf7 0%, #fef3c7 100%)", color: "#92400E",
                                         fontWeight: 800, fontSize: "15px", borderRadius: "18px",
-                                        border: "1px solid #f6e8c3", cursor: "pointer",
-                                        boxShadow: "0 4px 10px rgba(0, 0, 0, 0.03)",
+                                        border: "1.5px solid #F6D28B", cursor: "pointer",
+                                        boxShadow: "0 4px 12px rgba(180, 130, 30, 0.10)",
                                         display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '10px',
                                         transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                                        justifyContent: 'flex-start',
+                                        justifyContent: 'space-between',
                                         gridColumn: fontScale > 1.2 ? 'auto' : 'span 2'
                                     }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
-                                        <div style={{ width: '32px', height: '32px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', border: '1px solid #F0F0F0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexShrink: 0 }}>🎧</div>
-                                        <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2 }}>성경통독</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <div style={{ width: '34px', height: '34px', background: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '19px', border: '1px solid #FDE68A', boxShadow: '0 2px 5px rgba(180,130,30,0.12)', flexShrink: 0 }}>🏛️</div>
+                                            <span style={{ wordBreak: 'keep-all', textAlign: 'left', lineHeight: 1.2, fontWeight: 900 }}>온라인예배당</span>
+                                        </div>
+                                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#B45309', background: 'rgba(255,255,255,0.85)', padding: '4px 9px', borderRadius: '999px', border: '1px solid #FDE68A', whiteSpace: 'nowrap' }}>
+                                            3D 예배·통독·큐티·사랑방 ➔
+                                        </span>
                                     </button>
 
                                 </div>
@@ -6938,14 +6992,6 @@ export default function App() {
                                 <div style={{ textAlign: 'center' }}>
                                     <div style={{ fontSize: '12px', fontWeight: 800, color: '#B8924A', marginBottom: '2px', wordBreak: 'keep-all' }}>브랜드 홍보</div>
                                     <div style={{ fontSize: '9px', color: '#B8924A', wordBreak: 'keep-all' }}>PDF 홍보 책자</div>
-                                </div>
-                            </button>
-
-                            <button onClick={() => setView('bibleReadingManage')} style={{ padding: '16px 8px', background: 'white', border: '1px solid #F0ECE4', borderRadius: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                                <div style={{ width: '40px', height: '40px', background: '#FEF0D8', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>🎧</div>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#333', marginBottom: '2px', wordBreak: 'keep-all' }}>성경통독</div>
-                                    <div style={{ fontSize: '9px', color: '#999', wordBreak: 'keep-all' }}>음원 등록/삭제</div>
                                 </div>
                             </button>
 

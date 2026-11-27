@@ -1514,7 +1514,9 @@
       ch.position.set(0, 14.2, -24.6);
       this.roomGroup.add(cv, ch);
 
-      // 교회 정문 상단 대형 백라이트 입체 간판: '예수인교회' (JESUS-IN CHURCH)
+      // 교회 정문 상단 대형 백라이트 입체 간판: 소미 앱 연동 교회명 (기본 '예수인교회')
+      const churchDisplayName = (typeof window !== 'undefined' && window.SOMY_CHURCH_NAME) ? String(window.SOMY_CHURCH_NAME) : '예수인교회';
+      const churchEnglishSub = churchDisplayName === '예수인교회' ? 'JESUS-IN CHURCH' : 'ONLINE 3D CHAPEL';
       const churchSignTex = (() => {
         const c = document.createElement('canvas');
         c.width = 1024;
@@ -1528,11 +1530,12 @@
         g.fillStyle = '#ffffff';
         g.textAlign = 'center';
         g.textBaseline = 'middle';
-        g.font = '800 88px "Apple SD Gothic Neo", "Pretendard", sans-serif';
-        g.fillText('예수인교회', 512, 92);
+        const fontPx = churchDisplayName.length > 7 ? 68 : 88;
+        g.font = `800 ${fontPx}px "Apple SD Gothic Neo", "Pretendard", sans-serif`;
+        g.fillText(churchDisplayName, 512, 92);
         g.fillStyle = '#fde68a';
         g.font = '700 32px -apple-system, sans-serif';
-        g.fillText('JESUS-IN CHURCH', 512, 166);
+        g.fillText(churchEnglishSub, 512, 166);
         const t = new THREE.CanvasTexture(c);
         if (THREE.sRGBEncoding) t.encoding = THREE.sRGBEncoding;
         return t;
@@ -1551,7 +1554,7 @@
       mainChurchSign.position.set(0, 7.35, -24.55);
       this.roomGroup.add(mainChurchSign);
 
-      // 앞마당 진입로 우측 화강암 교회 입구 표지석(모뉴먼트): '예수인교회'
+      // 앞마당 진입로 우측 화강암 교회 입구 표지석(모뉴먼트)
       const monumentBase = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.38, 1.1), granite);
       monumentBase.position.set(6.2, 0.19, 15.8);
       const monumentStone = new THREE.Mesh(
@@ -1564,7 +1567,7 @@
       monumentStone.position.set(6.2, 1.20, 15.8);
       this.roomGroup.add(monumentBase, monumentStone);
 
-      this._addPortalDoor(0, -24.5, 0, 'sanctuary', '⛪ 예수인교회', '대성전 본당 정문 입장');
+      this._addPortalDoor(0, -24.5, 0, 'sanctuary', `⛪ ${churchDisplayName}`, '대성전 본당 정문 입장');
       this._addPortalDoor(-25, 2, Math.PI / 2, 'sarangbang', '🏠 사랑방 센터', '모던 소그룹실');
       this._addPortalDoor(25, 2, -Math.PI / 2, 'bible', '📖 성경통독방', '모던 북라운지');
       this._addPortalDoor(25, 11, -Math.PI / 2, 'qt', '✏️ 큐티 아카데미', '세미나·나눔실');

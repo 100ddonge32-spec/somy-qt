@@ -2,11 +2,39 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getTodayReading } from '@/lib/reading-plan';
 import { fetchCoommiReference, fetchGodpeopleBibleText } from '@/lib/qt-sync';
+import { logActivity } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const CHAPEL_WORLD_RECORD_ID = 'somy-chapel-world-v1';
+
+function normalizeChapelChurchId(raw?: string | null): string {
+    const trimmed = String(raw || '').trim().toLowerCase();
+    if (!trimmed || trimmed === 'undefined' || trimmed === 'null' || trimmed === 'somy-main') {
+        return 'jesus-in';
+    }
+    if (trimmed === '예수인교회' || trimmed === '예수인' || trimmed === 'jesus' || trimmed === 'jesus-in') {
+        return 'jesus-in';
+    }
+    return trimmed;
+}
+
+function getChapelRecordId(rawChurchId?: string | null): string {
+    const cid = normalizeChapelChurchId(rawChurchId);
+    return cid === 'jesus-in' ? CHAPEL_WORLD_RECORD_ID : `${CHAPEL_WORLD_RECORD_ID}:${cid}`;
+}
+
+function formatKstShort(iso?: string | null): string {
+    if (!iso) return '오늘';
+    const d = new Date(new Date(iso).getTime() + 9 * 60 * 60 * 1000);
+    if (Number.isNaN(d.getTime())) return '오늘';
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(d.getUTCDate()).padStart(2, '0');
+    const hh = String(d.getUTCHours()).padStart(2, '0');
+    const mi = String(d.getUTCMinutes()).padStart(2, '0');
+    return `${mm}.${dd} ${hh}:${mi}`;
+}
 
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -62,6 +90,7 @@ export interface ChapelWorldState {
         content: string;
         amens: number;
         createdAt: string;
+        fromSomyApp?: boolean;
     }[];
     bibleLogs: BibleTongdokLog[];
     candles: {
@@ -223,12 +252,13 @@ const DEFAULT_WORLD_STATE: ChapelWorldState = {
     },
 };
 
-async function loadStateFromDb(): Promise<ChapelWorldState> {
+async function loadStateFromDb(rawChurchId?: string | null): Promise<ChapelWorldState> {
+    const recordId = getChapelRecordId(rawChurchId);
     try {
         const { data } = await supabaseAdmin
             .from('church_settings')
             .select('id, church_id, plan')
-            .eq('church_id', CHAPEL_WORLD_RECORD_ID)
+            .eq('church_id', recordId)
             .neq('id', 1)
             .maybeSingle();
 
@@ -249,17 +279,18 @@ async function loadStateFromDb(): Promise<ChapelWorldState> {
     return structuredClone(DEFAULT_WORLD_STATE);
 }
 
-async function saveStateToDb(state: ChapelWorldState): Promise<void> {
+async function saveStateToDb(state: ChapelWorldState, rawChurchId?: string | null): Promise<void> {
+    const recordId = getChapelRecordId(rawChurchId);
     const serialized = 'CHAPEL_JSON:' + JSON.stringify(state);
     const { data: existing } = await supabaseAdmin
         .from('church_settings')
         .select('id, church_id')
-        .eq('church_id', CHAPEL_WORLD_RECORD_ID)
+        .eq('church_id', recordId)
         .neq('id', 1)
         .maybeSingle();
 
     const payload: Record<string, unknown> = {
-        church_id: CHAPEL_WORLD_RECORD_ID,
+        church_id: recordId,
         church_name: '소미 3D 온라인 캠퍼스 데이터',
         app_subtitle: '3D 메타버스 예배당·사랑방·통독방·큐티방 상태 저장용',
         plan: serialized,
@@ -271,6 +302,52 @@ async function saveStateToDb(state: ChapelWorldState): Promise<void> {
     } else {
         await supabaseAdmin.from('church_settings').insert(payload);
     }
+}
+
+// 소미 앱 community_posts(is_qt: true)와 온라인 예배당 큐티방 나눔 보드 양방향 병합
+async function attachLiveSomyQtShares(state: ChapelWorldState, rawChurchId?: string | null): Promise<ChapelWorldState> {
+    const cid = normalizeChapelChurchId(rawChurchId);
+    const churchFilter = cid === 'jesus-in' ? ['jesus-in', '예수인교회'] : [cid];
+
+    try {
+        const { data: qtPosts } = await supabaseAdmin
+            .from('community_posts')
+            .select('id, user_name, content, liker_ids, created_at, is_private, is_qt')
+            .in('church_id', churchFilter)
+            .eq('is_qt', true)
+            .eq('is_private', false)
+            .order('created_at', { ascending: false })
+            .limit(25);
+
+        if (Array.isArray(qtPosts) && qtPosts.length > 0) {
+            const mappedFromSomy = qtPosts.map((p: any) => {
+                const rawContent = String(p.content || '').trim();
+                const headerMatch = rawContent.match(/^\[(?:📖\s*)?([^\]]+)\]\s*\n?([\s\S]*)$/);
+                const passage = headerMatch ? headerMatch[1].trim() : '소미 큐티 묵상';
+                const cleanBody = headerMatch && headerMatch[2].trim() ? headerMatch[2].trim() : rawContent;
+                const amensCount = Array.isArray(p.liker_ids) ? Math.max(1, p.liker_ids.length) : 1;
+
+                return {
+                    id: `cp-${p.id}`,
+                    author: String(p.user_name || '성도'),
+                    passage,
+                    content: cleanBody,
+                    amens: amensCount,
+                    createdAt: formatKstShort(p.created_at),
+                    fromSomyApp: true,
+                };
+            });
+
+            const localOnly = (state.qtShares || []).filter((s) => !String(s.id).startsWith('cp-'));
+            return {
+                ...state,
+                qtShares: [...mappedFromSomy, ...localOnly].slice(0, 35),
+            };
+        }
+    } catch (e) {
+        console.warn('[ChapelWorld API] attachLiveSomyQtShares warning:', e);
+    }
+    return state;
 }
 
 // 소미 큐티(daily_qt) 안전 조회 헬퍼: 요청 날짜 -> 최근 등록된 큐티 -> 실시간 말씀 본문 순으로 100% 보장
@@ -352,6 +429,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const qtOnly = searchParams.get('qt_only') === 'true';
     const qtDate = searchParams.get('qt_date') || undefined;
+    const churchId = searchParams.get('church_id');
 
     if (qtOnly) {
         const qtBundle = await resolveSomyQtForChapel(qtDate);
@@ -360,10 +438,11 @@ export async function GET(req: NextRequest) {
         });
     }
 
-    const [state, qtBundle] = await Promise.all([
-        loadStateFromDb(),
+    const [rawState, qtBundle] = await Promise.all([
+        loadStateFromDb(churchId),
         resolveSomyQtForChapel(qtDate),
     ]);
+    const state = await attachLiveSomyQtShares(rawState, churchId);
 
     return NextResponse.json(
         {
@@ -384,8 +463,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { action, payload } = body || {};
-        const state = await loadStateFromDb();
+        const { action, payload, churchId: rawBodyChurchId } = body || {};
+        const churchId = normalizeChapelChurchId(rawBodyChurchId || payload?.churchId);
+        const state = await loadStateFromDb(churchId);
 
         if (action === 'create_sarangbang') {
             const name = String(payload?.name || '').trim();
@@ -405,17 +485,17 @@ export async function POST(req: NextRequest) {
                     badge: `${newRoom.name} · 인도: ${newRoom.leader}`,
                     body: newRoom.topic,
                 };
-                await saveStateToDb(state);
-                return NextResponse.json({ success: true, room: newRoom, state });
+                await saveStateToDb(state, churchId);
+                return NextResponse.json({ success: true, room: newRoom, state: await attachLiveSomyQtShares(state, churchId) });
             }
         } else if (action === 'delete_sarangbang') {
             const roomId = String(payload?.id || '');
             if (state.sarangbangs.length > 1) {
                 state.sarangbangs = state.sarangbangs.filter((r) => r.id !== roomId);
                 delete state.roomBoards[`sarangbang:${roomId}`];
-                await saveStateToDb(state);
+                await saveStateToDb(state, churchId);
             }
-            return NextResponse.json({ success: true, state });
+            return NextResponse.json({ success: true, state: await attachLiveSomyQtShares(state, churchId) });
         } else if (action === 'save_qt_lecture') {
             const id = String(payload?.id || 'lec-' + Date.now());
             const week = String(payload?.week || '큐티 강의').trim().slice(0, 24);
@@ -434,21 +514,72 @@ export async function POST(req: NextRequest) {
                 };
                 if (idx >= 0) state.qtLectures[idx] = item;
                 else state.qtLectures.push(item);
-                await saveStateToDb(state);
-                return NextResponse.json({ success: true, lecture: item, state });
+                await saveStateToDb(state, churchId);
+                return NextResponse.json({ success: true, lecture: item, state: await attachLiveSomyQtShares(state, churchId) });
             }
         } else if (action === 'delete_qt_lecture') {
             const id = String(payload?.id || '');
             if (state.qtLectures.length > 1) {
                 state.qtLectures = state.qtLectures.filter((l) => l.id !== id);
-                await saveStateToDb(state);
+                await saveStateToDb(state, churchId);
             }
-            return NextResponse.json({ success: true, state });
+            return NextResponse.json({ success: true, state: await attachLiveSomyQtShares(state, churchId) });
         } else if (action === 'add_qt_share') {
             const author = String(payload?.author || '익명 성도').trim().slice(0, 24);
             const passage = String(payload?.passage || '오늘의 말씀').trim().slice(0, 40);
-            const content = String(payload?.content || '').trim().slice(0, 500);
+            const content = String(payload?.content || '').trim().slice(0, 800);
+            const userId = String(payload?.userId || '').trim();
+            const avatarUrl = payload?.avatarUrl ? String(payload.avatarUrl) : null;
+
             if (content) {
+                // 로그인된 소미 앱 성도인 경우: 소미 앱 community_posts(is_qt: true) 및 qt_completions(달력·통계)에 직접 반영!
+                if (userId) {
+                    const formattedContent = `[📖 ${passage}]\n${content}`;
+                    const { data: insertedPost, error: insertErr } = await supabaseAdmin
+                        .from('community_posts')
+                        .insert([
+                            {
+                                user_id: userId,
+                                user_name: author,
+                                avatar_url: avatarUrl,
+                                content: formattedContent,
+                                church_id: churchId,
+                                is_private: false,
+                                is_qt: true,
+                            },
+                        ])
+                        .select()
+                        .single();
+
+                    if (!insertErr && insertedPost) {
+                        const koreaDate = getKoreaDateString();
+                        await supabaseAdmin
+                            .from('qt_completions')
+                            .upsert(
+                                {
+                                    user_id: userId,
+                                    user_name: author,
+                                    avatar_url: avatarUrl,
+                                    completed_date: koreaDate,
+                                    answers: [formattedContent],
+                                },
+                                { onConflict: 'user_id,completed_date' }
+                            );
+
+                        logActivity(userId, author, 'POST_CREATED', churchId, formattedContent.slice(0, 50));
+                        logActivity(userId, author, 'QT_COMPLETED', churchId, koreaDate);
+
+                        const mergedState = await attachLiveSomyQtShares(state, churchId);
+                        return NextResponse.json({
+                            success: true,
+                            syncedToSomy: true,
+                            somyPost: insertedPost,
+                            state: mergedState,
+                        });
+                    }
+                }
+
+                // 비로그인 방문자 폴백: 온라인 예배당 자체 보드에 저장
                 state.qtShares.unshift({
                     id: 'qs-' + Date.now(),
                     author,
@@ -457,18 +588,43 @@ export async function POST(req: NextRequest) {
                     amens: 1,
                     createdAt: getKoreaTimeStamp(),
                 });
-                state.qtShares = state.qtShares.slice(0, 40);
-                await saveStateToDb(state);
-                return NextResponse.json({ success: true, state });
+                state.qtShares = state.qtShares.filter((s) => !String(s.id).startsWith('cp-')).slice(0, 40);
+                await saveStateToDb(state, churchId);
+                return NextResponse.json({
+                    success: true,
+                    syncedToSomy: false,
+                    state: await attachLiveSomyQtShares(state, churchId),
+                });
             }
         } else if (action === 'amen_qt_share') {
             const id = String(payload?.id || '');
+            if (id.startsWith('cp-')) {
+                const postId = id.slice(3);
+                const likerKey = String(payload?.userId || payload?.clientId || `chapel_${Date.now()}`);
+                const { data: postRow } = await supabaseAdmin
+                    .from('community_posts')
+                    .select('id, liker_ids')
+                    .eq('id', postId)
+                    .maybeSingle();
+                if (postRow) {
+                    const prevLikers = Array.isArray(postRow.liker_ids) ? postRow.liker_ids : [];
+                    if (!prevLikers.includes(likerKey)) {
+                        await supabaseAdmin
+                            .from('community_posts')
+                            .update({ liker_ids: [...prevLikers, likerKey] })
+                            .eq('id', postId);
+                    }
+                }
+                return NextResponse.json({ success: true, state: await attachLiveSomyQtShares(state, churchId) });
+            }
+
             const target = state.qtShares.find((s) => s.id === id);
             if (target) {
                 target.amens = (target.amens || 0) + 1;
-                await saveStateToDb(state);
+                state.qtShares = state.qtShares.filter((s) => !String(s.id).startsWith('cp-'));
+                await saveStateToDb(state, churchId);
             }
-            return NextResponse.json({ success: true, state });
+            return NextResponse.json({ success: true, state: await attachLiveSomyQtShares(state, churchId) });
         } else if (action === 'add_bible_log') {
             const reader = String(payload?.reader || '성도').trim().slice(0, 24);
             const planName = String(payload?.planName || '성경통독').trim().slice(0, 36);
@@ -493,18 +649,18 @@ export async function POST(req: NextRequest) {
             if (!Array.isArray(state.bibleLogs)) state.bibleLogs = [];
             state.bibleLogs.unshift(newLog);
             state.bibleLogs = state.bibleLogs.slice(0, 120);
-            await saveStateToDb(state);
-            return NextResponse.json({ success: true, log: newLog, state });
+            await saveStateToDb(state, churchId);
+            return NextResponse.json({ success: true, log: newLog, state: await attachLiveSomyQtShares(state, churchId) });
         } else if (action === 'amen_bible_log') {
             const id = String(payload?.id || '');
             if (Array.isArray(state.bibleLogs)) {
                 const target = state.bibleLogs.find((l) => l.id === id);
                 if (target) {
                     target.amens = (target.amens || 0) + 1;
-                    await saveStateToDb(state);
+                    await saveStateToDb(state, churchId);
                 }
             }
-            return NextResponse.json({ success: true, state });
+            return NextResponse.json({ success: true, state: await attachLiveSomyQtShares(state, churchId) });
         } else if (action === 'update_room_board') {
             const roomKey = String(payload?.roomKey || 'sanctuary');
             const boardData = payload?.board || {};
@@ -520,8 +676,8 @@ export async function POST(req: NextRequest) {
                 slideIndex: Number(boardData.slideIndex || 0),
                 youtubeId: String(boardData.youtubeId || '').slice(0, 24),
             };
-            await saveStateToDb(state);
-            return NextResponse.json({ success: true, state });
+            await saveStateToDb(state, churchId);
+            return NextResponse.json({ success: true, state: await attachLiveSomyQtShares(state, churchId) });
         } else if (action === 'add_candle') {
             const name = String(payload?.name || '익명 성도').trim().slice(0, 24);
             const text = String(payload?.text || '').trim().slice(0, 120);
@@ -534,17 +690,17 @@ export async function POST(req: NextRequest) {
                     angle: (Math.random() - 0.5) * 1.04,
                 });
                 state.candles = state.candles.slice(0, 24);
-                await saveStateToDb(state);
+                await saveStateToDb(state, churchId);
             }
-            return NextResponse.json({ success: true, state });
+            return NextResponse.json({ success: true, state: await attachLiveSomyQtShares(state, churchId) });
         } else if (action === 'amen_candle') {
             const id = Number(payload?.id);
             const c = state.candles.find((x) => x.id === id);
             if (c) {
                 c.amens++;
-                await saveStateToDb(state);
+                await saveStateToDb(state, churchId);
             }
-            return NextResponse.json({ success: true, state });
+            return NextResponse.json({ success: true, state: await attachLiveSomyQtShares(state, churchId) });
         }
 
         return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
