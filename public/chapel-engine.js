@@ -459,14 +459,14 @@
     if (cfg.accessory === 'horn_glasses' || cfg.accessory === 'wire_glasses') {
       const isHorn = cfg.accessory === 'horn_glasses';
       const frameMat = new THREE.MeshStandardMaterial({
-        color: isHorn ? 0x181924 : 0xd4af37,
-        roughness: isHorn ? 0.25 : 0.20,
-        metalness: isHorn ? 0.15 : 0.82
+        color: isHorn ? 0x111318 : 0xd4af37,
+        roughness: isHorn ? 0.22 : 0.18,
+        metalness: isHorn ? 0.12 : 0.85
       });
       const lensMat = new THREE.MeshBasicMaterial({
         color: 0xe0f2fe,
         transparent: true,
-        opacity: 0.16,
+        opacity: 0.15,
         depthWrite: false,
         side: THREE.DoubleSide
       });
@@ -479,59 +479,58 @@
       });
 
       const gRoot = new THREE.Group();
-      // headRaw 로컬 좌표계의 눈 중심점(eyeBridgeLocal)에 직접 배치.
-      // headRaw 좌표계에서 얼굴 전면은 -Z이므로, +Z로 모델링된 안경을 Y축 180도 회전시켜
-      // 고개가 끄덕이거나 좌우로 돌아갈 때 1mm 오차 없이 얼굴에 완전 밀착!
       gRoot.position.copy(rec.eyeBridgeLocal);
       gRoot.rotation.set(0, Math.PI, 0);
 
       const span = rec.eyeHalfSpan || 0.032;
-      const fw = span * 1.48;
-      const fh = span * 0.96;
-      const th = isHorn ? 0.0046 : 0.0024;
+      // 순정만화 남주 비율에 맞춘 큼직하고 스타일리시한 와이드 뿔테/금테 규격 (+30% 와이드 & 상하 확장)
+      const fw = span * 1.82;
+      const fh = span * 1.34;
+      const th = isHorn ? 0.0058 : 0.0028;
 
       [-1, 1].forEach((side) => {
         const rim = new THREE.Group();
-        rim.position.set(side * span * 1.02, -0.002, 0);
+        rim.position.set(side * span * 1.15, -0.002, 0);
         rim.rotation.z = side * -0.03;
 
-        const topB = new THREE.Mesh(new THREE.BoxGeometry(fw + th, th * 1.35, th * 1.1), frameMat);
+        const topB = new THREE.Mesh(new THREE.BoxGeometry(fw + th * 1.2, th * 1.45, th * 1.1), frameMat);
         topB.position.y = fh * 0.5;
-        const botB = new THREE.Mesh(new THREE.BoxGeometry(fw * 0.94, th * (isHorn ? 0.85 : 0.55), th * 0.9), frameMat);
+        const botB = new THREE.Mesh(new THREE.BoxGeometry(fw * 0.96, th * (isHorn ? 0.95 : 0.60), th * 0.9), frameMat);
         botB.position.y = -fh * 0.5;
         const outB = new THREE.Mesh(new THREE.BoxGeometry(th, fh, th), frameMat);
         outB.position.x = side * fw * 0.48;
         const inB = new THREE.Mesh(new THREE.BoxGeometry(th * 0.85, fh * 0.92, th * 0.9), frameMat);
         inB.position.x = -side * fw * 0.46;
 
-        const lens = new THREE.Mesh(new THREE.PlaneGeometry(fw * 0.88, fh * 0.88), lensMat);
-        const glare = new THREE.Mesh(new THREE.PlaneGeometry(fw * 0.16, fh * 0.76), glareMat);
-        glare.position.set(-fw * 0.15, 0, 0.001);
+        const lens = new THREE.Mesh(new THREE.PlaneGeometry(fw * 0.90, fh * 0.90), lensMat);
+        const glare = new THREE.Mesh(new THREE.PlaneGeometry(fw * 0.18, fh * 0.78), glareMat);
+        glare.position.set(-fw * 0.16, 0, 0.001);
         glare.rotation.z = -0.38;
 
-        const temple = new THREE.Mesh(new THREE.BoxGeometry(th * 0.75, th * 0.85, 0.085), frameMat);
-        temple.position.set(side * fw * 0.50, fh * 0.20, -0.042);
+        const temple = new THREE.Mesh(new THREE.BoxGeometry(th * 0.75, th * 0.85, 0.11), frameMat);
+        temple.position.set(side * fw * 0.50, fh * 0.22, -0.055);
 
         rim.add(topB, botB, outB, inB, lens, glare, temple);
         gRoot.add(rim);
       });
 
-      const bridge = new THREE.Mesh(new THREE.BoxGeometry(span * 0.58, th, th), frameMat);
-      bridge.position.set(0, fh * 0.28, 0.001);
+      const bridge = new THREE.Mesh(new THREE.BoxGeometry(span * 0.52, th * 1.1, th), frameMat);
+      bridge.position.set(0, fh * 0.26, 0.001);
       gRoot.add(bridge);
       rec.accessoryAnchor.add(gRoot);
     }
 
     if (cfg.accessory === 'earcuff') {
       const cuffGroup = new THREE.Group();
-      cuffGroup.position.copy(rec.eyeBridgeLocal);
+      // 귀 카틀리지 로컬 위치 (눈/이마 앞머리 오프셋에 영향받지 않도록 귀 관상면 좌표 사용)
+      cuffGroup.position.set(0, 0.055, -0.015);
       cuffGroup.rotation.set(0, Math.PI, 0);
       const cuffMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.88, roughness: 0.18 });
       const earX = (rec.eyeHalfSpan || 0.032) * 2.55;
-      [-0.006, -0.016].forEach((cy) => {
-        const ring = new THREE.Mesh(new THREE.TorusGeometry(0.0065, 0.0016, 8, 14), cuffMat);
-        ring.position.set(earX, cy, -0.048);
-        ring.rotation.y = Math.PI * 0.42;
+      [-0.004, -0.016].forEach((cy) => {
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(0.0075, 0.0018, 8, 14), cuffMat);
+        ring.position.set(earX, cy, -0.012);
+        ring.rotation.y = Math.PI * 0.38;
         cuffGroup.add(ring);
       });
       rec.accessoryAnchor.add(cuffGroup);
@@ -539,15 +538,16 @@
 
     if (cfg.accessory === 'necklace') {
       const nGroup = new THREE.Group();
-      nGroup.rotation.set(0, Math.PI, 0);
-      const silverMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.88, roughness: 0.16 });
-      const chain = new THREE.Mesh(new THREE.TorusGeometry(0.058, 0.0022, 8, 22, Math.PI), silverMat);
-      chain.rotation.x = Math.PI * 0.78;
-      chain.position.set(0, -0.055, 0.048);
-      const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.028, 0.004), silverMat);
-      crossV.position.set(0, -0.102, 0.078);
-      const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.006, 0.004), silverMat);
-      crossH.position.set(0, -0.096, 0.078);
+      // 목걸이는 목 뼈(neckAnchor) 기준 옷/자켓 전면 바깥쪽으로 정면 배치
+      nGroup.position.set(0, -0.015, -0.065);
+      const silverMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.90, roughness: 0.14 });
+      const chain = new THREE.Mesh(new THREE.TorusGeometry(0.062, 0.0024, 8, 24, Math.PI), silverMat);
+      chain.rotation.x = -Math.PI * 0.22;
+      chain.position.set(0, -0.035, 0.025);
+      const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.007, 0.032, 0.004), silverMat);
+      crossV.position.set(0, -0.088, 0.058);
+      const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.007, 0.004), silverMat);
+      crossH.position.set(0, -0.082, 0.058);
       nGroup.add(chain, crossV, crossH);
       rec.neckAnchor.add(nGroup);
     }
