@@ -244,13 +244,15 @@
             <span>🏠 <span class="hidden sm:inline">소미</span>홈</span>
           </button>
 
-          <!-- 현재 공간 및 실시간 접속자 (상시 표시 핵심 정보) -->
-          <div
-            class="inline-flex items-center gap-1 px-2 py-1.5 rounded-full bg-slate-950/90 backdrop-blur-md border border-amber-400/40 text-[11px] font-extrabold shadow-lg min-w-0 truncate">
+          <!-- 현재 공간 및 실시간 접속자 (상시 표시 핵심 정보, 클릭 시 실시간 성도 위치/접속 현황 모달 오픈) -->
+          <button id="btn-presence-list"
+            class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-slate-950/90 hover:bg-slate-900 active:scale-95 transition backdrop-blur-md border border-amber-400/40 text-[11px] font-extrabold shadow-lg min-w-0 truncate cursor-pointer text-left"
+            title="접속 성도 목록 및 위치 보기">
             <span id="zone-title-badge" class="text-amber-300 truncate max-w-[70px] xs:max-w-[105px] sm:max-w-none">🌿 앞마당 정원</span>
             <span class="text-white/30 mx-0.5">|</span>
             <span id="online-count-label" class="text-emerald-300 whitespace-nowrap shrink-0">🟢 1명</span>
-          </div>
+            <span class="text-[9px] text-amber-300/80 hidden xs:inline">👥</span>
+          </button>
         </div>
 
         <div class="flex items-center gap-1 shrink-0 ml-1">
@@ -1294,6 +1296,32 @@
             점등</button>
         </div>
         <div id="candles-list-box" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
+      </div>
+    </div>
+
+    <!-- [모달 5-B] 👥 실시간 접속 현황 및 공간 위치 모달 -->
+    <div id="presence-modal"
+      class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-40">
+      <div
+        class="bg-slate-900 text-white rounded-3xl max-w-md w-full p-4 sm:p-5 border border-amber-400/40 shadow-2xl space-y-3 max-h-[85dvh] flex flex-col">
+        <div class="flex items-center justify-between pb-2 border-b border-white/15">
+          <div class="flex items-center gap-2">
+            <span class="text-base font-extrabold text-amber-300">👥 실시간 접속 성도 현황</span>
+            <span id="presence-modal-total-badge" class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-400/30">1명 온라인</span>
+          </div>
+          <button data-close="presence-modal" class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold cursor-pointer">✕ 닫기</button>
+        </div>
+
+        <p class="text-[11px] text-slate-400 m-0">현재 온라인 캠퍼스에 접속한 성도님들의 위치와 상태입니다. 성도님이 계신 공간으로 바로 이동할 수 있습니다.</p>
+
+        <!-- 접속자 목록 리스트 컨테이너 -->
+        <div id="presence-peers-list" class="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[55dvh]">
+          <!-- 동적 렌더링 -->
+        </div>
+
+        <div class="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
+          <span>💡 같은 공간에 모이면 서로 대화하거나 얼굴을 볼 수 있습니다.</span>
+        </div>
       </div>
     </div>
 

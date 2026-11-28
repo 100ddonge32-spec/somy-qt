@@ -260,7 +260,9 @@
   // Supabase Realtime 멀티플레이 & WebRTC 화면공유 상태
   let supaClient = null;
   let roomChannel = null;
-  let onlinePeers = new Map();
+  let campusChannel = null; // 7개 전체 공간 실시간 접속 현황 트래킹 채널
+  let onlinePeers = new Map(); // 현재 룸 내 동료들
+  let campusPeers = new Map(); // 전체 캠퍼스 성도들 (누가 어느 방에 있는지)
 
   // 칠판·화이트보드·PPT·화면공유 상태
   const boardOffscreen = document.getElementById('boardOffscreenCanvas');
@@ -896,7 +898,7 @@
   // Supabase Realtime 멀티플레이 (성도 접속·이동·채팅·칠판·예스통독 실시간 동기화)
   // -------------------------------------------------------------------------
   function updateOnlineCounter() {
-    const realCount = 1 + onlinePeers.size;
+    const realCount = Math.max(1, campusPeers.size || (1 + onlinePeers.size));
     const npcCount = showNpcs ? (SAMPLE_NPCS[currentZone] || []).length : 0;
     const el = document.getElementById('online-count-label');
     if (el) {
@@ -907,21 +909,184 @@
   }
 
   function syncMyPresence() {
-    if (!roomChannel) return;
     const me = world3d.avatars.get('me');
-    roomChannel.track({
+    const myPayload = {
       clientId: myClientId,
       name: myName,
       presetId: myPresetId,
       avatarConfig: myAvatarConfig,
       drink: myDrink,
       camOn: myFaceCamOn,
+      zoneId: currentZone,
+      sarangId: currentSarangId,
+      zoneName: (ZONE_SHORT_NAMES[currentZone] && ZONE_SHORT_NAMES[currentZone].name) || currentZone,
       x: me ? me.x : 0,
       y: 0,
       z: me ? me.z : 16,
       rotY: me ? me.rotY : Math.PI,
       pose: me ? me.pose : 'stand'
-    }).catch(() => {});
+    };
+
+    if (roomChannel) {
+      roomChannel.track(myPayload).catch(() => {});
+    }
+    if (campusChannel) {
+      campusChannel.track({
+        clientId: myClientId,
+        name: myName,
+        presetId: myPresetId,
+        avatarConfig: myAvatarConfig,
+        zoneId: currentZone,
+        sarangId: currentSarangId,
+        zoneName: (ZONE_SHORT_NAMES[currentZone] && ZONE_SHORT_NAMES[currentZone].name) || currentZone,
+        camOn: myFaceCamOn
+      }).catch(() => {});
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // 👥 전체 캠퍼스 실시간 접속자 트래킹 및 접속현황 모달 렌더링
+  // -------------------------------------------------------------------------
+  const ZONE_SHORT_NAMES = {
+    garden: { icon: '🌿', name: '앞마당 정원' },
+    sanctuary: { icon: '🏛️', name: '그레이스 대성전' },
+    sarangbang: { icon: '🏠', name: '사랑방(소그룹)' },
+    bible: { icon: '📖', name: '성경통독방' },
+    qt: { icon: '✏️', name: '큐티방' },
+    prayer: { icon: '🕯️', name: '기도·갤러리' },
+    rooftop: { icon: '☕', name: '루프탑 카페' }
+  };
+
+  function initCampusPresenceChannel() {
+    if (!supaClient || campusChannel) return;
+    const churchScope = currentChurchId === 'jesus-in' ? '' : `${currentChurchId}:`;
+    const chanName = `somy_world_v2:${churchScope}global_campus_presence`;
+    campusChannel = supaClient.channel(chanName, {
+      config: { presence: { key: myClientId } }
+    });
+
+    campusChannel.on('presence', { event: 'sync' }, () => {
+      const state = campusChannel.presenceState();
+      campusPeers.clear();
+      Object.keys(state).forEach((key) => {
+        const arr = state[key];
+        if (!arr || !arr.length) return;
+        campusPeers.set(key, arr[arr.length - 1]);
+      });
+      updateOnlineCounter();
+      renderPresenceModalList();
+    });
+
+    campusChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        syncMyPresence();
+      }
+    });
+  }
+
+  function renderPresenceModalList() {
+    const listEl = document.getElementById('presence-peers-list');
+    const badgeEl = document.getElementById('presence-modal-total-badge');
+    if (!listEl) return;
+
+    const allMembers = [];
+
+    // 1. 나 자신
+    allMembers.push({
+      clientId: myClientId,
+      name: myName || '나 (성도)',
+      zoneId: currentZone,
+      zoneName: (ZONE_SHORT_NAMES[currentZone] && ZONE_SHORT_NAMES[currentZone].name) || currentZone,
+      icon: (ZONE_SHORT_NAMES[currentZone] && ZONE_SHORT_NAMES[currentZone].icon) || '📍',
+      isMe: true,
+      camOn: myFaceCamOn
+    });
+
+    // 2. 다른 실제 접속 성도들
+    campusPeers.forEach((p, cid) => {
+      if (cid === myClientId) return;
+      const zid = p.zoneId || currentZone;
+      allMembers.push({
+        clientId: cid,
+        name: p.name || '성도',
+        zoneId: zid,
+        zoneName: (ZONE_SHORT_NAMES[zid] && ZONE_SHORT_NAMES[zid].name) || p.zoneName || zid,
+        icon: (ZONE_SHORT_NAMES[zid] && ZONE_SHORT_NAMES[zid].icon) || '📍',
+        isMe: false,
+        camOn: !!p.camOn
+      });
+    });
+
+    // 3. 상주 NPC 교제 성도들 (활성화된 경우)
+    if (showNpcs) {
+      Object.entries(SAMPLE_NPCS).forEach(([zKey, npcs]) => {
+        npcs.forEach((npc) => {
+          allMembers.push({
+            clientId: npc.id,
+            name: npc.name,
+            zoneId: zKey,
+            zoneName: (ZONE_SHORT_NAMES[zKey] && ZONE_SHORT_NAMES[zKey].name) || zKey,
+            icon: (ZONE_SHORT_NAMES[zKey] && ZONE_SHORT_NAMES[zKey].icon) || '📍',
+            isNpc: true,
+            bubble: npc.bubble || ''
+          });
+        });
+      });
+    }
+
+    if (badgeEl) {
+      const realOnly = allMembers.filter((m) => !m.isNpc).length;
+      badgeEl.textContent = `${realOnly}명 온라인 (${allMembers.length}명 참여중)`;
+    }
+
+    listEl.innerHTML = '';
+    allMembers.forEach((m) => {
+      const row = document.createElement('div');
+      row.className = 'flex items-center justify-between p-2.5 rounded-2xl bg-slate-800/80 border border-slate-700/60 hover:bg-slate-700/50 transition';
+
+      const isCurrentHere = m.zoneId === currentZone;
+
+      row.innerHTML = `
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="relative w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-sm font-bold shadow shrink-0 ${m.isMe ? 'ring-2 ring-amber-400' : ''}">
+            ${m.isMe ? '👤' : m.isNpc ? '🤖' : '✨'}
+            <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ${m.isMe || !m.isNpc ? 'bg-emerald-400' : 'bg-sky-400'} border-2 border-slate-900"></span>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-bold text-white truncate">${m.name}</span>
+              ${m.isMe ? '<span class="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 text-[9px] font-black">나</span>' : ''}
+              ${m.isNpc ? '<span class="px-1.5 py-0.2 rounded-full bg-sky-500/30 text-sky-300 text-[9px] font-bold">교제성도</span>' : ''}
+              ${m.camOn ? '<span class="text-[10px]" title="카메라 켬">📹</span>' : ''}
+            </div>
+            <div class="flex items-center gap-1 text-[11px] text-slate-300">
+              <span>${m.icon}</span>
+              <span class="truncate">${m.zoneName}</span>
+              ${isCurrentHere ? '<span class="text-[10px] text-emerald-300 font-extrabold ml-1">(같은 공간)</span>' : ''}
+            </div>
+          </div>
+        </div>
+        <div>
+          ${isCurrentHere
+            ? '<span class="px-2.5 py-1 rounded-xl bg-white/10 text-white/60 text-[10px] font-bold">현재 공간</span>'
+            : `<button class="btn-warp-to-peer px-2.5 py-1 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-extrabold cursor-pointer shadow transition active:scale-95" data-warpzone="${m.zoneId}">
+                이동 ➔
+               </button>`
+          }
+        </div>
+      `;
+
+      const warpBtn = row.querySelector('.btn-warp-to-peer');
+      if (warpBtn) {
+        warpBtn.addEventListener('click', () => {
+          closeModal('presence-modal');
+          enterZone(m.zoneId);
+          toast(`🚀 ${m.name}님이 계신 [${m.zoneName}]으로 이동했습니다!`);
+        });
+      }
+
+      listEl.appendChild(row);
+    });
   }
 
   function broadcastEvent(event, payload) {
@@ -4132,6 +4297,16 @@
   const topToolsIcon = document.getElementById('top-tools-icon');
   const topToolsLabel = document.getElementById('top-tools-label');
 
+  // 실시간 접속 현황 모달 열기 버튼 (상단 접속자 수 배지 클릭 시 오픈)
+  const presenceListBtn = document.getElementById('btn-presence-list');
+  if (presenceListBtn) {
+    presenceListBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      renderPresenceModalList();
+      openModal('presence-modal');
+    });
+  }
+
   if (topToolsBtn && topToolsDrawer) {
     topToolsBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -4302,6 +4477,7 @@
           } catch {}
         }
         joinMultiplayerRoom();
+        initCampusPresenceChannel();
       }
     } catch (e) {
       console.warn('Standalone offline fallback mode:', e);
