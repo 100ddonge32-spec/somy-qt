@@ -900,8 +900,8 @@
     },
     gallery: {
       id: 'gallery',
-      name: '🏛️ 루브르 성화·추억 갤러리 (온라인 전시관)',
-      subtitle: '파리 루브르 그랜드 갤러리 · 렘브란트 성화전 · 성도 추억나눔 온라인 전시관 · 감상 라운지',
+      name: '🏛️ 갤러리',
+      subtitle: '은혜의 성화전 · 기독교 고전 성조각전 · 성도 추억나눔 전시관 · 감상 라운지',
       sky: 0x1a1714,
       fogColor: 0x231f1b,
       fogDensity: 0.0022,
@@ -2124,7 +2124,7 @@
       this._addPortalDoor(9.5, 28.6, Math.PI, 'rooftop', '☕ 루프탑 카페', '옥상 라운지');
       this._addPortalDoor(-28.8, -9, Math.PI / 2, 'sarangbang', '🏠 사랑방 센터', '모던 소그룹실');
       this._addPortalDoor(-28.8, 1, Math.PI / 2, 'prayer', '🕯️ 고요한 기도실', '묵상·개인중보기도');
-      this._addPortalDoor(-28.8, 11, Math.PI / 2, 'gallery', '🏛️ 루브르 갤러리', '성화·추억 온라인전시관');
+      this._addPortalDoor(-28.8, 11, Math.PI / 2, 'gallery', '🏛️ 갤러리', '성화·성조각·추억 전시관');
       this._addPortalDoor(28.8, -6, -Math.PI / 2, 'bible', '📖 성경통독방', '모던 북라운지');
       this._addPortalDoor(28.8, 8, -Math.PI / 2, 'qt', '✏️ 큐티방', '세미나·나눔실');
     }
@@ -2656,7 +2656,7 @@
           bz,
           bIdx % 2 === 0 ? -Math.PI / 2 : Math.PI / 2,
           1.1,
-          '🛋️ 루브르 갤러리 감상석 착석',
+          '🛋️ 갤러리 감상석 착석',
           'chair'
         );
       });
@@ -2873,7 +2873,7 @@
 
       // 8. 남쪽 포털 출입문 (z = 13.2)
       this._addPortalDoor(-6.5, 13.2, Math.PI, 'sanctuary', '🏛️ 대성전 이동', '본당 복귀');
-      this._addPortalDoor(0.0, 13.2, Math.PI, 'gallery', '🏛️ 루브르 갤러리', '성화·추억 온라인전시관');
+      this._addPortalDoor(0.0, 13.2, Math.PI, 'gallery', '🏛️ 갤러리', '성화·성조각·추억 전시관');
       this._addPortalDoor(6.5, 13.2, Math.PI, 'qt', '✏️ 큐티방 이동', '말씀 나눔');
     }
 

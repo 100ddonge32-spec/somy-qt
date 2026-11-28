@@ -153,7 +153,7 @@
       { id: 'npc_p1', name: '오감사 권사', presetId: 'kwonsa_grace', avatarConfig: { vrmModel: 'shino', bodyStyle: 'model', skinTone: 'warm', eyeColor: 'original', expression: 'pray', hairColor: 'espresso', outfitColor: '#6d28d9', bottomColor: '#1e1b4b', accessory: 'necklace' }, x: -1.2, z: -7.4, rotY: Math.PI, pose: 'kneel', isNpc: true, bubble: '🕯️ 은밀한 골방에서 주님과 깊은 대화를 나눕니다' }
     ],
     gallery: [
-      { id: 'npc_g1', name: '김도슨트 집사', presetId: 'tweed_bob', x: 0, z: 1.5, rotY: -Math.PI / 2, pose: 'sit', isNpc: true, bubble: '🏛️ 루브르 성화와 성도님들의 소중한 은혜 추억을 감상하고 있어요' }
+      { id: 'npc_g1', name: '김도슨트 집사', presetId: 'tweed_bob', x: 0, z: 1.5, rotY: -Math.PI / 2, pose: 'sit', isNpc: true, bubble: '🏛️ 성화와 성도님들의 소중한 은혜 추억을 감상하고 있어요' }
     ],
     rooftop: [
       { id: 'npc_t1', name: '류화평 청년', presetId: 'webtoon_boy', x: -6.2, z: -17.6, rotY: Math.PI, pose: 'sit', drink: 'coffee', isNpc: true, bubble: '🏞️ 산과 바다 사계절 풍경이 정말 아름답네요!' }
@@ -817,7 +817,7 @@
       bible: { icon: '📖', name: '성경통독방' },
       qt: { icon: '✏️', name: '큐티방' },
       prayer: { icon: '🕯️', name: '고요한 기도실' },
-      gallery: { icon: '🏛️', name: '루브르 갤러리' },
+      gallery: { icon: '🏛️', name: '갤러리' },
       rooftop: { icon: '☕', name: '루프탑 카페' }
     };
     const zInfo = ZONE_SHORT_NAMES[zoneId] || { icon: '📍', name: meta.name };
@@ -969,10 +969,15 @@
   }
 
   function getSculptureItems() {
+    const imgMap = {
+      christus: '/sculpture/christus.jpg',
+      pieta: '/sculpture/pieta.jpg',
+      praying_hands: '/sculpture/praying_hands.jpg'
+    };
     const raw = window.GALLERY_SCULPTURES || [];
     return raw.map((s) => ({
       ...s,
-      img: getSculpturePreview(s),
+      img: imgMap[s.id] || getSculpturePreview(s),
       bible: `${s.bible} · ${s.material || '고전 성조각'}`
     }));
   }
@@ -1042,7 +1047,7 @@
       currentArtGalleryIdx = 0;
       if (titleEl) titleEl.textContent = '📸 성도 추억나눔 온라인 전시회';
       if (bibleEl) bibleEl.textContent = '소미큐티 추억나눔(갤러리) 연동 전시관';
-      if (descEl) descEl.textContent = '현재 등록된 추억나눔 사진이 없습니다. 성도님들이 소미큐티 앱 [추억나눔]에 사진을 올리시면 이곳과 3D 루브르 갤러리 벽면에 즉시 전시됩니다.';
+      if (descEl) descEl.textContent = '현재 등록된 추억나눔 사진이 없습니다. 성도님들이 소미큐티 앱 [추억나눔]에 사진을 올리시면 이곳과 3D 갤러리 벽면에 즉시 전시됩니다.';
       if (medEl) medEl.textContent = '✨ 은혜로운 교회 행사, 소그룹 모임, 일상 묵상 사진을 성도들과 함께 나누어 보세요!';
       if (badgeEl) badgeEl.textContent = '0 / 0';
       if (imgEl) imgEl.classList.add('hidden');
@@ -1151,7 +1156,7 @@
     bible: { icon: '📖', name: '성경통독방' },
     qt: { icon: '✏️', name: '큐티방' },
     prayer: { icon: '🕯️', name: '고요한 기도실' },
-    gallery: { icon: '🏛️', name: '루브르 갤러리' },
+    gallery: { icon: '🏛️', name: '갤러리' },
     rooftop: { icon: '☕', name: '루프탑 카페' }
   };
 
