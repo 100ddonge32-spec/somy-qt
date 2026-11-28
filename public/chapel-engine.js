@@ -915,14 +915,76 @@
     }
   };
 
+  // 🎨 램브란트(Rembrandt van Rijn)의 대표 성화 6선 컬렉션 (기도·갤러리실 전시)
   const GALLERY_ARTWORKS = [
-    { title: '창조의 빛 (창세기 1:3)', desc: '하나님이 이르시되 빛이 있으라 하시니 빛이 있었고 — 혼돈과 어둠 위에 임한 첫 창조의 광명', color1: '#1e293b', color2: '#d97706' },
-    { title: '선한 목자 (시편 23:1-2)', desc: '여호와는 나의 목자시니 내게 부족함이 없으리로다 그가 나를 푸른 풀밭과 쉴 만한 물 가로 인도하시는도다', color1: '#143829', color2: '#a3b18a' },
-    { title: '광야의 불기둥 (출애굽기 13:21)', desc: '밤에는 불기둥을 비추사 주야로 진행하게 하시니 — 인생의 밤길을 밝히시는 임마누엘 하나님', color1: '#3b180c', color2: '#ea580c' },
-    { title: '겟세마네의 기도 (누가복음 22:42)', desc: '내 원대로 마시옵고 아버지의 원대로 되기를 원하나이다 — 순종의 기도', color1: '#171a36', color2: '#6366f1' },
-    { title: '갈보리 언덕의 사랑 (로마서 5:8)', desc: '우리가 아직 죄인 되었을 때에 그리스도께서 우리를 위하여 죽으심으로 사랑을 확증하셨느니라', color1: '#3f0d1c', color2: '#e11d48' },
-    { title: '부활의 새벽 (요한복음 11:25)', desc: '나는 부활이요 생명이니 나를 믿는 자는 죽어도 살겠고 영원히 죽지 아니하리니', color1: '#1e3a5f', color2: '#facc15' }
+    {
+      id: 'prodigal_son',
+      title: '돌아온 탕자 (The Return of the Prodigal Son)',
+      bible: '누가복음 15:20-24',
+      artist: '렘브란트 반 레인 (Rembrandt van Rijn, c. 1668)',
+      img: '/rembrandt/prodigal_son.jpg',
+      color1: '#3a1f10',
+      color2: '#d97706',
+      desc: '렘브란트 생애 말년의 최고 걸작. 집을 떠나 모든 것을 탕진하고 만신창이가 되어 무릎 꿇은 아들을 두 손으로 감싸 안으시는 아버지의 무조건적인 사랑과 용서를 묘사합니다. 아버지의 한 손은 강인한 남성(아버지의 의지), 다른 한 손은 부드러운 여성(어머니의 온유함)을 상징하며, 하나님의 온전한 품으심을 깊이 전달합니다.',
+      meditation: '🙏 묵상 질문: 오늘 내 삶에서 아버지의 품으로 다시 돌아가 온전히 안겨야 할 나의 지친 모습은 무엇인가요?'
+    },
+    {
+      id: 'storm_galilee',
+      title: '갈릴리 호수의 폭풍 속 그리스도 (Christ in the Storm on the Lake of Galilee)',
+      bible: '마가복음 4:35-41',
+      artist: '렘브란트 반 레인 (Rembrandt van Rijn, 1633)',
+      img: '/rembrandt/storm_galilee.jpg',
+      color1: '#0f2937',
+      color2: '#38bdf8',
+      desc: '맹렬하게 몰아치는 파도와 위태롭게 기우는 배 위에서 공포에 질린 제자들과 평온히 주무시던 예수님의 대비를 극적으로 담아낸 작품입니다. 거센 풍랑 속에서도 키를 잡으신 주님께서 “잠잠하라, 고요하라” 명하실 때 모든 혼돈이 평강으로 변화됨을 보여줍니다.',
+      meditation: '🙏 묵상 질문: 인생의 거센 풍랑을 만났을 때, 나는 파도를 바라보고 있나요, 아니면 함께 배에 타고 계신 주님을 의지하고 있나요?'
+    },
+    {
+      id: 'supper_emmaus',
+      title: '엠마오의 저녁 식사 (The Supper at Emmaus)',
+      bible: '누가복음 24:30-31',
+      artist: '렘브란트 반 레인 (Rembrandt van Rijn, 1648)',
+      img: '/rembrandt/supper_emmaus.jpg',
+      color1: '#271b12',
+      color2: '#f59e0b',
+      desc: '부활하신 예수님께서 엠마오로 가던 두 제자와 함께 식탁에 앉아 떡을 떼어 축사하시는 순간을 포착한 성화입니다. 평범한 나그네인 줄 알았던 분에게서 신적인 빛이 은은하게 퍼져 나오며 제자들의 영적인 눈이 열려 주님을 알아보는 경이로운 순간을 표현했습니다.',
+      meditation: '🙏 묵상 질문: 말씀과 성찬, 매일의 일상 속에서 나에게 찾아오시는 부활의 주님을 나의 영의 눈으로 알아보고 있나요?'
+    },
+    {
+      id: 'simeon_temple',
+      title: '성전의 시므온 (Simeon in the Temple)',
+      bible: '누가복음 2:28-32',
+      artist: '렘브란트 반 레인 (Rembrandt van Rijn, 1631)',
+      img: '/rembrandt/simeon_temple.jpg',
+      color1: '#362208',
+      color2: '#eab308',
+      desc: '평생을 이스라엘의 위로를 기다리던 의로운 노인 시므온이 성전에서 아기 예수님을 품에 안고 감사의 찬송을 올리는 장면입니다. 웅장한 어둠 속에서 오직 아기 예수님과 시므온에게만 거룩한 하늘의 빛이 쏟아져 내리며, 인류의 구원자이신 예수 그리스도를 증언합니다.',
+      meditation: '🙏 묵상 질문: 나의 평생의 기도 속에 주님의 위로와 약속이 성취되는 거룩한 기쁨과 소망이 있습니까?'
+    },
+    {
+      id: 'apostle_paul',
+      title: '감옥의 사도 바울 (The Apostle Paul in Prison)',
+      bible: '디모데후서 4:6-8',
+      artist: '렘브란트 반 레인 (Rembrandt van Rijn, 1659)',
+      img: '/rembrandt/apostle_paul.jpg',
+      color1: '#221e1a',
+      color2: '#f97316',
+      desc: '차가운 감옥 안에서 턱을 괴고 깊은 고뇌와 기도로 편지를 기록하는 노사도 바울의 모습입니다. 육신의 자유는 결박되었으나 하나님의 말씀은 매이지 아니하며, 달려갈 길을 마치고 믿음을 지켜낸 사도의 결연하고 은혜로운 묵상이 배어납니다.',
+      meditation: '🙏 묵상 질문: 어떤 환경과 고난 속에서도 흔들리지 않고 끝까지 달려갈 복음의 사명이 내 마음에 있습니까?'
+    },
+    {
+      id: 'jeremiah',
+      title: '예루살렘의 멸망을 애통하는 예레미야 (Jeremiah Lamenting the Destruction of Jerusalem)',
+      bible: '예레미야애가 3:21-26',
+      artist: '렘브란트 반 레인 (Rembrandt van Rijn, 1630)',
+      img: '/rembrandt/jeremiah.jpg',
+      color1: '#261609',
+      color2: '#fbbf24',
+      desc: '불타는 예루살렘 성전을 등 뒤로 한 채, 거대한 성경에 팔을 괴고 민족의 죄악과 아픔을 가슴에 품고 눈물로 중보기도 드리는 선지자 예레미야의 모습입니다. 절망의 잿더미 속에서도 하나님의 자비와 긍휼이 무궁하심을 신뢰하는 눈물의 기도를 상징합니다.',
+      meditation: '🙏 묵상 질문: 무너진 이 세대와 이웃, 교회를 가슴에 품고 애통하며 눈물로 중보의 등불을 밝히고 있습니까?'
+    }
   ];
+  window.GALLERY_ARTWORKS = GALLERY_ARTWORKS;
 
   class ChapelWorld3D {
     constructor(opts) {

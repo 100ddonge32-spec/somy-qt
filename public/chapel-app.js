@@ -800,6 +800,8 @@
     document.getElementById('btn-yes-tongdok-quick').classList.toggle('hidden', zoneId !== 'bible');
     document.getElementById('btn-qt-academy').classList.toggle('hidden', zoneId !== 'qt');
     document.getElementById('btn-candle-board').classList.toggle('hidden', zoneId !== 'sanctuary' && zoneId !== 'prayer');
+    const prayerGalBtn = document.getElementById('btn-prayer-gallery');
+    if (prayerGalBtn) prayerGalBtn.classList.toggle('hidden', zoneId !== 'prayer');
     document.getElementById('btn-board-studio').classList.toggle('hidden', !meta.hasBoard);
     updateRooftopUi();
 
@@ -888,9 +890,59 @@
     } else if (item.type === 'candle_altar') {
       openModal('candle-modal');
     } else if (item.type === 'artwork' && item.artwork) {
-      document.getElementById('art-modal-title').textContent = `🖼️ ${item.artwork.title}`;
-      document.getElementById('art-modal-desc').textContent = item.artwork.desc;
+      const artList = window.GALLERY_ARTWORKS || [];
+      const fIdx = artList.findIndex((a) => a.id === item.artwork.id || a.title === item.artwork.title);
+      renderArtModalDetail(fIdx >= 0 ? fIdx : 0);
       openModal('art-modal');
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // 🎨 램브란트 성화 & 말씀 기도 갤러리 모달 렌더러
+  // -------------------------------------------------------------------------
+  let currentArtGalleryIdx = 0;
+  function renderArtModalDetail(idx = 0) {
+    const list = window.GALLERY_ARTWORKS || [];
+    if (!list.length) return;
+    currentArtGalleryIdx = (idx + list.length) % list.length;
+    const art = list[currentArtGalleryIdx];
+
+    const titleEl = document.getElementById('art-modal-title');
+    const bibleEl = document.getElementById('art-modal-bible');
+    const imgEl = document.getElementById('art-modal-img');
+    const descEl = document.getElementById('art-modal-desc');
+    const medEl = document.getElementById('art-modal-meditation');
+    const badgeEl = document.getElementById('art-gallery-index-badge');
+    const thumbContainer = document.getElementById('art-thumbnails-container');
+
+    if (titleEl) titleEl.textContent = art.title;
+    if (bibleEl) bibleEl.textContent = `${art.bible || ''} · ${art.artist || '렘브란트'}`;
+    if (descEl) descEl.textContent = art.desc;
+    if (medEl) medEl.textContent = art.meditation || '🙏 주님의 거룩한 임재와 사랑을 묵상합니다.';
+    if (badgeEl) badgeEl.textContent = `${currentArtGalleryIdx + 1} / ${list.length}`;
+
+    if (imgEl) {
+      imgEl.src = art.img;
+      imgEl.alt = art.title;
+    }
+
+    if (thumbContainer) {
+      thumbContainer.innerHTML = list.map((a, i) => `
+        <button type="button" data-artidx="${i}" class="group relative rounded-lg overflow-hidden border-2 transition p-0.5 cursor-pointer ${
+          i === currentArtGalleryIdx ? 'border-amber-400 bg-amber-400/20 scale-105 shadow-md' : 'border-white/10 opacity-60 hover:opacity-100 hover:border-white/40'
+        }">
+          <img src="${a.img}" alt="${a.title}" class="w-full h-11 object-cover rounded" />
+          <span class="absolute bottom-0 inset-x-0 bg-black/80 text-[9px] text-white font-bold truncate text-center px-0.5">${i + 1}</span>
+        </button>
+      `).join('');
+
+      thumbContainer.querySelectorAll('[data-artidx]').forEach((b) => {
+        b.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const targetIdx = parseInt(b.getAttribute('data-artidx'), 10);
+          renderArtModalDetail(targetIdx);
+        });
+      });
     }
   }
 
@@ -3843,12 +3895,49 @@
     }
     if (id === 'share-modal') {
       const url = window.location.href.startsWith('http') ? window.location.href : 'https://somy-qt.vercel.app/chapel';
-      document.getElementById('share-url-input').value = url;
-      const qr = document.getElementById('share-qr-img');
-      qr.style.display = 'block';
-      qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=8&data=${encodeURIComponent(url)}`;
+      const inputEl = document.getElementById('share-url-input');
+      if (inputEl) inputEl.value = url;
+      generateShareQr(url);
+    }
+    if (id === 'art-modal') {
+      renderArtModalDetail(currentArtGalleryIdx);
     }
     document.getElementById(id).classList.remove('hidden');
+  }
+
+  // -------------------------------------------------------------------------
+  // 📱 로컬 및 원격 QR 코드 안정적 생성기 (외부 API 실패 대비 오프라인 qrcodejs 탑재)
+  // -------------------------------------------------------------------------
+  function generateShareQr(url) {
+    const container = document.getElementById('share-qr-container');
+    const qrImg = document.getElementById('share-qr-img');
+    if (!container || !qrImg) return;
+
+    if (typeof QRCode !== 'undefined') {
+      try {
+        container.innerHTML = '';
+        new QRCode(container, {
+          text: url,
+          width: 192,
+          height: 192,
+          colorDark: '#090d16',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+        return;
+      } catch (err) {
+        console.warn('QRCode JS generation failed, using fallback img:', err);
+      }
+    }
+
+    // Fallback: 다중 QR 엔드포인트 지원
+    qrImg.style.display = 'block';
+    qrImg.onerror = () => {
+      // 2차 백업: qrserver
+      qrImg.onerror = null;
+      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=8&data=${encodeURIComponent(url)}`;
+    };
+    qrImg.src = `https://quickchart.io/qr?text=${encodeURIComponent(url)}&size=200&margin=2`;
   }
 
   function closeModal(id) {
@@ -4274,6 +4363,21 @@
     openModal('sarang-modal');
   });
 
+  const hubOpenQrBtn = document.getElementById('btn-hub-open-qr');
+  if (hubOpenQrBtn) {
+    hubOpenQrBtn.addEventListener('click', () => {
+      closeModal('hub-modal');
+      openModal('share-modal');
+    });
+  }
+
+  const prayerGalDrawerBtn = document.getElementById('btn-prayer-gallery');
+  if (prayerGalDrawerBtn) {
+    prayerGalDrawerBtn.addEventListener('click', () => {
+      openModal('art-modal');
+    });
+  }
+
   document.getElementById('btn-board-studio').addEventListener('click', () => openModal('board-modal'));
   document.getElementById('btn-sarang-Menu').addEventListener('click', () => openModal('sarang-modal'));
   document.getElementById('btn-bible-reader').addEventListener('click', () => {
@@ -4336,8 +4440,10 @@
       const isHidden = topToolsDrawer.classList.toggle('hidden');
       if (topToolsLabel) topToolsLabel.textContent = isHidden ? '도구' : '닫기';
       if (topToolsIcon) topToolsIcon.textContent = isHidden ? '⚙️' : '✕';
-      topToolsBtn.classList.toggle('bg-amber-400', !isHidden);
-      topToolsBtn.classList.toggle('text-slate-950', !isHidden);
+      topToolsBtn.classList.toggle('bg-amber-500/30', !isHidden);
+      topToolsBtn.classList.toggle('border-amber-300', !isHidden);
+      topToolsBtn.classList.toggle('text-white', !isHidden);
+      topToolsBtn.classList.toggle('text-amber-300', isHidden);
     });
   }
 

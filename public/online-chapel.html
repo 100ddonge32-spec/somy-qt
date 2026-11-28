@@ -305,6 +305,10 @@
             class="hidden shrink-0 px-2 sm:px-2.5 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] sm:text-[11px] font-extrabold cursor-pointer shadow">
             🕯️ 중보등불
           </button>
+          <button id="btn-prayer-gallery"
+            class="hidden shrink-0 px-2 sm:px-2.5 py-1 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] sm:text-[11px] font-black cursor-pointer shadow">
+            🎨 갤러리성화
+          </button>
           <button id="btn-sip-drink"
             class="hidden shrink-0 px-2 sm:px-2.5 py-1 rounded-full bg-amber-700 hover:bg-amber-600 text-white text-[10px] sm:text-[11px] font-extrabold cursor-pointer border border-amber-300/50">
             ☕ 커피
@@ -1609,38 +1613,74 @@
       </div>
     </div>
 
-    <!-- [모달 8] 🖼️ 성화·말씀 갤러리 해설 -->
+    <!-- [모달 8] 🖼️ 램브란트 성화 & 말씀 기도 갤러리 (전체보기 및 상세 묵상) -->
     <div id="art-modal"
-      class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-40">
+      class="hidden absolute inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 z-40">
       <div
-        class="bg-[#FDFBF7] text-slate-800 rounded-2xl max-w-sm w-full p-5 border border-amber-300 shadow-2xl space-y-3 text-center">
-        <div id="art-modal-title" class="text-sm font-extrabold text-amber-900"></div>
-        <div id="art-modal-desc" class="text-xs leading-relaxed font-medium text-slate-700 break-keep"></div>
+        class="bg-[#181B20] text-slate-100 rounded-2xl max-w-xl w-full p-4 sm:p-6 border border-amber-500/40 shadow-2xl space-y-4 max-h-[92dvh] flex flex-col">
+        <!-- 상단 헤더 -->
+        <div class="flex items-center justify-between border-b border-white/10 pb-3 shrink-0">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">🕯️</span>
+            <div>
+              <div id="art-modal-title" class="text-sm sm:text-base font-black text-amber-300">램브란트 성화 갤러리</div>
+              <div id="art-modal-bible" class="text-[11px] text-emerald-400 font-bold"></div>
+            </div>
+          </div>
+          <button data-close="art-modal"
+            class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold cursor-pointer transition">닫기 ✕</button>
+        </div>
+
+        <!-- 성화 이미지 뷰어 영역 -->
+        <div class="relative w-full bg-black/60 rounded-xl overflow-hidden border border-white/10 flex items-center justify-center min-h-[220px] max-h-[340px] shrink-0">
+          <img id="art-modal-img" src="" alt="성화" class="max-h-[330px] w-auto max-w-full object-contain mx-auto transition-opacity duration-300" />
+        </div>
+
+        <!-- 6작품 썸네일 탐색 바 -->
+        <div class="shrink-0 space-y-1.5">
+          <div class="text-[11px] font-bold text-slate-400 flex items-center justify-between">
+            <span>🎨 갤러리 작품 목록 (클릭하여 전환)</span>
+            <span id="art-gallery-index-badge" class="text-[10px] text-amber-400 font-extrabold">1 / 6</span>
+          </div>
+          <div id="art-thumbnails-container" class="grid grid-cols-6 gap-1.5 p-1 rounded-xl bg-slate-900/80 border border-white/10 overflow-x-auto">
+            <!-- chapel-app.js에서 6개 썸네일 동적 렌더링 -->
+          </div>
+        </div>
+
+        <!-- 성화 설명 및 묵상 텍스트 (스크롤 가능) -->
+        <div class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+          <div id="art-modal-desc" class="text-xs sm:text-sm leading-relaxed text-slate-200 break-keep font-normal"></div>
+          <div id="art-modal-meditation" class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-[11px] sm:text-xs text-amber-200 leading-normal break-keep"></div>
+        </div>
+
         <button data-close="art-modal"
-          class="w-full py-2 rounded-xl bg-amber-600 text-white text-xs font-extrabold cursor-pointer">묵상하며 닫기
-          🙏</button>
+          class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs sm:text-sm font-black cursor-pointer shadow shrink-0 transition">
+          말씀과 기도로 묵상하며 닫기 🙏
+        </button>
       </div>
     </div>
 
     <!-- [모달 9] 📱 친구 초대 & 스마트폰 QR 열기 -->
     <div id="share-modal"
-      class="hidden absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-40">
+      class="hidden absolute inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-40">
       <div
-        class="bg-slate-800 text-white rounded-2xl max-w-sm w-full p-5 border border-slate-600 shadow-2xl space-y-3 text-center">
-        <div class="flex items-center justify-between">
-          <span class="text-sm font-extrabold text-emerald-300">📱 성도 초대 & 스마트폰 접속</span>
+        class="bg-slate-900 text-white rounded-3xl max-w-sm w-full p-5 border-2 border-emerald-400/50 shadow-2xl space-y-4 text-center">
+        <div class="flex items-center justify-between border-b border-slate-700/80 pb-2.5">
+          <span class="text-sm font-extrabold text-emerald-300">📱 성도 초대 & 스마트폰 접속 QR</span>
           <button data-close="share-modal"
-            class="px-2.5 py-1 rounded-lg bg-slate-700 text-xs cursor-pointer">닫기</button>
+            class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs cursor-pointer">닫기 ✕</button>
         </div>
-        <div class="bg-white rounded-2xl p-3 inline-block mx-auto">
-          <img id="share-qr-img" alt="QR" class="w-36 h-36 object-contain" onerror="this.style.display='none'" />
+        <div class="bg-white rounded-2xl p-4 inline-block mx-auto shadow-inner">
+          <div id="share-qr-container" class="flex items-center justify-center min-w-[192px] min-h-[192px]">
+            <img id="share-qr-img" alt="QR" class="w-48 h-48 object-contain" />
+          </div>
         </div>
-        <p class="text-xs text-slate-300 m-0">같은 링크로 접속한 성도들은 3D 공간에서 실시간으로 만나 걸어 다니고 대화할 수 있습니다!</p>
-        <div class="flex gap-1.5">
+        <p class="text-xs text-slate-300 leading-relaxed m-0">스마트폰 기본 카메라로 위 QR 코드를 비추면 앱 설치 없이 즉시 3D 온라인 캠퍼스로 접속합니다.</p>
+        <div class="flex gap-1.5 pt-1">
           <input id="share-url-input" type="text" readonly
-            class="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-emerald-300 font-bold outline-none" />
+            class="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-emerald-300 font-bold outline-none select-all" />
           <button id="btn-copy-share"
-            class="px-3 py-2 rounded-xl bg-emerald-400 text-slate-950 text-xs font-extrabold cursor-pointer">복사</button>
+            class="px-3.5 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-black cursor-pointer shadow transition">주소 복사</button>
         </div>
       </div>
     </div>
@@ -1684,6 +1724,22 @@
           <button data-hubzone="rooftop"
             class="hub-zone-btn p-2 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 border border-slate-700 text-xs font-extrabold cursor-pointer">☕
             루프탑카페</button>
+        </div>
+
+        <!-- 📱 스마트폰 QR 접속 & 친구 초대 배너 -->
+        <div class="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-slate-800 to-slate-900 border border-emerald-400/40 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-400/20 border border-emerald-400/50 flex items-center justify-center text-xl shrink-0">
+              📱
+            </div>
+            <div>
+              <div class="text-xs sm:text-sm font-extrabold text-emerald-300">스마트폰 카메라로 비추어 바로 접속하기</div>
+              <div class="text-[11px] text-slate-300 mt-0.5">QR 코드를 스캔하거나 링크를 복사하여 함께 예배하고 교제할 성도들을 초대하세요.</div>
+            </div>
+          </div>
+          <button id="btn-hub-open-qr" class="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-black cursor-pointer shadow flex items-center justify-center gap-1.5 shrink-0 transition">
+            <span>📷 접속 QR 코드 열기</span>
+          </button>
         </div>
 
         <!-- 4대 분류별 통합 게시판 그리드 (밝은 고대비 카드 디자인) -->
@@ -1780,9 +1836,10 @@
       document.body.appendChild(s);
     });
 
-    await loadScriptSequential('/chapel-pbr.js?v=11');
-    await loadScriptSequential('/chapel-engine.js?v=11');
-    await loadScriptSequential('/chapel-app.js?v=11');
+    await loadScriptSequential('/qrcode.min.js');
+    await loadScriptSequential('/chapel-pbr.js?v=12');
+    await loadScriptSequential('/chapel-engine.js?v=12');
+    await loadScriptSequential('/chapel-app.js?v=12');
   </script>
 </body>
 

@@ -1044,42 +1044,53 @@
       const outer = new THREE.Mesh(new THREE.BoxGeometry(5.2, 3.6, 0.10), slimFrame);
       outer.castShadow = true;
 
-      const tex = makeCanvasTex(512, 340, (ctx, w, h) => {
-        const bg = ctx.createRadialGradient(w * 0.5, h * 0.38, 18, w * 0.5, h * 0.5, w * 0.68);
-        bg.addColorStop(0, art.color2);
-        bg.addColorStop(0.58, art.color1);
-        bg.addColorStop(1, '#111827');
-        ctx.fillStyle = bg;
-        ctx.fillRect(0, 0, w, h);
+      // 램브란트 명화 텍스처 로드 (fallback 지원)
+      let canvasMat;
+      if (art && art.img) {
+        const texLoader = new THREE.TextureLoader();
+        const map = texLoader.load(art.img);
+        map.colorSpace = THREE.SRGBColorSpace;
+        canvasMat = new THREE.MeshStandardMaterial({
+          map,
+          roughness: 0.35,
+          emissive: 0xffffff,
+          emissiveMap: map,
+          emissiveIntensity: 0.18
+        });
+      } else {
+        const tex = makeCanvasTex(512, 340, (ctx, w, h) => {
+          const bg = ctx.createRadialGradient(w * 0.5, h * 0.38, 18, w * 0.5, h * 0.5, w * 0.68);
+          bg.addColorStop(0, art.color2 || '#b45309');
+          bg.addColorStop(0.58, art.color1 || '#1e293b');
+          bg.addColorStop(1, '#111827');
+          ctx.fillStyle = bg;
+          ctx.fillRect(0, 0, w, h);
 
-        ctx.fillStyle = '#ffffff';
-        ctx.strokeStyle = '#e5e7eb';
-        ctx.lineWidth = 24;
-        ctx.strokeRect(12, 12, w - 24, h - 24); // 모던 화이트 매트 보드
+          ctx.fillStyle = '#ffffff';
+          ctx.strokeStyle = '#e5e7eb';
+          ctx.lineWidth = 24;
+          ctx.strokeRect(12, 12, w - 24, h - 24);
 
-        if (idx % 2 === 0) {
-          ctx.fillStyle = 'rgba(255, 251, 235, 0.92)';
-          ctx.fillRect(w * 0.5 - 5, h * 0.24, 10, 114);
-          ctx.fillRect(w * 0.5 - 34, h * 0.35, 68, 10);
-        } else {
-          ctx.beginPath();
-          ctx.arc(w * 0.5, h * 0.42, 40, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(254, 249, 195, 0.85)';
-          ctx.fill();
-        }
-
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.94)';
-        ctx.fillRect(24, h - 64, w - 48, 40);
-        ctx.fillStyle = '#1e293b';
-        ctx.font = '700 20px -apple-system, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(art.title, w / 2, h - 44, w - 64);
-      }, 1, 1);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.94)';
+          ctx.fillRect(24, h - 64, w - 48, 40);
+          ctx.fillStyle = '#1e293b';
+          ctx.font = '700 20px -apple-system, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(art.title, w / 2, h - 44, w - 64);
+        }, 1, 1);
+        canvasMat = new THREE.MeshStandardMaterial({
+          map: tex,
+          roughness: 0.35,
+          emissive: 0xffffff,
+          emissiveMap: tex,
+          emissiveIntensity: 0.15
+        });
+      }
 
       const canvasMesh = new THREE.Mesh(
         new THREE.PlaneGeometry(4.96, 3.36),
-        new THREE.MeshStandardMaterial({ map: tex, roughness: 0.35, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.15 })
+        canvasMat
       );
       canvasMesh.position.z = 0.06;
 
