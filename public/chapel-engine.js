@@ -886,8 +886,22 @@
     },
     prayer: {
       id: 'prayer',
-      name: '🏛️ 기도실 & 루브르 말씀·추억 갤러리',
-      subtitle: '파리 루브르 그랜드 갤러리 · 렘브란트 성화전 · 성도 추억나눔 온라인 전시관 · 개인기도부스',
+      name: '🕯️ 고요한 기도실 (개인·중보 기도처)',
+      subtitle: '은은한 캔들 촛불 · 십자가 백라이트 제단 · 아늑한 흡음 우드 패널 · 개인 무릎기도석',
+      sky: 0x0a0908,
+      fogColor: 0x141210,
+      fogDensity: 0.0035,
+      spawn: { x: 0, z: 9.5, rotY: Math.PI },
+      panorama: { pos: [-11, 6.5, 12.5], look: [0, 2.2, -4] },
+      bounds: { x: 13.8, zMin: -13.8, zMax: 13.8 },
+      hasBoard: true,
+      boardPos: [0, 4.4, -13.2],
+      boardSize: [9.6, 4.5]
+    },
+    gallery: {
+      id: 'gallery',
+      name: '🏛️ 루브르 성화·추억 갤러리 (온라인 전시관)',
+      subtitle: '파리 루브르 그랜드 갤러리 · 렘브란트 성화전 · 성도 추억나눔 온라인 전시관 · 감상 라운지',
       sky: 0x1a1714,
       fogColor: 0x231f1b,
       fogDensity: 0.0022,
@@ -1617,7 +1631,8 @@
       else if (meta.id === 'sarangbang') this._buildSarangbang(opts.sarangbangName || '사랑방');
       else if (meta.id === 'bible') this._buildBibleRoom();
       else if (meta.id === 'qt') this._buildQtRoom();
-      else if (meta.id === 'prayer') this._buildPrayerGallery(opts.galleryPosts || []);
+      else if (meta.id === 'prayer') this._buildPrayerRoom(opts.candles || []);
+      else if (meta.id === 'gallery') this._buildGallery(opts.galleryPosts || []);
       else if (meta.id === 'rooftop') this._buildRooftop();
 
       if (meta.hasBoard) {
@@ -2075,8 +2090,9 @@
 
       this._addPortalDoor(-9.5, 28.6, Math.PI, 'garden', '🌿 앞마당 광장', '야외 출구');
       this._addPortalDoor(9.5, 28.6, Math.PI, 'rooftop', '☕ 루프탑 카페', '옥상 라운지');
-      this._addPortalDoor(-28.8, -6, Math.PI / 2, 'sarangbang', '🏠 사랑방 센터', '모던 소그룹실');
-      this._addPortalDoor(-28.8, 8, Math.PI / 2, 'prayer', '🕯️ 기도·갤러리실', '성화·개인기도');
+      this._addPortalDoor(-28.8, -9, Math.PI / 2, 'sarangbang', '🏠 사랑방 센터', '모던 소그룹실');
+      this._addPortalDoor(-28.8, 1, Math.PI / 2, 'prayer', '🕯️ 고요한 기도실', '묵상·개인중보기도');
+      this._addPortalDoor(-28.8, 11, Math.PI / 2, 'gallery', '🏛️ 루브르 갤러리', '성화·추억 온라인전시관');
       this._addPortalDoor(28.8, -6, -Math.PI / 2, 'bible', '📖 성경통독방', '모던 북라운지');
       this._addPortalDoor(28.8, 8, -Math.PI / 2, 'qt', '✏️ 큐티방', '세미나·나눔실');
     }
@@ -2327,9 +2343,9 @@
     }
 
     // =======================================================================
-    // 5) 🏛️ 기도실 & 파리 루브르 박물관(Grand Galerie) 성화·추억나눔 온라인 전시관
+    // 5) 🏛️ 파리 루브르 박물관(Grand Galerie) 성화·추억나눔 온라인 전시관 (루브르 갤러리)
     // =======================================================================
-    _buildPrayerGallery(galleryPosts = []) {
+    _buildGallery(galleryPosts = []) {
       const parquetFloor = this.pbr.louvreParquetMaterial(10, 14);
       const runnerMarble = this.pbr.marbleMaterial('louvre_runner', [236, 232, 224], [190, 184, 172], 4, 12, 0.18);
       const goldMat = this.pbr.louvreGoldMaterial();
@@ -2525,37 +2541,21 @@
         );
       });
 
-      // 7. 안쪽 북편 고요한 개인기도부스 성소 (z = -22.5)
-      [-6.0, -2.0, 2.0, 6.0].forEach((kx, idx) => {
-        const divL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.5, 2.2), oakSlat);
-        divL.position.set(kx - 1.85, 1.25, -22.6);
-        if (idx === 3) {
-          const divR = divL.clone();
-          divR.position.x = kx + 1.85;
-          this.roomGroup.add(divR);
-        }
-        const shelf = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.07, 0.55), oakSlat);
-        shelf.position.set(kx, 0.90, -23.4);
-        const ledCross = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.65, 0.04), new THREE.MeshBasicMaterial({ color: 0xfff8dc }));
-        ledCross.position.set(kx, 1.65, -23.6);
-        const ledCrossH = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.06, 0.04), new THREE.MeshBasicMaterial({ color: 0xfff8dc }));
-        ledCrossH.position.set(kx, 1.76, -23.6);
-
-        const cushion = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.14, 0.9), padMat);
-        cushion.position.set(kx, 0.07, -22.2);
-        this.roomGroup.add(divL, shelf, ledCross, ledCrossH, cushion);
-
-        this.interactables.push({
-          id: `prayer_kneel_${idx}`,
-          type: 'kneel',
-          label: `🧎 ${idx + 1}번 개인기도부스 무릎기도`,
-          x: kx,
-          y: 0,
-          z: -22.2,
-          rotY: Math.PI,
-          radius: 1.85,
-          mesh: cushion
-        });
+      // 7. 북편 루브르 특별 기획전 라운지 감상석 (z = -22.5)
+      [-6.0, 6.0].forEach((bx, idx) => {
+        const bench = this.pbr.createMuseumBench(4.2);
+        bench.position.set(bx, 0, -22.5);
+        this.roomGroup.add(bench);
+        this._addFurnitureSeat(
+          `louvre_north_bench_${idx}`,
+          bx,
+          0,
+          -22.5,
+          Math.PI,
+          1.2,
+          '🛋️ 북측 기획전 감상석 착석',
+          'chair'
+        );
       });
 
       // 8. 4면 대형 플랜터 조경
@@ -2566,9 +2566,194 @@
       });
 
       // 9. 남쪽 출입 포털 문
-      this._addPortalDoor(-9.5, 28.0, Math.PI, 'sanctuary', '🏛️ 대성전 이동', '');
-      this._addPortalDoor(0.0, 28.0, Math.PI, 'qt', '✏️ 큐티방 이동', '');
-      this._addPortalDoor(9.5, 28.0, Math.PI, 'bible', '📖 성경통독방', '');
+      this._addPortalDoor(-11.5, 28.0, Math.PI, 'sanctuary', '🏛️ 대성전 이동', '본당 복귀');
+      this._addPortalDoor(0.0, 28.0, Math.PI, 'prayer', '🕯️ 고요한 기도실', '조용한 묵상·기도');
+      this._addPortalDoor(11.5, 28.0, Math.PI, 'qt', '✏️ 큐티방 이동', '말씀 나눔');
+    }
+
+    // =======================================================================
+    // 5-B) 🕯️ 고요한 기도실 (Quiet Prayer & Meditation Room)
+    // 갤러리 전시장과 완전히 분리되어 조용히 묵상하고 은밀히 기도하는 성스러운 공간
+    // =======================================================================
+    _buildPrayerRoom(candles = []) {
+      const darkOakFloor = this.pbr.woodPlankMaterial('prayer_dark_oak', [90, 68, 50], [60, 44, 30], 8, 8, 0.42);
+      const runnerVelvet = this.pbr.fabricMaterial('prayer_runner_burgundy', [110, 24, 36], 3, 6);
+      const oakSlat = this.pbr.acousticSlatMaterial(5, 1, true);
+      const wallWash = this.pbr.wallWashPanelMaterial('warm_dark', true);
+      const padMat = this.pbr.fabricMaterial('prayer_cushion_crimson', [135, 28, 42], 2, 2);
+      const altarMarble = this.pbr.marbleMaterial('altar_black_gold', [35, 33, 30], [20, 18, 16], 2, 2, 0.25);
+
+      // 1. 차분한 다크 오크 마루 바닥 + 중앙 묵상 벨벳 카펫
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(28, 28), darkOakFloor);
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      this.roomGroup.add(floor);
+
+      const runner = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 22), runnerVelvet);
+      runner.rotation.x = -Math.PI / 2;
+      runner.position.set(0, 0.012, 1.0);
+      runner.receiveShadow = true;
+      this.roomGroup.add(runner);
+
+      // 2. 어쿠스틱 흡음 목재 루버 벽체 및 인워드 벽 (27.2 x 27.2 x 6.8m)
+      this._addFourInwardRoomWalls(27.2, 27.2, 6.8, 0.0, oakSlat, wallWash, oakSlat);
+
+      // 3. 은은한 간접 조명 우물천장
+      const ceilingGrp = new THREE.Group();
+      const ceilBase = new THREE.Mesh(
+        new THREE.PlaneGeometry(28, 28),
+        new THREE.MeshStandardMaterial({ color: 0x1a1613, roughness: 0.9 })
+      );
+      ceilBase.rotation.x = Math.PI / 2;
+      ceilBase.position.y = 6.8;
+      ceilingGrp.add(ceilBase);
+
+      // 코브 간접조명 박스 (천장 중앙이 파여있고 둘레에 따스한 빛)
+      const cove = new THREE.Mesh(
+        new THREE.BoxGeometry(20, 0.25, 20),
+        new THREE.MeshBasicMaterial({ color: 0xffd8a8 })
+      );
+      cove.position.set(0, 6.65, 0);
+      ceilingGrp.add(cove);
+      this.roomGroup.add(ceilingGrp);
+
+      // 고요한 앰비언트 기도 조명 (따스하고 은은한 골드 톤)
+      const prayerAmbLight = new THREE.PointLight(0xffdfba, 0.85, 28, 1.2);
+      prayerAmbLight.position.set(0, 5.2, -4);
+      this.roomGroup.add(prayerAmbLight);
+
+      // 4. 북측 성소 제단 (North Wall, z = -12.5)
+      // 백라이트 은은한 골드 십자가
+      const crossGrp = new THREE.Group();
+      crossGrp.position.set(0, 3.8, -13.3);
+
+      const crossMat = new THREE.MeshStandardMaterial({
+        color: 0xffdfaa,
+        roughness: 0.25,
+        metalness: 0.8,
+        emissive: 0x996515,
+        emissiveIntensity: 0.35
+      });
+      const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.32, 3.6, 0.12), crossMat);
+      const crossH = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.32, 0.12), crossMat);
+      crossH.position.y = 0.65;
+      crossGrp.add(crossV, crossH);
+
+      // 십자가 후면 은은한 웜 백라이트 글로우
+      const crossGlow = new THREE.Mesh(
+        new THREE.PlaneGeometry(3.6, 4.6),
+        new THREE.MeshBasicMaterial({ color: 0xffedd5, transparent: true, opacity: 0.45 })
+      );
+      crossGlow.position.z = -0.06;
+      crossGrp.add(crossGlow);
+
+      const crossPointLight = new THREE.PointLight(0xffe4b5, 1.2, 14, 1.2);
+      crossPointLight.position.set(0, 0.5, 0.5);
+      crossGrp.add(crossPointLight);
+      this.roomGroup.add(crossGrp);
+
+      // 대리석 기도 제단 테이블
+      const altar = new THREE.Mesh(new THREE.BoxGeometry(6.4, 0.95, 1.6), altarMarble);
+      altar.position.set(0, 0.475, -11.5);
+      altar.castShadow = true;
+      altar.receiveShadow = true;
+      this.roomGroup.add(altar);
+
+      // 제단 위 촛불 그룹 배치 (Sanctuary 캔들과 동기화)
+      this.candleGroup = new THREE.Group();
+      this.candleGroup.position.set(0, 0.95, -11.5);
+      this.roomGroup.add(this.candleGroup);
+      this.updateCandles(candles);
+
+      // 촛불 봉헌대 인터랙션
+      this.interactables.push({
+        id: 'prayer_candle_altar',
+        type: 'candle',
+        label: '🕯️ 제단 촛불 밝히기 & 간절한 중보기도',
+        x: 0,
+        y: 0,
+        z: -9.8,
+        radius: 2.8,
+        mesh: altar
+      });
+
+      // 5. 개인 무릎 기도석 (8좌석: 중앙 앞줄 4석, 뒷줄 4석)
+      // 각 부스마다 아늑한 파티션 날개와 고급 기도 방석, 성경 거치대
+      const kneelLayouts = [
+        { kx: -3.6, kz: -7.5 }, { kx: -1.2, kz: -7.5 }, { kx: 1.2, kz: -7.5 }, { kx: 3.6, kz: -7.5 },
+        { kx: -3.6, kz: -3.2 }, { kx: -1.2, kz: -3.2 }, { kx: 1.2, kz: -3.2 }, { kx: 3.6, kz: -3.2 }
+      ];
+
+      kneelLayouts.forEach((pos, idx) => {
+        // 기도대 (성경 거치대 겸 무릎 지지대)
+        const desk = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.78, 0.42), oakSlat);
+        desk.position.set(pos.kx, 0.39, pos.kz - 0.48);
+        desk.castShadow = true;
+        desk.receiveShadow = true;
+
+        // 개인 십자가 음각 상징
+        const miniCross = new THREE.Mesh(
+          new THREE.BoxGeometry(0.04, 0.32, 0.02),
+          new THREE.MeshBasicMaterial({ color: 0xfef08a })
+        );
+        miniCross.position.set(pos.kx, 0.62, pos.kz - 0.26);
+
+        // 벨벳 푹신한 무릎 방석
+        const cushion = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.16, 0.85), padMat);
+        cushion.position.set(pos.kx, 0.08, pos.kz + 0.12);
+        cushion.castShadow = true;
+        cushion.receiveShadow = true;
+
+        this.roomGroup.add(desk, miniCross, cushion);
+
+        this.interactables.push({
+          id: `prayer_kneel_${idx}`,
+          type: 'kneel',
+          label: `🧎 ${idx + 1}번 개인 무릎기도석 (조용한 기도·묵상)`,
+          x: pos.kx,
+          y: 0,
+          z: pos.kz + 0.12,
+          rotY: Math.PI,
+          radius: 1.8,
+          mesh: cushion
+        });
+      });
+
+      // 6. 좌·우 벽면 조용한 침묵 묵상 벤치 (4석)
+      [
+        { bx: -10.5, bz: -5.0, rot: Math.PI / 2 },
+        { bx: -10.5, bz: 2.5, rot: Math.PI / 2 },
+        { bx: 10.5, bz: -5.0, rot: -Math.PI / 2 },
+        { bx: 10.5, bz: 2.5, rot: -Math.PI / 2 }
+      ].forEach((bs, bIdx) => {
+        const bench = this.pbr.createMuseumBench(3.2);
+        bench.position.set(bs.bx, 0, bs.bz);
+        bench.rotation.y = bs.rot;
+        this.roomGroup.add(bench);
+
+        this._addFurnitureSeat(
+          `prayer_meditation_seat_${bIdx}`,
+          bs.bx,
+          0,
+          bs.bz,
+          bs.rot,
+          1.2,
+          '🛋️ 조용한 침묵 묵상석 착석',
+          'chair'
+        );
+      });
+
+      // 7. 모퉁이 공기정화 올리브 화분
+      [[-11.5, -11.5], [11.5, -11.5], [-11.5, 11.5], [11.5, 11.5]].forEach(([px, pz]) => {
+        const plant = this.pbr.createPottedPlant(1.25);
+        plant.position.set(px, 0, pz);
+        this.roomGroup.add(plant);
+      });
+
+      // 8. 남쪽 포털 출입문 (z = 13.2)
+      this._addPortalDoor(-6.5, 13.2, Math.PI, 'sanctuary', '🏛️ 대성전 이동', '본당 복귀');
+      this._addPortalDoor(0.0, 13.2, Math.PI, 'gallery', '🏛️ 루브르 갤러리', '성화·추억 온라인전시관');
+      this._addPortalDoor(6.5, 13.2, Math.PI, 'qt', '✏️ 큐티방 이동', '말씀 나눔');
     }
 
     // =======================================================================

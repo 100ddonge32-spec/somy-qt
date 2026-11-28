@@ -578,10 +578,15 @@
           <button data-zone="prayer"
             class="zone-tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white/90 bg-white/10 hover:bg-white/20 cursor-pointer text-left">
             <span>🕯️</span>
-            <span class="truncate">기도·갤러리</span>
+            <span class="truncate">고요한 기도실</span>
+          </button>
+          <button data-zone="gallery"
+            class="zone-tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white/90 bg-white/10 hover:bg-white/20 cursor-pointer text-left">
+            <span>🏛️</span>
+            <span class="truncate">루브르 갤러리</span>
           </button>
           <button data-zone="rooftop"
-            class="zone-tab-btn col-span-2 sm:col-span-1 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white/90 bg-white/10 hover:bg-white/20 cursor-pointer text-left">
+            class="zone-tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white/90 bg-white/10 hover:bg-white/20 cursor-pointer text-left">
             <span>☕</span>
             <span class="truncate">루프탑 카페</span>
           </button>
@@ -1746,6 +1751,9 @@
           <button data-hubzone="prayer"
             class="hub-zone-btn p-2 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 border border-slate-700 text-xs font-extrabold cursor-pointer">🕯️
             기도실</button>
+          <button data-hubzone="gallery"
+            class="hub-zone-btn p-2 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 border border-slate-700 text-xs font-extrabold cursor-pointer">🏛️
+            루브르전시관</button>
           <button data-hubzone="rooftop"
             class="hub-zone-btn p-2 rounded-xl bg-slate-800 hover:bg-amber-400 hover:text-slate-950 border border-slate-700 text-xs font-extrabold cursor-pointer">☕
             루프탑카페</button>
@@ -1862,9 +1870,9 @@
     });
 
     await loadScriptSequential('/qrcode.min.js');
-    await loadScriptSequential('/chapel-pbr.js?v=13');
-    await loadScriptSequential('/chapel-engine.js?v=13');
-    await loadScriptSequential('/chapel-app.js?v=13');
+    await loadScriptSequential('/chapel-pbr.js?v=14');
+    await loadScriptSequential('/chapel-engine.js?v=14');
+    await loadScriptSequential('/chapel-app.js?v=14');
   </script>
 </body>
 

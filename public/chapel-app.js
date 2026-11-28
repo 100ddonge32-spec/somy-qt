@@ -150,7 +150,10 @@
       { id: 'npc_q1', name: '송찬양 간사', presetId: 'tweed_bob', x: -6.4, z: -3.75, rotY: Math.PI, pose: 'sit', isNpc: true, bubble: '🌅 오늘의 소미 큐티 말씀 함께 묵상해요!' }
     ],
     prayer: [
-      { id: 'npc_p1', name: '오감사 권사', presetId: 'kwonsa_grace', avatarConfig: { vrmModel: 'shino', bodyStyle: 'model', skinTone: 'warm', eyeColor: 'original', expression: 'pray', hairColor: 'espresso', outfitColor: '#6d28d9', bottomColor: '#1e1b4b', accessory: 'necklace' }, x: -2, z: -11.2, rotY: Math.PI, pose: 'kneel', isNpc: true }
+      { id: 'npc_p1', name: '오감사 권사', presetId: 'kwonsa_grace', avatarConfig: { vrmModel: 'shino', bodyStyle: 'model', skinTone: 'warm', eyeColor: 'original', expression: 'pray', hairColor: 'espresso', outfitColor: '#6d28d9', bottomColor: '#1e1b4b', accessory: 'necklace' }, x: -1.2, z: -7.4, rotY: Math.PI, pose: 'kneel', isNpc: true, bubble: '🕯️ 은밀한 골방에서 주님과 깊은 대화를 나눕니다' }
+    ],
+    gallery: [
+      { id: 'npc_g1', name: '김도슨트 집사', presetId: 'tweed_bob', x: 0, z: 1.5, rotY: -Math.PI / 2, pose: 'sit', isNpc: true, bubble: '🏛️ 루브르 성화와 성도님들의 소중한 은혜 추억을 감상하고 있어요' }
     ],
     rooftop: [
       { id: 'npc_t1', name: '류화평 청년', presetId: 'webtoon_boy', x: -6.2, z: -17.6, rotY: Math.PI, pose: 'sit', drink: 'coffee', isNpc: true, bubble: '🏞️ 산과 바다 사계절 풍경이 정말 아름답네요!' }
@@ -803,7 +806,7 @@
     document.getElementById('btn-qt-academy').classList.toggle('hidden', zoneId !== 'qt');
     document.getElementById('btn-candle-board').classList.toggle('hidden', zoneId !== 'sanctuary' && zoneId !== 'prayer');
     const prayerGalBtn = document.getElementById('btn-prayer-gallery');
-    if (prayerGalBtn) prayerGalBtn.classList.toggle('hidden', zoneId !== 'prayer');
+    if (prayerGalBtn) prayerGalBtn.classList.toggle('hidden', zoneId !== 'gallery');
     document.getElementById('btn-board-studio').classList.toggle('hidden', !meta.hasBoard);
     updateRooftopUi();
 
@@ -813,7 +816,8 @@
       sarangbang: { icon: '🏠', name: '사랑방(소그룹)' },
       bible: { icon: '📖', name: '성경통독방' },
       qt: { icon: '✏️', name: '큐티방' },
-      prayer: { icon: '🕯️', name: '기도·갤러리' },
+      prayer: { icon: '🕯️', name: '고요한 기도실' },
+      gallery: { icon: '🏛️', name: '루브르 갤러리' },
       rooftop: { icon: '☕', name: '루프탑 카페' }
     };
     const zInfo = ZONE_SHORT_NAMES[zoneId] || { icon: '📍', name: meta.name };
@@ -1072,7 +1076,8 @@
     sarangbang: { icon: '🏠', name: '사랑방(소그룹)' },
     bible: { icon: '📖', name: '성경통독방' },
     qt: { icon: '✏️', name: '큐티방' },
-    prayer: { icon: '🕯️', name: '기도·갤러리' },
+    prayer: { icon: '🕯️', name: '고요한 기도실' },
+    gallery: { icon: '🏛️', name: '루브르 갤러리' },
     rooftop: { icon: '☕', name: '루프탑 카페' }
   };
 
@@ -4665,9 +4670,8 @@
       }
       if (res && Array.isArray(res.somyGallery)) {
         somyGalleryPosts = res.somyGallery;
-        if (currentZone === 'prayer') {
-          world3d.loadZone('prayer', {
-            candles: worldState.candles,
+        if (currentZone === 'gallery') {
+          world3d.loadZone('gallery', {
             galleryPosts: somyGalleryPosts
           });
         }
