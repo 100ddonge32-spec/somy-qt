@@ -718,6 +718,8 @@
       const rUA = h.getNormalizedBoneNode('rightUpperArm');
       const lLA = h.getNormalizedBoneNode('leftLowerArm');
       const rLA = h.getNormalizedBoneNode('rightLowerArm');
+      const lHand = h.getNormalizedBoneNode('leftHand');
+      const rHand = h.getNormalizedBoneNode('rightHand');
       const lUL = h.getNormalizedBoneNode('leftUpperLeg');
       const rUL = h.getNormalizedBoneNode('rightUpperLeg');
       const lLL = h.getNormalizedBoneNode('leftLowerLeg');
@@ -738,20 +740,27 @@
         if (rUA) rUA.rotation.set(sipTimer > 0 ? 1.05 : 0.28, 0, -1.16);
         if (lLA) lLA.rotation.set(0, 0.35, 0);
         if (rLA) rLA.rotation.set(0, sipTimer > 0 ? 1.15 : -0.35, 0);
+        if (lHand) lHand.rotation.set(0, 0, 0);
+        if (rHand) rHand.rotation.set(0, 0, 0);
       } else if (pose === 'kneel') {
-        // 강단 앞 무릎 꿇고 두 손 모아 간절히 기도하는 자세
+        // 강단 앞 무릎 꿇고 가슴 앞에 두 손을 모아 간절히 기도하는 자세 (Praying Hands Pose)
         if (hips) hips.position.y = rec.baseHipsY - 0.42;
-        if (spine) spine.rotation.set(-0.14, 0, 0);
-        if (neck) neck.rotation.set(-0.26, 0, 0);
-        if (head) head.rotation.set(-0.12, 0, 0);
+        if (spine) spine.rotation.set(-0.16 + breathe * 0.3, 0, 0);
+        if (neck) neck.rotation.set(-0.28, 0, 0);
+        if (head) head.rotation.set(-0.14, 0, 0);
         if (lUL) lUL.rotation.set(0.28, 0.04, 0);
         if (rUL) rUL.rotation.set(0.28, -0.04, 0);
         if (lLL) lLL.rotation.set(-2.18, 0, 0);
         if (rLL) rLL.rotation.set(-2.18, 0, 0);
-        if (lUA) lUA.rotation.set(0.68, 0.38, 0.95);
-        if (rUA) rUA.rotation.set(0.68, -0.38, -0.95);
-        if (lLA) lLA.rotation.set(0, 1.25, 0);
-        if (rLA) rLA.rotation.set(0, -1.25, 0);
+        // 양 상완을 가슴 앞으로 모으고(팔꿈치를 몸쪽으로 당김)
+        if (lUA) lUA.rotation.set(0.72, 0.45, 0.85);
+        if (rUA) rUA.rotation.set(0.72, -0.45, -0.85);
+        // 전완(하완)을 위로 꺾어 가슴 정중앙으로 손을 모음
+        if (lLA) lLA.rotation.set(0.35, 0.65, 0.95);
+        if (rLA) rLA.rotation.set(0.35, -0.65, -0.95);
+        // 양 손목을 살짝 안쪽으로 맞닿게 하여 기도하는 손 모양 완성
+        if (lHand) lHand.rotation.set(0.12, 0.25, 0.18);
+        if (rHand) rHand.rotation.set(0.12, -0.25, -0.18);
       } else if (moving) {
         // 경쾌하고 자연스러운 순정만화 워킹 사이클 (양팔이 앞뒤로 자연스럽게 스윙!)
         const sw = Math.sin(walkPhase) * 0.52;
@@ -768,6 +777,8 @@
         if (rUA) rUA.rotation.set(sipTimer > 0 ? 1.05 : sw * 0.72, -0.05, -1.44);
         if (lLA) lLA.rotation.set(Math.max(0, -sw) * 0.32 + 0.12, 0, 0);
         if (rLA) rLA.rotation.set(sipTimer > 0 ? 1.15 : Math.max(0, sw) * 0.32 + 0.12, 0, 0);
+        if (lHand) lHand.rotation.set(0, 0, 0);
+        if (rHand) rHand.rotation.set(0, 0, 0);
       } else {
         // 순정만화 편안한 스탠딩 (양팔이 몸통 옆에 자연스럽게 촥 붙은 완벽한 핏)
         if (hips) hips.position.y = rec.baseHipsY + breathe * 0.35;
@@ -782,6 +793,8 @@
         if (rUA) rUA.rotation.set(sipTimer > 0 ? 1.05 : 0.04, -0.05, -1.45 - breathe * 0.25);
         if (lLA) lLA.rotation.set(0.12, 0, 0);
         if (rLA) rLA.rotation.set(sipTimer > 0 ? 1.15 : 0.12, 0, 0);
+        if (lHand) lHand.rotation.set(0, 0, 0);
+        if (rHand) rHand.rotation.set(0, 0, 0);
       }
     }
 
