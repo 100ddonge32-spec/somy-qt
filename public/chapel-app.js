@@ -900,14 +900,82 @@
       const idx = typeof item.index === 'number' ? item.index : 0;
       renderArtModalDetail(idx, tab);
       openModal('art-modal');
+    } else if (item.type === 'sculpture' && item.sculpture) {
+      const idx = typeof item.index === 'number' ? item.index : 0;
+      renderArtModalDetail(idx, 'sculpture');
+      openModal('art-modal');
     }
   }
 
   // -------------------------------------------------------------------------
-  // 🏛️ 파리 루브르 온라인 전시관 모달 (렘브란트 성화전 + 소미큐티 추억나눔 성도 사진전)
+  // 🏛️ 파리 루브르 온라인 전시관 모달 (렘브란트 성화전 + 기독교 성조각전 + 추억나눔 사진전)
   // -------------------------------------------------------------------------
   let currentArtGalleryTab = 'rembrandt';
   let currentArtGalleryIdx = 0;
+  const sculpturePreviewCache = {};
+
+  function getSculpturePreview(sculpt) {
+    if (sculpturePreviewCache[sculpt.id]) return sculpturePreviewCache[sculpt.id];
+    try {
+      const cvs = document.createElement('canvas');
+      cvs.width = 720;
+      cvs.height = 480;
+      const ctx = cvs.getContext('2d');
+
+      // 고급 다크 뮤지엄 갤러리 배경 + 방사형 스포트라이트
+      const grad = ctx.createRadialGradient(360, 210, 30, 360, 240, 380);
+      grad.addColorStop(0, sculpt.id === 'praying_hands' ? '#3d2b1f' : '#282522');
+      grad.addColorStop(0.65, '#151311');
+      grad.addColorStop(1, '#080706');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 720, 480);
+
+      // 루브르 전시대 대리석 및 금장 테두리 실루엣
+      ctx.fillStyle = 'rgba(217, 119, 6, 0.25)';
+      ctx.fillRect(24, 24, 672, 432);
+      ctx.strokeStyle = '#d97706';
+      ctx.lineWidth = 2.5;
+      ctx.strokeRect(24, 24, 672, 432);
+
+      // 상징 아이콘 & 타이틀 렌더링
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '76px sans-serif';
+      const icon = sculpt.id === 'christus' ? '🕊️' : (sculpt.id === 'pieta' ? '✝️' : '🙏');
+      ctx.fillText(icon, 360, 185);
+
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = 'bold 30px sans-serif';
+      ctx.fillText(sculpt.title, 360, 265);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '19px sans-serif';
+      ctx.fillText(sculpt.artist, 360, 310);
+
+      ctx.fillStyle = '#34d399';
+      ctx.font = 'bold 17px sans-serif';
+      ctx.fillText(sculpt.material || 'Carrara Marble', 360, 355);
+
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = 'italic 16px sans-serif';
+      ctx.fillText(sculpt.bible, 360, 400);
+
+      const url = cvs.toDataURL('image/jpeg', 0.92);
+      sculpturePreviewCache[sculpt.id] = url;
+      return url;
+    } catch {
+      return '';
+    }
+  }
+
+  function getSculptureItems() {
+    const raw = window.GALLERY_SCULPTURES || [];
+    return raw.map((s) => ({
+      ...s,
+      img: getSculpturePreview(s),
+      bible: `${s.bible} · ${s.material || '고전 성조각'}`
+    }));
+  }
 
   function getMemberExhibitionItems() {
     const out = [];
@@ -931,29 +999,35 @@
   }
 
   function renderArtModalDetail(idx = 0, forceTab = null) {
-    if (forceTab === 'rembrandt' || forceTab === 'member') {
+    if (forceTab === 'rembrandt' || forceTab === 'member' || forceTab === 'sculpture') {
       currentArtGalleryTab = forceTab;
     }
 
     const memberItems = getMemberExhibitionItems();
     const rembrandtItems = window.GALLERY_ARTWORKS || [];
+    const sculptureItems = getSculptureItems();
 
     const memberBadge = document.getElementById('art-member-count-badge');
     if (memberBadge) memberBadge.textContent = String(memberItems.length);
 
     const remTabBtn = document.getElementById('btn-art-tab-rembrandt');
+    const sculptTabBtn = document.getElementById('btn-art-tab-sculpture');
     const memTabBtn = document.getElementById('btn-art-tab-member');
-    if (remTabBtn && memTabBtn) {
-      const isRem = currentArtGalleryTab === 'rembrandt';
-      remTabBtn.className = `py-1.5 px-2 rounded-lg text-xs font-black cursor-pointer transition ${
-        isRem ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-300 hover:bg-white/10 font-bold'
-      }`;
-      memTabBtn.className = `py-1.5 px-2 rounded-lg text-xs font-black cursor-pointer transition ${
-        !isRem ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-300 hover:bg-white/10 font-bold'
-      }`;
-    }
 
-    const list = currentArtGalleryTab === 'member' ? memberItems : rembrandtItems;
+    [
+      { btn: remTabBtn, active: currentArtGalleryTab === 'rembrandt' },
+      { btn: sculptTabBtn, active: currentArtGalleryTab === 'sculpture' },
+      { btn: memTabBtn, active: currentArtGalleryTab === 'member' }
+    ].forEach(({ btn, active }) => {
+      if (!btn) return;
+      btn.className = `py-1.5 px-1.5 rounded-lg text-[11px] sm:text-xs font-black cursor-pointer transition truncate ${
+        active ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-300 hover:bg-white/10 font-bold'
+      }`;
+    });
+
+    let list = rembrandtItems;
+    if (currentArtGalleryTab === 'member') list = memberItems;
+    else if (currentArtGalleryTab === 'sculpture') list = sculptureItems;
 
     const titleEl = document.getElementById('art-modal-title');
     const bibleEl = document.getElementById('art-modal-bible');
@@ -4455,10 +4529,12 @@
   }
 
   const artTabRem = document.getElementById('btn-art-tab-rembrandt');
+  const artTabSculpt = document.getElementById('btn-art-tab-sculpture');
   const artTabMem = document.getElementById('btn-art-tab-member');
   const artPrevBtn = document.getElementById('btn-art-prev');
   const artNextBtn = document.getElementById('btn-art-next');
   if (artTabRem) artTabRem.addEventListener('click', () => renderArtModalDetail(0, 'rembrandt'));
+  if (artTabSculpt) artTabSculpt.addEventListener('click', () => renderArtModalDetail(0, 'sculpture'));
   if (artTabMem) artTabMem.addEventListener('click', () => renderArtModalDetail(0, 'member'));
   if (artPrevBtn) artPrevBtn.addEventListener('click', () => renderArtModalDetail(currentArtGalleryIdx - 1));
   if (artNextBtn) artNextBtn.addEventListener('click', () => renderArtModalDetail(currentArtGalleryIdx + 1));

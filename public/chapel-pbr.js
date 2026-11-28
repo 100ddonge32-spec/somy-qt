@@ -2119,6 +2119,287 @@
       this.cache.frosted_wood_deck = mat;
       return mat;
     }
+
+    // =========================================================================
+    // 11) 🏛️ 기독교 신앙 조각상 전용 PBR 재질 및 고전 대리석/청동 조각군
+    //     (토르발센의 그리스도상 / 미켈란젤로의 피에타 / 뒤러의 기도하는 손)
+    // =========================================================================
+    carraraMarbleMaterial() {
+      if (this.cache.carrara_marble) return this.cache.carrara_marble;
+      const map = makeCanvasTex(512, 512, (ctx, w, h) => {
+        ctx.fillStyle = '#f8f7f5';
+        ctx.fillRect(0, 0, w, h);
+        ctx.strokeStyle = 'rgba(215, 210, 202, 0.35)';
+        ctx.lineWidth = 1.6;
+        for (let i = 0; i < 22; i++) {
+          ctx.beginPath();
+          let x = hash2(i, 41) * w;
+          let y = 0;
+          ctx.moveTo(x, y);
+          while (y < h) {
+            y += 18 + hash2(i, y) * 22;
+            x += (hash2(x, y) - 0.5) * 32;
+            ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+      }, 2, 2);
+
+      const mat = new THREE.MeshStandardMaterial({
+        map,
+        color: 0xfcfbfa,
+        roughness: 0.22,
+        metalness: 0.08,
+        envMap: this.envMap,
+        envMapIntensity: 0.55
+      });
+      this.cache.carrara_marble = mat;
+      return mat;
+    }
+
+    antiqueBronzeMaterial() {
+      if (this.cache.antique_bronze) return this.cache.antique_bronze;
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0x5a4632,
+        roughness: 0.38,
+        metalness: 0.78,
+        envMap: this.envMap,
+        envMapIntensity: 0.65
+      });
+      this.cache.antique_bronze = mat;
+      return mat;
+    }
+
+    // 1) 🕊️ 토르발센의 부활하신 그리스도상 (Christus by Bertel Thorvaldsen)
+    createChristusSculpture() {
+      const grp = new THREE.Group();
+      const marble = this.carraraMarbleMaterial();
+      const gold = this.louvreGoldMaterial();
+
+      // 대리석 원형 대좌 (Pedestal)
+      const base1 = new THREE.Mesh(new THREE.CylinderGeometry(1.35, 1.45, 0.35, 32), marble);
+      base1.position.y = 0.175;
+      base1.castShadow = true;
+      base1.receiveShadow = true;
+
+      const goldTrim = new THREE.Mesh(new THREE.CylinderGeometry(1.37, 1.37, 0.06, 32), gold);
+      goldTrim.position.y = 0.38;
+
+      const base2 = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.25, 0.85, 32), marble);
+      base2.position.y = 0.835;
+      base2.castShadow = true;
+      base2.receiveShadow = true;
+
+      // 금장 명판 (Plaque)
+      const plaque = new THREE.Mesh(new THREE.PlaneGeometry(0.72, 0.28), gold);
+      plaque.position.set(0, 0.85, 1.22);
+      grp.add(base1, goldTrim, base2, plaque);
+
+      // 조각상 본체 (높이 약 2.4m)
+      const statueY = 1.26;
+      const statueGrp = new THREE.Group();
+      statueGrp.position.y = statueY;
+
+      // 튜닉 로브 드레이프 (하반신)
+      const robeLower = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.72, 1.3, 18), marble);
+      robeLower.position.y = 0.65;
+      robeLower.castShadow = true;
+
+      // 드레이프 주름 디테일
+      for (let r = 0; r < 7; r++) {
+        const fold = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.08, 1.28, 8), marble);
+        const ang = (r / 7) * Math.PI * 1.5 - Math.PI * 0.75;
+        fold.position.set(Math.sin(ang) * 0.58, 0.64, Math.cos(ang) * 0.58);
+        statueGrp.add(fold);
+      }
+
+      // 상포 및 숄더 (상반신)
+      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.44, 0.8, 16), marble);
+      torso.position.y = 1.62;
+      torso.castShadow = true;
+
+      // 어깨를 두른 망토 (Himation drape)
+      const mantle = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.12, 10, 24, Math.PI * 1.2), marble);
+      mantle.rotation.x = Math.PI / 2 + 0.3;
+      mantle.rotation.z = -0.4;
+      mantle.position.set(0, 1.82, 0.05);
+
+      // 머리 & 수염
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 16), marble);
+      head.position.set(0, 2.22, 0.04);
+      head.scale.set(0.9, 1.05, 0.95);
+      head.rotation.x = 0.12; // 온화하게 아래를 바라봄
+
+      // 성스러운 금빛 헤일로 링
+      const halo = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.02, 10, 32), gold);
+      halo.position.set(0, 2.32, -0.06);
+      halo.rotation.x = 0.3;
+
+      // 두 팔을 온화하게 앞으로 벌려 성도를 환영하는 자애로운 손길
+      const armMat = marble;
+      // 왼팔 (관람객 기준 우측)
+      const leftArmGrp = new THREE.Group();
+      leftArmGrp.position.set(0.36, 1.88, 0);
+      const leftBicep = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.09, 0.52, 12), armMat);
+      leftBicep.position.set(0.24, -0.15, 0.14);
+      leftBicep.rotation.set(-0.25, 0.2, -0.6);
+      const leftForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.065, 0.52, 12), armMat);
+      leftForearm.position.set(0.58, -0.32, 0.36);
+      leftForearm.rotation.set(-0.45, 0.35, -0.75);
+      const leftHand = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, 0.05), armMat);
+      leftHand.position.set(0.82, -0.42, 0.55);
+      leftHand.rotation.set(-0.35, 0.45, -0.8);
+      leftArmGrp.add(leftBicep, leftForearm, leftHand);
+
+      // 오른팔 (대칭)
+      const rightArmGrp = new THREE.Group();
+      rightArmGrp.position.set(-0.36, 1.88, 0);
+      const rightBicep = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.09, 0.52, 12), armMat);
+      rightBicep.position.set(-0.24, -0.15, 0.14);
+      rightBicep.rotation.set(-0.25, -0.2, 0.6);
+      const rightForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.065, 0.52, 12), armMat);
+      rightForearm.position.set(-0.58, -0.32, 0.36);
+      rightForearm.rotation.set(-0.45, -0.35, 0.75);
+      const rightHand = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, 0.05), armMat);
+      rightHand.position.set(-0.82, -0.42, 0.55);
+      rightHand.rotation.set(-0.35, -0.45, 0.8);
+      rightArmGrp.add(rightBicep, rightForearm, rightHand);
+
+      statueGrp.add(robeLower, torso, mantle, head, halo, leftArmGrp, rightArmGrp);
+      grp.add(statueGrp);
+
+      return grp;
+    }
+
+    // 2) ✝️ 미켈란젤로의 피에타 (The Pietà by Michelangelo)
+    createPietaSculpture() {
+      const grp = new THREE.Group();
+      const marble = this.carraraMarbleMaterial();
+      const gold = this.louvreGoldMaterial();
+
+      // 팔각 대리석 대좌
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(1.65, 1.8, 0.85, 8), marble);
+      base.position.y = 0.425;
+      base.castShadow = true;
+      base.receiveShadow = true;
+
+      const plaque = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.3), gold);
+      plaque.position.set(0, 0.46, 1.76);
+      grp.add(base, plaque);
+
+      const statueGrp = new THREE.Group();
+      statueGrp.position.y = 0.85;
+
+      // 마리아의 넓은 로브 옷자락 기저부 (피라미드 안정적 구도)
+      const skirt = new THREE.Mesh(new THREE.ConeGeometry(1.3, 1.35, 14), marble);
+      skirt.position.set(0, 0.65, -0.05);
+      skirt.scale.set(1.25, 1.0, 0.95);
+
+      // 마리아 상체와 베일
+      const maryTorso = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.36, 0.75, 12), marble);
+      maryTorso.position.set(0, 1.35, -0.22);
+      maryTorso.rotation.x = 0.15;
+
+      const maryHead = new THREE.Mesh(new THREE.SphereGeometry(0.21, 14, 14), marble);
+      maryHead.position.set(0, 1.82, -0.15);
+      maryHead.rotation.x = 0.28; // 예수님을 애도하며 고개를 숙임
+
+      const veil = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.65, 10), marble);
+      veil.position.set(0, 1.75, -0.2);
+      veil.rotation.x = 0.35;
+
+      // 예수님의 비스듬히 누이신 몸체 (마리아의 품안)
+      const christTorso = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, 1.1, 12), marble);
+      christTorso.position.set(0.12, 1.0, 0.18);
+      christTorso.rotation.z = Math.PI / 2 - 0.22;
+      christTorso.rotation.x = -0.25;
+
+      const christLegs = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.15, 1.25, 12), marble);
+      christLegs.position.set(0.85, 0.62, 0.24);
+      christLegs.rotation.z = Math.PI / 3;
+
+      const christArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, 0.78, 10), marble);
+      christArm.position.set(-0.52, 0.68, 0.32);
+      christArm.rotation.set(0.2, 0.1, 0.35);
+
+      const christHead = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 12), marble);
+      christHead.position.set(-0.48, 1.15, 0.12);
+      christHead.rotation.set(-0.3, 0.2, -0.4);
+
+      statueGrp.add(skirt, maryTorso, maryHead, veil, christTorso, christLegs, christArm, christHead);
+      grp.add(statueGrp);
+
+      return grp;
+    }
+
+    // 3) 🙏 알브레히트 뒤러의 기도하는 손 (Praying Hands by Albrecht Dürer)
+    createPrayingHandsSculpture() {
+      const grp = new THREE.Group();
+      const bronze = this.antiqueBronzeMaterial();
+      const marble = this.carraraMarbleMaterial();
+      const gold = this.louvreGoldMaterial();
+
+      // 다크 대리석 큐브 대좌
+      const base = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.9, 1.3), marble);
+      base.position.y = 0.45;
+      base.castShadow = true;
+      base.receiveShadow = true;
+
+      const plaque = new THREE.Mesh(new THREE.PlaneGeometry(0.68, 0.26), gold);
+      plaque.position.set(0, 0.48, 0.66);
+      grp.add(base, plaque);
+
+      const statueGrp = new THREE.Group();
+      statueGrp.position.y = 0.9;
+
+      // 두 손목과 소매 주름
+      const sleeveL = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.3, 0.45, 12), bronze);
+      sleeveL.position.set(0.18, 0.22, 0);
+      sleeveL.rotation.z = -0.22;
+
+      const sleeveR = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.3, 0.45, 12), bronze);
+      sleeveR.position.set(-0.18, 0.22, 0);
+      sleeveR.rotation.z = 0.22;
+
+      // 손바닥
+      const palmL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.32), bronze);
+      palmL.position.set(0.08, 0.65, 0);
+      palmL.rotation.z = -0.15;
+
+      const palmR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.32), bronze);
+      palmR.position.set(-0.08, 0.65, 0);
+      palmR.rotation.z = 0.15;
+
+      // 하늘을 향해 모아진 4손가락들
+      for (let f = 0; f < 4; f++) {
+        const fingerLen = 0.5 - Math.abs(f - 1.5) * 0.05;
+        const zOff = (f - 1.5) * 0.075;
+
+        const fL = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, fingerLen, 8), bronze);
+        fL.position.set(0.04, 1.05 + fingerLen * 0.4, zOff);
+        fL.rotation.z = -0.06;
+
+        const fR = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, fingerLen, 8), bronze);
+        fR.position.set(-0.04, 1.05 + fingerLen * 0.4, zOff);
+        fR.rotation.z = 0.06;
+
+        statueGrp.add(fL, fR);
+      }
+
+      // 모아진 엄지손가락
+      const thumbL = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.34, 8), bronze);
+      thumbL.position.set(0.14, 0.76, 0.16);
+      thumbL.rotation.set(0.4, -0.3, -0.4);
+
+      const thumbR = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.34, 8), bronze);
+      thumbR.position.set(-0.14, 0.76, 0.16);
+      thumbR.rotation.set(0.4, 0.3, 0.4);
+
+      statueGrp.add(sleeveL, sleeveR, palmL, palmR, thumbL, thumbR);
+      grp.add(statueGrp);
+
+      return grp;
+    }
   }
 
   window.ArchitecturalPBR = ArchitecturalPBR;

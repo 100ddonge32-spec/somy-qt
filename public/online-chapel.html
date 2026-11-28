@@ -1636,15 +1636,19 @@
             class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold cursor-pointer shrink-0 transition">닫기 ✕</button>
         </div>
 
-        <!-- 전시관 윙 전환 탭 -->
-        <div class="grid grid-cols-2 gap-2 p-1 rounded-xl bg-black/50 border border-white/10 shrink-0">
+        <!-- 전시관 윙 전환 탭 (성화 / 성조각 / 성도추억) -->
+        <div class="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-black/50 border border-white/10 shrink-0">
           <button id="btn-art-tab-rembrandt" type="button"
-            class="py-1.5 px-2 rounded-lg text-xs font-black cursor-pointer transition bg-amber-500 text-slate-950 shadow">
-            🎨 렘브란트 성화전 (6)
+            class="py-1.5 px-1.5 rounded-lg text-[11px] sm:text-xs font-black cursor-pointer transition bg-amber-500 text-slate-950 shadow truncate">
+            🎨 렘브란트 성화 (6)
+          </button>
+          <button id="btn-art-tab-sculpture" type="button"
+            class="py-1.5 px-1.5 rounded-lg text-[11px] sm:text-xs font-bold cursor-pointer transition text-slate-300 hover:bg-white/10 truncate">
+            🗿 기독교 성조각 (3)
           </button>
           <button id="btn-art-tab-member" type="button"
-            class="py-1.5 px-2 rounded-lg text-xs font-bold cursor-pointer transition text-slate-300 hover:bg-white/10">
-            📸 추억나눔 전시회 (<span id="art-member-count-badge">0</span>)
+            class="py-1.5 px-1.5 rounded-lg text-[11px] sm:text-xs font-bold cursor-pointer transition text-slate-300 hover:bg-white/10 truncate">
+            📸 추억나눔 (<span id="art-member-count-badge">0</span>)
           </button>
         </div>
 
@@ -1870,9 +1874,9 @@
     });
 
     await loadScriptSequential('/qrcode.min.js');
-    await loadScriptSequential('/chapel-pbr.js?v=14');
-    await loadScriptSequential('/chapel-engine.js?v=14');
-    await loadScriptSequential('/chapel-app.js?v=14');
+    await loadScriptSequential('/chapel-pbr.js?v=15');
+    await loadScriptSequential('/chapel-engine.js?v=15');
+    await loadScriptSequential('/chapel-app.js?v=15');
   </script>
 </body>
 

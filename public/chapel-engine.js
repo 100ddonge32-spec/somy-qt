@@ -1000,6 +1000,38 @@
   ];
   window.GALLERY_ARTWORKS = GALLERY_ARTWORKS;
 
+  // 🗿 기독교 신앙 고전 성조각(Christian Sculptures) 컬렉션 (루브르 갤러리 전시)
+  const GALLERY_SCULPTURES = [
+    {
+      id: 'christus',
+      title: '부활하신 그리스도상 (Christus)',
+      bible: '마태복음 11:28',
+      artist: '베르텔 토르발센 (Bertel Thorvaldsen, 1821)',
+      material: '카라라 순백 대리석 (Carrara Marble)',
+      desc: '덴마크의 위대한 조각가 토르발센의 최고 걸작. 부활하신 예수 그리스도께서 양팔을 온화하게 벌려 “수고하고 무거운 짐 진 자들아 다 내게로 오라 내가 너희를 쉬게 하리라” 말씀하시며 세상의 모든 지친 영혼들을 자비와 평강으로 품으시는 거룩한 은혜를 조각했습니다.',
+      meditation: '🙏 묵상 질문: 오늘 나의 무거운 짐과 지친 마음을 주님의 벌리신 두 품에 온전히 내려놓고 쉼을 얻고 있습니까?'
+    },
+    {
+      id: 'pieta',
+      title: '피에타 (The Pietà - 자비와 구속)',
+      bible: '이사야 53:5, 요한복음 19:30',
+      artist: '미켈란젤로 부오나로티 (Michelangelo Buonarroti, 1499)',
+      material: '이탈리아 카라라 대리석 (Carrara Marble)',
+      desc: '바티칸 성 베드로 대성전의 불후의 명작. 십자가에서 인류의 모든 죄를 대속하시고 운명하신 예수님을 품에 안은 마리아의 비통과 거룩한 순종을 담아냈습니다. 단순한 슬픔을 넘어 영원한 구원을 완성하신 하나님의 측량할 수 없는 사랑과 평안을 온몸으로 웅변합니다.',
+      meditation: '🙏 묵상 질문: 나를 위해 살 찢기시고 피 흘려 구원을 완성하신 십자가의 은혜를 오늘 내 심장에 깊이 새기고 있습니까?'
+    },
+    {
+      id: 'praying_hands',
+      title: '기도하는 손 (Betende Hände / Praying Hands)',
+      bible: '데살로니가전서 5:16-18, 빌립보서 4:6-7',
+      artist: '알브레히트 뒤러 (Albrecht Dürer, 1508)',
+      material: '고전 앤틱 브론즈 청동 & 대리석 (Antique Bronze & Marble)',
+      desc: '자신의 미술 공부를 위해 험한 광산에서 일하며 손이 굳어져 버린 형 알베르트의 희생과 헌신, 그리고 하나님을 향해 간절히 올려진 기도의 손을 기리는 명작. 거칠고 굳은 마디마디마다 믿음의 눈물과 중보의 거룩한 능력이 깃들어 있습니다.',
+      meditation: '🙏 묵상 질문: 오늘 나의 두 손은 나 자신만을 위해 쥐어져 있습니까, 아니면 이웃과 교회를 향해 하늘로 간절히 모아져 있습니까?'
+    }
+  ];
+  window.GALLERY_SCULPTURES = GALLERY_SCULPTURES;
+
   class ChapelWorld3D {
     constructor(opts) {
       this.canvas = opts.canvas;
@@ -2524,9 +2556,97 @@
         });
       }
 
-      // 6. 중앙 루브르 퀄팅 가죽 감상 벤치 3좌석 (양쪽 벽면 명화·추억작을 편안히 관람)
-      [-9.5, 1.5, 12.5].forEach((bz, bIdx) => {
-        const bench = this.pbr.createMuseumBench(3.8);
+      // 6. 🗿 기독교 신앙 고전 성조각상 3대 걸작 전시 & 전용 스포트라이트 핀 조명
+      // 1) 🕊️ 토르발센의 부활하신 그리스도상 (중앙 그랜드 러너 z = -3.5)
+      const christus = this.pbr.createChristusSculpture();
+      christus.position.set(0, 0, -3.5);
+      christus.rotation.y = Math.PI; // 관람객(남쪽 출입구)을 온화하게 맞이함
+      this.roomGroup.add(christus);
+
+      const spotChristus = new THREE.SpotLight(0xfff6e5, 1.35, 18, Math.PI / 6, 0.45);
+      spotChristus.position.set(0, 9.8, -1.8);
+      spotChristus.target = christus;
+      this.roomGroup.add(spotChristus);
+
+      const ropeChristus = this.pbr.createLouvreStanchionBarrier(3.4);
+      ropeChristus.position.set(0, 0, -1.8);
+      this.roomGroup.add(ropeChristus);
+
+      this.interactables.push({
+        id: 'sculpture_christus',
+        type: 'sculpture',
+        category: 'sculpture',
+        index: 0,
+        label: "🕊️ '토르발센의 부활하신 그리스도상' 조각 해설 보기",
+        sculpture: GALLERY_SCULPTURES[0],
+        x: 0,
+        y: 0,
+        z: -1.6,
+        radius: 3.2,
+        mesh: christus.children[0]
+      });
+
+      // 2) ✝️ 미켈란젤로의 피에타 (북측 성소 제단 중앙 z = -20.5)
+      const pieta = this.pbr.createPietaSculpture();
+      pieta.position.set(0, 0, -20.5);
+      pieta.rotation.y = Math.PI;
+      this.roomGroup.add(pieta);
+
+      const spotPieta = new THREE.SpotLight(0xfff1dc, 1.4, 20, Math.PI / 5, 0.4);
+      spotPieta.position.set(0, 10.2, -18.5);
+      spotPieta.target = pieta;
+      this.roomGroup.add(spotPieta);
+
+      const ropePieta = this.pbr.createLouvreStanchionBarrier(4.0);
+      ropePieta.position.set(0, 0, -18.5);
+      this.roomGroup.add(ropePieta);
+
+      this.interactables.push({
+        id: 'sculpture_pieta',
+        type: 'sculpture',
+        category: 'sculpture',
+        index: 1,
+        label: "✝️ 미켈란젤로의 '피에타(The Pietà)' 조각 해설 보기",
+        sculpture: GALLERY_SCULPTURES[1],
+        x: 0,
+        y: 0,
+        z: -18.2,
+        radius: 3.2,
+        mesh: pieta.children[0]
+      });
+
+      // 3) 🙏 알브레히트 뒤러의 기도하는 손 (남측 입구 전방 z = 10.5)
+      const prayingHands = this.pbr.createPrayingHandsSculpture();
+      prayingHands.position.set(0, 0, 10.5);
+      prayingHands.rotation.y = Math.PI;
+      this.roomGroup.add(prayingHands);
+
+      const spotHands = new THREE.SpotLight(0xffedd5, 1.25, 16, Math.PI / 6, 0.5);
+      spotHands.position.set(0, 9.5, 12.0);
+      spotHands.target = prayingHands;
+      this.roomGroup.add(spotHands);
+
+      const ropeHands = this.pbr.createLouvreStanchionBarrier(3.2);
+      ropeHands.position.set(0, 0, 12.2);
+      this.roomGroup.add(ropeHands);
+
+      this.interactables.push({
+        id: 'sculpture_praying_hands',
+        type: 'sculpture',
+        category: 'sculpture',
+        index: 2,
+        label: "🙏 알브레히트 뒤러의 '기도하는 손' 조각 해설 보기",
+        sculpture: GALLERY_SCULPTURES[2],
+        x: 0,
+        y: 0,
+        z: 12.5,
+        radius: 3.0,
+        mesh: prayingHands.children[0]
+      });
+
+      // 7. 중앙 & 북측 루브르 퀄팅 가죽 감상 벤치 4좌석 (조각상과 벽면 명화를 편안히 관람)
+      [-11.5, 3.8].forEach((bz, bIdx) => {
+        const bench = this.pbr.createMuseumBench(3.6);
         bench.position.set(0, 0, bz);
         this.roomGroup.add(bench);
         this._addFurnitureSeat(
@@ -2541,19 +2661,20 @@
         );
       });
 
-      // 7. 북편 루브르 특별 기획전 라운지 감상석 (z = -22.5)
-      [-6.0, 6.0].forEach((bx, idx) => {
-        const bench = this.pbr.createMuseumBench(4.2);
-        bench.position.set(bx, 0, -22.5);
+      // 북측 피에타 좌우 감상 벤치
+      [-6.5, 6.5].forEach((bx, idx) => {
+        const bench = this.pbr.createMuseumBench(3.8);
+        bench.position.set(bx, 0, -20.5);
+        bench.rotation.y = idx === 0 ? Math.PI / 2 : -Math.PI / 2;
         this.roomGroup.add(bench);
         this._addFurnitureSeat(
           `louvre_north_bench_${idx}`,
           bx,
           0,
-          -22.5,
-          Math.PI,
+          -20.5,
+          idx === 0 ? Math.PI / 2 : -Math.PI / 2,
           1.2,
-          '🛋️ 북측 기획전 감상석 착석',
+          '🛋️ 피에타 성조각 감상석 착석',
           'chair'
         );
       });
