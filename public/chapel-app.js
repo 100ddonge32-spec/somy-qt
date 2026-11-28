@@ -801,12 +801,33 @@
     document.getElementById('btn-board-studio').classList.toggle('hidden', !meta.hasBoard);
     updateRooftopUi();
 
+    const ZONE_SHORT_NAMES = {
+      garden: { icon: '🌿', name: '앞마당 정원' },
+      sanctuary: { icon: '🏛️', name: '그레이스 대성전' },
+      sarangbang: { icon: '🏠', name: '사랑방(소그룹)' },
+      bible: { icon: '📖', name: '성경통독방' },
+      qt: { icon: '✏️', name: '큐티방' },
+      prayer: { icon: '🕯️', name: '기도·갤러리' },
+      rooftop: { icon: '☕', name: '루프탑 카페' }
+    };
+    const zInfo = ZONE_SHORT_NAMES[zoneId] || { icon: '📍', name: meta.name };
+    const curIconEl = document.getElementById('cur-zone-icon');
+    const curNameEl = document.getElementById('cur-zone-name');
+    if (curIconEl) curIconEl.textContent = zInfo.icon;
+    if (curNameEl) curNameEl.textContent = zInfo.name;
+
     document.querySelectorAll('.zone-tab-btn').forEach((b) => {
       const active = b.getAttribute('data-zone') === zoneId;
       b.className = active
-        ? 'zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-extrabold bg-amber-400 text-slate-950 shadow cursor-pointer transition'
-        : 'zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer transition';
+        ? 'zone-tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold bg-amber-400 text-slate-950 shadow cursor-pointer text-left transition'
+        : 'zone-tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white/90 bg-white/10 hover:bg-white/20 cursor-pointer text-left transition';
     });
+
+    // 이동 완료 후 펼쳐져 있던 공간이동 시트는 닫아 화면 시야 복원
+    const sheet = document.getElementById('bottom-zone-sheet');
+    if (sheet && !sheet.classList.contains('hidden')) {
+      sheet.classList.add('hidden');
+    }
 
     joinMultiplayerRoom();
     toast(`${titleText}에 입장했습니다`);
@@ -4104,6 +4125,43 @@
   });
 
   // -------------------------------------------------------------------------
+  // 최하단 공간 빠른 이동 시트(접기/펼치기) & 상단 도구함(접기/펼치기) 토글 바인딩
+  // -------------------------------------------------------------------------
+  const topToolsBtn = document.getElementById('btn-toggle-top-tools');
+  const topToolsDrawer = document.getElementById('top-tools-drawer');
+  const topToolsIcon = document.getElementById('top-tools-icon');
+  const topToolsLabel = document.getElementById('top-tools-label');
+
+  if (topToolsBtn && topToolsDrawer) {
+    topToolsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = topToolsDrawer.classList.toggle('hidden');
+      if (topToolsLabel) topToolsLabel.textContent = isHidden ? '도구' : '닫기';
+      if (topToolsIcon) topToolsIcon.textContent = isHidden ? '⚙️' : '✕';
+      topToolsBtn.classList.toggle('bg-amber-400', !isHidden);
+      topToolsBtn.classList.toggle('text-slate-950', !isHidden);
+    });
+  }
+
+  const zoneSheet = document.getElementById('bottom-zone-sheet');
+  const toggleZoneBtn = document.getElementById('btn-toggle-zone-sheet');
+  const closeZoneBtn = document.getElementById('btn-close-zone-sheet');
+
+  if (toggleZoneBtn && zoneSheet) {
+    toggleZoneBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      zoneSheet.classList.toggle('hidden');
+    });
+  }
+
+  if (closeZoneBtn && zoneSheet) {
+    closeZoneBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      zoneSheet.classList.add('hidden');
+    });
+  }
+
+  // -------------------------------------------------------------------------
   // 최하단 7개 공간 빠른 이동 탭 (스크롤/드래그 시 3D 카메라 드래그 간섭 완벽 차단)
   // -------------------------------------------------------------------------
   const bottomNavEl = document.getElementById('bottom-zone-nav');
@@ -4113,6 +4171,15 @@
     };
     ['pointerdown', 'pointermove', 'pointerup', 'touchstart', 'touchmove', 'touchend', 'mousedown', 'mousemove'].forEach((evt) => {
       bottomNavEl.addEventListener(evt, stopNavDrag, { passive: false });
+    });
+  }
+
+  if (zoneSheet) {
+    const stopSheetDrag = (e) => {
+      e.stopPropagation();
+    };
+    ['pointerdown', 'pointermove', 'pointerup', 'touchstart', 'touchmove', 'touchend', 'mousedown', 'mousemove'].forEach((evt) => {
+      zoneSheet.addEventListener(evt, stopSheetDrag, { passive: false });
     });
   }
 

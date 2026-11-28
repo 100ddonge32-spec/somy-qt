@@ -232,11 +232,11 @@
     <div id="avatarOverlayLayer" class="pointer-events-none absolute inset-0 overflow-hidden z-10"></div>
 
     <!-- 1. 상단 글로벌 HUD 바 (3개 시각적 그룹으로 깔끔하게 정돈 + 통합 게시판 원터치 버튼) -->
-    <!-- 1. 상단 글로벌 HUD 바 (한눈에 정돈된 콤팩트 스마트 헤더: 겹침 차단 & 직관적 아이콘 바) -->
+    <!-- 1. 상단 글로벌 HUD 바 (필수 정보는 항상 노출 + 변경/조작 도구는 펼치기 버튼으로 쾌적화) -->
     <div
       class="absolute top-2 sm:top-3.5 inset-x-2 sm:inset-x-4 flex flex-col gap-1.5 pointer-events-none z-20"
       style="padding-top: env(safe-area-inset-top, 0px);">
-      <!-- 1단 (주요 네비게이션): 홈 · 장소배지 · 아바타 · 통합메뉴 -->
+      <!-- 1단 (상시 노출 필수 정보 및 글로벌 메뉴): 소미홈 · 장소배지 · 꾸미기 · 도구 펼치기 토글 · 전체메뉴 -->
       <div class="pointer-events-auto flex items-center justify-between gap-1.5 w-full">
         <div class="flex items-center gap-1.5 min-w-0">
           <button id="btn-back-somy"
@@ -244,31 +244,39 @@
             <span>🏠 <span class="hidden xs:inline sm:inline">소미</span>홈</span>
           </button>
 
+          <!-- 현재 공간 및 실시간 접속자 (상시 표시 핵심 정보) -->
           <div
-            class="inline-flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-full bg-slate-950/90 backdrop-blur-md border border-amber-400/40 text-[11px] sm:text-xs font-extrabold shadow-lg shrink-0 truncate">
+            class="inline-flex items-center gap-1 px-2.5 sm:px-3.5 py-1.5 rounded-full bg-slate-950/90 backdrop-blur-md border border-amber-400/40 text-[11px] sm:text-xs font-extrabold shadow-lg shrink-0 truncate">
             <span id="zone-title-badge" class="text-amber-300 truncate">🌿 앞마당 정원</span>
             <span class="text-white/30 mx-0.5">|</span>
             <span id="online-count-label" class="text-emerald-300 whitespace-nowrap">🟢 1명</span>
           </div>
         </div>
 
-        <div class="flex items-center gap-1.5 shrink-0">
+        <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
+          <!-- 도구함 접기/펼치기 토글 버튼 (화면을 산만하게 가리던 조명/찬양/마이크 등을 필요할 때만 열기) -->
+          <button id="btn-toggle-top-tools"
+            class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 text-amber-300 border border-amber-400/50 backdrop-blur-md text-[11px] sm:text-xs font-extrabold cursor-pointer shadow-lg shrink-0 transition">
+            <span id="top-tools-icon">⚙️</span>
+            <span id="top-tools-label" class="text-[10px] sm:text-xs">도구</span>
+          </button>
+
           <button id="btn-open-profile"
-            class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 backdrop-blur-md border border-amber-300/40 text-[11px] sm:text-xs font-bold text-white cursor-pointer shadow shrink-0">
+            class="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 backdrop-blur-md border border-amber-300/40 text-[11px] sm:text-xs font-bold text-white cursor-pointer shadow shrink-0">
             <span id="my-expr-badge">✨</span>
             <span id="my-name-badge" class="hidden md:inline">백동희 성도</span>
             <span class="px-1.5 py-0.5 rounded-full bg-amber-400/25 text-amber-300 text-[10px] font-extrabold">꾸미기</span>
           </button>
 
           <button id="btn-campus-hub"
-            class="inline-flex items-center gap-1 px-2.5 sm:px-3.5 py-1.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] sm:text-xs font-extrabold cursor-pointer shadow-lg border border-amber-200 shrink-0">
+            class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] sm:text-xs font-extrabold cursor-pointer shadow-lg border border-amber-200 shrink-0">
             <span>📋 메뉴</span>
           </button>
         </div>
       </div>
 
-      <!-- 2단 (한눈에 들어오는 콤팩트 퀵 액션 바: 여백 최소화, 모바일에서도 정갈하게 정렬) -->
-      <div class="pointer-events-auto flex items-center justify-between gap-1 overflow-x-auto no-scrollbar w-full py-0.5">
+      <!-- 2단 (펼쳐지는 도구 드로어: 평소에는 숨겨져 시야 확보, 필요할 때 원터치로 편리하게 조작) -->
+      <div id="top-tools-drawer" class="hidden pointer-events-auto flex items-center justify-between gap-1 overflow-x-auto no-scrollbar w-full py-1 px-1 rounded-2xl bg-black/85 backdrop-blur-lg border border-white/15 shadow-2xl transition">
         <!-- 좌측: 현재 방 전용 바로가기 버튼 (상황에 따라 노출) -->
         <div class="inline-flex items-center gap-1 shrink-0">
           <button id="btn-sarang-Menu"
@@ -301,9 +309,9 @@
           </button>
         </div>
 
-        <!-- 우측: 핵심 커뮤니케이션 & 환경 도구 통합 캡슐 (한눈에 정돈된 일렬 배치) -->
+        <!-- 우측: 핵심 커뮤니케이션 & 환경 도구 통합 캡슐 -->
         <div
-          class="inline-flex items-center gap-0.5 sm:gap-1 p-0.5 rounded-full bg-slate-950/85 backdrop-blur-md border border-white/20 shadow-lg shrink-0 ml-auto">
+          class="inline-flex items-center gap-0.5 sm:gap-1 p-0.5 rounded-full bg-slate-900/90 border border-white/20 shadow-lg shrink-0 ml-auto">
           <!-- 얼굴/캠 토글 -->
           <button id="btn-face-cam-toggle"
             class="shrink-0 px-2 sm:px-2.5 py-1 rounded-full bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-[10px] sm:text-[11px] font-extrabold cursor-pointer flex items-center gap-0.5 sm:gap-1">
@@ -518,39 +526,69 @@
       </div>
     </div>
 
-    <!-- 2. 최하단 7개 공간 빠른 이동(Quick-Warp) 내비게이션 바 -->
-    <div id="bottom-zone-nav-container" class="absolute bottom-2.5 inset-x-2.5 flex justify-center pointer-events-none z-20"
+    <!-- 2. 최하단 7개 공간 빠른 이동(Quick-Warp): 콤팩트 토글 버튼 + 원터치 격자형 선택 팝업 -->
+    <div id="bottom-zone-nav-container" class="absolute bottom-2.5 inset-x-2.5 flex flex-col items-center pointer-events-none z-20"
       style="padding-bottom: env(safe-area-inset-bottom, 0px);">
-      <div id="bottom-zone-nav"
-        class="pointer-events-auto inline-flex items-center gap-1 p-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/15 overflow-x-auto no-scrollbar max-w-full shadow-2xl touch-pan-x select-none"
-        style="-webkit-overflow-scrolling: touch; touch-action: pan-x;">
-        <button data-zone="garden"
-          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-extrabold bg-amber-400 text-slate-950 shadow cursor-pointer select-none">
-          🌿 앞마당 정원
-        </button>
-        <button data-zone="sanctuary"
-          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer select-none">
-          🏛️ 대성전
-        </button>
-        <button data-zone="sarangbang"
-          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer select-none">
-          🏠 사랑방(소그룹)
-        </button>
-        <button data-zone="bible"
-          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer select-none">
-          📖 성경통독방
-        </button>
-        <button data-zone="qt"
-          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer select-none">
-          ✏️ 큐티방
-        </button>
-        <button data-zone="prayer"
-          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer select-none">
-          🕯️ 기도·갤러리
-        </button>
-        <button data-zone="rooftop"
-          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer select-none">
-          ☕ 루프탑 카페
+
+      <!-- 펼쳐지는 7개 공간 선택 그리드 팝업 (모바일 화면 터치 시 한눈에 클릭 가능) -->
+      <div id="bottom-zone-sheet"
+        class="hidden pointer-events-auto mb-2 p-3 rounded-3xl bg-slate-950/95 backdrop-blur-xl border border-white/20 shadow-2xl max-w-sm w-full transition select-none animate-in fade-in slide-in-from-bottom-2">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-white/15 px-1">
+          <div class="flex items-center gap-1.5 text-xs font-extrabold text-amber-300">
+            <span>🚀</span>
+            <span>공간 빠른 이동</span>
+          </div>
+          <button id="btn-close-zone-sheet" class="text-white/60 hover:text-white text-xs font-bold px-2 py-0.5 rounded-full hover:bg-white/10 cursor-pointer">
+            ✕ 닫기
+          </button>
+        </div>
+        <!-- 2열 또는 3열 그리드로 모든 공간 버튼을 한눈에 바로 터치 가능 -->
+        <div id="bottom-zone-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-[48dvh] overflow-y-auto no-scrollbar py-0.5">
+          <button data-zone="garden"
+            class="zone-tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-extrabold bg-amber-400 text-slate-950 shadow cursor-pointer text-left">
+            <span>🌿</span>
+            <span class="truncate">앞마당 정원</span>
+          </button>
+          <button data-zone="sanctuary"
+            class="zone-tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white/90 bg-white/10 hover:bg-white/20 cursor-pointer text-left">
+            <span>🏛️</span>
+            <span class="truncate">그레이스 대성전</span>
+          </button>
+          <button data-zone="sarangbang"
+            class="zone-tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white/90 bg-white/10 hover:bg-white/20 cursor-pointer text-left">
+            <span>🏠</span>
+            <span class="truncate">사랑방(소그룹)</span>
+          </button>
+          <button data-zone="bible"
+            class="zone-tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white/90 bg-white/10 hover:bg-white/20 cursor-pointer text-left">
+            <span>📖</span>
+            <span class="truncate">성경통독방</span>
+          </button>
+          <button data-zone="qt"
+            class="zone-tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white/90 bg-white/10 hover:bg-white/20 cursor-pointer text-left">
+            <span>✏️</span>
+            <span class="truncate">큐티방</span>
+          </button>
+          <button data-zone="prayer"
+            class="zone-tab-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white/90 bg-white/10 hover:bg-white/20 cursor-pointer text-left">
+            <span>🕯️</span>
+            <span class="truncate">기도·갤러리</span>
+          </button>
+          <button data-zone="rooftop"
+            class="zone-tab-btn col-span-2 sm:col-span-1 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white/90 bg-white/10 hover:bg-white/20 cursor-pointer text-left">
+            <span>☕</span>
+            <span class="truncate">루프탑 카페</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 상시 노출 공간 이동 펼치기 트리거 버튼 (손가락 터치가 가장 편한 콤팩트 플로팅 알약 캡슐) -->
+      <div id="bottom-zone-nav" class="pointer-events-auto select-none" onpointerdown="event.stopPropagation()">
+        <button id="btn-toggle-zone-sheet"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-950/90 hover:bg-slate-900 text-amber-300 border border-amber-400/60 backdrop-blur-md shadow-2xl text-xs font-extrabold cursor-pointer transition active:scale-95">
+          <span id="cur-zone-icon">🌿</span>
+          <span id="cur-zone-name" class="font-extrabold text-white">앞마당 정원</span>
+          <span class="px-1.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black tracking-wide">공간이동 ▲</span>
         </button>
       </div>
     </div>
