@@ -801,7 +801,7 @@
     document.getElementById('btn-qt-academy').classList.toggle('hidden', zoneId !== 'qt');
     document.getElementById('btn-candle-board').classList.toggle('hidden', zoneId !== 'sanctuary' && zoneId !== 'prayer');
     const prayerGalBtn = document.getElementById('btn-prayer-gallery');
-    if (prayerGalBtn) prayerGalBtn.classList.toggle('hidden', zoneId !== 'prayer');
+    if (prayerGalBtn) prayerGalBtn.classList.toggle('hidden', zoneId !== 'prayer' && zoneId !== 'qt');
     document.getElementById('btn-board-studio').classList.toggle('hidden', !meta.hasBoard);
     updateRooftopUi();
 

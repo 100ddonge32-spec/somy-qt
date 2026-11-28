@@ -872,14 +872,14 @@
     },
     qt: {
       id: 'qt',
-      name: '✏️ 큐티방 (모던 세미나홀)',
-      subtitle: '리니어 LED 우물천장 · 화이트 세미나 데스크 · 큐티 기초반 강의실',
-      sky: 0x202328,
-      fogColor: 0x282c33,
-      fogDensity: 0.003,
+      name: '✏️ 소미 큐티방 & 성화 갤러리 아카데미',
+      subtitle: '프리미엄 뮤지엄 갤러리 월 · 렘브란트 성화 회랑 · 모던 세미나 라운지',
+      sky: 0x1a1d24,
+      fogColor: 0x222630,
+      fogDensity: 0.0025,
       spawn: { x: 0, z: 10.2, rotY: Math.PI },
-      panorama: { pos: [-13, 8.0, 15.0], look: [0, 3.0, -4] },
-      bounds: { x: 16.2, zMin: -14.8, zMax: 15.5 },
+      panorama: { pos: [-13, 8.5, 15.0], look: [0, 3.2, -4] },
+      bounds: { x: 16.5, zMin: -15.0, zMax: 15.8 },
       hasBoard: true,
       boardPos: [0, 5.2, -15.1],
       boardSize: [13.0, 5.8]
@@ -2264,18 +2264,38 @@
     // 4) ✏️ 큐티방 — 현대식 아카데미 & 세미나 홀
     // =======================================================================
     _buildQtRoom() {
-      const lightOakFloor = this.pbr.woodPlankMaterial('qt_mod_floor', [202, 172, 132], [164, 134, 96], 8, 8, 0.32);
-      const whiteWall = this.pbr.wallWashPanelMaterial('white', false);
-      const oakSlat = this.pbr.acousticSlatMaterial(6, 1, true);
+      // 최고급 미술관 갤러리 콘셉트: 대리석 마블 바닥, 뮤지엄 화이트 월, 다크 월넛 & 샴페인 골드 루버
+      const museumMarble = this.pbr.marbleMaterial('qt_gallery_marble', [228, 224, 216], [198, 192, 180], 6, 6, 0.20);
+      const galleryWallMat = this.pbr.wallWashPanelMaterial('white', true);
+      const walnutSlat = this.pbr.acousticSlatMaterial(6, 1, true);
+      const accentBlackSteel = this.pbr.darkSteelMaterial();
 
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(36, 33), lightOakFloor);
+      // 1. 프리미엄 대리석 바닥재
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(36, 34), museumMarble);
       floor.rotation.x = -Math.PI / 2;
       floor.receiveShadow = true;
       this.roomGroup.add(floor);
 
-      this.roomGroup.add(this.pbr.createModernRoomCeiling(36, 33, 9.2, 5, 4));
-      this._addFourInwardRoomWalls(35.0, 31.8, 9.2, 0.5, oakSlat, whiteWall, whiteWall);
+      // 2. 미술관 전용 코브 조명 우물천장
+      this.roomGroup.add(this.pbr.createModernRoomCeiling(36, 34, 9.4, 5, 4));
+      this._addFourInwardRoomWalls(35.2, 32.8, 9.4, 0.6, walnutSlat, galleryWallMat, galleryWallMat);
 
+      // 천장 트랙 스포트라이트 레일 (좌/우 갤러리 벽면 비추기)
+      [-14.0, 14.0].forEach((trackX) => {
+        const track = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.10, 26), accentBlackSteel);
+        track.position.set(trackX, 9.15, 0);
+        this.roomGroup.add(track);
+
+        // 스포트라이트 조명 팟들
+        [-9, -3, 3, 9].forEach((spotZ) => {
+          const spotHead = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 0.35, 12), accentBlackSteel);
+          spotHead.rotation.z = trackX < 0 ? 0.35 : -0.35;
+          spotHead.position.set(trackX, 8.95, spotZ);
+          this.roomGroup.add(spotHead);
+        });
+      });
+
+      // 3. 중앙 세미나 강대상 & 스탠드
       const podium = this.pbr.createModernPulpit();
       podium.position.set(-6.4, 0, -11.2);
       this.roomGroup.add(podium);
@@ -2291,6 +2311,7 @@
         mesh: podium.children[0]
       });
 
+      // 4. 모던 세미나 & 갤러리 나눔 테이블
       [-5.0, 1.4].forEach((dz, rIdx) => {
         [-6.4, 6.4].forEach((dx, cIdx) => {
           const semDesk = this.pbr.createModernStudyDesk(6.2);
@@ -2315,12 +2336,55 @@
         });
       });
 
-      [[-15.2, -12], [15.2, -12]].forEach(([px, pz]) => {
+      // 5. 🎨 큐티방 갤러리 전시 월 (Gallery Wall) — 좌우 측면 벽에 렘브란트 명화 6작품 배치
+      GALLERY_ARTWORKS.forEach((art, i) => {
+        const isLeft = i < 3;
+        const idx = i % 3;
+        const az = -8.2 + idx * 8.6;
+        const ax = isLeft ? -15.1 : 15.1;
+        const rotY = isLeft ? Math.PI / 2 : -Math.PI / 2;
+
+        const framed = this.pbr.createFramedSacredPainting(art, i);
+        framed.position.set(ax, 4.3, az);
+        framed.rotation.y = rotY;
+        this.roomGroup.add(framed);
+
+        // 바닥 작품 캡션 명패 및 안내 스탠드
+        const plaque = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.04, 0.35), accentBlackSteel);
+        plaque.position.set(isLeft ? -14.6 : 14.6, 0.02, az);
+        this.roomGroup.add(plaque);
+
+        this.interactables.push({
+          id: `qt_art_${i}`,
+          type: 'artwork',
+          label: `🖼️ 갤러리 명화 '${art.title}' 해설 보기`,
+          artwork: art,
+          x: isLeft ? -12.4 : 12.4,
+          y: 0,
+          z: az,
+          radius: 3.2,
+          mesh: framed.children[1]
+        });
+      });
+
+      // 6. 관람객 휴식 및 묵상용 갤러리 벤치 (Gallery Lounges)
+      [-11.5, 11.5].forEach((bx) => {
+        const benchMat = this.pbr.fabricMaterial('qt_bench', [48, 52, 60], 2, 2);
+        const bench = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.45, 3.8), benchMat);
+        bench.position.set(bx, 0.225, 0.5);
+        bench.castShadow = true;
+        this.roomGroup.add(bench);
+        this._addFurnitureSeat(`qt_bench_${bx < 0 ? 'L' : 'R'}`, bx, 0, 0.5, bx < 0 ? Math.PI / 2 : -Math.PI / 2, 1.0, '🛋️ 갤러리 묵상 벤치 착석', 'chair');
+      });
+
+      // 7. 화분 및 공간 조경
+      [[-15.2, -12], [15.2, -12], [-15.2, 12], [15.2, 12]].forEach(([px, pz]) => {
         const plant = this.pbr.createPottedPlant(1.3);
         plant.position.set(px, 0, pz);
         this.roomGroup.add(plant);
       });
 
+      // 8. 포털 도어
       this._addPortalDoor(-11.2, 16.3, Math.PI, 'bible', '📖 성경통독방', '');
       this._addPortalDoor(-5.0, 16.3, Math.PI, 'sanctuary', '🏛️ 대성전 이동', '');
       this._addPortalDoor(11.2, 16.3, Math.PI, 'sarangbang', '🏠 사랑방 이동', '');
