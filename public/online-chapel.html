@@ -307,7 +307,7 @@
           </button>
           <button id="btn-prayer-gallery"
             class="hidden shrink-0 px-2 sm:px-2.5 py-1 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] sm:text-[11px] font-black cursor-pointer shadow">
-            🎨 갤러리성화
+            🏛️ 루브르 전시관
           </button>
           <button id="btn-sip-drink"
             class="hidden shrink-0 px-2 sm:px-2.5 py-1 rounded-full bg-amber-700 hover:bg-amber-600 text-white text-[10px] sm:text-[11px] font-extrabold cursor-pointer border border-amber-300/50">
@@ -1613,49 +1613,74 @@
       </div>
     </div>
 
-    <!-- [모달 8] 🖼️ 램브란트 성화 & 말씀 기도 갤러리 (전체보기 및 상세 묵상) -->
+    <!-- [모달 8] 🏛️ 파리 루브르 온라인 전시관 (렘브란트 성화전 & 소미큐티 추억나눔 성도 사진전) -->
     <div id="art-modal"
-      class="hidden absolute inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 z-40">
+      class="hidden absolute inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-2.5 sm:p-5 z-40">
       <div
-        class="bg-[#181B20] text-slate-100 rounded-2xl max-w-xl w-full p-4 sm:p-6 border border-amber-500/40 shadow-2xl space-y-4 max-h-[92dvh] flex flex-col">
+        class="bg-[#181614] text-slate-100 rounded-2xl max-w-2xl w-full p-4 sm:p-6 border-2 border-amber-500/45 shadow-2xl space-y-3.5 max-h-[94dvh] flex flex-col">
         <!-- 상단 헤더 -->
-        <div class="flex items-center justify-between border-b border-white/10 pb-3 shrink-0">
-          <div class="flex items-center gap-2">
-            <span class="text-xl">🕯️</span>
-            <div>
-              <div id="art-modal-title" class="text-sm sm:text-base font-black text-amber-300">램브란트 성화 갤러리</div>
-              <div id="art-modal-bible" class="text-[11px] text-emerald-400 font-bold"></div>
+        <div class="flex items-center justify-between border-b border-amber-500/20 pb-3 shrink-0 gap-2">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="text-2xl shrink-0">🏛️</span>
+            <div class="min-w-0">
+              <div id="art-modal-title" class="text-sm sm:text-base font-black text-amber-300 truncate">루브르 온라인 전시관</div>
+              <div id="art-modal-bible" class="text-[11px] text-emerald-400 font-bold truncate"></div>
             </div>
           </div>
           <button data-close="art-modal"
-            class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold cursor-pointer transition">닫기 ✕</button>
+            class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold cursor-pointer shrink-0 transition">닫기 ✕</button>
         </div>
 
-        <!-- 성화 이미지 뷰어 영역 -->
-        <div class="relative w-full bg-black/60 rounded-xl overflow-hidden border border-white/10 flex items-center justify-center min-h-[220px] max-h-[340px] shrink-0">
-          <img id="art-modal-img" src="" alt="성화" class="max-h-[330px] w-auto max-w-full object-contain mx-auto transition-opacity duration-300" />
+        <!-- 전시관 윙 전환 탭 -->
+        <div class="grid grid-cols-2 gap-2 p-1 rounded-xl bg-black/50 border border-white/10 shrink-0">
+          <button id="btn-art-tab-rembrandt" type="button"
+            class="py-1.5 px-2 rounded-lg text-xs font-black cursor-pointer transition bg-amber-500 text-slate-950 shadow">
+            🎨 렘브란트 성화전 (6)
+          </button>
+          <button id="btn-art-tab-member" type="button"
+            class="py-1.5 px-2 rounded-lg text-xs font-bold cursor-pointer transition text-slate-300 hover:bg-white/10">
+            📸 추억나눔 전시회 (<span id="art-member-count-badge">0</span>)
+          </button>
         </div>
 
-        <!-- 6작품 썸네일 탐색 바 -->
+        <!-- 작품 이미지 뷰어 영역 (좌우 탐색 화살표 포함) -->
+        <div class="relative w-full bg-black/70 rounded-xl overflow-hidden border border-amber-500/25 flex items-center justify-center min-h-[190px] sm:min-h-[240px] max-h-[300px] shrink-0 group">
+          <button id="btn-art-prev" type="button" aria-label="이전 작품"
+            class="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/65 hover:bg-amber-500 hover:text-slate-950 text-white border border-white/20 flex items-center justify-center text-sm font-black cursor-pointer z-10 transition">
+            ◀
+          </button>
+          <img id="art-modal-img" src="" alt="전시 작품" class="max-h-[290px] w-auto max-w-full object-contain mx-auto transition-opacity duration-300" />
+          <div id="art-modal-empty-state" class="hidden p-6 text-center space-y-2">
+            <div class="text-3xl">🖼️</div>
+            <div class="text-xs sm:text-sm font-bold text-amber-200">아직 등록된 추억나눔 사진이 없습니다</div>
+            <div class="text-[11px] text-slate-400 leading-relaxed">소미큐티 앱의 [추억나눔(갤러리)]에 은혜로운 사진을 올리시면 이곳 루브르 전시관 벽면과 도록에 자동으로 전시됩니다.</div>
+          </div>
+          <button id="btn-art-next" type="button" aria-label="다음 작품"
+            class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/65 hover:bg-amber-500 hover:text-slate-950 text-white border border-white/20 flex items-center justify-center text-sm font-black cursor-pointer z-10 transition">
+            ▶
+          </button>
+        </div>
+
+        <!-- 전시 작품 썸네일 스트립 -->
         <div class="shrink-0 space-y-1.5">
           <div class="text-[11px] font-bold text-slate-400 flex items-center justify-between">
-            <span>🎨 갤러리 작품 목록 (클릭하여 전환)</span>
+            <span>🖼️ 전시 도록 목록 (클릭하여 감상)</span>
             <span id="art-gallery-index-badge" class="text-[10px] text-amber-400 font-extrabold">1 / 6</span>
           </div>
-          <div id="art-thumbnails-container" class="grid grid-cols-6 gap-1.5 p-1 rounded-xl bg-slate-900/80 border border-white/10 overflow-x-auto">
-            <!-- chapel-app.js에서 6개 썸네일 동적 렌더링 -->
+          <div id="art-thumbnails-container" class="flex gap-1.5 p-1.5 rounded-xl bg-slate-900/90 border border-white/10 overflow-x-auto">
+            <!-- chapel-app.js에서 동적 렌더링 -->
           </div>
         </div>
 
-        <!-- 성화 설명 및 묵상 텍스트 (스크롤 가능) -->
-        <div class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+        <!-- 작품 설명 및 묵상 텍스트 -->
+        <div class="flex-1 min-h-[84px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
           <div id="art-modal-desc" class="text-xs sm:text-sm leading-relaxed text-slate-200 break-keep font-normal"></div>
           <div id="art-modal-meditation" class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-[11px] sm:text-xs text-amber-200 leading-normal break-keep"></div>
         </div>
 
         <button data-close="art-modal"
           class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs sm:text-sm font-black cursor-pointer shadow shrink-0 transition">
-          말씀과 기도로 묵상하며 닫기 🙏
+          은혜와 기도로 묵상하며 닫기 🙏
         </button>
       </div>
     </div>
@@ -1837,9 +1862,9 @@
     });
 
     await loadScriptSequential('/qrcode.min.js');
-    await loadScriptSequential('/chapel-pbr.js?v=12');
-    await loadScriptSequential('/chapel-engine.js?v=12');
-    await loadScriptSequential('/chapel-app.js?v=12');
+    await loadScriptSequential('/chapel-pbr.js?v=13');
+    await loadScriptSequential('/chapel-engine.js?v=13');
+    await loadScriptSequential('/chapel-app.js?v=13');
   </script>
 </body>
 

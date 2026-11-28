@@ -1102,6 +1102,455 @@
       return grp;
     }
 
+    // =======================================================================
+    // 🏛️ 파리 루브르 박물관(Louvre Grand Galerie) 스타일 고급 인테리어 PBR 컴포넌트
+    // =======================================================================
+    louvreGoldMaterial() {
+      if (this.cache.louvre_gold) return this.cache.louvre_gold;
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0xd4af37,
+        roughness: 0.26,
+        metalness: 0.86,
+        envMap: this.envMap,
+        envMapIntensity: 1.2
+      });
+      this.cache.louvre_gold = mat;
+      return mat;
+    }
+
+    // 1) 루브르 그랜드 갤러리 헤링본(쉐브론) 원목 파케 마루
+    louvreParquetMaterial(rx = 10, ry = 14) {
+      const ck = `louvre_parquet_${rx}_${ry}`;
+      if (this.cache[ck]) return this.cache[ck];
+
+      const map = makeCanvasTex(512, 512, (ctx, w, h) => {
+        ctx.fillStyle = '#a87d4f';
+        ctx.fillRect(0, 0, w, h);
+
+        const cols = 8;
+        const rows = 16;
+        const cw = w / cols;
+        const rh = h / rows;
+
+        for (let r = -2; r < rows + 2; r++) {
+          for (let c = 0; c < cols; c++) {
+            const isEven = c % 2 === 0;
+            const x0 = c * cw;
+            const y0 = r * rh;
+            const shade = 0.85 + hash2(c * 3, r * 5) * 0.28;
+            const rv = Math.min(255, Math.round(186 * shade));
+            const gv = Math.min(255, Math.round(138 * shade));
+            const bv = Math.min(255, Math.round(86 * shade));
+
+            ctx.beginPath();
+            if (isEven) {
+              ctx.moveTo(x0, y0);
+              ctx.lineTo(x0 + cw, y0 + rh * 0.5);
+              ctx.lineTo(x0 + cw, y0 + rh * 1.5);
+              ctx.lineTo(x0, y0 + rh);
+            } else {
+              ctx.moveTo(x0, y0 + rh * 0.5);
+              ctx.lineTo(x0 + cw, y0);
+              ctx.lineTo(x0 + cw, y0 + rh);
+              ctx.lineTo(x0, y0 + rh * 1.5);
+            }
+            ctx.closePath();
+            ctx.fillStyle = `rgb(${rv},${gv},${bv})`;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(58, 36, 16, 0.35)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
+        }
+      }, rx, ry);
+
+      const mat = new THREE.MeshStandardMaterial({
+        map,
+        roughness: 0.24,
+        metalness: 0.05,
+        envMap: this.envMap,
+        envMapIntensity: 0.82
+      });
+      this.cache[ck] = mat;
+      return mat;
+    }
+
+    // 2) 루브르 박물관 웨인스코팅 + 딥 버건디/크림/세이지 클래식 전시 벽체
+    louvreGalleryWallMaterial(tone = 'burgundy') {
+      const ck = `louvre_wall_${tone}`;
+      if (this.cache[ck]) return this.cache[ck];
+
+      const map = makeCanvasTex(512, 512, (ctx, w, h) => {
+        const pal = tone === 'burgundy'
+          ? { top: '#581c24', mid: '#6e232d', low: '#43141a' }
+          : tone === 'sage'
+          ? { top: '#274237', mid: '#325345', low: '#1b3027' }
+          : { top: '#e7e0d2', mid: '#dcd2be', low: '#cbbda4' };
+
+        // 상단 뮤지엄 패브릭/스투코 벽면 (상단 76%)
+        const upperH = Math.round(h * 0.76);
+        const grad = ctx.createLinearGradient(0, 0, 0, upperH);
+        grad.addColorStop(0.0, pal.top);
+        grad.addColorStop(0.45, pal.mid);
+        grad.addColorStop(1.0, pal.low);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, upperH);
+
+        // 은은한 스포트라이트 월워셔 빛 효과
+        const wash = ctx.createRadialGradient(w * 0.5, upperH * 0.35, 16, w * 0.5, upperH * 0.45, w * 0.52);
+        wash.addColorStop(0, 'rgba(255, 244, 214, 0.20)');
+        wash.addColorStop(1, 'rgba(255, 244, 214, 0.0)');
+        ctx.fillStyle = wash;
+        ctx.fillRect(0, 0, w, upperH);
+
+        // 황금빛 데이도 몰딩 라인 (웨인스코팅 경계)
+        ctx.fillStyle = '#c59b38';
+        ctx.fillRect(0, upperH - 10, w, 10);
+        ctx.fillStyle = '#f3e5ab';
+        ctx.fillRect(0, upperH - 10, w, 3);
+
+        // 하단 크림 라임스톤 웨인스코팅 패널 (24%)
+        ctx.fillStyle = '#e5dccb';
+        ctx.fillRect(0, upperH, w, h - upperH);
+        ctx.strokeStyle = '#b9ad97';
+        ctx.lineWidth = 4;
+        for (let px = 20; px < w; px += 128) {
+          ctx.strokeRect(px, upperH + 16, 88, h - upperH - 36);
+        }
+        // 최하단 걸레받이
+        ctx.fillStyle = '#8b7e6b';
+        ctx.fillRect(0, h - 14, w, 14);
+      }, 2, 1);
+
+      const mat = new THREE.MeshStandardMaterial({
+        map,
+        roughness: 0.55,
+        metalness: 0.04,
+        envMap: this.envMap,
+        envMapIntensity: 0.45
+      });
+      this.cache[ck] = mat;
+      return mat;
+    }
+
+    // 3) 루브르 그랜드 갤러리 아치형 채광 유리천장 + 크리스탈 샹들리에 + 스포트 레일
+    createLouvreGrandCeiling(width, depth, height) {
+      const grp = new THREE.Group();
+      const goldMat = this.louvreGoldMaterial();
+      const darkSteel = this.darkSteelMaterial();
+
+      const plasterCeil = new THREE.MeshStandardMaterial({
+        color: 0xf4eee1,
+        emissive: 0xfff3d6,
+        emissiveIntensity: 0.28,
+        roughness: 0.60,
+        side: THREE.FrontSide
+      });
+
+      const vaultGlassTex = makeCanvasTex(512, 512, (ctx, w, h) => {
+        const g = ctx.createLinearGradient(0, 0, w, 0);
+        g.addColorStop(0, '#dbeafe');
+        g.addColorStop(0.5, '#fefce8');
+        g.addColorStop(1, '#dbeafe');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.strokeStyle = '#9a8458';
+        ctx.lineWidth = 6;
+        for (let x = 0; x <= w; x += 64) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+        }
+        for (let y = 0; y <= h; y += 64) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        }
+      }, 2, 6);
+
+      const glassCeilMat = new THREE.MeshStandardMaterial({
+        map: vaultGlassTex,
+        emissive: 0xfffbeb,
+        emissiveMap: vaultGlassTex,
+        emissiveIntensity: 0.62,
+        roughness: 0.25,
+        side: THREE.FrontSide
+      });
+
+      // 양쪽 측면 코퍼드 플라스터 천장 날개
+      const sideW = (width - 14) / 2;
+      [-width / 2 + sideW / 2, width / 2 - sideW / 2].forEach((sx) => {
+        const wing = new THREE.Mesh(new THREE.PlaneGeometry(sideW, depth), plasterCeil);
+        wing.rotation.x = Math.PI / 2;
+        wing.position.set(sx, height, 0);
+        grp.add(wing);
+      });
+
+      // 중앙 배럴 볼트(반원 아치 유리 천창) — BackSide로 설정하면 내부에서 올려다볼 때만 보임!
+      const vaultGeo = new THREE.CylinderGeometry(7.2, 7.2, depth, 20, 1, true, Math.PI / 2, Math.PI);
+      const vaultMat = glassCeilMat.clone();
+      vaultMat.side = THREE.BackSide;
+      const vaultMesh = new THREE.Mesh(vaultGeo, vaultMat);
+      // rotation.x = PI/2 이면 로컬 +Y(길이축)가 월드 +Z로, 로컬 -Z(theta=PI)가 월드 +Y(아치 꼭대기)로 정렬됨
+      vaultMesh.rotation.x = Math.PI / 2;
+      vaultMesh.position.set(0, height - 0.1, 0);
+      grp.add(vaultMesh);
+
+      // 아치형 천창 양 끝단 반원 박공(Tympanum) 크림 석조 마감 (검은 빈 공간 차단)
+      const tympMat = plasterCeil.clone();
+      tympMat.side = THREE.FrontSide;
+      const tympNorth = new THREE.Mesh(new THREE.CircleGeometry(7.25, 20, 0, Math.PI), tympMat);
+      tympNorth.position.set(0, height - 0.1, -depth / 2 + 0.15);
+      const tympSouth = new THREE.Mesh(new THREE.CircleGeometry(7.25, 20, 0, Math.PI), tympMat);
+      tympSouth.rotation.y = Math.PI;
+      tympSouth.position.set(0, height - 0.1, depth / 2 - 0.15);
+      grp.add(tympNorth, tympSouth);
+
+      // 아치형 금장 늑골 프레임(Ribs) + 코니스 보더
+      [-7.2, 7.2].forEach((cx) => {
+        const cornice = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.55, depth), plasterCeil);
+        cornice.position.set(cx, height - 0.22, 0);
+        const trim = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.12, depth), goldMat);
+        trim.position.set(cx, height - 0.48, 0);
+        grp.add(cornice, trim);
+      });
+
+      // 금빛 클래식 크리스탈 샹들리에 3기 (중앙 축)
+      [-15, 0, 15].forEach((cz) => {
+        const chan = new THREE.Group();
+        chan.position.set(0, height + 2.8, cz);
+        const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 4.4, 8), goldMat);
+        rod.position.y = -1.6;
+        const ringOuter = new THREE.Mesh(new THREE.TorusGeometry(1.45, 0.08, 8, 24), goldMat);
+        ringOuter.rotation.x = Math.PI / 2;
+        ringOuter.position.y = -3.7;
+        const ringInner = new THREE.Mesh(new THREE.TorusGeometry(0.82, 0.06, 8, 18), goldMat);
+        ringInner.rotation.x = Math.PI / 2;
+        ringInner.position.y = -3.3;
+
+        const bulbMat = new THREE.MeshBasicMaterial({ color: 0xfff8dc });
+        for (let b = 0; b < 8; b++) {
+          const ang = (b / 8) * Math.PI * 2;
+          const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 8), bulbMat);
+          bulb.position.set(Math.cos(ang) * 1.45, -3.55, Math.sin(ang) * 1.45);
+          chan.add(bulb);
+        }
+        chan.add(rod, ringOuter, ringInner);
+        grp.add(chan);
+      });
+
+      // 전시 벽면 전용 브론즈 스포트라이트 트랙 레일
+      [-16.2, 16.2].forEach((tx) => {
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.10, depth - 6), darkSteel);
+        rail.position.set(tx, height - 0.12, 0);
+        grp.add(rail);
+        for (let sz = -20; sz <= 20; sz += 6.5) {
+          const head = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.20, 0.38, 10), goldMat);
+          head.rotation.z = tx < 0 ? 0.38 : -0.38;
+          head.position.set(tx, height - 0.34, sz);
+          grp.add(head);
+        }
+      });
+
+      return grp;
+    }
+
+    // 4) 클래식 루브르 플루티드 대리석 기둥 (Pilaster Column)
+    createLouvreColumn(height = 11.2) {
+      const grp = new THREE.Group();
+      const marble = this.marbleMaterial('louvre_col_marble', [236, 230, 218], [198, 190, 176], 1, 3, 0.22);
+      const goldMat = this.louvreGoldMaterial();
+
+      const plinth = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.9, 1.15), marble);
+      plinth.position.y = 0.45;
+      plinth.castShadow = true;
+
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.42, height - 1.7, 16), marble);
+      shaft.position.y = 0.9 + (height - 1.7) / 2;
+      shaft.castShadow = true;
+
+      const capitalBase = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.36, 0.55, 16), goldMat);
+      capitalBase.position.y = height - 0.55;
+      const abacus = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.26, 1.18), marble);
+      abacus.position.y = height - 0.14;
+
+      grp.add(plinth, shaft, capitalBase, abacus);
+      return grp;
+    }
+
+    // 5) 박물관 퀄팅 가죽 벤치 (중앙 관람용 라운지 벤치)
+    createMuseumBench(width = 3.8) {
+      const grp = new THREE.Group();
+      const leather = this.fabricMaterial('louvre_leather', [72, 46, 32], 3, 1);
+      const goldMat = this.louvreGoldMaterial();
+
+      const cushion = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.22, width), leather);
+      cushion.position.y = 0.46;
+      cushion.castShadow = true;
+      cushion.receiveShadow = true;
+
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(1.26, 0.08, width - 0.1), goldMat);
+      frame.position.y = 0.33;
+
+      [-width / 2 + 0.32, width / 2 - 0.32].forEach((lz) => {
+        [-0.48, 0.48].forEach((lx) => {
+          const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.04, 0.33, 8), goldMat);
+          leg.position.set(lx, 0.165, lz);
+          grp.add(leg);
+        });
+      });
+
+      grp.add(cushion, frame);
+      return grp;
+    }
+
+    // 6) 황동 포스트 & 버건디 벨벳 차단봉 (Stanchion Barrier)
+    createLouvreStanchionBarrier(length = 4.6) {
+      const grp = new THREE.Group();
+      const goldMat = this.louvreGoldMaterial();
+      const velvetMat = new THREE.MeshStandardMaterial({ color: 0x7f1d1d, roughness: 0.75 });
+
+      [-length / 2, length / 2].forEach((px) => {
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.21, 0.06, 16), goldMat);
+        base.position.set(px, 0.03, 0);
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.92, 10), goldMat);
+        pole.position.set(px, 0.48, 0);
+        const finial = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 10), goldMat);
+        finial.position.set(px, 0.96, 0);
+        grp.add(base, pole, finial);
+      });
+
+      // 처짐이 있는 벨벳 로프 커브
+      const curve = new THREE.QuadraticBezierCurve3(
+        new THREE.Vector3(-length / 2, 0.86, 0),
+        new THREE.Vector3(0, 0.66, 0),
+        new THREE.Vector3(length / 2, 0.86, 0)
+      );
+      const rope = new THREE.Mesh(new THREE.TubeGeometry(curve, 16, 0.028, 8, false), velvetMat);
+      grp.add(rope);
+      return grp;
+    }
+
+    // 7) 루브르 박물관 엔틱 골드 프레임 + 성도 추억나눔/렘브란트 명화 액자
+    // - 세로/가로 어떤 비율의 사진도 매트보드 안에 찌그러지지 않게 자동 비율 보정하여 렌더링
+    // - 외부 Supabase Storage 사진도 crossOrigin='anonymous'로 안전하게 캔버스에 합성
+    createLouvreGoldFramePainting(art, idx, scaleW = 5.4, scaleH = 3.9) {
+      const grp = new THREE.Group();
+      const goldMat = this.louvreGoldMaterial();
+      const darkWood = this.woodPlankMaterial('louvre_frame_in', [52, 34, 22], [32, 20, 14], 1, 1, 0.35);
+
+      // 외곽 엔틱 골드 프레임 + 내측 다크 몰딩
+      const outerFrame = new THREE.Mesh(new THREE.BoxGeometry(scaleW + 0.48, scaleH + 0.48, 0.14), goldMat);
+      outerFrame.castShadow = true;
+      const innerBezel = new THREE.Mesh(new THREE.BoxGeometry(scaleW + 0.22, scaleH + 0.22, 0.16), darkWood);
+
+      const canvasW = isMobileClient ? 384 : 512;
+      const canvasH = isMobileClient ? 276 : 368;
+      const c = document.createElement('canvas');
+      c.width = canvasW;
+      c.height = canvasH;
+      const ctx = c.getContext('2d');
+
+      const drawArtworkCanvas = (loadedImg) => {
+        // 크림 화이트 박물관 매트보드 배경
+        ctx.fillStyle = '#f6f2e8';
+        ctx.fillRect(0, 0, canvasW, canvasH);
+
+        // 안쪽 금장 테두리선
+        const pad = Math.round(canvasW * 0.055);
+        const bottomSpace = Math.round(canvasH * 0.13);
+        const boxX = pad;
+        const boxY = pad;
+        const boxW = canvasW - pad * 2;
+        const boxH = canvasH - pad - bottomSpace;
+
+        ctx.fillStyle = '#1b1917';
+        ctx.fillRect(boxX - 3, boxY - 3, boxW + 6, boxH + 6);
+
+        if (loadedImg && loadedImg.width > 0 && loadedImg.height > 0) {
+          // 비율 유지 (이미지가 잘리지 않되 여백을 우아하게 처리하는 contain + 다크 매트)
+          const imgRatio = loadedImg.width / loadedImg.height;
+          const boxRatio = boxW / boxH;
+          let dw = boxW, dh = boxH, dx = boxX, dy = boxY;
+          if (imgRatio > boxRatio) {
+            dh = boxW / imgRatio;
+            dy = boxY + (boxH - dh) / 2;
+          } else {
+            dw = boxH * imgRatio;
+            dx = boxX + (boxW - dw) / 2;
+          }
+          ctx.drawImage(loadedImg, dx, dy, dw, dh);
+        } else {
+          // 로딩 중 또는 폴백 우아한 전시 배경
+          const bg = ctx.createRadialGradient(canvasW * 0.5, canvasH * 0.42, 14, canvasW * 0.5, canvasH * 0.45, canvasW * 0.55);
+          bg.addColorStop(0, art.color2 || '#d97706');
+          bg.addColorStop(0.6, art.color1 || '#3a1f10');
+          bg.addColorStop(1, '#1c1917');
+          ctx.fillStyle = bg;
+          ctx.fillRect(boxX, boxY, boxW, boxH);
+
+          ctx.fillStyle = 'rgba(254, 243, 199, 0.9)';
+          ctx.font = `700 ${Math.round(canvasW * 0.04)}px -apple-system, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(art.img ? '🖼️ 작품 불러오는 중...' : (art.title || '성화 갤러리'), canvasW / 2, boxY + boxH / 2, boxW - 24);
+        }
+
+        // 하단 황동 스타일 캡션 라벨
+        ctx.fillStyle = '#33291e';
+        ctx.font = `700 ${Math.round(canvasW * 0.032)}px -apple-system, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const caption = art.authorLabel
+          ? `${art.title} · ${art.authorLabel}`
+          : (art.title || '성화 갤러리');
+        ctx.fillText(caption, canvasW / 2, canvasH - bottomSpace * 0.48, canvasW - 36);
+      };
+
+      drawArtworkCanvas(null);
+      const tex = new THREE.CanvasTexture(c);
+      if ('colorSpace' in tex && THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+      else if (THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
+      tex.anisotropy = isMobileClient ? 2 : 4;
+
+      if (art && art.img) {
+        const imgObj = new Image();
+        imgObj.crossOrigin = 'anonymous';
+        imgObj.onload = () => {
+          try {
+            drawArtworkCanvas(imgObj);
+            tex.needsUpdate = true;
+          } catch {}
+        };
+        imgObj.src = art.img;
+      }
+
+      const canvasMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(scaleW, scaleH),
+        new THREE.MeshStandardMaterial({
+          map: tex,
+          roughness: 0.30,
+          emissive: 0xffffff,
+          emissiveMap: tex,
+          emissiveIntensity: 0.16
+        })
+      );
+      canvasMesh.position.z = 0.095;
+
+      // 상단 루브르 골드 픽처 라이트(전용 액자 조명등)
+      const lightStem = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.08, 0.48), goldMat);
+      lightStem.position.set(0, scaleH / 2 + 0.32, 0.22);
+      const lightHood = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 1.5, 10), goldMat);
+      lightHood.rotation.z = Math.PI / 2;
+      lightHood.position.set(0, scaleH / 2 + 0.30, 0.44);
+      const lightGlow = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.36, 0.08),
+        new THREE.MeshBasicMaterial({ color: 0xfff8dc, side: THREE.DoubleSide })
+      );
+      lightGlow.rotation.x = Math.PI / 2;
+      lightGlow.position.set(0, scaleH / 2 + 0.25, 0.44);
+
+      grp.add(outerFrame, innerBezel, canvasMesh, lightStem, lightHood, lightGlow);
+      return grp;
+    }
+
     createRealisticTree(scale = 1) {
       const grp = new THREE.Group();
       const bark = this.woodPlankMaterial('bark2', [112, 88, 68], [64, 48, 36], 1, 3, 0.85);

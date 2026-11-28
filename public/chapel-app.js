@@ -212,6 +212,7 @@
   let showNpcs = true;
   let currentZone = 'garden';
   let currentSarangId = 'group-1';
+  let somyGalleryPosts = [];
 
   // -------------------------------------------------------------------------
   // 👑 관리자 및 인도자 권한 판별 (칠판 게시 · 화면공유 · 전원 찬양 송출 통제)
@@ -785,7 +786,8 @@
     world3d.clearRemoteAvatars(false);
     world3d.loadZone(zoneId, {
       candles: worldState.candles,
-      sarangbangName: sarangObj ? sarangObj.name : '사랑방'
+      sarangbangName: sarangObj ? sarangObj.name : '사랑방',
+      galleryPosts: somyGalleryPosts
     });
     if (myFaceCamOn && myFaceStream) {
       world3d.setAvatarVideoStream('me', myFaceStream, faceFacingMode === 'user');
@@ -801,7 +803,7 @@
     document.getElementById('btn-qt-academy').classList.toggle('hidden', zoneId !== 'qt');
     document.getElementById('btn-candle-board').classList.toggle('hidden', zoneId !== 'sanctuary' && zoneId !== 'prayer');
     const prayerGalBtn = document.getElementById('btn-prayer-gallery');
-    if (prayerGalBtn) prayerGalBtn.classList.toggle('hidden', zoneId !== 'prayer' && zoneId !== 'qt');
+    if (prayerGalBtn) prayerGalBtn.classList.toggle('hidden', zoneId !== 'prayer');
     document.getElementById('btn-board-studio').classList.toggle('hidden', !meta.hasBoard);
     updateRooftopUi();
 
@@ -890,33 +892,95 @@
     } else if (item.type === 'candle_altar') {
       openModal('candle-modal');
     } else if (item.type === 'artwork' && item.artwork) {
-      const artList = window.GALLERY_ARTWORKS || [];
-      const fIdx = artList.findIndex((a) => a.id === item.artwork.id || a.title === item.artwork.title);
-      renderArtModalDetail(fIdx >= 0 ? fIdx : 0);
+      const tab = item.category === 'member' ? 'member' : 'rembrandt';
+      const idx = typeof item.index === 'number' ? item.index : 0;
+      renderArtModalDetail(idx, tab);
       openModal('art-modal');
     }
   }
 
   // -------------------------------------------------------------------------
-  // 🎨 램브란트 성화 & 말씀 기도 갤러리 모달 렌더러
+  // 🏛️ 파리 루브르 온라인 전시관 모달 (렘브란트 성화전 + 소미큐티 추억나눔 성도 사진전)
   // -------------------------------------------------------------------------
+  let currentArtGalleryTab = 'rembrandt';
   let currentArtGalleryIdx = 0;
-  function renderArtModalDetail(idx = 0) {
-    const list = window.GALLERY_ARTWORKS || [];
-    if (!list.length) return;
-    currentArtGalleryIdx = (idx + list.length) % list.length;
-    const art = list[currentArtGalleryIdx];
+
+  function getMemberExhibitionItems() {
+    const out = [];
+    (Array.isArray(somyGalleryPosts) ? somyGalleryPosts : []).forEach((post) => {
+      const urls = Array.isArray(post.images) && post.images.length
+        ? post.images
+        : (post.imageUrl ? [post.imageUrl] : []);
+      urls.forEach((url, imgIdx) => {
+        out.push({
+          id: `${post.id}_${imgIdx}`,
+          title: post.description ? post.description.slice(0, 42) : `${post.author} 성도의 은혜 추억`,
+          bible: `📸 ${post.author} 성도 · ${post.createdAt || '추억나눔'}`,
+          artist: '소미큐티 추억나눔(갤러리)',
+          img: url,
+          desc: post.description || `${post.author} 성도님께서 소미큐티 추억나눔(갤러리)에 공유해주신 소중한 은혜의 순간입니다.`,
+          meditation: `✨ 소미큐티 추억나눔 온라인 전시작 · 게시자: ${post.author} 성도`
+        });
+      });
+    });
+    return out;
+  }
+
+  function renderArtModalDetail(idx = 0, forceTab = null) {
+    if (forceTab === 'rembrandt' || forceTab === 'member') {
+      currentArtGalleryTab = forceTab;
+    }
+
+    const memberItems = getMemberExhibitionItems();
+    const rembrandtItems = window.GALLERY_ARTWORKS || [];
+
+    const memberBadge = document.getElementById('art-member-count-badge');
+    if (memberBadge) memberBadge.textContent = String(memberItems.length);
+
+    const remTabBtn = document.getElementById('btn-art-tab-rembrandt');
+    const memTabBtn = document.getElementById('btn-art-tab-member');
+    if (remTabBtn && memTabBtn) {
+      const isRem = currentArtGalleryTab === 'rembrandt';
+      remTabBtn.className = `py-1.5 px-2 rounded-lg text-xs font-black cursor-pointer transition ${
+        isRem ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-300 hover:bg-white/10 font-bold'
+      }`;
+      memTabBtn.className = `py-1.5 px-2 rounded-lg text-xs font-black cursor-pointer transition ${
+        !isRem ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-300 hover:bg-white/10 font-bold'
+      }`;
+    }
+
+    const list = currentArtGalleryTab === 'member' ? memberItems : rembrandtItems;
 
     const titleEl = document.getElementById('art-modal-title');
     const bibleEl = document.getElementById('art-modal-bible');
     const imgEl = document.getElementById('art-modal-img');
+    const emptyEl = document.getElementById('art-modal-empty-state');
     const descEl = document.getElementById('art-modal-desc');
     const medEl = document.getElementById('art-modal-meditation');
     const badgeEl = document.getElementById('art-gallery-index-badge');
     const thumbContainer = document.getElementById('art-thumbnails-container');
 
+    if (!list.length) {
+      currentArtGalleryIdx = 0;
+      if (titleEl) titleEl.textContent = '📸 성도 추억나눔 온라인 전시회';
+      if (bibleEl) bibleEl.textContent = '소미큐티 추억나눔(갤러리) 연동 전시관';
+      if (descEl) descEl.textContent = '현재 등록된 추억나눔 사진이 없습니다. 성도님들이 소미큐티 앱 [추억나눔]에 사진을 올리시면 이곳과 3D 루브르 갤러리 벽면에 즉시 전시됩니다.';
+      if (medEl) medEl.textContent = '✨ 은혜로운 교회 행사, 소그룹 모임, 일상 묵상 사진을 성도들과 함께 나누어 보세요!';
+      if (badgeEl) badgeEl.textContent = '0 / 0';
+      if (imgEl) imgEl.classList.add('hidden');
+      if (emptyEl) emptyEl.classList.remove('hidden');
+      if (thumbContainer) thumbContainer.innerHTML = '';
+      return;
+    }
+
+    if (imgEl) imgEl.classList.remove('hidden');
+    if (emptyEl) emptyEl.classList.add('hidden');
+
+    currentArtGalleryIdx = ((idx % list.length) + list.length) % list.length;
+    const art = list[currentArtGalleryIdx];
+
     if (titleEl) titleEl.textContent = art.title;
-    if (bibleEl) bibleEl.textContent = `${art.bible || ''} · ${art.artist || '렘브란트'}`;
+    if (bibleEl) bibleEl.textContent = `${art.bible || ''}${art.artist ? ` · ${art.artist}` : ''}`;
     if (descEl) descEl.textContent = art.desc;
     if (medEl) medEl.textContent = art.meditation || '🙏 주님의 거룩한 임재와 사랑을 묵상합니다.';
     if (badgeEl) badgeEl.textContent = `${currentArtGalleryIdx + 1} / ${list.length}`;
@@ -928,7 +992,7 @@
 
     if (thumbContainer) {
       thumbContainer.innerHTML = list.map((a, i) => `
-        <button type="button" data-artidx="${i}" class="group relative rounded-lg overflow-hidden border-2 transition p-0.5 cursor-pointer ${
+        <button type="button" data-artidx="${i}" class="shrink-0 w-14 sm:w-16 group relative rounded-lg overflow-hidden border-2 transition p-0.5 cursor-pointer ${
           i === currentArtGalleryIdx ? 'border-amber-400 bg-amber-400/20 scale-105 shadow-md' : 'border-white/10 opacity-60 hover:opacity-100 hover:border-white/40'
         }">
           <img src="${a.img}" alt="${a.title}" class="w-full h-11 object-cover rounded" />
@@ -943,6 +1007,11 @@
           renderArtModalDetail(targetIdx);
         });
       });
+
+      const activeBtn = thumbContainer.querySelector(`[data-artidx="${currentArtGalleryIdx}"]`);
+      if (activeBtn && activeBtn.scrollIntoView) {
+        activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
     }
   }
 
@@ -4374,9 +4443,20 @@
   const prayerGalDrawerBtn = document.getElementById('btn-prayer-gallery');
   if (prayerGalDrawerBtn) {
     prayerGalDrawerBtn.addEventListener('click', () => {
+      const memCount = getMemberExhibitionItems().length;
+      renderArtModalDetail(0, memCount > 0 ? 'member' : 'rembrandt');
       openModal('art-modal');
     });
   }
+
+  const artTabRem = document.getElementById('btn-art-tab-rembrandt');
+  const artTabMem = document.getElementById('btn-art-tab-member');
+  const artPrevBtn = document.getElementById('btn-art-prev');
+  const artNextBtn = document.getElementById('btn-art-next');
+  if (artTabRem) artTabRem.addEventListener('click', () => renderArtModalDetail(0, 'rembrandt'));
+  if (artTabMem) artTabMem.addEventListener('click', () => renderArtModalDetail(0, 'member'));
+  if (artPrevBtn) artPrevBtn.addEventListener('click', () => renderArtModalDetail(currentArtGalleryIdx - 1));
+  if (artNextBtn) artNextBtn.addEventListener('click', () => renderArtModalDetail(currentArtGalleryIdx + 1));
 
   document.getElementById('btn-board-studio').addEventListener('click', () => openModal('board-modal'));
   document.getElementById('btn-sarang-Menu').addEventListener('click', () => openModal('sarang-modal'));
@@ -4581,6 +4661,15 @@
             });
             syncMyPresence();
           }
+        }
+      }
+      if (res && Array.isArray(res.somyGallery)) {
+        somyGalleryPosts = res.somyGallery;
+        if (currentZone === 'prayer') {
+          world3d.loadZone('prayer', {
+            candles: worldState.candles,
+            galleryPosts: somyGalleryPosts
+          });
         }
       }
       if (res && Array.isArray(res.somyQtRecentDates)) {

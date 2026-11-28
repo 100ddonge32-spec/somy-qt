@@ -316,6 +316,67 @@ async function attachLiveSomyQtShares(state: ChapelWorldState, rawChurchId?: str
     return state;
 }
 
+// 소미 앱 추억나눔(gallery_posts) 성도 사진 실시간 조회 (루브르 말씀·추억 갤러리 전시용)
+async function fetchLiveSomyGalleryPosts(rawChurchId?: string | null) {
+    const cid = normalizeChapelChurchId(rawChurchId);
+    const churchFilter = cid === 'jesus-in' ? ['jesus-in', '예수인교회'] : [cid];
+
+    try {
+        const { data: posts, error } = await supabaseAdmin
+            .from('gallery_posts')
+            .select(`
+                id,
+                user_id,
+                user_name,
+                description,
+                image_url,
+                image_urls,
+                created_at,
+                profiles:user_id (
+                    full_name
+                )
+            `)
+            .in('church_id', churchFilter)
+            .order('created_at', { ascending: false })
+            .limit(40);
+
+        if (error || !Array.isArray(posts)) return [];
+
+        return posts
+            .map((p: any) => {
+                let imgs: string[] = [];
+                if (Array.isArray(p.image_urls) && p.image_urls.length > 0) {
+                    imgs = p.image_urls.filter((u: any) => typeof u === 'string' && u.startsWith('http'));
+                } else if (typeof p.image_urls === 'string' && p.image_urls.startsWith('[')) {
+                    try {
+                        const parsed = JSON.parse(p.image_urls);
+                        if (Array.isArray(parsed)) {
+                            imgs = parsed.filter((u: any) => typeof u === 'string' && u.startsWith('http'));
+                        }
+                    } catch {}
+                }
+                if (imgs.length === 0 && typeof p.image_url === 'string' && p.image_url.startsWith('http')) {
+                    imgs = [p.image_url];
+                }
+                if (imgs.length === 0) return null;
+
+                const author = p.profiles?.full_name || p.user_name || '성도';
+                return {
+                    id: String(p.id),
+                    author: String(author),
+                    description: String(p.description || '').trim(),
+                    imageUrl: imgs[0],
+                    images: imgs,
+                    createdAt: formatKstShort(p.created_at),
+                };
+            })
+            .filter(Boolean);
+    } catch (e) {
+        console.warn('[ChapelWorld API] fetchLiveSomyGalleryPosts warning:', e);
+        return [];
+    }
+}
+
 // 소미 큐티(daily_qt) 안전 조회 헬퍼: 요청 날짜 -> 최근 등록된 큐티 -> 실시간 말씀 본문 순으로 100% 보장
 async function resolveSomyQtForChapel(requestedDate?: string) {
     const today = getKoreaDateString();
@@ -404,9 +465,10 @@ export async function GET(req: NextRequest) {
         });
     }
 
-    const [rawState, qtBundle] = await Promise.all([
+    const [rawState, qtBundle, somyGallery] = await Promise.all([
         loadStateFromDb(churchId),
         resolveSomyQtForChapel(qtDate),
+        fetchLiveSomyGalleryPosts(churchId),
     ]);
     const state = await attachLiveSomyQtShares(rawState, churchId);
 
@@ -417,6 +479,7 @@ export async function GET(req: NextRequest) {
             state,
             somyQt: qtBundle.qt,
             somyQtRecentDates: qtBundle.recentDates,
+            somyGallery,
         },
         {
             headers: {

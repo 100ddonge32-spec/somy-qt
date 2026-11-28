@@ -872,31 +872,31 @@
     },
     qt: {
       id: 'qt',
-      name: '✏️ 소미 큐티방 & 성화 갤러리 아카데미',
-      subtitle: '프리미엄 뮤지엄 갤러리 월 · 렘브란트 성화 회랑 · 모던 세미나 라운지',
-      sky: 0x1a1d24,
-      fogColor: 0x222630,
-      fogDensity: 0.0025,
+      name: '✏️ 큐티방 (모던 세미나홀)',
+      subtitle: '리니어 LED 우물천장 · 화이트 세미나 데스크 · 큐티 기초반 강의실',
+      sky: 0x202328,
+      fogColor: 0x282c33,
+      fogDensity: 0.003,
       spawn: { x: 0, z: 10.2, rotY: Math.PI },
-      panorama: { pos: [-13, 8.5, 15.0], look: [0, 3.2, -4] },
-      bounds: { x: 16.5, zMin: -15.0, zMax: 15.8 },
+      panorama: { pos: [-13, 8.0, 15.0], look: [0, 3.0, -4] },
+      bounds: { x: 16.2, zMin: -14.8, zMax: 15.5 },
       hasBoard: true,
       boardPos: [0, 5.2, -15.1],
       boardSize: [13.0, 5.8]
     },
     prayer: {
       id: 'prayer',
-      name: '🕯️ 기도실 & 현대 성화갤러리',
-      subtitle: '화이트 뮤지엄 월워셔 회랑 · 간접조명 원목 루버 개인기도부스',
-      sky: 0x1c1a18,
-      fogColor: 0x252220,
-      fogDensity: 0.0035,
-      spawn: { x: 0, z: 11.8, rotY: Math.PI },
-      panorama: { pos: [-11, 7.6, 16.0], look: [0, 2.8, -5] },
-      bounds: { x: 14.2, zMin: -15.8, zMax: 16.8 },
+      name: '🏛️ 기도실 & 루브르 말씀·추억 갤러리',
+      subtitle: '파리 루브르 그랜드 갤러리 · 렘브란트 성화전 · 성도 추억나눔 온라인 전시관 · 개인기도부스',
+      sky: 0x1a1714,
+      fogColor: 0x231f1b,
+      fogDensity: 0.0022,
+      spawn: { x: 0, z: 22.0, rotY: Math.PI },
+      panorama: { pos: [-16, 11.2, 26.5], look: [0, 3.8, -6] },
+      bounds: { x: 18.8, zMin: -25.5, zMax: 26.2 },
       hasBoard: true,
-      boardPos: [0, 5.0, -16.1],
-      boardSize: [10.6, 5.0]
+      boardPos: [0, 5.6, -27.4],
+      boardSize: [12.0, 5.4]
     },
     rooftop: {
       id: 'rooftop',
@@ -1617,7 +1617,7 @@
       else if (meta.id === 'sarangbang') this._buildSarangbang(opts.sarangbangName || '사랑방');
       else if (meta.id === 'bible') this._buildBibleRoom();
       else if (meta.id === 'qt') this._buildQtRoom();
-      else if (meta.id === 'prayer') this._buildPrayerGallery();
+      else if (meta.id === 'prayer') this._buildPrayerGallery(opts.galleryPosts || []);
       else if (meta.id === 'rooftop') this._buildRooftop();
 
       if (meta.hasBoard) {
@@ -2264,38 +2264,18 @@
     // 4) ✏️ 큐티방 — 현대식 아카데미 & 세미나 홀
     // =======================================================================
     _buildQtRoom() {
-      // 최고급 미술관 갤러리 콘셉트: 대리석 마블 바닥, 뮤지엄 화이트 월, 다크 월넛 & 샴페인 골드 루버
-      const museumMarble = this.pbr.marbleMaterial('qt_gallery_marble', [228, 224, 216], [198, 192, 180], 6, 6, 0.20);
-      const galleryWallMat = this.pbr.wallWashPanelMaterial('white', true);
-      const walnutSlat = this.pbr.acousticSlatMaterial(6, 1, true);
-      const accentBlackSteel = this.pbr.darkSteelMaterial();
+      const lightOakFloor = this.pbr.woodPlankMaterial('qt_mod_floor', [202, 172, 132], [164, 134, 96], 8, 8, 0.32);
+      const whiteWall = this.pbr.wallWashPanelMaterial('white', false);
+      const oakSlat = this.pbr.acousticSlatMaterial(6, 1, true);
 
-      // 1. 프리미엄 대리석 바닥재
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(36, 34), museumMarble);
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(36, 33), lightOakFloor);
       floor.rotation.x = -Math.PI / 2;
       floor.receiveShadow = true;
       this.roomGroup.add(floor);
 
-      // 2. 미술관 전용 코브 조명 우물천장
-      this.roomGroup.add(this.pbr.createModernRoomCeiling(36, 34, 9.4, 5, 4));
-      this._addFourInwardRoomWalls(35.2, 32.8, 9.4, 0.6, walnutSlat, galleryWallMat, galleryWallMat);
+      this.roomGroup.add(this.pbr.createModernRoomCeiling(36, 33, 9.2, 5, 4));
+      this._addFourInwardRoomWalls(35.0, 31.8, 9.2, 0.5, oakSlat, whiteWall, whiteWall);
 
-      // 천장 트랙 스포트라이트 레일 (좌/우 갤러리 벽면 비추기)
-      [-14.0, 14.0].forEach((trackX) => {
-        const track = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.10, 26), accentBlackSteel);
-        track.position.set(trackX, 9.15, 0);
-        this.roomGroup.add(track);
-
-        // 스포트라이트 조명 팟들
-        [-9, -3, 3, 9].forEach((spotZ) => {
-          const spotHead = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 0.35, 12), accentBlackSteel);
-          spotHead.rotation.z = trackX < 0 ? 0.35 : -0.35;
-          spotHead.position.set(trackX, 8.95, spotZ);
-          this.roomGroup.add(spotHead);
-        });
-      });
-
-      // 3. 중앙 세미나 강대상 & 스탠드
       const podium = this.pbr.createModernPulpit();
       podium.position.set(-6.4, 0, -11.2);
       this.roomGroup.add(podium);
@@ -2311,7 +2291,6 @@
         mesh: podium.children[0]
       });
 
-      // 4. 모던 세미나 & 갤러리 나눔 테이블
       [-5.0, 1.4].forEach((dz, rIdx) => {
         [-6.4, 6.4].forEach((dx, cIdx) => {
           const semDesk = this.pbr.createModernStudyDesk(6.2);
@@ -2336,136 +2315,260 @@
         });
       });
 
-      // 5. 🎨 큐티방 갤러리 전시 월 (Gallery Wall) — 좌우 측면 벽에 렘브란트 명화 6작품 배치
-      GALLERY_ARTWORKS.forEach((art, i) => {
-        const isLeft = i < 3;
-        const idx = i % 3;
-        const az = -8.2 + idx * 8.6;
-        const ax = isLeft ? -15.1 : 15.1;
-        const rotY = isLeft ? Math.PI / 2 : -Math.PI / 2;
-
-        const framed = this.pbr.createFramedSacredPainting(art, i);
-        framed.position.set(ax, 4.3, az);
-        framed.rotation.y = rotY;
-        this.roomGroup.add(framed);
-
-        // 바닥 작품 캡션 명패 및 안내 스탠드
-        const plaque = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.04, 0.35), accentBlackSteel);
-        plaque.position.set(isLeft ? -14.6 : 14.6, 0.02, az);
-        this.roomGroup.add(plaque);
-
-        this.interactables.push({
-          id: `qt_art_${i}`,
-          type: 'artwork',
-          label: `🖼️ 갤러리 명화 '${art.title}' 해설 보기`,
-          artwork: art,
-          x: isLeft ? -12.4 : 12.4,
-          y: 0,
-          z: az,
-          radius: 3.2,
-          mesh: framed.children[1]
-        });
-      });
-
-      // 6. 관람객 휴식 및 묵상용 갤러리 벤치 (Gallery Lounges)
-      [-11.5, 11.5].forEach((bx) => {
-        const benchMat = this.pbr.fabricMaterial('qt_bench', [48, 52, 60], 2, 2);
-        const bench = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.45, 3.8), benchMat);
-        bench.position.set(bx, 0.225, 0.5);
-        bench.castShadow = true;
-        this.roomGroup.add(bench);
-        this._addFurnitureSeat(`qt_bench_${bx < 0 ? 'L' : 'R'}`, bx, 0, 0.5, bx < 0 ? Math.PI / 2 : -Math.PI / 2, 1.0, '🛋️ 갤러리 묵상 벤치 착석', 'chair');
-      });
-
-      // 7. 화분 및 공간 조경
-      [[-15.2, -12], [15.2, -12], [-15.2, 12], [15.2, 12]].forEach(([px, pz]) => {
+      [[-15.2, -12], [15.2, -12]].forEach(([px, pz]) => {
         const plant = this.pbr.createPottedPlant(1.3);
         plant.position.set(px, 0, pz);
         this.roomGroup.add(plant);
       });
 
-      // 8. 포털 도어
       this._addPortalDoor(-11.2, 16.3, Math.PI, 'bible', '📖 성경통독방', '');
       this._addPortalDoor(-5.0, 16.3, Math.PI, 'sanctuary', '🏛️ 대성전 이동', '');
       this._addPortalDoor(11.2, 16.3, Math.PI, 'sarangbang', '🏠 사랑방 이동', '');
     }
 
     // =======================================================================
-    // 5) 🕯️ 기도실 & 말씀갤러리 — 현대 화이트 뮤지엄 회랑 & 루버 개인기도부스
+    // 5) 🏛️ 기도실 & 파리 루브르 박물관(Grand Galerie) 성화·추억나눔 온라인 전시관
     // =======================================================================
-    _buildPrayerGallery() {
-      const limestoneFloor = this.pbr.marbleMaterial('gal_floor', [214, 208, 198], [182, 174, 162], 6, 6, 0.24);
-      const museumWall = this.pbr.wallWashPanelMaterial('white', true);
+    _buildPrayerGallery(galleryPosts = []) {
+      const parquetFloor = this.pbr.louvreParquetMaterial(10, 14);
+      const runnerMarble = this.pbr.marbleMaterial('louvre_runner', [236, 232, 224], [190, 184, 172], 4, 12, 0.18);
+      const goldMat = this.pbr.louvreGoldMaterial();
+      const burgundyWall = this.pbr.louvreGalleryWallMaterial('burgundy');
+      const creamWall = this.pbr.louvreGalleryWallMaterial('cream');
       const oakSlat = this.pbr.acousticSlatMaterial(4, 1, true);
       const padMat = this.pbr.fabricMaterial('mod_kneel_pad', [148, 32, 46], 2, 2);
 
-      const floor = new THREE.Mesh(new THREE.PlaneGeometry(32, 36), limestoneFloor);
+      // 1. 루브르 그랜드 파케 마루 + 중앙 대리석 러너 카펫 + 금장 인레이
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(42, 58), parquetFloor);
       floor.rotation.x = -Math.PI / 2;
       floor.receiveShadow = true;
       this.roomGroup.add(floor);
 
-      this.roomGroup.add(this.pbr.createModernRoomCeiling(32, 36, 9.0, 3, 5));
-      this._addFourInwardRoomWalls(31.0, 34.4, 9.0, 0.8, oakSlat, museumWall, museumWall);
+      const runner = new THREE.Mesh(new THREE.PlaneGeometry(8.8, 50), runnerMarble);
+      runner.rotation.x = -Math.PI / 2;
+      runner.position.set(0, 0.012, 1.0);
+      runner.receiveShadow = true;
+      this.roomGroup.add(runner);
 
-      GALLERY_ARTWORKS.forEach((art, i) => {
-        const isLeft = i < 3;
-        const idx = i % 3;
-        const az = -8.2 + idx * 8.6;
-        const ax = isLeft ? -15.1 : 15.1;
-        const rotY = isLeft ? Math.PI / 2 : -Math.PI / 2;
+      [-4.48, 4.48].forEach((bx) => {
+        const trimLine = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.018, 50), goldMat);
+        trimLine.position.set(bx, 0.014, 1.0);
+        this.roomGroup.add(trimLine);
+      });
 
-        const framed = this.pbr.createFramedSacredPainting(art, i);
-        framed.position.set(ax, 4.3, az);
-        framed.rotation.y = rotY;
-        this.roomGroup.add(framed);
+      // 2. 루브르 아치형 배럴 볼트 채광 천장 + 샹들리에 + 스포트라이트 레일
+      this.roomGroup.add(this.pbr.createLouvreGrandCeiling(42, 58, 12.2));
+      this._addFourInwardRoomWalls(41.2, 56.8, 12.2, 0.0, creamWall, burgundyWall, creamWall);
 
-        this.interactables.push({
-          id: `art_${i}`,
-          type: 'artwork',
-          label: `🖼️ '${art.title}' 해설 보기`,
-          artwork: art,
-          x: isLeft ? -12.4 : 12.4,
-          y: 0,
-          z: az,
-          radius: 3.0,
-          mesh: framed.children[1]
+      // 3. 회랑 좌·우 대리석 + 금장 주두 플루티드 기둥 리듬 배치
+      [-19.5, 19.5].forEach((colX) => {
+        [-20.0, -13.0, -6.0, 1.0, 8.0, 15.0, 22.0].forEach((colZ) => {
+          const col = this.pbr.createLouvreColumn(12.0);
+          col.position.set(colX, 0, colZ);
+          this.roomGroup.add(col);
         });
       });
 
+      const bayZs = [-16.5, -9.5, -2.5, 4.5, 11.5, 18.5];
+
+      // 4. [좌측 서관] 🎨 렘브란트 대표 성화 6선 (West Wing)
+      GALLERY_ARTWORKS.forEach((art, i) => {
+        const az = bayZs[i % bayZs.length];
+        const framed = this.pbr.createLouvreGoldFramePainting(art, i, 5.2, 3.8);
+        framed.position.set(-20.45, 5.0, az);
+        framed.rotation.y = Math.PI / 2;
+        this.roomGroup.add(framed);
+
+        const rope = this.pbr.createLouvreStanchionBarrier(4.4);
+        rope.position.set(-18.3, 0, az);
+        rope.rotation.y = Math.PI / 2;
+        this.roomGroup.add(rope);
+
+        this.interactables.push({
+          id: `art_rembrandt_${i}`,
+          type: 'artwork',
+          category: 'rembrandt',
+          index: i,
+          label: `🎨 성화 '${art.title}' 해설 보기`,
+          artwork: art,
+          x: -17.0,
+          y: 0,
+          z: az,
+          radius: 3.3,
+          mesh: framed.children[2]
+        });
+      });
+
+      // 5. [우측 동관 & 특별 전시 파티션] 📸 소미큐티 추억나눔 성도 사진 전시관 (East Wing)
+      const memberExhibits = [];
+      (Array.isArray(galleryPosts) ? galleryPosts : []).forEach((post) => {
+        const urls = Array.isArray(post.images) && post.images.length ? post.images : (post.imageUrl ? [post.imageUrl] : []);
+        urls.forEach((url, imgIdx) => {
+          memberExhibits.push({
+            id: `${post.id}_${imgIdx}`,
+            postId: post.id,
+            title: post.description ? post.description.slice(0, 32) : `${post.author} 성도의 은혜 추억`,
+            authorLabel: `${post.author} · ${post.createdAt || ''}`,
+            author: post.author,
+            createdAt: post.createdAt || '',
+            likesCount: post.likesCount || 0,
+            img: url,
+            desc: post.description || `${post.author} 성도님께서 소미큐티 추억나눔(갤러리)에 공유해주신 소중한 은혜의 순간입니다.`,
+            meditation: `📸 소미큐티 추억나눔 전시작 · 게시자: ${post.author} 성도 · ${post.createdAt || ''}`,
+            isMemberPhoto: true
+          });
+        });
+      });
+
+      // 우측 메인 전시 벽 (최대 6점)
+      for (let i = 0; i < 6; i++) {
+        const az = bayZs[i];
+        const exhibit = memberExhibits[i] || {
+          id: `placeholder_member_${i}`,
+          title: i === 0 ? '📸 성도 추억나눔 온라인 사진전' : `전시 예정 작품 #${i + 1}`,
+          authorLabel: '소미큐티 추억나눔 연동',
+          img: null,
+          color1: '#1e3a5f',
+          color2: '#d97706',
+          desc: '소미큐티 앱의 [추억나눔(갤러리)] 메뉴에서 사진을 공유하시면, 이 루브르 전시관 벽면 액자에 실시간으로 걸립니다!',
+          meditation: '✨ 소미큐티 앱에서 성도들과 은혜로운 일상의 사진들을 함께 나누어 보세요.',
+          isMemberPhoto: true
+        };
+
+        const framed = this.pbr.createLouvreGoldFramePainting(exhibit, i + 10, 5.2, 3.8);
+        framed.position.set(20.45, 5.0, az);
+        framed.rotation.y = -Math.PI / 2;
+        this.roomGroup.add(framed);
+
+        const rope = this.pbr.createLouvreStanchionBarrier(4.4);
+        rope.position.set(18.3, 0, az);
+        rope.rotation.y = -Math.PI / 2;
+        this.roomGroup.add(rope);
+
+        this.interactables.push({
+          id: `art_member_${i}`,
+          type: 'artwork',
+          category: 'member',
+          index: memberExhibits[i] ? i : 0,
+          label: memberExhibits[i]
+            ? `📸 ${exhibit.author} 성도 추억 사진 보기`
+            : '📸 추억나눔 온라인 전시관 열기',
+          artwork: exhibit,
+          x: 17.0,
+          y: 0,
+          z: az,
+          radius: 3.3,
+          mesh: framed.children[2]
+        });
+      }
+
+      // 성도 사진이 6점을 넘을 경우 중앙 우측 특별 전시 파티션 월을 세워 추가 전시 (최대 4점 추가 = 총 10점 3D 벽면 전시)
+      if (memberExhibits.length > 6) {
+        const partitionWallMat = this.pbr.louvreGalleryWallMaterial('sage');
+        const partitionSpots = [
+          { px: 9.6, pz: -4.0 },
+          { px: 9.6, pz: 10.0 }
+        ];
+        partitionSpots.forEach((sp, pIdx) => {
+          const partBox = new THREE.Mesh(new THREE.BoxGeometry(0.42, 7.6, 5.8), partitionWallMat);
+          partBox.position.set(sp.px, 3.8, sp.pz);
+          partBox.castShadow = true;
+          partBox.receiveShadow = true;
+          const capGold = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.16, 5.9), goldMat);
+          capGold.position.set(sp.px, 7.65, sp.pz);
+          this.roomGroup.add(partBox, capGold);
+
+          const leftIdx = 6 + pIdx * 2;
+          const rightIdx = 6 + pIdx * 2 + 1;
+          [
+            { exIdx: leftIdx, xOff: -0.24, rot: -Math.PI / 2, standX: sp.px - 2.6 },
+            { exIdx: rightIdx, xOff: 0.24, rot: Math.PI / 2, standX: sp.px + 2.6 }
+          ].forEach((sideSpec) => {
+            const ex = memberExhibits[sideSpec.exIdx];
+            if (!ex) return;
+            const pf = this.pbr.createLouvreGoldFramePainting(ex, sideSpec.exIdx + 20, 4.4, 3.2);
+            pf.position.set(sp.px + sideSpec.xOff, 4.4, sp.pz);
+            pf.rotation.y = sideSpec.rot;
+            this.roomGroup.add(pf);
+
+            this.interactables.push({
+              id: `art_member_${sideSpec.exIdx}`,
+              type: 'artwork',
+              category: 'member',
+              index: sideSpec.exIdx,
+              label: `📸 ${ex.author} 성도 추억 사진 보기`,
+              artwork: ex,
+              x: sideSpec.standX,
+              y: 0,
+              z: sp.pz,
+              radius: 2.8,
+              mesh: pf.children[2]
+            });
+          });
+        });
+      }
+
+      // 6. 중앙 루브르 퀄팅 가죽 감상 벤치 3좌석 (양쪽 벽면 명화·추억작을 편안히 관람)
+      [-9.5, 1.5, 12.5].forEach((bz, bIdx) => {
+        const bench = this.pbr.createMuseumBench(3.8);
+        bench.position.set(0, 0, bz);
+        this.roomGroup.add(bench);
+        this._addFurnitureSeat(
+          `louvre_bench_${bIdx}`,
+          0,
+          0,
+          bz,
+          bIdx % 2 === 0 ? -Math.PI / 2 : Math.PI / 2,
+          1.1,
+          '🛋️ 루브르 갤러리 감상석 착석',
+          'chair'
+        );
+      });
+
+      // 7. 안쪽 북편 고요한 개인기도부스 성소 (z = -22.5)
       [-6.0, -2.0, 2.0, 6.0].forEach((kx, idx) => {
         const divL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.5, 2.2), oakSlat);
-        divL.position.set(kx - 1.85, 1.25, -11.6);
+        divL.position.set(kx - 1.85, 1.25, -22.6);
         if (idx === 3) {
           const divR = divL.clone();
           divR.position.x = kx + 1.85;
           this.roomGroup.add(divR);
         }
         const shelf = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.07, 0.55), oakSlat);
-        shelf.position.set(kx, 0.90, -12.4);
+        shelf.position.set(kx, 0.90, -23.4);
         const ledCross = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.65, 0.04), new THREE.MeshBasicMaterial({ color: 0xfff8dc }));
-        ledCross.position.set(kx, 1.65, -12.6);
+        ledCross.position.set(kx, 1.65, -23.6);
         const ledCrossH = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.06, 0.04), new THREE.MeshBasicMaterial({ color: 0xfff8dc }));
-        ledCrossH.position.set(kx, 1.76, -12.6);
+        ledCrossH.position.set(kx, 1.76, -23.6);
 
         const cushion = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.14, 0.9), padMat);
-        cushion.position.set(kx, 0.07, -11.2);
+        cushion.position.set(kx, 0.07, -22.2);
         this.roomGroup.add(divL, shelf, ledCross, ledCrossH, cushion);
 
         this.interactables.push({
           id: `prayer_kneel_${idx}`,
           type: 'kneel',
-          label: `🧎 ${idx + 1}번 모던 개인기도부스 무릎기도`,
+          label: `🧎 ${idx + 1}번 개인기도부스 무릎기도`,
           x: kx,
           y: 0,
-          z: -11.2,
+          z: -22.2,
           rotY: Math.PI,
           radius: 1.85,
           mesh: cushion
         });
       });
 
-      this._addPortalDoor(-7.5, 17.9, Math.PI, 'sanctuary', '🏛️ 대성전 이동', '');
-      this._addPortalDoor(7.5, 17.9, Math.PI, 'bible', '📖 성경통독방', '');
+      // 8. 4면 대형 플랜터 조경
+      [[-17.2, -24.5], [17.2, -24.5], [-17.2, 24.5], [17.2, 24.5]].forEach(([px, pz]) => {
+        const plant = this.pbr.createPottedPlant(1.45);
+        plant.position.set(px, 0, pz);
+        this.roomGroup.add(plant);
+      });
+
+      // 9. 남쪽 출입 포털 문
+      this._addPortalDoor(-9.5, 28.0, Math.PI, 'sanctuary', '🏛️ 대성전 이동', '');
+      this._addPortalDoor(0.0, 28.0, Math.PI, 'qt', '✏️ 큐티방 이동', '');
+      this._addPortalDoor(9.5, 28.0, Math.PI, 'bible', '📖 성경통독방', '');
     }
 
     // =======================================================================
