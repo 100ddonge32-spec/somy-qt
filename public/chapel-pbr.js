@@ -33,17 +33,27 @@
     return v;
   }
 
+  const isMobileClient = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+
   function makeCanvasTex(sizeW, sizeH, drawFn, repeatX = 1, repeatY = 1, isSrgb = true) {
+    // 모바일(iOS Safari/Android)의 경우 캔버스 해상도를 절반으로 줄여 VRAM 소비 75% 절감 및 WebKit 크래시 원천 방지
+    let effectiveW = sizeW;
+    let effectiveH = sizeH;
+    if (isMobileClient) {
+      effectiveW = Math.max(64, Math.floor(sizeW * 0.5));
+      effectiveH = Math.max(64, Math.floor(sizeH * 0.5));
+    }
+
     const c = document.createElement('canvas');
-    c.width = sizeW;
-    c.height = sizeH;
+    c.width = effectiveW;
+    c.height = effectiveH;
     const ctx = c.getContext('2d');
-    drawFn(ctx, sizeW, sizeH);
+    drawFn(ctx, effectiveW, effectiveH);
     const tex = new THREE.CanvasTexture(c);
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.RepeatWrapping;
     tex.repeat.set(repeatX, repeatY);
-    tex.anisotropy = 8;
+    tex.anisotropy = isMobileClient ? 2 : 8;
     if (isSrgb) {
       if ('colorSpace' in tex && THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
       else if (THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;

@@ -921,8 +921,8 @@
         powerPreference: isMobileDevice ? 'default' : 'high-performance'
       });
 
-      // 모바일에서는 DPR을 1.25로 제한하여 GPU VRAM 폭증 및 Safari 튕김 원천 방지
-      const maxDpr = isMobileDevice ? 1.25 : 2.0;
+      // 모바일에서는 DPR을 1.0으로 엄격 제한하여 iOS Safari/WebKit 메모리 상한선(300MB) 초과 및 튕김 방지
+      const maxDpr = isMobileDevice ? 1.0 : 2.0;
       this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
 
       // 모바일에서는 소프트 섀도우 연산 부하를 일반 ShadowMap으로 경량화
@@ -1099,7 +1099,7 @@
       this.camera.fov = w < h ? 68 : 56;
       this.camera.updateProjectionMatrix();
 
-      const maxDpr = this.isMobile ? 1.25 : 2.0;
+      const maxDpr = this.isMobile ? 1.0 : 2.0;
       this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
       this.renderer.setSize(w, h, false);
     }
@@ -1461,6 +1461,29 @@
     }
 
     // -----------------------------------------------------------------------
+    // 메모리 누수 방지용 Three.js 오브젝트/지오메트리/재질 재귀 해제
+    // -----------------------------------------------------------------------
+    _disposeGroup(group) {
+      if (!group) return;
+      while (group.children.length > 0) {
+        const obj = group.children[0];
+        group.remove(obj);
+        obj.traverse((child) => {
+          if (child.geometry) {
+            try { child.geometry.dispose(); } catch (e) {}
+          }
+          if (child.material) {
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach((m) => {
+              if (!m) return;
+              try { m.dispose(); } catch (e) {}
+            });
+          }
+        });
+      }
+    }
+
+    // -----------------------------------------------------------------------
     // 7개 현대식 CAD 실사 인테리어 공간 로더
     // -----------------------------------------------------------------------
     loadZone(zoneId, opts = {}) {
@@ -1475,9 +1498,8 @@
       this.oceanMesh = null;
       this.weatherSystem = null;
 
-      while (this.roomGroup.children.length > 0) {
-        this.roomGroup.remove(this.roomGroup.children[0]);
-      }
+      // 이전 공간 오브젝트 및 GPU 지오메트리/재질 안전 폐기 (메모리 누수로 인한 모바일 튕김 원천 차단)
+      this._disposeGroup(this.roomGroup);
 
       this.scene.background = new THREE.Color(meta.sky);
       this.scene.fog = new THREE.FogExp2(meta.fogColor, meta.fogDensity);
@@ -1488,8 +1510,9 @@
       this.mainDirLight = new THREE.DirectionalLight(0xfff2db, 0.78);
       this.mainDirLight.position.set(12, 26, 16);
       this.mainDirLight.castShadow = true;
-      this.mainDirLight.shadow.mapSize.width = 1024;
-      this.mainDirLight.shadow.mapSize.height = 1024;
+      const shadowRes = this.isMobile ? 512 : 1024;
+      this.mainDirLight.shadow.mapSize.width = shadowRes;
+      this.mainDirLight.shadow.mapSize.height = shadowRes;
       this.mainDirLight.shadow.camera.near = 2;
       this.mainDirLight.shadow.camera.far = 85;
       this.mainDirLight.shadow.camera.left = -36;
@@ -2638,7 +2661,7 @@
       // 미세하고 사실적인 실사 카메라 보케형 눈송이·빗줄기 대기 효과 (과장된 만화 이펙트 배제)
       if (theme === 'winter' || theme === 'rain') {
         const isRain = theme === 'rain';
-        const count = isRain ? 780 : 520;
+        const count = this.isMobile ? (isRain ? 220 : 160) : (isRain ? 780 : 520);
         const pGeo = new THREE.BufferGeometry();
         const positions = new Float32Array(count * 3);
         const seeds = new Float32Array(count);
