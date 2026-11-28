@@ -2170,43 +2170,43 @@
       return mat;
     }
 
-    _createSculptureMonument(imagePath, title, bibleText, width, height, isBronze = false) {
+    // =========================================================================
+    // 11) 🏛️ 실제 100% 3D 입체 고전 성조각상 (Full 3D Sculpted Meshes & Pedestals)
+    //     (미켈란젤로의 루브르 죽어가는 노예 / 바티칸 라오콘 군상 / 부활의 3D 대리석 십자가)
+    // =========================================================================
+
+    // 다단 박물관 대리석 대좌 베이스 헬퍼
+    _createPedestal(width, depth, height, title, subtitle) {
       const grp = new THREE.Group();
       const marble = this.carraraMarbleMaterial();
       const gold = this.louvreGoldMaterial();
-      const bronze = this.antiqueBronzeMaterial();
-      const baseMat = isBronze ? bronze : marble;
 
-      // 1. 다단 박물관 대리석 기단 (Pedestal Base)
-      const baseW = width + 0.6;
-      const baseD = 1.1;
-      const baseH = 0.85;
-
-      // 하단 단 (Plinth)
-      const plinth = new THREE.Mesh(new THREE.BoxGeometry(baseW + 0.25, 0.22, baseD + 0.25), baseMat);
+      // 1. 하단 플린스 (기단)
+      const plinth = new THREE.Mesh(new THREE.BoxGeometry(width + 0.3, 0.22, depth + 0.3), marble);
       plinth.position.y = 0.11;
       plinth.castShadow = true;
       plinth.receiveShadow = true;
 
       // 금장 몰딩 트림
-      const goldTrim = new THREE.Mesh(new THREE.BoxGeometry(baseW + 0.26, 0.05, baseD + 0.26), gold);
+      const goldTrim = new THREE.Mesh(new THREE.BoxGeometry(width + 0.32, 0.05, depth + 0.32), gold);
       goldTrim.position.y = 0.235;
 
-      // 메인 대좌 본체
-      const pedestal = new THREE.Mesh(new THREE.BoxGeometry(baseW, baseH, baseD), baseMat);
-      pedestal.position.y = 0.26 + baseH * 0.5;
+      // 2. 메인 대좌 본체
+      const bodyH = height - 0.38;
+      const pedestal = new THREE.Mesh(new THREE.BoxGeometry(width, bodyH, depth), marble);
+      pedestal.position.y = 0.26 + bodyH * 0.5;
       pedestal.castShadow = true;
       pedestal.receiveShadow = true;
 
-      // 상단 캡 몰딩
-      const cap = new THREE.Mesh(new THREE.BoxGeometry(baseW + 0.15, 0.12, baseD + 0.15), baseMat);
-      cap.position.y = 0.26 + baseH + 0.06;
+      // 3. 상단 캡 몰딩
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(width + 0.18, 0.12, depth + 0.18), marble);
+      cap.position.y = height - 0.06;
       cap.castShadow = true;
 
-      const goldTrimTop = new THREE.Mesh(new THREE.BoxGeometry(baseW + 0.16, 0.04, baseD + 0.16), gold);
-      goldTrimTop.position.y = 0.26 + baseH + 0.14;
+      const goldTrimTop = new THREE.Mesh(new THREE.BoxGeometry(width + 0.20, 0.04, depth + 0.20), gold);
+      goldTrimTop.position.y = height + 0.02;
 
-      // 전면 황동 캡션 명판 (Plaque)
+      // 4. 전면 황동 캡션 명판 (Plaque)
       const plaqueCanvas = document.createElement('canvas');
       plaqueCanvas.width = 512;
       plaqueCanvas.height = 140;
@@ -2217,12 +2217,12 @@
       pctx.lineWidth = 6;
       pctx.strokeRect(6, 6, 500, 128);
       pctx.fillStyle = '#fbbf24';
-      pctx.font = 'bold 34px sans-serif';
+      pctx.font = 'bold 32px sans-serif';
       pctx.textAlign = 'center';
-      pctx.fillText(title, 256, 58);
+      pctx.fillText(title, 256, 56);
       pctx.fillStyle = '#cbd5e1';
-      pctx.font = '22px sans-serif';
-      pctx.fillText(bibleText, 256, 102);
+      pctx.font = '21px sans-serif';
+      pctx.fillText(subtitle, 256, 100);
 
       const plaqueTex = new THREE.CanvasTexture(plaqueCanvas);
       plaqueTex.colorSpace = THREE.SRGBColorSpace;
@@ -2232,98 +2232,122 @@
         metalness: 0.75,
         color: 0xffffff
       });
-      const plaque = new THREE.Mesh(new THREE.PlaneGeometry(baseW * 0.72, 0.32), plaqueMat);
-      plaque.position.set(0, 0.26 + baseH * 0.55, baseD * 0.5 + 0.015);
+      const plaque = new THREE.Mesh(new THREE.PlaneGeometry(width * 0.72, 0.30), plaqueMat);
+      plaque.position.set(0, 0.26 + bodyH * 0.52, depth * 0.5 + 0.015);
 
       grp.add(plinth, goldTrim, pedestal, cap, goldTrimTop, plaque);
+      return { group: grp, topY: height + 0.04 };
+    }
 
-      // 2. 조각상 실물 릴리프 모뉴먼트 패널 (Monument Stela)
-      const stelaY = 0.26 + baseH + 0.16;
-      const stelaGrp = new THREE.Group();
-      stelaGrp.position.y = stelaY;
+    // 1) 🗿 미켈란젤로의 '죽어가는 노예' (Dying Slave by Michelangelo, Louvre Museum) - 100% 3D 입체 조각상
+    createMichelangeloDyingSlave() {
+      const { group: grp, topY } = this._createPedestal(1.3, 1.3, 0.88, '미켈란젤로 · 죽어가는 노예', '루브르 박물관 소장 · 1516');
+      const marbleMat = this.carraraMarbleMaterial();
 
-      // 대리석 백보드 기둥 (두께 0.22m)
-      const backboard = new THREE.Mesh(
-        new THREE.BoxGeometry(width, height, 0.22),
-        baseMat
-      );
-      backboard.position.y = height * 0.5;
-      backboard.castShadow = true;
-      backboard.receiveShadow = true;
-
-      // 외곽 금장 프레임 몰딩
-      const frameMat = gold;
-      const frameT = 0.08;
-      const topBar = new THREE.Mesh(new THREE.BoxGeometry(width + frameT * 2, frameT, 0.26), frameMat);
-      topBar.position.y = height + frameT * 0.5;
-      const leftBar = new THREE.Mesh(new THREE.BoxGeometry(frameT, height, 0.26), frameMat);
-      leftBar.position.set(-width * 0.5 - frameT * 0.5, height * 0.5, 0);
-      const rightBar = new THREE.Mesh(new THREE.BoxGeometry(frameT, height, 0.26), frameMat);
-      rightBar.position.set(width * 0.5 + frameT * 0.5, height * 0.5, 0);
-      stelaGrp.add(backboard, topBar, leftBar, rightBar);
-
-      // 3. 조각상 실사 텍스처 (전면 및 후면)
-      const texLoader = new THREE.TextureLoader();
-      const sculptTex = texLoader.load(imagePath);
-      sculptTex.colorSpace = THREE.SRGBColorSpace;
-
-      const sculptMat = new THREE.MeshStandardMaterial({
-        map: sculptTex,
-        roughness: 0.42,
-        metalness: isBronze ? 0.45 : 0.08,
-        emissive: 0xffffff,
-        emissiveMap: sculptTex,
-        emissiveIntensity: 0.12
-      });
-
-      const frontFace = new THREE.Mesh(new THREE.PlaneGeometry(width * 0.94, height * 0.94), sculptMat);
-      frontFace.position.set(0, height * 0.5, 0.112);
-      frontFace.castShadow = true;
-
-      const backFace = new THREE.Mesh(new THREE.PlaneGeometry(width * 0.94, height * 0.94), sculptMat);
-      backFace.position.set(0, height * 0.5, -0.112);
-      backFace.rotation.y = Math.PI;
-
-      stelaGrp.add(frontFace, backFace);
-      grp.add(stelaGrp);
-
+      if (window.GLTFLoader) {
+        const loader = new window.GLTFLoader();
+        loader.load(
+          '/models/sculptures/dying-slave.glb',
+          (gltf) => {
+            const model = gltf.scene;
+            model.traverse((child) => {
+              if (child.isMesh) {
+                child.material = marbleMat;
+                child.castShadow = true;
+                child.receiveShadow = true;
+              }
+            });
+            model.position.set(0, topY, 0);
+            model.rotation.y = Math.PI; // 관람객 쪽을 바라봄
+            grp.add(model);
+          },
+          undefined,
+          (err) => console.warn('Dying slave GLB load failed:', err)
+        );
+      }
       return grp;
     }
 
-    // 1) 🕊️ 토르발센의 부활하신 그리스도상 (Christus by Bertel Thorvaldsen)
-    createChristusSculpture() {
-      return this._createSculptureMonument(
-        '/sculpture/christus.jpg',
-        '부활하신 그리스도상',
-        '마태복음 11:28 · 토르발센',
-        1.75,
-        2.5,
-        false
-      );
+    // 2) 🏛️ 바티칸 박물관 최고 걸작 '라오콘 군상' (The Laocoön Group) - 100% 3D 입체 조각상
+    createLaocoonSculpture() {
+      const { group: grp, topY } = this._createPedestal(2.2, 1.4, 0.85, '바티칸 라오콘 군상', '바티칸 벨베데레 소장 · 기원전 1세기');
+      const marbleMat = this.carraraMarbleMaterial();
+
+      if (window.GLTFLoader) {
+        const loader = new window.GLTFLoader();
+        loader.load(
+          '/models/sculptures/laocoon.glb',
+          (gltf) => {
+            const model = gltf.scene;
+            model.traverse((child) => {
+              if (child.isMesh) {
+                child.material = marbleMat;
+                child.castShadow = true;
+                child.receiveShadow = true;
+              }
+            });
+            model.position.set(0, topY, 0);
+            model.rotation.y = Math.PI;
+            grp.add(model);
+          },
+          undefined,
+          (err) => console.warn('Laocoon GLB load failed:', err)
+        );
+      }
+      return grp;
     }
 
-    // 2) ✝️ 미켈란젤로의 피에타 (The Pietà by Michelangelo)
-    createPietaSculpture() {
-      return this._createSculptureMonument(
-        '/sculpture/pieta.jpg',
-        '미켈란젤로의 피에타',
-        '이사야 53:5 · 바티칸 성 베드로',
-        2.4,
-        2.35,
-        false
-      );
-    }
+    // 3) ✝️ 부활의 영광 대리석 십자가 & 펼쳐진 성경 기념 조각상 (Monumental 3D Cross Sculpture) - 100% 3D 입체 조각품
+    createChristianCrossSculpture() {
+      const { group: grp, topY } = this._createPedestal(1.4, 1.2, 0.85, '부활의 영광 대리석 십자가', '갈라디아서 6:14 · 십자가의 자랑');
+      const marble = this.carraraMarbleMaterial();
+      const gold = this.louvreGoldMaterial();
 
-    // 3) 🙏 알브레히트 뒤러의 기도하는 손 (Praying Hands by Albrecht Dürer)
-    createPrayingHandsSculpture() {
-      return this._createSculptureMonument(
-        '/sculpture/praying_hands.jpg',
-        '기도하는 손',
-        '데살로니가전서 5:17 · 알브레히트 뒤러',
-        1.65,
-        2.2,
-        true
-      );
+      const statueGrp = new THREE.Group();
+      statueGrp.position.y = topY;
+
+      // 3D 펼쳐진 성경책 (기단 상단 안착)
+      const bookGrp = new THREE.Group();
+      bookGrp.position.set(0, 0.08, 0.22);
+      const leftPage = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.09, 0.48), marble);
+      leftPage.position.set(-0.20, 0, 0);
+      leftPage.rotation.z = 0.12;
+      const rightPage = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.09, 0.48), marble);
+      rightPage.position.set(0.20, 0, 0);
+      rightPage.rotation.z = -0.12;
+      bookGrp.add(leftPage, rightPage);
+      statueGrp.add(bookGrp);
+
+      // 3D 입체 대리석 십자가 기둥 (Vertical Post)
+      const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.36, 2.7, 0.26), marble);
+      crossV.position.set(0, 1.35, -0.05);
+      crossV.castShadow = true;
+      crossV.receiveShadow = true;
+
+      // 3D 입체 대리석 십자가 가로대 (Horizontal Crossbar)
+      const crossH = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.36, 0.26), marble);
+      crossH.position.set(0, 2.05, -0.05);
+      crossH.castShadow = true;
+      crossH.receiveShadow = true;
+
+      // 금장 베벨 엣지 테두리
+      const trimV = new THREE.Mesh(new THREE.BoxGeometry(0.38, 2.72, 0.04), gold);
+      trimV.position.set(0, 1.35, 0.085);
+      const trimH = new THREE.Mesh(new THREE.BoxGeometry(1.87, 0.38, 0.04), gold);
+      trimH.position.set(0, 2.05, 0.085);
+
+      // 중앙 3차원 골드 성광(Radiant Sunburst) 광배 링
+      const haloRing = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.04, 12, 36), gold);
+      haloRing.position.set(0, 2.05, -0.05);
+
+      // 상단 금장 'INRI' 명패
+      const inri = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.15, 0.06), gold);
+      inri.position.set(0, 2.58, 0.085);
+
+      statueGrp.add(crossV, crossH, trimV, trimH, haloRing, inri);
+      grp.add(statueGrp);
+
+      return grp;
     }
   }
 

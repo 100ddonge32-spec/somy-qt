@@ -1000,34 +1000,34 @@
   ];
   window.GALLERY_ARTWORKS = GALLERY_ARTWORKS;
 
-  // 🗿 기독교 신앙 고전 성조각(Christian Sculptures) 컬렉션 (루브르 갤러리 전시)
+  // 🗿 기독교 신앙 고전 성조각(Christian Sculptures) 컬렉션 (갤러리 100% 3D 입체 조각 전시)
   const GALLERY_SCULPTURES = [
     {
-      id: 'christus',
-      title: '부활하신 그리스도상 (Christus)',
-      bible: '마태복음 11:28',
-      artist: '베르텔 토르발센 (Bertel Thorvaldsen, 1821)',
-      material: '카라라 순백 대리석 (Carrara Marble)',
-      desc: '덴마크의 위대한 조각가 토르발센의 최고 걸작. 부활하신 예수 그리스도께서 양팔을 온화하게 벌려 “수고하고 무거운 짐 진 자들아 다 내게로 오라 내가 너희를 쉬게 하리라” 말씀하시며 세상의 모든 지친 영혼들을 자비와 평강으로 품으시는 거룩한 은혜를 조각했습니다.',
-      meditation: '🙏 묵상 질문: 오늘 나의 무거운 짐과 지친 마음을 주님의 벌리신 두 품에 온전히 내려놓고 쉼을 얻고 있습니까?'
+      id: 'dying_slave',
+      title: '미켈란젤로 · 죽어가는 노예 (Dying Slave)',
+      bible: '로마서 8:1-2, 시편 31:5',
+      artist: '미켈란젤로 부오나로티 (Michelangelo Buonarroti, 1513-1516)',
+      material: '이탈리아 카라라 순백 대리석 (루브르 박물관 소장 실제 3D 입체 스캔)',
+      desc: '루브르 박물관의 불후의 최고 걸작. 인간의 육신과 고통의 결박에서 벗어나 하나님의 영원한 품으로 승화되는 영혼의 안식과 해방을 묘사한 실제 3D 입체 대리석 조각상입니다.',
+      meditation: '🙏 묵상 질문: 오늘 내 삶을 얽매는 세상의 멍에를 벗어버리고, 그리스도 예수 안에서 참된 해방과 자유를 누리고 있습니까?'
     },
     {
-      id: 'pieta',
-      title: '피에타 (The Pietà - 자비와 구속)',
-      bible: '이사야 53:5, 요한복음 19:30',
-      artist: '미켈란젤로 부오나로티 (Michelangelo Buonarroti, 1499)',
-      material: '이탈리아 카라라 대리석 (Carrara Marble)',
-      desc: '바티칸 성 베드로 대성전의 불후의 명작. 십자가에서 인류의 모든 죄를 대속하시고 운명하신 예수님을 품에 안은 마리아의 비통과 거룩한 순종을 담아냈습니다. 단순한 슬픔을 넘어 영원한 구원을 완성하신 하나님의 측량할 수 없는 사랑과 평안을 온몸으로 웅변합니다.',
-      meditation: '🙏 묵상 질문: 나를 위해 살 찢기시고 피 흘려 구원을 완성하신 십자가의 은혜를 오늘 내 심장에 깊이 새기고 있습니까?'
+      id: 'laocoon',
+      title: '바티칸 라오콘 군상 (The Laocoön Group)',
+      bible: '시편 91:1-4, 시편 124:7',
+      artist: '고대 로도스 조각가 아게산드로스 외 (Agesander of Rhodes)',
+      material: '이탈리아 카라라 대리석 (바티칸 벨베데레 소장 실제 3D 입체 스캔)',
+      desc: '바티칸 박물관의 세계적인 최고 걸작. 거대한 바다 뱀의 시험 속에서도 하나님의 구원을 갈망하는 인간의 실존과 건지심을 묵상하게 하는 압도적인 3D 입체 대리석 군상 조각입니다.',
+      meditation: '🙏 묵상 질문: 인생의 거대한 시련과 시험을 만났을 때, 나의 반석이시요 피난처이신 주님께 부르짖고 있습니까?'
     },
     {
-      id: 'praying_hands',
-      title: '기도하는 손 (Betende Hände / Praying Hands)',
-      bible: '데살로니가전서 5:16-18, 빌립보서 4:6-7',
-      artist: '알브레히트 뒤러 (Albrecht Dürer, 1508)',
-      material: '고전 앤틱 브론즈 청동 & 대리석 (Antique Bronze & Marble)',
-      desc: '자신의 미술 공부를 위해 험한 광산에서 일하며 손이 굳어져 버린 형 알베르트의 희생과 헌신, 그리고 하나님을 향해 간절히 올려진 기도의 손을 기리는 명작. 거칠고 굳은 마디마디마다 믿음의 눈물과 중보의 거룩한 능력이 깃들어 있습니다.',
-      meditation: '🙏 묵상 질문: 오늘 나의 두 손은 나 자신만을 위해 쥐어져 있습니까, 아니면 이웃과 교회를 향해 하늘로 간절히 모아져 있습니까?'
+      id: 'cross',
+      title: '부활의 영광 대리석 십자가 (The Glorious Cross)',
+      bible: '갈라디아서 6:14, 고린도전서 1:18',
+      artist: '기독교 신앙 고전 기념 조각 (Classic Christian Monument)',
+      material: '카라라 순백 대리석 & 순금 성광 (Carrara Marble & Pure Gold)',
+      desc: '죽음을 이기시고 영원히 승리하신 예수 그리스도의 십자가를 웅장한 3D 입체 대리석과 골드 성광(Halo)으로 조각한 걸작. 기단 위 펼쳐진 성경책과 함께 영원한 구원의 도를 증언합니다.',
+      meditation: '🙏 묵상 질문: 내게는 우리 주 예수 그리스도의 십자가 외에 결코 자랑할 것이 없음을 매일 고백하고 있습니까?'
     }
   ];
   window.GALLERY_SCULPTURES = GALLERY_SCULPTURES;
@@ -2556,92 +2556,89 @@
         });
       }
 
-      // 6. 🗿 기독교 신앙 고전 성조각상 3대 걸작 전시 & 전용 스포트라이트 핀 조명
-      // 1) 🕊️ 토르발센의 부활하신 그리스도상 (중앙 그랜드 러너 z = -3.5)
-      const christus = this.pbr.createChristusSculpture();
-      christus.position.set(0, 0, -3.5);
-      christus.rotation.y = Math.PI; // 관람객(남쪽 출입구)을 온화하게 맞이함
-      this.roomGroup.add(christus);
+      // 6. 🗿 기독교 신앙 고전 성조각상 3대 걸작 전시 (100% 리얼 3D 입체 조각상 & 전용 핀 스포트라이트)
+      // 1) 🗿 미켈란젤로의 '죽어가는 노예' (중앙 그랜드 러너 z = -3.5 / 루브르 소장 실물 3D 입체 조각)
+      const dyingSlave = this.pbr.createMichelangeloDyingSlave();
+      dyingSlave.position.set(0, 0, -3.5);
+      this.roomGroup.add(dyingSlave);
 
-      const spotChristus = new THREE.SpotLight(0xfff6e5, 1.35, 18, Math.PI / 6, 0.45);
-      spotChristus.position.set(0, 9.8, -1.8);
-      spotChristus.target = christus;
-      this.roomGroup.add(spotChristus);
+      const spotSlave = new THREE.SpotLight(0xfff6e5, 1.45, 18, Math.PI / 6, 0.45);
+      spotSlave.position.set(0, 9.8, -1.8);
+      spotSlave.target = dyingSlave;
+      this.roomGroup.add(spotSlave);
 
-      const ropeChristus = this.pbr.createLouvreStanchionBarrier(3.4);
-      ropeChristus.position.set(0, 0, -1.8);
-      this.roomGroup.add(ropeChristus);
+      const ropeSlave = this.pbr.createLouvreStanchionBarrier(3.4);
+      ropeSlave.position.set(0, 0, -1.8);
+      this.roomGroup.add(ropeSlave);
 
       this.interactables.push({
-        id: 'sculpture_christus',
+        id: 'sculpture_dying_slave',
         type: 'sculpture',
         category: 'sculpture',
         index: 0,
-        label: "🕊️ '토르발센의 부활하신 그리스도상' 조각 해설 보기",
+        label: "🗿 미켈란젤로의 '죽어가는 노예' 3D 입체 조각 해설 보기",
         sculpture: GALLERY_SCULPTURES[0],
         x: 0,
         y: 0,
         z: -1.6,
         radius: 3.2,
-        mesh: christus.children[0]
+        mesh: dyingSlave.children[0]
       });
 
-      // 2) ✝️ 미켈란젤로의 피에타 (북측 성소 제단 중앙 z = -20.5)
-      const pieta = this.pbr.createPietaSculpture();
-      pieta.position.set(0, 0, -20.5);
-      pieta.rotation.y = Math.PI;
-      this.roomGroup.add(pieta);
+      // 2) 🏛️ 바티칸 박물관 최고 걸작 '라오콘 군상' (북측 성소 제단 중앙 z = -20.5 / 실물 3D 입체 군상)
+      const laocoon = this.pbr.createLaocoonSculpture();
+      laocoon.position.set(0, 0, -20.5);
+      this.roomGroup.add(laocoon);
 
-      const spotPieta = new THREE.SpotLight(0xfff1dc, 1.4, 20, Math.PI / 5, 0.4);
-      spotPieta.position.set(0, 10.2, -18.5);
-      spotPieta.target = pieta;
-      this.roomGroup.add(spotPieta);
+      const spotLaocoon = new THREE.SpotLight(0xfff1dc, 1.5, 20, Math.PI / 5, 0.4);
+      spotLaocoon.position.set(0, 10.2, -18.5);
+      spotLaocoon.target = laocoon;
+      this.roomGroup.add(spotLaocoon);
 
-      const ropePieta = this.pbr.createLouvreStanchionBarrier(4.0);
-      ropePieta.position.set(0, 0, -18.5);
-      this.roomGroup.add(ropePieta);
+      const ropeLaocoon = this.pbr.createLouvreStanchionBarrier(4.0);
+      ropeLaocoon.position.set(0, 0, -18.5);
+      this.roomGroup.add(ropeLaocoon);
 
       this.interactables.push({
-        id: 'sculpture_pieta',
+        id: 'sculpture_laocoon',
         type: 'sculpture',
         category: 'sculpture',
         index: 1,
-        label: "✝️ 미켈란젤로의 '피에타(The Pietà)' 조각 해설 보기",
+        label: "🏛️ 바티칸 박물관 '라오콘 군상' 3D 입체 조각 해설 보기",
         sculpture: GALLERY_SCULPTURES[1],
         x: 0,
         y: 0,
         z: -18.2,
         radius: 3.2,
-        mesh: pieta.children[0]
+        mesh: laocoon.children[0]
       });
 
-      // 3) 🙏 알브레히트 뒤러의 기도하는 손 (남측 입구 전방 z = 10.5)
-      const prayingHands = this.pbr.createPrayingHandsSculpture();
-      prayingHands.position.set(0, 0, 10.5);
-      prayingHands.rotation.y = Math.PI;
-      this.roomGroup.add(prayingHands);
+      // 3) ✝️ 부활의 영광 대리석 십자가 기념 조각상 (남측 입구 전방 z = 10.5 / 100% 3D 입체 조각)
+      const crossStatue = this.pbr.createChristianCrossSculpture();
+      crossStatue.position.set(0, 0, 10.5);
+      this.roomGroup.add(crossStatue);
 
-      const spotHands = new THREE.SpotLight(0xffedd5, 1.25, 16, Math.PI / 6, 0.5);
-      spotHands.position.set(0, 9.5, 12.0);
-      spotHands.target = prayingHands;
-      this.roomGroup.add(spotHands);
+      const spotCross = new THREE.SpotLight(0xffedd5, 1.35, 16, Math.PI / 6, 0.5);
+      spotCross.position.set(0, 9.5, 12.0);
+      spotCross.target = crossStatue;
+      this.roomGroup.add(spotCross);
 
-      const ropeHands = this.pbr.createLouvreStanchionBarrier(3.2);
-      ropeHands.position.set(0, 0, 12.2);
-      this.roomGroup.add(ropeHands);
+      const ropeCross = this.pbr.createLouvreStanchionBarrier(3.2);
+      ropeCross.position.set(0, 0, 12.2);
+      this.roomGroup.add(ropeCross);
 
       this.interactables.push({
-        id: 'sculpture_praying_hands',
+        id: 'sculpture_cross',
         type: 'sculpture',
         category: 'sculpture',
         index: 2,
-        label: "🙏 알브레히트 뒤러의 '기도하는 손' 조각 해설 보기",
+        label: "✝️ '부활의 영광 대리석 십자가' 3D 입체 조각 해설 보기",
         sculpture: GALLERY_SCULPTURES[2],
         x: 0,
         y: 0,
         z: 12.5,
         radius: 3.0,
-        mesh: prayingHands.children[0]
+        mesh: crossStatue.children[0]
       });
 
       // 7. 중앙 & 북측 루브르 퀄팅 가죽 감상 벤치 4좌석 (조각상과 벽면 명화를 편안히 관람)

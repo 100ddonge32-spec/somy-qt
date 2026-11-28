@@ -941,7 +941,7 @@
       ctx.textAlign = 'center';
       ctx.fillStyle = '#ffffff';
       ctx.font = '76px sans-serif';
-      const icon = sculpt.id === 'christus' ? '🕊️' : (sculpt.id === 'pieta' ? '✝️' : '🙏');
+      const icon = sculpt.id === 'dying_slave' ? '🗿' : (sculpt.id === 'laocoon' ? '🏛️' : '✝️');
       ctx.fillText(icon, 360, 185);
 
       ctx.fillStyle = '#fbbf24';
