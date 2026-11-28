@@ -900,9 +900,9 @@
     const npcCount = showNpcs ? (SAMPLE_NPCS[currentZone] || []).length : 0;
     const el = document.getElementById('online-count-label');
     if (el) {
-      el.textContent = supaClient
-        ? `🟢 실시간 ${realCount}명${npcCount ? ` (+교제성도 ${npcCount})` : ''}`
-        : `성도 ${realCount + npcCount}명`;
+      // 모바일 화면(360~430px)에서 버튼들이 겹치지 않도록 짧고 깔끔하게 표시
+      const total = realCount + npcCount;
+      el.textContent = `🟢 ${total}명`;
     }
   }
 
