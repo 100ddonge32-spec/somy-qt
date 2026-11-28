@@ -841,7 +841,11 @@
       document.getElementById('rooftop-season-bar').classList.remove('hidden');
       toast(`🔭 전망대 풍경을 [${SEASON_LABELS[next]}] 테마로 전환했습니다!`);
     } else if (item.type === 'board') {
-      openModal('board-modal');
+      if (boardState.mode === 'screenshare' || boardState.mode === 'ppt_embed' || boardState.mode === 'youtube') {
+        openMediaFullscreenModal();
+      } else {
+        openModal('board-modal');
+      }
     } else if (item.type === 'bible_desk') {
       world3d.sitOrPoseMe('sit', item.x, 0, item.z, item.rotY ?? Math.PI);
       switchBibleTab('book');
@@ -1801,9 +1805,106 @@
     else startMyScreenShare();
   });
 
-  document.getElementById('btn-close-dock').addEventListener('click', () => {
+  document.getElementById('btn-close-dock').addEventListener('click', (e) => {
+    e.stopPropagation();
     document.getElementById('live-media-dock').classList.add('hidden');
   });
+
+  // 🔍 실시간 공유 화면 터치 시 크게 보기 (플로팅 독 또는 3D 칠판 터치)
+  function openMediaFullscreenModal() {
+    const modal = document.getElementById('media-fullscreen-modal');
+    const fsVideo = document.getElementById('screenShareVideoFs');
+    const fsIframe = document.getElementById('dockEmbedFrameFs');
+    const fsCanvas = document.getElementById('boardCanvasFs');
+    const titleEl = document.getElementById('fs-modal-title');
+    if (!modal) return;
+
+    fsVideo.classList.add('hidden');
+    fsIframe.classList.add('hidden');
+    fsCanvas.classList.add('hidden');
+
+    if (boardState.mode === 'screenshare' && screenShareVideo && screenShareVideo.srcObject) {
+      if (titleEl) titleEl.textContent = '🖥️ 실시간 PC 화면(PPT) 공유 확대';
+      fsVideo.srcObject = screenShareVideo.srcObject;
+      fsVideo.play().catch(() => {});
+      fsVideo.classList.remove('hidden');
+      modal.classList.remove('hidden');
+    } else if (boardState.mode === 'ppt_embed' && boardState.embedUrl) {
+      if (titleEl) titleEl.textContent = '📊 실시간 공유 PPT / 강의자료 확대';
+      fsIframe.src = boardState.embedUrl;
+      fsIframe.classList.remove('hidden');
+      modal.classList.remove('hidden');
+    } else if (boardState.mode === 'youtube' && boardState.youtubeId) {
+      if (titleEl) titleEl.textContent = '▶️ 실시간 공유 유튜브 영상 확대';
+      fsIframe.src = `https://www.youtube.com/embed/${boardState.youtubeId}?autoplay=1&playsinline=1&rel=0`;
+      fsIframe.classList.remove('hidden');
+      modal.classList.remove('hidden');
+    } else {
+      // 일반 화이트보드 판서 또는 슬라이드 화면 복제 렌더링
+      if (titleEl) titleEl.textContent = '👨‍🏫 3D 칠판 강의 화면 확대';
+      fsCanvas.width = boardOffscreen.width;
+      fsCanvas.height = boardOffscreen.height;
+      const fsCtx = fsCanvas.getContext('2d');
+      fsCtx.drawImage(boardOffscreen, 0, 0);
+      fsCanvas.classList.remove('hidden');
+      modal.classList.remove('hidden');
+    }
+  }
+
+  function closeMediaFullscreenModal() {
+    const modal = document.getElementById('media-fullscreen-modal');
+    const fsVideo = document.getElementById('screenShareVideoFs');
+    const fsIframe = document.getElementById('dockEmbedFrameFs');
+    if (modal) modal.classList.add('hidden');
+    if (fsVideo) {
+      fsVideo.srcObject = null;
+      fsVideo.classList.add('hidden');
+    }
+    if (fsIframe) {
+      fsIframe.src = '';
+      fsIframe.classList.add('hidden');
+    }
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }
+
+  const dockContainer = document.getElementById('dock-media-container');
+  if (dockContainer) {
+    dockContainer.addEventListener('click', () => {
+      openMediaFullscreenModal();
+    });
+  }
+
+  const btnFsDock = document.getElementById('btn-fullscreen-dock');
+  if (btnFsDock) {
+    btnFsDock.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openMediaFullscreenModal();
+    });
+  }
+
+  const btnCloseFsModal = document.getElementById('btn-close-fs-modal');
+  if (btnCloseFsModal) {
+    btnCloseFsModal.addEventListener('click', () => {
+      closeMediaFullscreenModal();
+    });
+  }
+
+  const btnNativeFs = document.getElementById('btn-native-fs');
+  if (btnNativeFs) {
+    btnNativeFs.addEventListener('click', async () => {
+      const modal = document.getElementById('media-fullscreen-modal');
+      if (!modal) return;
+      if (!document.fullscreenElement) {
+        await modal.requestFullscreen().catch(() => {});
+        btnNativeFs.textContent = '📱 창모드로 복귀';
+      } else {
+        await document.exitFullscreen().catch(() => {});
+        btnNativeFs.textContent = '📱 기기 전체화면';
+      }
+    });
+  }
 
   async function saveRoomBoardToServer() {
     try {
@@ -3885,6 +3986,17 @@
         localStorage.setItem('somy_world_avatar_v4', JSON.stringify(myAvatarConfig));
       }
     } catch {}
+
+    // 서버 DB 영구 저장 (소미 앱 계정 연동 및 브라우저 세션 변경에도 영구 유지)
+    const userKey = somyUserId || myName;
+    if (userKey && myAvatarConfig.vrmModel !== 'custom') {
+      postChapelApi('save_user_avatar', {
+        userId: userKey,
+        presetId: myPresetId,
+        avatarConfig: myAvatarConfig
+      });
+    }
+
     document.getElementById('my-name-badge').textContent = myName;
     updateMyExprBadge();
     world3d.updateAvatarInfo('me', {
@@ -3901,7 +4013,7 @@
       avatarConfig: myAvatarConfig.vrmModel === 'custom' ? { ...myAvatarConfig, vrmModel: 'fumiriya' } : myAvatarConfig
     });
     closeModal('profile-modal');
-    toast(`✨ '${myName}' 순정만화 3D 아바타 스타일이 적용되었습니다!`);
+    toast(`✨ '${myName}' 순정만화 3D 아바타 스타일이 적용 및 저장되었습니다!`);
   });
 
   document.getElementById('npc-toggle-chk').addEventListener('change', (e) => {
@@ -4053,6 +4165,25 @@
         worldState = res.state;
         if (worldState.sarangbangs && worldState.sarangbangs.length > 0) {
           currentSarangId = worldState.sarangbangs[0].id;
+        }
+
+        // 서버에 저장된 내 캐릭터 설정이 있다면 동기화 복원
+        const userKey = somyUserId || myName;
+        if (worldState.userAvatars && userKey && worldState.userAvatars[userKey]) {
+          const remoteAv = worldState.userAvatars[userKey];
+          if (remoteAv.presetId) myPresetId = remoteAv.presetId;
+          if (remoteAv.avatarConfig) {
+            myAvatarConfig = world3d.resolveAvatarConfig(myPresetId, remoteAv.avatarConfig);
+            try {
+              localStorage.setItem('somy_world_preset_v4', myPresetId);
+              localStorage.setItem('somy_world_avatar_v4', JSON.stringify(myAvatarConfig));
+            } catch {}
+            world3d.updateAvatarInfo('me', {
+              presetId: myPresetId,
+              avatarConfig: myAvatarConfig
+            });
+            syncMyPresence();
+          }
         }
       }
       if (res && Array.isArray(res.somyQtRecentDates)) {

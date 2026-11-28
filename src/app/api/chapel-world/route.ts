@@ -112,6 +112,14 @@ export interface ChapelWorldState {
             youtubeId?: string;
         }
     >;
+    userAvatars?: Record<
+        string,
+        {
+            presetId: string;
+            avatarConfig: any;
+            updatedAt: string;
+        }
+    >;
 }
 
 const DEFAULT_WORLD_STATE: ChapelWorldState = {
@@ -271,6 +279,7 @@ async function loadStateFromDb(rawChurchId?: string | null): Promise<ChapelWorld
                     ? parsed.bibleLogs
                     : DEFAULT_WORLD_STATE.bibleLogs,
                 roomBoards: { ...DEFAULT_WORLD_STATE.roomBoards, ...(parsed.roomBoards || {}) },
+                userAvatars: parsed.userAvatars || {},
             };
         }
     } catch (e) {
@@ -701,6 +710,21 @@ export async function POST(req: NextRequest) {
                 await saveStateToDb(state, churchId);
             }
             return NextResponse.json({ success: true, state: await attachLiveSomyQtShares(state, churchId) });
+        } else if (action === 'save_user_avatar') {
+            const userId = String(payload?.userId || payload?.userName || '').trim();
+            const presetId = String(payload?.presetId || 'webtoon_boy');
+            const avatarConfig = payload?.avatarConfig;
+            if (userId && avatarConfig && typeof avatarConfig === 'object') {
+                if (!state.userAvatars) state.userAvatars = {};
+                state.userAvatars[userId] = {
+                    presetId,
+                    avatarConfig,
+                    updatedAt: getKoreaTimeStamp(),
+                };
+                await saveStateToDb(state, churchId);
+                return NextResponse.json({ success: true, userAvatars: state.userAvatars });
+            }
+            return NextResponse.json({ success: false, error: 'Missing userId or avatarConfig' }, { status: 400 });
         }
 
         return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });

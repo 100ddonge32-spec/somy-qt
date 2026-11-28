@@ -416,16 +416,53 @@
 
     <!-- 실시간 공유 PPT(웹 링크) / 유튜브 / PC화면 공유 플로팅 뷰어 -->
     <div id="live-media-dock"
-      class="hidden absolute top-28 right-3 sm:right-4 w-[min(92vw,420px)] bg-slate-900/95 border-2 border-sky-400/70 rounded-2xl overflow-hidden shadow-2xl z-20">
+      class="hidden absolute top-28 right-3 sm:right-4 w-[min(92vw,420px)] bg-slate-900/95 border-2 border-sky-400/70 rounded-2xl overflow-hidden shadow-2xl z-20 transition-all duration-300">
       <div class="px-3 py-1.5 bg-slate-800 flex items-center justify-between">
-        <span id="dock-title" class="text-xs font-extrabold text-sky-300">📊 실시간 공유 자료</span>
-        <button id="btn-close-dock" class="text-xs px-2 py-0.5 rounded bg-slate-700 text-white cursor-pointer">접기
-          ✕</button>
+        <div class="flex items-center gap-1.5 min-w-0">
+          <span id="dock-title" class="text-xs font-extrabold text-sky-300 truncate">📊 실시간 공유 자료</span>
+          <span id="dock-expand-hint" class="text-[10px] text-sky-200/70 font-normal hidden sm:inline">(터치 시 확대)</span>
+        </div>
+        <div class="flex items-center gap-1 shrink-0">
+          <button id="btn-fullscreen-dock" class="text-xs px-2 py-0.5 rounded bg-sky-600/80 hover:bg-sky-500 text-white cursor-pointer font-bold" title="화면 크게 보기">⛶ 확대</button>
+          <button id="btn-close-dock" class="text-xs px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-white cursor-pointer">접기 ✕</button>
+        </div>
       </div>
-      <div class="w-full aspect-video bg-black relative">
+      <div id="dock-media-container" class="w-full aspect-video bg-black relative cursor-pointer group" title="터치하여 화면 크게 보기">
         <iframe id="dockEmbedFrame" class="hidden w-full h-full border-0" allow="autoplay; encrypted-media; fullscreen"
           allowfullscreen></iframe>
         <video id="screenShareVideo" autoplay playsinline class="hidden w-full h-full object-contain"></video>
+        <div id="dock-touch-overlay" class="absolute inset-0 bg-transparent group-hover:bg-white/5 transition flex items-center justify-center pointer-events-none">
+          <span class="opacity-0 group-hover:opacity-100 transition px-2.5 py-1 rounded-full bg-slate-950/80 text-sky-300 text-[11px] font-extrabold shadow">🔍 화면 터치 시 크게 보기</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🔍 실시간 공유 화면 전용 대형/전체화면 오버레이 뷰어 모달 -->
+    <div id="media-fullscreen-modal"
+      class="hidden fixed inset-0 bg-black/95 z-50 flex flex-col justify-between p-2 sm:p-4 backdrop-blur-md">
+      <!-- 상단 컨트롤 헤더 -->
+      <div class="flex items-center justify-between px-2 sm:px-4 py-2 bg-slate-900/90 rounded-2xl border border-sky-400/50 shadow-2xl">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
+          <span id="fs-modal-title" class="text-xs sm:text-sm font-extrabold text-sky-300">🖥️ 실시간 공유 화면 크게 보기</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btn-native-fs"
+            class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-600 cursor-pointer">
+            📱 기기 전체화면
+          </button>
+          <button id="btn-close-fs-modal"
+            class="px-3.5 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-xs font-extrabold text-slate-950 cursor-pointer shadow">
+            닫기 ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- 중앙 초대형 미디어 표시 영역 -->
+      <div class="flex-1 w-full max-h-[calc(100vh-80px)] flex items-center justify-center p-1 sm:p-2 overflow-hidden">
+        <video id="screenShareVideoFs" autoplay playsinline class="hidden max-w-full max-h-full object-contain rounded-xl shadow-2xl border border-sky-400/30"></video>
+        <iframe id="dockEmbedFrameFs" class="hidden w-full h-full border-0 rounded-xl" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
+        <canvas id="boardCanvasFs" class="hidden max-w-full max-h-full object-contain rounded-xl shadow-2xl border border-sky-400/30"></canvas>
       </div>
     </div>
 
