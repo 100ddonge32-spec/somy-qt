@@ -728,20 +728,31 @@
       const breathe = Math.sin(elapsed * 2.1 + blinkOffset) * 0.022;
 
       if (pose === 'sit') {
-        if (hips) hips.position.y = rec.baseHipsY - 0.34;
-        if (spine) spine.rotation.set(0.03 + breathe * 0.4, 0, 0);
-        if (neck) neck.rotation.set(0, 0, Math.sin(elapsed * 1.1 + blinkOffset) * 0.03);
-        if (head) head.rotation.set(0, 0, 0);
-        if (lUL) lUL.rotation.set(1.42, 0.06, 0);
-        if (rUL) rUL.rotation.set(1.42, -0.06, 0);
-        if (lLL) lLL.rotation.set(-1.42, 0, 0);
-        if (rLL) rLL.rotation.set(-1.42, 0, 0);
-        if (lUA) lUA.rotation.set(0.28, 0, 1.16);
-        if (rUA) rUA.rotation.set(sipTimer > 0 ? 1.05 : 0.28, 0, -1.16);
-        if (lLA) lLA.rotation.set(0, 0.35, 0);
-        if (rLA) rLA.rotation.set(0, sipTimer > 0 ? 1.15 : -0.35, 0);
-        if (lHand) lHand.rotation.set(0, 0, 0);
-        if (rHand) rHand.rotation.set(0, 0, 0);
+        // 소파/의자 쿠션 높이에 완벽히 밀착되도록 힙 높이 하향 (-0.46)
+        if (hips) hips.position.y = rec.baseHipsY - 0.46;
+        if (spine) spine.rotation.set(-0.06 + breathe * 0.35, 0, 0);
+        if (neck) neck.rotation.set(-0.04, 0, Math.sin(elapsed * 0.9 + blinkOffset) * 0.02);
+        if (head) head.rotation.set(-0.02, 0, 0);
+        if (lUL) lUL.rotation.set(1.48, 0.05, 0);
+        if (rUL) rUL.rotation.set(1.48, -0.05, 0);
+        if (lLL) lLL.rotation.set(-1.48, 0, 0);
+        if (rLL) rLL.rotation.set(-1.48, 0, 0);
+
+        // 왼팔: 자연스럽게 무릎/테이블 위에 얹는 포즈 (펭귄 자세 탈피)
+        if (lUA) lUA.rotation.set(0.52, 0.16, 0.72);
+        if (lLA) lLA.rotation.set(0.24, 0.38, 0.68);
+        if (lHand) lHand.rotation.set(0.12, 0.18, 0.12);
+
+        // 오른팔: 커피 마실 때(sipTimer > 0) 입가로 컵 들기 / 평상시에는 컵을 쥐고 테이블/무릎에 자연스럽게 거치
+        if (sipTimer > 0) {
+          if (rUA) rUA.rotation.set(0.88, -0.32, -0.42);
+          if (rLA) rLA.rotation.set(0.55, -0.75, -0.88);
+          if (rHand) rHand.rotation.set(0.18, -0.22, -0.28);
+        } else {
+          if (rUA) rUA.rotation.set(0.52, -0.16, -0.72);
+          if (rLA) rLA.rotation.set(0.24, -0.38, -0.68);
+          if (rHand) rHand.rotation.set(0.12, -0.18, -0.12);
+        }
       } else if (pose === 'kneel') {
         // 강단 앞 무릎 꿇고 가슴 앞에 두 손을 모아 간절히 기도하는 자세 (Praying Hands Pose)
         if (hips) hips.position.y = rec.baseHipsY - 0.42;
@@ -2966,7 +2977,17 @@
         av.root.position.set(av.x, av.y, av.z);
         av.root.rotation.y = av.rotY;
 
-        if (av.sipTimer > 0) av.sipTimer = Math.max(0, av.sipTimer - dt);
+        if (av.sipTimer > 0) {
+          av.sipTimer = Math.max(0, av.sipTimer - dt);
+        } else if (av.pose === 'sit') {
+          // 착석 중 음료(커피/생수)를 들고 있을 때 12~18초마다 자연스럽게 커피를 한 모금씩 마시는 모션 자동 재생!
+          if (!av._nextSitSip) av._nextSitSip = 8.0 + Math.random() * 8.0;
+          av._nextSitSip -= dt;
+          if (av._nextSitSip <= 0) {
+            av.sipTimer = 2.4;
+            av._nextSitSip = 14.0 + Math.random() * 10.0;
+          }
+        }
 
         const moving = av.isMe
           ? !!(this.walkTarget || this.keys['w'] || this.keys['a'] || this.keys['s'] || this.keys['d'] || this.keys['arrowup'] || this.keys['arrowdown'] || this.keys['arrowleft'] || this.keys['arrowright'] || Math.hypot(this.joyVec.x, this.joyVec.y) > 0.08)
@@ -3055,7 +3076,7 @@
     _updateHtmlOverlays() {
       const v = new THREE.Vector3();
       for (const av of this.avatars.values()) {
-        const poseDrop = av.pose === 'sit' ? 0.34 : av.pose === 'kneel' ? 0.42 : 0;
+        const poseDrop = av.pose === 'sit' ? 0.46 : av.pose === 'kneel' ? 0.42 : 0;
         v.set(av.x, av.y + (av.heightTop || 2.16) - poseDrop, av.z);
         v.project(this.camera);
         if (v.z > 1) {
