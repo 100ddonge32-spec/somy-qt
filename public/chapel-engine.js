@@ -738,20 +738,22 @@
         if (lLL) lLL.rotation.set(-1.48, 0, 0);
         if (rLL) rLL.rotation.set(-1.48, 0, 0);
 
-        // 왼팔: 자연스럽게 무릎/테이블 위에 얹는 포즈 (펭귄 자세 탈피)
-        if (lUA) lUA.rotation.set(0.52, 0.16, 0.72);
-        if (lLA) lLA.rotation.set(0.24, 0.38, 0.68);
-        if (lHand) lHand.rotation.set(0.12, 0.18, 0.12);
+        // 팔: 몸통 옆으로 자연스럽게 모아 허벅지/무릎 위에 가지런히 얹는 편안한 착석 포즈
+        // 상완(UpperArm)을 몸통 옆으로 차렷에 가깝게 내림 (Z축 ±1.35로 벌어짐 제거, X축 0.18로 살짝 앞으로)
+        if (lUA) lUA.rotation.set(0.18, 0.08, 1.35);
+        // 전완(LowerArm)을 무릎/허벅지 중앙 쪽으로 자연스럽게 굽힘
+        if (lLA) lLA.rotation.set(0.65, 0.28, 0.22);
+        if (lHand) lHand.rotation.set(0.08, 0.12, 0.05);
 
-        // 오른팔: 커피 마실 때(sipTimer > 0) 입가로 컵 들기 / 평상시에는 컵을 쥐고 테이블/무릎에 자연스럽게 거치
+        // 오른팔: 커피 마실 때(sipTimer > 0) 입가로 컵 들기 / 평상시에는 허벅지/테이블 위에 편안하게 거치
         if (sipTimer > 0) {
-          if (rUA) rUA.rotation.set(0.88, -0.32, -0.42);
-          if (rLA) rLA.rotation.set(0.55, -0.75, -0.88);
-          if (rHand) rHand.rotation.set(0.18, -0.22, -0.28);
+          if (rUA) rUA.rotation.set(0.65, -0.28, -0.85);
+          if (rLA) rLA.rotation.set(0.85, -0.65, -0.45);
+          if (rHand) rHand.rotation.set(0.18, -0.22, -0.15);
         } else {
-          if (rUA) rUA.rotation.set(0.52, -0.16, -0.72);
-          if (rLA) rLA.rotation.set(0.24, -0.38, -0.68);
-          if (rHand) rHand.rotation.set(0.12, -0.18, -0.12);
+          if (rUA) rUA.rotation.set(0.18, -0.08, -1.35);
+          if (rLA) rLA.rotation.set(0.65, -0.28, -0.22);
+          if (rHand) rHand.rotation.set(0.08, -0.12, -0.05);
         }
       } else if (pose === 'kneel') {
         // 강단 앞 무릎 꿇고 가슴 앞에 두 손을 모아 간절히 기도하는 자세 (Praying Hands Pose)

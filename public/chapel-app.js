@@ -731,8 +731,12 @@
   function updateRooftopUi() {
     const isRoof = currentZone === 'rooftop';
     document.getElementById('btn-rooftop-season').classList.toggle('hidden', !isRoof);
-    document.getElementById('rooftop-season-bar').classList.toggle('hidden', !isRoof);
-    if (!isRoof && rainSoundOn) toggleRainAmbience(true);
+    // 기본적으로 3단으로 화면을 가리던 사계절 선택 바는 숨겨두고, 사용자가 [🏞️ 사계절배경] 버튼을 눌렀을 때만 토글되도록 변경
+    const seasonBar = document.getElementById('rooftop-season-bar');
+    if (!isRoof) {
+      seasonBar.classList.add('hidden');
+      if (rainSoundOn) toggleRainAmbience(true);
+    }
 
     if (isRoof) {
       const resolved = world3d.getResolvedRooftopSeason();
