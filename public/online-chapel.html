@@ -500,7 +500,8 @@
 
       <!-- 시점 전환(3인칭 추적 ↔ 파노라마) & 채팅 접기 & 줌 -->
       <div
-        class="pointer-events-auto inline-flex items-center gap-1 p-1 rounded-full bg-black/70 backdrop-blur-md border border-white/15">
+        class="pointer-events-auto inline-flex items-center gap-1 p-1 rounded-full bg-black/70 backdrop-blur-md border border-white/15 select-none touch-none"
+        onpointerdown="event.stopPropagation()">
         <button id="btn-cam-mode"
           class="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-amber-300 text-[11px] sm:text-xs font-extrabold cursor-pointer">
           🏛️ 전체 파노라마 뷰
@@ -518,36 +519,37 @@
     </div>
 
     <!-- 2. 최하단 7개 공간 빠른 이동(Quick-Warp) 내비게이션 바 -->
-    <div class="absolute bottom-2.5 inset-x-2.5 flex justify-center pointer-events-none z-20"
+    <div id="bottom-zone-nav-container" class="absolute bottom-2.5 inset-x-2.5 flex justify-center pointer-events-none z-20"
       style="padding-bottom: env(safe-area-inset-bottom, 0px);">
-      <div
-        class="pointer-events-auto inline-flex items-center gap-1 p-1.5 rounded-full bg-black/75 backdrop-blur-md border border-white/15 overflow-x-auto no-scrollbar max-w-full shadow-2xl">
+      <div id="bottom-zone-nav"
+        class="pointer-events-auto inline-flex items-center gap-1 p-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/15 overflow-x-auto no-scrollbar max-w-full shadow-2xl touch-pan-x select-none"
+        style="-webkit-overflow-scrolling: touch; touch-action: pan-x;">
         <button data-zone="garden"
-          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-extrabold bg-amber-400 text-slate-950 shadow cursor-pointer">
+          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-extrabold bg-amber-400 text-slate-950 shadow cursor-pointer select-none">
           🌿 앞마당 정원
         </button>
         <button data-zone="sanctuary"
-          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
+          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer select-none">
           🏛️ 대성전
         </button>
         <button data-zone="sarangbang"
-          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
+          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer select-none">
           🏠 사랑방(소그룹)
         </button>
         <button data-zone="bible"
-          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
+          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer select-none">
           📖 성경통독방
         </button>
         <button data-zone="qt"
-          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
+          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer select-none">
           ✏️ 큐티방
         </button>
         <button data-zone="prayer"
-          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
+          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer select-none">
           🕯️ 기도·갤러리
         </button>
         <button data-zone="rooftop"
-          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer">
+          class="zone-tab-btn shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white/90 hover:bg-white/15 cursor-pointer select-none">
           ☕ 루프탑 카페
         </button>
       </div>

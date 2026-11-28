@@ -4099,8 +4099,30 @@
     }
   });
 
+  // -------------------------------------------------------------------------
+  // 최하단 7개 공간 빠른 이동 탭 (스크롤/드래그 시 3D 카메라 드래그 간섭 완벽 차단)
+  // -------------------------------------------------------------------------
+  const bottomNavEl = document.getElementById('bottom-zone-nav');
+  if (bottomNavEl) {
+    const stopNavDrag = (e) => {
+      e.stopPropagation();
+    };
+    ['pointerdown', 'pointermove', 'pointerup', 'touchstart', 'touchmove', 'touchend', 'mousedown', 'mousemove'].forEach((evt) => {
+      bottomNavEl.addEventListener(evt, stopNavDrag, { passive: false });
+    });
+  }
+
   document.querySelectorAll('.zone-tab-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
+    // 버튼 터치/클릭 시 3D 캔버스로의 포인터 전파를 막아 화면 회전/드래그 오동작 방지
+    const preventCanvasDrag = (e) => {
+      e.stopPropagation();
+    };
+    btn.addEventListener('pointerdown', preventCanvasDrag);
+    btn.addEventListener('touchstart', preventCanvasDrag, { passive: true });
+    btn.addEventListener('mousedown', preventCanvasDrag);
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       const z = btn.getAttribute('data-zone');
       enterZone(z);
     });
