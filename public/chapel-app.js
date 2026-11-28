@@ -898,13 +898,11 @@
   // Supabase Realtime 멀티플레이 (성도 접속·이동·채팅·칠판·예스통독 실시간 동기화)
   // -------------------------------------------------------------------------
   function updateOnlineCounter() {
+    // 실제 접속한 성도만 순수 집계 (NPC 가상 캐릭터는 카운터에서 완전히 제외하여 실제 상황과 일치)
     const realCount = Math.max(1, campusPeers.size || (1 + onlinePeers.size));
-    const npcCount = showNpcs ? (SAMPLE_NPCS[currentZone] || []).length : 0;
     const el = document.getElementById('online-count-label');
     if (el) {
-      // 모바일 화면(360~430px)에서 버튼들이 겹치지 않도록 짧고 깔끔하게 표시
-      const total = realCount + npcCount;
-      el.textContent = `🟢 ${total}명`;
+      el.textContent = `🟢 ${realCount}명`;
     }
   }
 
@@ -989,10 +987,11 @@
     const badgeEl = document.getElementById('presence-modal-total-badge');
     if (!listEl) return;
 
-    const allMembers = [];
+    const realMembers = [];
+    const npcMembers = [];
 
-    // 1. 나 자신
-    allMembers.push({
+    // 1. 나 자신 (실제 성도)
+    realMembers.push({
       clientId: myClientId,
       name: myName || '나 (성도)',
       zoneId: currentZone,
@@ -1006,7 +1005,7 @@
     campusPeers.forEach((p, cid) => {
       if (cid === myClientId) return;
       const zid = p.zoneId || currentZone;
-      allMembers.push({
+      realMembers.push({
         clientId: cid,
         name: p.name || '성도',
         zoneId: zid,
@@ -1017,11 +1016,11 @@
       });
     });
 
-    // 3. 상주 NPC 교제 성도들 (활성화된 경우)
+    // 3. 상주 NPC 교제 도우미들 (원내 상주)
     if (showNpcs) {
       Object.entries(SAMPLE_NPCS).forEach(([zKey, npcs]) => {
         npcs.forEach((npc) => {
-          allMembers.push({
+          npcMembers.push({
             clientId: npc.id,
             name: npc.name,
             zoneId: zKey,
@@ -1035,28 +1034,36 @@
     }
 
     if (badgeEl) {
-      const realOnly = allMembers.filter((m) => !m.isNpc).length;
-      badgeEl.textContent = `${realOnly}명 온라인 (${allMembers.length}명 참여중)`;
+      badgeEl.textContent = `실제 접속 성도: ${realMembers.length}명`;
     }
 
     listEl.innerHTML = '';
-    allMembers.forEach((m) => {
+
+    // 섹션 1: 실제 접속 성도 (Real Users)
+    const realSecHeader = document.createElement('div');
+    realSecHeader.className = 'flex items-center justify-between text-[11px] font-extrabold text-emerald-300 px-1 pt-1';
+    realSecHeader.innerHTML = `<span>🟢 실제 접속 성도 (${realMembers.length}명)</span>`;
+    listEl.appendChild(realSecHeader);
+
+    const renderRow = (m) => {
       const row = document.createElement('div');
-      row.className = 'flex items-center justify-between p-2.5 rounded-2xl bg-slate-800/80 border border-slate-700/60 hover:bg-slate-700/50 transition';
+      row.className = `flex items-center justify-between p-2.5 rounded-2xl border transition ${
+        m.isNpc ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-800/80 border-slate-700/60 hover:bg-slate-700/50'
+      }`;
 
       const isCurrentHere = m.zoneId === currentZone;
 
       row.innerHTML = `
         <div class="flex items-center gap-2.5 min-w-0">
-          <div class="relative w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-sm font-bold shadow shrink-0 ${m.isMe ? 'ring-2 ring-amber-400' : ''}">
+          <div class="relative w-8 h-8 rounded-full ${m.isNpc ? 'bg-slate-800' : 'bg-slate-700'} flex items-center justify-center text-sm font-bold shadow shrink-0 ${m.isMe ? 'ring-2 ring-amber-400' : ''}">
             ${m.isMe ? '👤' : m.isNpc ? '🤖' : '✨'}
-            <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ${m.isMe || !m.isNpc ? 'bg-emerald-400' : 'bg-sky-400'} border-2 border-slate-900"></span>
+            <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ${!m.isNpc ? 'bg-emerald-400 ring-1 ring-slate-900' : 'bg-slate-500'}"></span>
           </div>
           <div class="min-w-0">
             <div class="flex items-center gap-1.5">
               <span class="text-xs font-bold text-white truncate">${m.name}</span>
               ${m.isMe ? '<span class="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 text-[9px] font-black">나</span>' : ''}
-              ${m.isNpc ? '<span class="px-1.5 py-0.2 rounded-full bg-sky-500/30 text-sky-300 text-[9px] font-bold">교제성도</span>' : ''}
+              ${m.isNpc ? '<span class="px-1.5 py-0.2 rounded-full bg-slate-700 text-slate-300 text-[9px] font-bold">상주도우미</span>' : ''}
               ${m.camOn ? '<span class="text-[10px]" title="카메라 켬">📹</span>' : ''}
             </div>
             <div class="flex items-center gap-1 text-[11px] text-slate-300">
@@ -1086,7 +1093,18 @@
       }
 
       listEl.appendChild(row);
-    });
+    };
+
+    realMembers.forEach(renderRow);
+
+    // 섹션 2: 상주 교제 도우미 NPC (분리 표시)
+    if (npcMembers.length > 0) {
+      const npcSecHeader = document.createElement('div');
+      npcSecHeader.className = 'flex items-center justify-between text-[11px] font-bold text-slate-400 px-1 pt-3 border-t border-white/10';
+      npcSecHeader.innerHTML = `<span>🤖 상주 교제 도우미 NPC (${npcMembers.length}명)</span><span class="text-[10px] text-slate-500 font-normal">공간 안내 및 대화</span>`;
+      listEl.appendChild(npcSecHeader);
+      npcMembers.forEach(renderRow);
+    }
   }
 
   function broadcastEvent(event, payload) {
