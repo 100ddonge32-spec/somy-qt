@@ -3450,7 +3450,12 @@
   function renderCandlesList() {
     const box = document.getElementById('candles-list-box');
     if (!box) return;
-    box.innerHTML = (worldState.candles || []).map((c) => `
+    const candles = worldState.candles || [];
+    if (!candles.length) {
+      box.innerHTML = `<div class="p-6 rounded-xl bg-slate-900/60 border border-dashed border-slate-700 text-center text-xs text-slate-400">아직 등록된 기도 등불이 없습니다.<br/>위 입력창에 기도 제목을 적고 첫 등불을 밝혀보세요! 🕯️</div>`;
+      return;
+    }
+    box.innerHTML = candles.map((c) => `
       <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-between gap-2">
         <div class="min-w-0 flex-1">
           <div class="text-xs font-extrabold text-amber-300 truncate">🕯️ ${c.name}</div>

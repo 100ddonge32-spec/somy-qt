@@ -175,67 +175,9 @@ const DEFAULT_WORLD_STATE: ChapelWorldState = {
             updatedAt: '2026-11-26',
         },
     ],
-    qtShares: [
-        {
-            id: 'qs-1',
-            author: '김은혜 권사',
-            passage: '시편 27:1',
-            content: '여호와가 나의 빛이시니 두려워할 것이 없음을 고백합니다. 오늘 병원에 계신 성도님께 위로 전화를 드리겠습니다.',
-            amens: 12,
-            createdAt: '오늘',
-        },
-        {
-            id: 'qs-2',
-            author: '박소망 청년',
-            passage: '빌립보서 4:6-7',
-            content: '염려 대신 감사함으로 아뢰라는 말씀에 순종해 출근길 10분 먼저 도착해 기도로 하루를 시작하겠습니다!',
-            amens: 9,
-            createdAt: '오늘',
-        },
-    ],
-    bibleLogs: [
-        {
-            id: 'bl-1',
-            reader: '강기쁨 청년',
-            planName: '연대기순 통독',
-            rangeLabel: '창세기 1장 ~ 3장',
-            chaptersCount: 3,
-            comment: '예스통독! 태초에 말씀으로 빛을 창조하신 주님을 찬양합니다.',
-            amens: 8,
-            createdAt: '오늘 07:30',
-            dateKey: '2026-11-26',
-        },
-        {
-            id: 'bl-2',
-            reader: '김은혜 권사',
-            planName: '성경 순서 정독',
-            rangeLabel: '시편 23편 ~ 25편',
-            chaptersCount: 3,
-            comment: '예스통독! 음성 낭독으로 함께 들으니 말씀이 마음에 깊이 새겨집니다.',
-            amens: 11,
-            createdAt: '오늘 08:15',
-            dateKey: '2026-11-26',
-        },
-        {
-            id: 'bl-3',
-            reader: '한충성 장로',
-            planName: '구약+신약 균형',
-            rangeLabel: '요한복음 1장 ~ 2장',
-            chaptersCount: 2,
-            comment: '예스통독! 말씀이 육신이 되어 우리 가운데 거하시매 아멘!',
-            amens: 9,
-            createdAt: '오늘 09:05',
-            dateKey: '2026-11-26',
-        },
-    ],
-    candles: [
-        { id: 1, name: '김은혜 권사', text: '환우들의 치유와 회복을 위해 간절히 기도합니다.', amens: 21, angle: -0.45 },
-        { id: 2, name: '이믿음 집사', text: '온 가정이 주님만 섬기는 믿음의 명문가 되게 하소서.', amens: 15, angle: -0.27 },
-        { id: 3, name: '박소망 청년', text: '다음 세대와 청년부가 말씀으로 부흥하게 하소서.', amens: 29, angle: -0.09 },
-        { id: 4, name: '한충성 장로', text: '교회가 지역 사회의 따뜻한 방주가 되게 하소서.', amens: 34, angle: 0.09 },
-        { id: 5, name: '정온유 성도', text: '주일 예배마다 하나님의 임재가 넘치게 하소서.', amens: 18, angle: 0.27 },
-        { id: 6, name: '윤평강 권사', text: '나라와 민족, 열방의 선교사님들을 지켜주소서.', amens: 16, angle: 0.45 },
-    ],
+    qtShares: [],
+    bibleLogs: [],
+    candles: [],
     roomBoards: {
         sanctuary: {
             mode: 'slide',
@@ -272,12 +214,27 @@ async function loadStateFromDb(rawChurchId?: string | null): Promise<ChapelWorld
 
         if (data?.plan && data.plan.startsWith('CHAPEL_JSON:')) {
             const parsed = JSON.parse(data.plan.slice('CHAPEL_JSON:'.length));
+            // 과거 DB에 저장된 NPC 가상 더미 데이터(강기쁨, 김은혜, 한충성 등의 초기 생성물) 필터링
+            const isDummyLog = (l: any) => l.id === 'bl-1' || l.id === 'bl-2' || l.id === 'bl-3';
+            const isDummyCandle = (c: any) => typeof c.id === 'number' && c.id >= 1 && c.id <= 6;
+            const isDummyQt = (q: any) => q.id === 'qs-1' || q.id === 'qs-2';
+
+            const cleanBibleLogs = Array.isArray(parsed.bibleLogs)
+                ? parsed.bibleLogs.filter((l: any) => !isDummyLog(l))
+                : [];
+            const cleanCandles = Array.isArray(parsed.candles)
+                ? parsed.candles.filter((c: any) => !isDummyCandle(c))
+                : [];
+            const cleanQtShares = Array.isArray(parsed.qtShares)
+                ? parsed.qtShares.filter((q: any) => !isDummyQt(q))
+                : [];
+
             return {
                 ...DEFAULT_WORLD_STATE,
                 ...parsed,
-                bibleLogs: Array.isArray(parsed.bibleLogs) && parsed.bibleLogs.length > 0
-                    ? parsed.bibleLogs
-                    : DEFAULT_WORLD_STATE.bibleLogs,
+                bibleLogs: cleanBibleLogs,
+                candles: cleanCandles,
+                qtShares: cleanQtShares,
                 roomBoards: { ...DEFAULT_WORLD_STATE.roomBoards, ...(parsed.roomBoards || {}) },
                 userAvatars: parsed.userAvatars || {},
             };
